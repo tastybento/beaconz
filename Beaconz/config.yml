@@ -1,0 +1,7 @@
+# Config file for Beaconz
+world:
+  # Beaconz world
+  name: beaconz
+  # Distribution of beacons the large the number, the more beacons are made
+  distribution: 0.01
+  

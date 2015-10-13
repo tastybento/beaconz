@@ -1,0 +1,13 @@
+name: Beaconz
+main: com.wasteofplastic.beaconz.Beaconz
+version: ${version}
+description: Capture the beacons game
+author: tastybento
+depend: [Vault]
+load: startup
+loadbefore: [Multiverse-Core]
+commands:
+    beaconz:
+        description: Main player command
+        usage:  |
+             /beaconz help
