@@ -1,11 +1,8 @@
 package com.wasteofplastic.beaconz;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map.Entry;
 
-import org.bukkit.ChatColor;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.material.MaterialData;
@@ -91,7 +88,7 @@ public class Scorecard {
      * Provide a user readable comma delimited list of the team names for use in commands
      * @return team list
      */
-    public String listTeams() {	
+    public String getTeamListString() {	
 	String result = "";
 	for (Team team : scoreboard.getTeams()) {
 	    if (result.isEmpty()) {

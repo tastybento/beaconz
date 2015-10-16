@@ -24,8 +24,8 @@ public class BeaconPopulator extends BlockPopulator {
     @Override
     public void populate(World world, Random random, Chunk source) {
 	// randomly place a beacon
-	//Bukkit.getLogger().info("DEBUG: populator called");
-	if (random.nextDouble() < plugin.getConfig().getDouble("world.distribution", 0.01D)) {
+	//Bukkit.getLogger().info("DEBUG: distribution = " + Settings.distribution);
+	if (random.nextDouble() < Settings.distribution) {
 	    int x = random.nextInt(16);
 	    int z = random.nextInt(16);
 	    int y = source.getChunkSnapshot().getHighestBlockYAt(x, z) - 1;

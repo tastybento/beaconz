@@ -1,7 +1,5 @@
 package com.wasteofplastic.beaconz;
 
-import net.md_5.bungee.api.ChatColor;
-
 import org.bukkit.entity.Player;
 import org.bukkit.map.MapCanvas;
 import org.bukkit.map.MapRenderer;

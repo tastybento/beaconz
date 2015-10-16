@@ -4,4 +4,12 @@ world:
   name: beaconz
   # Distribution of beacons the large the number, the more beacons are made
   distribution: 0.01
+  # Size of the world - a barrier will be created using worldborder if size > 0
+  size: 0
+  # Center
+  xCenter: 0
+  zCenter: 0
+  # Random spawn - if true, players will spawn randomly (within the world border if set)
+  randomspawn: true
+  
   

@@ -12,6 +12,7 @@ import java.util.Set;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.scoreboard.Team;
@@ -53,7 +54,7 @@ public class Register {
 	    }
 	    plugin.getConfig().set("beacon." + count + ".links", beaconLinks);
 	    if (beacon.getId() != null) {
-		plugin.getConfig().set("id", beacon.getId());
+		plugin.getConfig().set("beacon." + count + ".id", beacon.getId());
 	    }
 	    count++;
 	}
@@ -271,12 +272,29 @@ public class Register {
      * @return BeaconObj or null if none
      */
     public BeaconObj getBeacon(Block b) {
-	if (!b.getType().equals(Material.BEACON) && !b.getType().equals(Material.DIAMOND_BLOCK)) {
+	// Quick check
+	if (!b.getType().equals(Material.BEACON) && !b.getType().equals(Material.DIAMOND_BLOCK) 
+		&& !b.getType().equals(Material.OBSIDIAN) && !b.getType().equals(Material.STAINED_GLASS)) {
 	    return null;
 	}
 	plugin.getLogger().info("DEBUG: correct material");
 	Point2D point = new Point2D.Double(b.getLocation().getBlockX(),b.getLocation().getBlockZ());
 	plugin.getLogger().info("DEBUG: checking point " + point);
+	// Check glass or obsidian
+	if (b.getType().equals(Material.OBSIDIAN) || b.getType().equals(Material.STAINED_GLASS)) {
+	    Block below = b.getRelative(BlockFace.DOWN);
+	    if (!below.getType().equals(Material.BEACON)) {
+		return null;
+	    }
+	    point = new Point2D.Double(below.getLocation().getBlockX(),below.getLocation().getBlockZ());
+	    // Beacon below
+	    if (beaconRegister.containsKey(point)) {
+		//plugin.getLogger().info("DEBUG: found in register");
+		return beaconRegister.get(point);
+	    } else {
+		return null;
+	    }
+	}
 	// Check beacons
 	if (b.getType().equals(Material.BEACON)) {
 	    if (beaconRegister.containsKey(point)) {

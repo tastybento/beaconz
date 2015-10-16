@@ -1,12 +1,22 @@
 package com.wasteofplastic.beaconz;
 
 import java.awt.geom.Point2D;
+import java.util.Random;
+import java.util.Set;
 
 import org.bukkit.ChatColor;
+import org.bukkit.ChunkSnapshot;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.material.MaterialData;
+import org.bukkit.material.SimpleAttachableMaterialData;
+import org.bukkit.material.TrapDoor;
 import org.bukkit.scoreboard.Team;
 
 public class CmdHandler implements CommandExecutor {
@@ -26,26 +36,92 @@ public class CmdHandler implements CommandExecutor {
 
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 	// Test commands
-	// Join team
-	if (args[0].equalsIgnoreCase("join")) {
+	if (args[0].equalsIgnoreCase("distribution")) {
+	    if (args.length == 2) {
+		try {
+		    double dist = Double.valueOf(args[1]);
+		    if (dist > 0D && dist < 1D) {
+			Settings.distribution = dist;
+			sender.sendMessage(ChatColor.GREEN + "Setting beacon distribution to " + dist);
+			return true;
+		    }
+		} catch (Exception e) {}
+	    }
+	    sender.sendMessage(ChatColor.RED + label + "distribution <fraction> - must be less than 1");
+	    return true;  
+	} else
+	if (args[0].equalsIgnoreCase("go")) {
 	    if (!(sender instanceof Player)) {
 		sender.sendMessage("Only available to players");
 		return true;
 	    }
-	    if (args.length != 2) {
-		sender.sendMessage(ChatColor.RED + "/" + label + " join [" + plugin.getScorecard().listTeams() + "]");
+	    Player player = (Player)sender;
+	    if (!player.getWorld().equals(Beaconz.getBeaconzWorld())) {
+		player.sendMessage(ChatColor.GREEN + "Teleporting you to the world...");
+		Location teleportTo = Beaconz.getBeaconzWorld().getSpawnLocation();
+		boolean found = false;
+		if (Settings.randomSpawn) {
+		    Random rand = new Random();
+		    int range = Settings.size > 0 ? (Settings.size/2):50000;
+		    do {
+			int x = rand.nextInt(range);
+			x = rand.nextBoolean() ? x: -x;
+			x = x + Settings.xCenter;
+			int z = rand.nextInt(range);
+			z = rand.nextBoolean() ? z: -z;
+			z = z + Settings.zCenter;
+			//teleportTo = plugin.getBeaconzWorld().getHighestBlockAt(x, z).getLocation();
+			//teleportTo.getChunk().load();
+			// Seach the chunk in this area
+			ChunkSnapshot searchChunk = Beaconz.getBeaconzWorld().getChunkAt(x/16, z/16).getChunkSnapshot();
+			for (int xx = 0; xx < 16; xx++) {
+			    for (int zz = 0; zz < 16; zz++) {
+				teleportTo = Beaconz.beaconzWorld.getBlockAt(x + xx, searchChunk.getHighestBlockYAt(xx, zz), z +zz).getLocation();
+				if (isSafeLocation(teleportTo)) {
+				    found = true;
+				    break;
+				}
+			    }
+			}
+		    } while (!found);
+		}
+		player.teleport(teleportTo);
+		if (plugin.getScorecard().getTeam(player) == null) {
+		    Random rand = new Random();
+		    Set<Team> teams = plugin.getScorecard().getScoreboard().getTeams();
+		    int r = rand.nextInt(teams.size());
+		    for (Team t: teams) {
+			if (r-- == 0) {
+			    t.addPlayer(player);
+			    player.sendMessage("You are now a member of " + t.getDisplayName() + " team!");
+			    break;
+			}
+		    }    
+		}
 		return true;
 	    }
-	    // Check if this is a known team name
-	    Team team = plugin.getScorecard().getTeam(args[1]);
-	    if (team == null) {
-		sender.sendMessage(ChatColor.RED + "/" + label + " join [" + plugin.getScorecard().listTeams() + "]");
-		return true;
-	    }
-	    team.addPlayer((Player)sender);
-	    sender.sendMessage(ChatColor.GREEN + "You joined " + team.getDisplayName());
 	    return true;
-	}
+	} else
+	    // Join team
+	    if (args[0].equalsIgnoreCase("join")) {
+		if (!(sender instanceof Player)) {
+		    sender.sendMessage("Only available to players");
+		    return true;
+		}
+		if (args.length != 2) {
+		    sender.sendMessage(ChatColor.RED + "/" + label + " join [" + plugin.getScorecard().getTeamListString() + "]");
+		    return true;
+		}
+		// Check if this is a known team name
+		Team team = plugin.getScorecard().getTeam(args[1]);
+		if (team == null) {
+		    sender.sendMessage(ChatColor.RED + "/" + label + " join [" + plugin.getScorecard().getTeamListString() + "]");
+		    return true;
+		}
+		team.addPlayer((Player)sender);
+		sender.sendMessage(ChatColor.GREEN + "You joined " + team.getDisplayName());
+		return true;
+	    }
 	if (args[0].equalsIgnoreCase("list")) {
 	    // list known beacons
 	    sender.sendMessage("Known beacons:");
@@ -141,4 +217,74 @@ public class CmdHandler implements CommandExecutor {
 	return true;
     }
 
+    /**
+     * Checks if this location is safe for a player to teleport to. Used by
+     * warps and boat exits Unsafe is any liquid or air and also if there's no
+     * space
+     * 
+     * @param l
+     *            - Location to be checked
+     * @return true if safe, otherwise false
+     */
+    public static boolean isSafeLocation(final Location l) {
+	if (l == null) {
+	    return false;
+	}
+	// TODO: improve the safe location finding.
+	//Bukkit.getLogger().info("DEBUG: " + l.toString());
+	final Block ground = l.getBlock().getRelative(BlockFace.DOWN);
+	final Block space1 = l.getBlock();
+	final Block space2 = l.getBlock().getRelative(BlockFace.UP);
+	//Bukkit.getLogger().info("DEBUG: ground = " + ground.getType());
+	//Bukkit.getLogger().info("DEBUG: space 1 = " + space1.getType());
+	//Bukkit.getLogger().info("DEBUG: space 2 = " + space2.getType());
+	// Portals are not "safe"
+	if (space1.getType() == Material.PORTAL || ground.getType() == Material.PORTAL || space2.getType() == Material.PORTAL
+		|| space1.getType() == Material.ENDER_PORTAL || ground.getType() == Material.ENDER_PORTAL || space2.getType() == Material.ENDER_PORTAL) {
+	    return false;
+	}
+	// If ground is AIR, then this is either not good, or they are on slab,
+	// stair, etc.
+	if (ground.getType() == Material.AIR) {
+	    //Bukkit.getLogger().info("DEBUG: air");
+	    return false;
+	}
+	// Liquid is unsafe
+	if (ground.isLiquid() || space1.isLiquid() || space2.isLiquid()) {
+	    return false;
+	}
+	MaterialData md = ground.getState().getData();
+	if (md instanceof SimpleAttachableMaterialData) {
+	    //Bukkit.getLogger().info("DEBUG: trapdoor/button/tripwire hook etc.");
+	    if (md instanceof TrapDoor) {
+		TrapDoor trapDoor = (TrapDoor)md;
+		if (trapDoor.isOpen()) {
+		    //Bukkit.getLogger().info("DEBUG: trapdoor open");
+		    return false;
+		}
+	    } else {
+		return false;
+	    }
+	    //Bukkit.getLogger().info("DEBUG: trapdoor closed");
+	}
+	if (ground.getType().equals(Material.CACTUS) || ground.getType().equals(Material.BOAT) || ground.getType().equals(Material.FENCE)
+		|| ground.getType().equals(Material.NETHER_FENCE) || ground.getType().equals(Material.SIGN_POST) || ground.getType().equals(Material.WALL_SIGN)) {
+	    // Bukkit.getLogger().info("DEBUG: cactus");
+	    return false;
+	}
+	// Check that the space is not solid
+	// The isSolid function is not fully accurate (yet) so we have to
+	// check
+	// a few other items
+	// isSolid thinks that PLATEs and SIGNS are solid, but they are not
+	if (space1.getType().isSolid() && !space1.getType().equals(Material.SIGN_POST) && !space1.getType().equals(Material.WALL_SIGN)) {
+	    return false;
+	}
+	if (space2.getType().isSolid()&& !space2.getType().equals(Material.SIGN_POST) && !space2.getType().equals(Material.WALL_SIGN)) {
+	    return false;
+	}
+	// Safe
+	//Bukkit.getLogger().info("DEBUG: safe!");
+	return true;
+    }
 }
