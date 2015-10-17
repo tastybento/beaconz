@@ -362,5 +362,21 @@ public class Register {
 	this.beaconMaps.put(index, beacon);
     }
 
+    /**
+     * Gets a set of all the control triangles at this location. Can be overlapping triangles.
+     * @param x
+     * @param y
+     * @return list of triangles at this location
+     */
+    public List<TriangleField> getTriangle(int x, int y) {
+	// TODO: Brute force check - in the future, will need to be indexed better
+	List<TriangleField> result = new ArrayList<TriangleField>();
+	for (TriangleField tri: triangleFields) {
+	    if (tri.contains(x, y) != null) {
+		result.add(tri);
+	    }
+	}
+	return result;
+    }
 
 }

@@ -7,6 +7,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.block.Biome;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.generator.BlockPopulator;
@@ -30,6 +31,11 @@ public class BeaconPopulator extends BlockPopulator {
 	    int z = random.nextInt(16);
 	    int y = source.getChunkSnapshot().getHighestBlockYAt(x, z) - 1;
 	    Block b = source.getBlock(x, y, z);
+	    // Don't make in the ocean or deep ocean because they are too easy to find.
+	    // Frozen ocean okay for now.
+	    if (b.getBiome().equals(Biome.OCEAN) || b.getBiome().equals(Biome.DEEP_OCEAN)) {
+		return;
+	    }
 	    if (b.getType().equals(Material.LEAVES) || b.getType().equals(Material.LEAVES_2)
 		    || b.getType().equals(Material.LOG) || b.getType().equals(Material.LOG_2)) {
 		return;

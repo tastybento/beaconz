@@ -1,7 +1,9 @@
 package com.wasteofplastic.beaconz;
 
-import java.awt.geom.Point2D;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Random;
 
 import org.bukkit.Bukkit;
@@ -20,11 +22,14 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDamageEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.world.WorldInitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.map.MapView;
 import org.bukkit.material.MaterialData;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scoreboard.Team;
 import org.bukkit.util.Vector;
 
@@ -161,11 +166,13 @@ public class BeaconListeners implements Listener {
 	final BeaconObj beacon = plugin.getRegister().getBeacon(b);
 	if (beacon == null) {
 	    plugin.getLogger().info("DEBUG: not a beacon");
+	    event.setCancelled(true);
 	    return;
 	}
 	// Check the team
 	if (beacon.getOwnership() == null || !beacon.getOwnership().equals(team)) {
 	    player.sendMessage(ChatColor.RED + "You must capture this beacon first!");
+	    event.setCancelled(true);
 	    return;
 	}
 	if (event.getItem().getType().equals(Material.PAPER)) {
@@ -195,6 +202,8 @@ public class BeaconListeners implements Listener {
 	    ItemMeta meta = event.getItem().getItemMeta();
 	    meta.setDisplayName("Beacon map for " + beacon.getName());
 	    event.getItem().setItemMeta(meta);
+	    // Stop the beacon inventory opening
+	    event.setCancelled(true);
 	    return;
 	} else {
 	    // Map!
@@ -205,10 +214,12 @@ public class BeaconListeners implements Listener {
 	    }
 	    if (beacon.equals(mappedBeacon)) {
 		player.sendMessage(ChatColor.RED + "You cannot link a beacon to itself!");
+		event.setCancelled(true);
 		return;
 	    }
 	    if (beacon.getOutgoing() == 8) {
 		player.sendMessage(ChatColor.RED + "This beacon already has 8 outbound links!");
+		event.setCancelled(true);
 		return;
 	    }
 	    // Link the two beacons!
@@ -221,27 +232,131 @@ public class BeaconListeners implements Listener {
 	    player.setItemInHand(null);
 	    player.getWorld().playSound(player.getLocation(), Sound.FIREWORK_LARGE_BLAST, 1F, 1F);
 	    visualize(player, beacon, mappedBeacon, team);
+	    event.setCancelled(true);
 	}
     }
-    
+
+
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
+    public void onPlayerMove(PlayerMoveEvent event) {
+	World world = event.getTo().getWorld();
+	if (!world.equals(Beaconz.beaconzWorld)) {
+	    return;
+	}
+	// Only proceed if there's been a change in X or Z coords
+	if (event.getFrom().getBlockX() == event.getTo().getBlockX() && event.getFrom().getBlockZ() == event.getTo().getBlockZ()) {
+	    return;
+	}
+	// Get the player's team
+	Team team = plugin.getScorecard().getTeam(event.getPlayer());
+	if (team == null) {
+	    return;
+	}
+	// Check the From
+	List<TriangleField> from = plugin.getRegister().getTriangle(event.getFrom().getBlockX(), event.getFrom().getBlockZ());
+	// Check the To
+	List<TriangleField> to = plugin.getRegister().getTriangle(event.getTo().getBlockX(), event.getTo().getBlockZ());
+	// Outside any field
+	if (from.isEmpty() && to.isEmpty()) {
+	    return;
+	}
+	// Check if to is not a triangle
+	if (to.size() == 0) {
+	    // Leaving a control triangle
+	    event.getPlayer().sendMessage("Leaving " + from.get(0).getFaction().getDisplayName() + "'s control area");
+	    return;
+	}
+
+	// Apply bad stuff
+	// Enemy team
+	/*
+	 * 1 | Hunger
+	 * 2 | Mining fatigue 1, hunger
+	 * 3 | Weakness 1, mining fatigue 2, hunger
+	 * 4 | Slowness 1, weakness 2, mining fatigue 2, hunger 2
+	 * 5 | Nausea 1, slowness 2, weakness 3, mining fatigue 3, hunger 2
+	 * 6 | Poison 1, nausea 1, slowness 3, weakness 3, mining fatigue 3
+	 * 7 | Blindness, poison 2, slowness 4, weakness 4, mining fatigue 4
+	 * 8+ | Wither*, blindness, slowness 5, weakness 5, mining fatigue 5
+	 */
+	Team toOwner = null;
+	toOwner = to.get(0).getFaction();
+	Collection<PotionEffect> effects = new ArrayList<PotionEffect>();
+	if (toOwner != null && !toOwner.equals(team)) {
+	    switch (to.size()) {
+	    default:
+	    case 8:
+		effects.add(new PotionEffect(PotionEffectType.WITHER,200,to.size()-7));
+	    case 7:
+		effects.add(new PotionEffect(PotionEffectType.BLINDNESS,200,1));
+	    case 6:
+		effects.add(new PotionEffect(PotionEffectType.POISON,200,1));
+	    case 5:
+		effects.add(new PotionEffect(PotionEffectType.CONFUSION,200,1));
+	    case 4:
+		effects.add(new PotionEffect(PotionEffectType.SLOW,200,1));
+	    case 3:
+		effects.add(new PotionEffect(PotionEffectType.WEAKNESS,200,1));
+	    case 2:
+		effects.add(new PotionEffect(PotionEffectType.SLOW_DIGGING,200,1));
+	    case 1:
+		effects.add(new PotionEffect(PotionEffectType.HUNGER,200,1));
+	    }
+	    event.getPlayer().addPotionEffects(effects);
+	}
+	// Entering a field, or moving to a stronger field
+	if (from.size() < to.size()) {
+	    event.getPlayer().sendMessage("Now entering " + toOwner.getDisplayName() + "'s area of control level " + to.size());
+	    return;
+	}
+	if (to.size() < from.size()) {
+	    event.getPlayer().sendMessage(toOwner.getDisplayName() + "'s control level dropping to " + to.size());
+	    return;
+	}
+    }
+
     private void visualize(Player player, BeaconObj from, BeaconObj to, Team team) {
+	plugin.getLogger().info("from = " + from + " to = " + to);
 	double diffX = from.getLocation().getX() - to.getLocation().getX();
 	double diffZ = from.getLocation().getY() - to.getLocation().getY();
 	// Normalize
-	if (diffX > diffZ) {
-	    diffZ = diffZ / diffX;
-	    diffX = 1D;
+	double dist = to.getLocation().distance(from.getLocation());
+	diffZ /= dist;
+	diffX /= dist;
+	// Make the smallest one = 1
+	if (diffZ < diffX) {
+	    diffX = diffX/diffZ;
+	    diffZ = 1;
 	} else {
-	    diffX = diffX / diffZ;
-	    diffZ = 1D;
+	    diffZ = diffZ/diffX;
+	    diffX = 1;
 	}
+	plugin.getLogger().info("direction = " + diffX + "," + diffZ);
 	// Just hack 15 blocks for now
-	for (double x = from.getLocation().getX(); x < from.getLocation().getX() + 15D; x+= diffX) {
-	    for (double z = from.getLocation().getY(); z < from.getLocation().getY() + 15D; z+= diffZ) {
-		Location loc = Beaconz.beaconzWorld.getHighestBlockAt((int)x, (int)z).getLocation();
-		MaterialData md = plugin.getScorecard().getBlockID(team);
-		player.sendBlockChange(loc.add(new Vector(0,5,0)), md.getItemType(), md.getData());
+	int index = 0;
+	double x = from.getLocation().getX(); 
+	double z = from.getLocation().getY();
+	boolean xComplete = false;
+	boolean zComplete = false;
+	do {
+	    index++;
+	    plugin.getLogger().info("Double coords = " + x + "," + z);
+	    Location loc = Beaconz.beaconzWorld.getHighestBlockAt((int)x, (int)z).getLocation();
+	    plugin.getLogger().info("coords = " + loc.getBlockX() + "," + loc.getBlockY() + ", " + loc.getBlockZ());
+	    MaterialData md = plugin.getScorecard().getBlockID(team);
+	    //player.sendBlockChange(loc.add(new Vector(0,5,0)), md.getItemType(), md.getData());
+	    player.sendBlockChange(loc.add(new Vector(0,5,0)), Material.FIRE, (byte)0);
+	    //ParticleEffect.FLAME.display(0, 1, 0, 0, 10, loc.add(new Vector(0,5,0)), 100);;
+	    if (!zComplete && Math.abs(z - to.getLocation().getY()) > 2) {
+		z+= diffZ;  
+	    } else {
+		zComplete = true; 
 	    }
-	}
+	    if (!xComplete && Math.abs(x - to.getLocation().getX()) > 2 ) {
+		x+= diffX;
+	    } else {
+		xComplete = true;
+	    }
+	} while (!zComplete && !xComplete && index < plugin.getServer().getViewDistance());
     }
 }

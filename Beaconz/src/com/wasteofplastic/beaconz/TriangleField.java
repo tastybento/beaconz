@@ -1,5 +1,6 @@
 package com.wasteofplastic.beaconz;
 
+import java.awt.Polygon;
 import java.awt.geom.Point2D;
 
 import org.bukkit.scoreboard.Team;
@@ -17,6 +18,7 @@ public class TriangleField {
     public Point2D b;
     public Point2D c;
     public double area;
+    private Polygon triangle;
     /**
      * Fields are 2D. Only x and z coordinates count
      * @param point2d
@@ -26,6 +28,10 @@ public class TriangleField {
      */
     public TriangleField(Point2D point2d, Point2D point2d2, Point2D point2d3, Team owner) {
 	this.faction = owner;
+	this.triangle = new Polygon();
+	this.triangle.addPoint((int)point2d.getX(), (int)point2d.getY());
+	this.triangle.addPoint((int)point2d2.getX(), (int)point2d2.getY());
+	this.triangle.addPoint((int)point2d3.getX(), (int)point2d3.getY());
 	this.a = point2d;
 	this.b = point2d2;
 	this.c = point2d3;
@@ -96,6 +102,13 @@ public class TriangleField {
 	return (int) area;
     }
 
+    public Team contains(int x, int y) {
+	if (triangle.contains(x,y)) {
+	    return faction;
+	}
+	return null;
+    }
+    
     @Override
     public String toString() {
 	return (int)a.getX() + ":" + (int)a.getY() + ":" + (int)b.getX() + ":" + (int)b.getY() + ":" 
