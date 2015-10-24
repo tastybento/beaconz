@@ -272,6 +272,7 @@ public class Register {
      * @return BeaconObj or null if none
      */
     public BeaconObj getBeacon(Block b) {
+	plugin.getLogger().info("DEBUG: material = " + b.getType());
 	// Quick check
 	if (!b.getType().equals(Material.BEACON) && !b.getType().equals(Material.DIAMOND_BLOCK) 
 		&& !b.getType().equals(Material.OBSIDIAN) && !b.getType().equals(Material.STAINED_GLASS)) {
@@ -280,18 +281,21 @@ public class Register {
 	plugin.getLogger().info("DEBUG: correct material");
 	Point2D point = new Point2D.Double(b.getLocation().getBlockX(),b.getLocation().getBlockZ());
 	plugin.getLogger().info("DEBUG: checking point " + point);
+	
 	// Check glass or obsidian
 	if (b.getType().equals(Material.OBSIDIAN) || b.getType().equals(Material.STAINED_GLASS)) {
 	    Block below = b.getRelative(BlockFace.DOWN);
 	    if (!below.getType().equals(Material.BEACON)) {
+		plugin.getLogger().info("DEBUG: no beacon below here");
 		return null;
 	    }
 	    point = new Point2D.Double(below.getLocation().getBlockX(),below.getLocation().getBlockZ());
 	    // Beacon below
 	    if (beaconRegister.containsKey(point)) {
-		//plugin.getLogger().info("DEBUG: found in register");
+		plugin.getLogger().info("DEBUG: found in register");
 		return beaconRegister.get(point);
 	    } else {
+		plugin.getLogger().info("DEBUG: not found in register");
 		return null;
 	    }
 	}

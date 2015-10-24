@@ -36,21 +36,7 @@ public class CmdHandler implements CommandExecutor {
 
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 	// Test commands
-	if (args[0].equalsIgnoreCase("distribution")) {
-	    if (args.length == 2) {
-		try {
-		    double dist = Double.valueOf(args[1]);
-		    if (dist > 0D && dist < 1D) {
-			Settings.distribution = dist;
-			sender.sendMessage(ChatColor.GREEN + "Setting beacon distribution to " + dist);
-			return true;
-		    }
-		} catch (Exception e) {}
-	    }
-	    sender.sendMessage(ChatColor.RED + label + "distribution <fraction> - must be less than 1");
-	    return true;  
-	} else
-	if (args[0].equalsIgnoreCase("go")) {
+	if (args.length == 0 || args[0].equalsIgnoreCase("go")) {
 	    if (!(sender instanceof Player)) {
 		sender.sendMessage("Only available to players");
 		return true;
@@ -101,6 +87,19 @@ public class CmdHandler implements CommandExecutor {
 		return true;
 	    }
 	    return true;
+	} else if (args[0].equalsIgnoreCase("distribution")) {
+	    if (args.length == 2) {
+		try {
+		    double dist = Double.valueOf(args[1]);
+		    if (dist > 0D && dist < 1D) {
+			Settings.distribution = dist;
+			sender.sendMessage(ChatColor.GREEN + "Setting beacon distribution to " + dist);
+			return true;
+		    }
+		} catch (Exception e) {}
+	    }
+	    sender.sendMessage(ChatColor.RED + label + "distribution <fraction> - must be less than 1");
+	    return true;  
 	} else
 	    // Join team
 	    if (args[0].equalsIgnoreCase("join")) {

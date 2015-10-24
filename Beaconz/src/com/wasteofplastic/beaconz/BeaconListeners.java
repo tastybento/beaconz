@@ -58,8 +58,10 @@ public class BeaconListeners implements Listener {
      * Protects the underlying beacon from any damage
      * @param event
      */
+    /*
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onBeaconDamage(BlockDamageEvent event) {
+	plugin.getLogger().info("DEBUG: " + event.getEventName());
 	World world = event.getBlock().getWorld();
 	if (!world.equals(Beaconz.getBeaconzWorld())) {
 	    return;
@@ -70,14 +72,15 @@ public class BeaconListeners implements Listener {
 	    event.setCancelled(true);
 	}
     }
-
+*/
     /**
      * Handle breakage of the top part of a beacon
      * @param event
      */
     @SuppressWarnings("deprecation")
-    @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled=false)
     public void onBeaconBreak(BlockBreakEvent event) {
+	plugin.getLogger().info("DEBUG: " + event.getEventName());
 	World world = event.getBlock().getWorld();
 	if (!world.equals(Beaconz.getBeaconzWorld())) {
 	    plugin.getLogger().info("DEBUG: not right world");
@@ -94,6 +97,9 @@ public class BeaconListeners implements Listener {
 	}
 	// Check if the block is a beacon or the surrounding pyramid
 	Block b = event.getBlock();
+	if (plugin.getRegister().isBeacon(b)) {
+	    event.setCancelled(true);
+	}
 	if (b.getRelative(BlockFace.DOWN).getType().equals(Material.BEACON)) {
 	    plugin.getLogger().info("DEBUG:beacon below");
 	    // Check if this is a real beacon
@@ -137,7 +143,7 @@ public class BeaconListeners implements Listener {
     @SuppressWarnings("deprecation")
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onPaperMapUse(final PlayerInteractEvent event) {
-	//plugin.getLogger().info("DEBUG: " + event.getEventName());
+	plugin.getLogger().info("DEBUG: paper map " + event.getEventName());
 	if (!event.hasItem()) {
 	    return;
 	}

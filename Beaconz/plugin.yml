@@ -8,5 +8,6 @@ loadbefore: [Multiverse-Core]
 commands:
     beaconz:
         description: Main player command
+        aliases: [beacons]
         usage:  |
              /beaconz help
