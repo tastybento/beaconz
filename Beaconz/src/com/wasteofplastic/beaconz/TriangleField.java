@@ -114,4 +114,16 @@ public class TriangleField {
 	return (int)a.getX() + ":" + (int)a.getY() + ":" + (int)b.getX() + ":" + (int)b.getY() + ":" 
 		+ (int)c.getX() + ":" + (int)c.getY() + ":" + faction.getName();
     }
+
+    /**
+     * Checks if a point is a vertex in this triangle
+     * @param point
+     * @return
+     */
+    public boolean hasVertex(Point2D point) {
+	if (a.equals(point) || b.equals(point) || c.equals(point)) {
+	    return true;
+	}
+	return false;
+    }
 }

@@ -281,7 +281,7 @@ public class Register {
 	plugin.getLogger().info("DEBUG: correct material");
 	Point2D point = new Point2D.Double(b.getLocation().getBlockX(),b.getLocation().getBlockZ());
 	plugin.getLogger().info("DEBUG: checking point " + point);
-	
+
 	// Check glass or obsidian
 	if (b.getType().equals(Material.OBSIDIAN) || b.getType().equals(Material.STAINED_GLASS)) {
 	    Block below = b.getRelative(BlockFace.DOWN);
@@ -335,8 +335,31 @@ public class Register {
 	Point2D point = new Point2D.Double(test.getLocation().getBlockX(),test.getLocation().getBlockZ());
 	if (beaconRegister.containsKey(point)) {
 	    BeaconObj beacon = beaconRegister.get(point);
+	    Team oldOwner = beacon.getOwnership();
 	    beacon.setOwnership(null);
-	    //TODO remove all the links and delete any score from the opposing team
+	    //TODO remove all the links and delete any score from the team that just lost it
+	    for (BeaconObj linkedBeacon : beacon.getLinks()) {
+		linkedBeacon.removeLink(beacon);
+	    }
+	    beacon.removeLinks();
+	    // Get any control triangles that have been removed because of this
+	    Iterator<TriangleField> it = triangleFields.iterator();
+	    while (it.hasNext()) {
+		TriangleField triangle = it.next();
+		if (triangle.hasVertex(point)) {
+		    plugin.getLogger().info("DEBUG: this beaon was part of a triangle");
+		    // Remove score
+		    if (score.containsKey(oldOwner)) {
+			int sc = triangle.getArea();
+			plugin.getLogger().info("DEBUG: Removing score " + sc + " from " + oldOwner.getDisplayName() 
+				+ " team's score of " + score.get(beacon.getOwnership()));
+			int newScore = score.get(oldOwner) - sc;
+			score.put(oldOwner,newScore);
+		    }
+		    // Remove triangle
+		    it.remove();
+		}
+	    }
 	}
 
     }

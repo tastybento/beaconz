@@ -98,6 +98,7 @@ public class BeaconListeners implements Listener {
 	// Check if the block is a beacon or the surrounding pyramid
 	Block b = event.getBlock();
 	if (plugin.getRegister().isBeacon(b)) {
+	    // Cancel any breakage
 	    event.setCancelled(true);
 	}
 	if (b.getRelative(BlockFace.DOWN).getType().equals(Material.BEACON)) {
@@ -346,7 +347,7 @@ public class BeaconListeners implements Listener {
 	boolean zComplete = false;
 	do {
 	    index++;
-	    plugin.getLogger().info("Double coords = " + x + "," + z);
+	    //plugin.getLogger().info("Double coords = " + x + "," + z);
 	    Location loc = Beaconz.beaconzWorld.getHighestBlockAt((int)x, (int)z).getLocation();
 	    plugin.getLogger().info("coords = " + loc.getBlockX() + "," + loc.getBlockY() + ", " + loc.getBlockZ());
 	    MaterialData md = plugin.getScorecard().getBlockID(team);

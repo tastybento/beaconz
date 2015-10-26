@@ -230,6 +230,21 @@ public class BeaconObj {
     public Integer getId() {
         return id;
     }
+
+    /**
+     * Remove links to beacon
+     * @param beacon
+     */
+    public void removeLink(BeaconObj beacon) {
+	links.remove(beacon);
+    }
+
+    /**
+     * Remove all links from this beacon
+     */
+    public void removeLinks() {
+	links.clear();
+    }
     
     
 
