@@ -7,4 +7,5 @@ public class Settings {
     public static int zCenter;
     public static int size;
     public static boolean randomSpawn;
+    public static long seedAdjustment;
 }
