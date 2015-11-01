@@ -1,10 +1,12 @@
 package com.wasteofplastic.beaconz;
 
+import java.awt.geom.Line2D;
+import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Random;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -20,7 +22,6 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockDamageEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.world.WorldInitEvent;
@@ -34,7 +35,6 @@ import org.bukkit.scoreboard.Team;
 import org.bukkit.util.Vector;
 
 public class BeaconListeners implements Listener {
-    private Random rand = new Random();
     private Beaconz plugin;
 
     /**
@@ -72,7 +72,7 @@ public class BeaconListeners implements Listener {
 	    event.setCancelled(true);
 	}
     }
-*/
+     */
     /**
      * Handle breakage of the top part of a beacon
      * @param event
@@ -98,6 +98,7 @@ public class BeaconListeners implements Listener {
 	// Check if the block is a beacon or the surrounding pyramid
 	Block b = event.getBlock();
 	if (plugin.getRegister().isBeacon(b)) {
+	    // Cancel any breakage
 	    event.setCancelled(true);
 	}
 	if (b.getRelative(BlockFace.DOWN).getType().equals(Material.BEACON)) {
@@ -321,48 +322,28 @@ public class BeaconListeners implements Listener {
 	}
     }
 
+    /**
+     * Draws a line of glass in the sky at 255 height of the team's block between two beacons
+     * @param player
+     * @param from
+     * @param to
+     * @param team
+     */
     private void visualize(Player player, BeaconObj from, BeaconObj to, Team team) {
 	plugin.getLogger().info("from = " + from + " to = " + to);
-	double diffX = from.getLocation().getX() - to.getLocation().getX();
-	double diffZ = from.getLocation().getY() - to.getLocation().getY();
-	// Normalize
-	double dist = to.getLocation().distance(from.getLocation());
-	diffZ /= dist;
-	diffX /= dist;
-	// Make the smallest one = 1
-	if (diffZ < diffX) {
-	    diffX = diffX/diffZ;
-	    diffZ = 1;
-	} else {
-	    diffZ = diffZ/diffX;
-	    diffX = 1;
+
+	//List<Point2D> points = new ArrayList<Point2D>();
+	Line2D line = new Line2D.Double(from.getLocation(), to.getLocation());
+	Point2D current;
+
+	for (Iterator<Point2D> it = new LineIterator(line); it.hasNext();) {
+	    current = it.next();
+	    Block b = Beaconz.getBeaconzWorld().getBlockAt((int)current.getX(), Beaconz.getBeaconzWorld().getMaxHeight()-1, (int)current.getY());
+	    if (b.getType().equals(Material.AIR)) {
+		MaterialData md = plugin.getScorecard().getBlockID(team);
+		b.setType(md.getItemType());
+		b.setData(md.getData());
+	    }
 	}
-	plugin.getLogger().info("direction = " + diffX + "," + diffZ);
-	// Just hack 15 blocks for now
-	int index = 0;
-	double x = from.getLocation().getX(); 
-	double z = from.getLocation().getY();
-	boolean xComplete = false;
-	boolean zComplete = false;
-	do {
-	    index++;
-	    plugin.getLogger().info("Double coords = " + x + "," + z);
-	    Location loc = Beaconz.beaconzWorld.getHighestBlockAt((int)x, (int)z).getLocation();
-	    plugin.getLogger().info("coords = " + loc.getBlockX() + "," + loc.getBlockY() + ", " + loc.getBlockZ());
-	    MaterialData md = plugin.getScorecard().getBlockID(team);
-	    //player.sendBlockChange(loc.add(new Vector(0,5,0)), md.getItemType(), md.getData());
-	    player.sendBlockChange(loc.add(new Vector(0,5,0)), Material.FIRE, (byte)0);
-	    //ParticleEffect.FLAME.display(0, 1, 0, 0, 10, loc.add(new Vector(0,5,0)), 100);;
-	    if (!zComplete && Math.abs(z - to.getLocation().getY()) > 2) {
-		z+= diffZ;  
-	    } else {
-		zComplete = true; 
-	    }
-	    if (!xComplete && Math.abs(x - to.getLocation().getX()) > 2 ) {
-		x+= diffX;
-	    } else {
-		xComplete = true;
-	    }
-	} while (!zComplete && !xComplete && index < plugin.getServer().getViewDistance());
     }
 }
