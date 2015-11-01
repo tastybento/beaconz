@@ -12,6 +12,8 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.generator.BlockPopulator;
 
+import com.wasteofplastic.include.it.unimi.dsi.util.XorShift;
+
 public class BeaconPopulator extends BlockPopulator {
     private Beaconz plugin;
     
@@ -23,12 +25,17 @@ public class BeaconPopulator extends BlockPopulator {
     }
 
     @Override
-    public void populate(World world, Random random, Chunk source) {
-	// randomly place a beacon
-	//Bukkit.getLogger().info("DEBUG: distribution = " + Settings.distribution);
-	if (random.nextDouble() < Settings.distribution) {
-	    int x = random.nextInt(16);
-	    int z = random.nextInt(16);
+    public void populate(World world, Random unused, Chunk source) {
+	// pseudo-randomly place a beacon
+    XorShift gen=new XorShift(new long[] {
+    		source.getX(),
+    		source.getZ(),
+    		world.getSeed(),
+    		Settings.seedAdjustment
+    });
+	if (gen.nextDouble() < Settings.distribution) {
+	    int x = gen.nextInt(16);
+	    int z = gen.nextInt(16);
 	    int y = source.getChunkSnapshot().getHighestBlockYAt(x, z) - 1;
 	    Block b = source.getBlock(x, y, z);
 	    // Don't make in the ocean or deep ocean because they are too easy to find.
