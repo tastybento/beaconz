@@ -12,6 +12,7 @@ import org.bukkit.scoreboard.Team;
 public class BeaconObj {
     private Beaconz plugin;
     private Point2D location;
+    private int height;
     private long hackTimer;
     private Team ownership;
     private List<Resonator> resonators;
@@ -20,13 +21,18 @@ public class BeaconObj {
     private int outgoing;
     private Integer id = null;
 
+
     /**
-     * @param location
-     * @param owner 
+     * @param plugin
+     * @param x
+     * @param y
+     * @param z
+     * @param owner
      */
-    public BeaconObj(Beaconz plugin, Point2D location, Team owner) {
+    public BeaconObj(Beaconz plugin, int x, int y, int z, Team owner) {
 	this.plugin = plugin;
-	this.location = location;
+	this.location = new Point2D.Double(x,z);
+	this.height = y;
 	this.hackTimer = System.currentTimeMillis();
 	this.ownership = owner;
 	this.resonators = new ArrayList<Resonator>();
@@ -35,6 +41,15 @@ public class BeaconObj {
 	this.outgoing = 0;
     }
 
+    public int getX() {
+	return (int) location.getX();
+    }
+    public int getY() {
+	return height;
+    }
+    public int getZ() {
+	return (int) location.getY();
+    }
     /**
      * @return the location
      */
@@ -244,6 +259,20 @@ public class BeaconObj {
      */
     public void removeLinks() {
 	links.clear();
+    }
+
+    /**
+     * @return the height
+     */
+    public int getHeight() {
+        return height;
+    }
+
+    /**
+     * @param height the height to set
+     */
+    public void setHeight(int height) {
+        this.height = height;
     }
     
     

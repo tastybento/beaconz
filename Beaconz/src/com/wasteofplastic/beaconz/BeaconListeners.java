@@ -10,7 +10,6 @@ import java.util.List;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.World;
@@ -22,6 +21,12 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockFromToEvent;
+import org.bukkit.event.block.BlockPistonExtendEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.block.BlockSpreadEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.world.WorldInitEvent;
@@ -32,7 +37,6 @@ import org.bukkit.material.MaterialData;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scoreboard.Team;
-import org.bukkit.util.Vector;
 
 public class BeaconListeners implements Listener {
     private Beaconz plugin;
@@ -58,21 +62,124 @@ public class BeaconListeners implements Listener {
      * Protects the underlying beacon from any damage
      * @param event
      */
-    /*
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
-    public void onBeaconDamage(BlockDamageEvent event) {
-	plugin.getLogger().info("DEBUG: " + event.getEventName());
-	World world = event.getBlock().getWorld();
+    public void onBeaconDamage(EntityExplodeEvent event) {
+	//plugin.getLogger().info("DEBUG: " + event.getEventName());
+	World world = event.getLocation().getWorld();
 	if (!world.equals(Beaconz.getBeaconzWorld())) {
 	    return;
 	}
-	// Check if the block is a beacon or the surrounding pyramid
-	Block b = event.getBlock();
-	if (plugin.getRegister().isBeacon(b)) {
+	// Check if the block is a beacon or the surrounding pyramid and remove it from the damaged blocks
+	Iterator<Block> it = event.blockList().iterator();
+	while (it.hasNext()) {
+	    if (plugin.getRegister().isBeacon(it.next())) {
+		it.remove();
+	    }
+	}
+    }
+
+    /**
+     * Prevents placing blocks above the beacon
+     * @param event
+     */
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
+    public void onBeaconPlace(BlockPlaceEvent event) {
+	World world = event.getBlock().getWorld();
+	if (!world.equals(Beaconz.getBeaconzWorld())) {
+	    //plugin.getLogger().info("DEBUG: not right world");
+	    return;
+	}
+	BeaconObj beacon = plugin.getRegister().getBeaconAt(event.getBlock().getX(),event.getBlock().getZ());
+	if (beacon != null && beacon.getY() < event.getBlock().getY()) {
+	    event.setCancelled(true);
+	    event.getPlayer().sendMessage(ChatColor.RED + "You cannot build on top of a beacon!");
+	}
+    }
+
+    /**
+     * Prevents trees from growing above the beacon
+     * @param event
+     */
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
+    public void onBlockSpread(BlockSpreadEvent event) {
+	World world = event.getBlock().getWorld();
+	if (!world.equals(Beaconz.getBeaconzWorld())) {
+	    //plugin.getLogger().info("DEBUG: not right world");
+	    return;
+	}
+	BeaconObj beacon = plugin.getRegister().getBeaconAt(event.getBlock().getX(),event.getBlock().getZ());
+	if (beacon != null && beacon.getY() < event.getBlock().getY()) {
 	    event.setCancelled(true);
 	}
     }
+
+    /**
+     * Prevents blocks from being piston pushed above a beacon or a piston being used to remove beacon blocks
+     * @param event
      */
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
+    public void onPistonPush(BlockPistonExtendEvent event) {
+	World world = event.getBlock().getWorld();
+	if (!world.equals(Beaconz.getBeaconzWorld())) {
+	    //plugin.getLogger().info("DEBUG: not right world");
+	    return;
+	}
+	for (Block b : event.getBlocks()) {
+	    // If any block is part of a beacon cancel it
+	    if (plugin.getRegister().isBeacon(b)) {
+		event.setCancelled(true);
+		return;
+	    }
+	    Block testBlock = b.getRelative(event.getDirection());
+	    BeaconObj beacon = plugin.getRegister().getBeaconAt(testBlock.getX(),testBlock.getZ());
+	    if (beacon != null && beacon.getY() < testBlock.getY()) {
+		event.setCancelled(true);
+	    }
+	}
+    }
+
+    /**
+     * Prevents the tipping of liquids over the beacon
+     * @param event
+     */
+    @EventHandler(priority = EventPriority.LOW)
+    public void onBucketEmpty(final PlayerBucketEmptyEvent event) {
+	//plugin.getLogger().info("DEBUG: " + event.getEventName());
+	World world = event.getBlockClicked().getWorld();
+	if (!world.equals(Beaconz.getBeaconzWorld())) {
+	    //plugin.getLogger().info("DEBUG: not right world");
+	    return;
+	}
+	BeaconObj beacon = plugin.getRegister().getBeaconAt(event.getBlockClicked().getX(),event.getBlockClicked().getZ());
+	if (beacon != null && beacon.getY() <= event.getBlockClicked().getY()) {
+	    event.setCancelled(true);
+	    event.getPlayer().sendMessage(ChatColor.RED + "You cannot place liquids above a beacon!");
+	}
+    }
+
+
+    /**
+     * Prevents liquid flowing over the beacon beam
+     * @param event
+     */
+    @EventHandler(priority = EventPriority.LOW)
+    public void onLiquidFlow(final BlockFromToEvent event) {
+	//plugin.getLogger().info("DEBUG: " + event.getEventName());
+	World world = event.getBlock().getWorld();
+	if (!world.equals(Beaconz.getBeaconzWorld())) {
+	    //plugin.getLogger().info("DEBUG: not right world");
+	    return;
+	}
+	// Only bother with horizontal flows
+	if (event.getToBlock().getX() != event.getBlock().getX() || event.getToBlock().getZ() != event.getBlock().getZ()) {
+	    //plugin.getLogger().info("DEBUG: " + event.getEventName());
+	    BeaconObj beacon = plugin.getRegister().getBeaconAt(event.getToBlock().getX(),event.getToBlock().getZ());
+	    if (beacon != null && beacon.getY() < event.getToBlock().getY()) {
+		event.setCancelled(true);
+	    }
+	}
+    }
+
     /**
      * Handle breakage of the top part of a beacon
      * @param event
@@ -80,10 +187,10 @@ public class BeaconListeners implements Listener {
     @SuppressWarnings("deprecation")
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=false)
     public void onBeaconBreak(BlockBreakEvent event) {
-	plugin.getLogger().info("DEBUG: " + event.getEventName());
+	//plugin.getLogger().info("DEBUG: " + event.getEventName());
 	World world = event.getBlock().getWorld();
 	if (!world.equals(Beaconz.getBeaconzWorld())) {
-	    plugin.getLogger().info("DEBUG: not right world");
+	    //plugin.getLogger().info("DEBUG: not right world");
 	    return;
 	}
 	Player player = event.getPlayer();
@@ -102,13 +209,13 @@ public class BeaconListeners implements Listener {
 	    event.setCancelled(true);
 	}
 	if (b.getRelative(BlockFace.DOWN).getType().equals(Material.BEACON)) {
-	    plugin.getLogger().info("DEBUG:beacon below");
+	    //plugin.getLogger().info("DEBUG:beacon below");
 	    // Check if this is a real beacon
 	    if (plugin.getRegister().isBeacon(b.getRelative(BlockFace.DOWN))) {
-		plugin.getLogger().info("DEBUG: registered beacon");
+		//plugin.getLogger().info("DEBUG: registered beacon");
 		// It is a real beacon
 		if (b.getType().equals(Material.OBSIDIAN)) {
-		    plugin.getLogger().info("DEBUG: obsidian");
+		    //plugin.getLogger().info("DEBUG: obsidian");
 		    //Claiming unowned beacon
 		    b.setType(plugin.getScorecard().getBlockID(team).getItemType());
 		    b.setData(plugin.getScorecard().getBlockID(team).getData());
@@ -117,10 +224,10 @@ public class BeaconListeners implements Listener {
 		    plugin.getRegister().addBeacon(team, b.getLocation());
 		    player.sendMessage(ChatColor.GREEN + "You captured a beacon!");
 		} else {
-		    plugin.getLogger().info("DEBUG: another block");
+		    //plugin.getLogger().info("DEBUG: another block");
 		    Team blockTeam = plugin.getScorecard().getTeamFromBlock(b);
 		    if (blockTeam != null) {
-			plugin.getLogger().info("DEBUG: known team block");
+			//plugin.getLogger().info("DEBUG: known team block");
 			if (team.equals(blockTeam)) {
 			    // You can't destroy your own beacon
 			    player.sendMessage(ChatColor.RED + "You cannot destroy your own beacon");
@@ -144,7 +251,7 @@ public class BeaconListeners implements Listener {
     @SuppressWarnings("deprecation")
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onPaperMapUse(final PlayerInteractEvent event) {
-	plugin.getLogger().info("DEBUG: paper map " + event.getEventName());
+	//plugin.getLogger().info("DEBUG: paper map " + event.getEventName());
 	if (!event.hasItem()) {
 	    return;
 	}
@@ -156,7 +263,7 @@ public class BeaconListeners implements Listener {
 	}
 	World world = event.getClickedBlock().getWorld();
 	if (!world.equals(Beaconz.getBeaconzWorld())) {
-	    plugin.getLogger().info("DEBUG: not right world");
+	    //plugin.getLogger().info("DEBUG: not right world");
 	    return;
 	}
 	Player player = event.getPlayer();
@@ -172,7 +279,7 @@ public class BeaconListeners implements Listener {
 	Block b = event.getClickedBlock();
 	final BeaconObj beacon = plugin.getRegister().getBeacon(b);
 	if (beacon == null) {
-	    plugin.getLogger().info("DEBUG: not a beacon");
+	    //plugin.getLogger().info("DEBUG: not a beacon");
 	    event.setCancelled(true);
 	    return;
 	}
@@ -197,7 +304,7 @@ public class BeaconListeners implements Listener {
 	    event.getItem().setDurability(map.getId());
 	    // Each map is unique and the durability defines the map ID, register it
 	    plugin.getRegister().addBeaconMap(map.getId(), beacon);
-	    plugin.getLogger().info("DEBUG: beacon id = " + beacon.getId());
+	    //plugin.getLogger().info("DEBUG: beacon id = " + beacon.getId());
 	    if (amount > 0) {
 		HashMap<Integer, ItemStack> leftOver = player.getInventory().addItem(new ItemStack(Material.PAPER, amount));
 		if (!leftOver.isEmpty()) {

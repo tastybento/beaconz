@@ -46,7 +46,7 @@ public class Register {
 	    if (beacon.getOwnership() != null) {
 		owner = beacon.getOwnership().getName();
 	    }
-	    plugin.getConfig().set("beacon." + count + ".location", (int)beacon.getLocation().getX() +":" + (int)beacon.getLocation().getY() 
+	    plugin.getConfig().set("beacon." + count + ".location", beacon.getX() + ":" + beacon.getY() + ":" + beacon.getZ() 
 		    + ":" + owner);
 	    List<String> beaconLinks = new ArrayList<String>();
 	    for (BeaconObj linkedBeacon: beacon.getLinks()) {
@@ -89,17 +89,20 @@ public class Register {
 	    for (String beacon : configSec.getValues(false).keySet()) {
 		String info = configSec.getString(beacon + ".location","");
 		String[] args = info.split(":");
-		if (!info.isEmpty() && args.length == 3) {
-		    Point2D location = new Point2D.Double(Double.valueOf(args[0]), Double.valueOf(args[1]));
-		    BeaconObj newBeacon = new BeaconObj(plugin, location , plugin.getScorecard().getTeam(args[2]));
+		if (!info.isEmpty() && args.length == 4) {
+		    int x = Integer.valueOf(args[0]);
+		    int y = Integer.valueOf(args[1]);
+		    int z = Integer.valueOf(args[2]);
+		    BeaconObj newBeacon = new BeaconObj(plugin, x,y,z , plugin.getScorecard().getTeam(args[3]));
 		    // Check for links
 		    beaconLinks.put(newBeacon, configSec.getStringList(beacon + ".links"));
-		    beaconRegister.put(location, newBeacon);
+		    
+		    beaconRegister.put(new Point2D.Double(x, z), newBeacon);
 		    // Map id
 		    if (configSec.contains(beacon + ".id")) {
 			addBeaconMap((short)configSec.getInt(beacon + ".id"), newBeacon);
 		    }
-		    plugin.getLogger().info("DEBUG: loaded beacon at " + location);
+		    plugin.getLogger().info("DEBUG: loaded beacon at " + x + "," + y + "," + z);
 		}
 	    }
 	}
@@ -162,10 +165,11 @@ public class Register {
      * @param owner
      * @param location
      */
-    public void addBeacon(Team owner, Point2D location) {
+    public void addBeacon(Team owner, int x, int y, int z) {
 	// Create a beacon
+	Point2D location = new Point2D.Double(x,z);
 	plugin.getLogger().info("DEBUG: registered beacon at " + location + " status " + owner);
-	BeaconObj p = new BeaconObj(plugin, location, owner);
+	BeaconObj p = new BeaconObj(plugin, x, y, z, owner);
 	beaconRegister.put(location, p);
     }
 
@@ -376,7 +380,7 @@ public class Register {
      * @param location
      */
     public void addBeacon(Team team, Location location) {
-	addBeacon(team, new Point2D.Double(location.getBlockX(),location.getBlockZ()));
+	addBeacon(team, location.getBlockX(), location.getBlockY(), location.getBlockZ());
     }
 
     /**
@@ -410,6 +414,18 @@ public class Register {
 	    }
 	}
 	return result;
+    }
+
+
+    /**
+     * Returns the beacon at x,z or null if there is none
+     * @param x
+     * @param z
+     * @return beacon object
+     */
+    public BeaconObj getBeaconAt(int x, int z) {
+	Point2D point = new Point2D.Double((double)x,(double)z);
+	return beaconRegister.get(point);
     }
 
 }

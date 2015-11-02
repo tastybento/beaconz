@@ -1,6 +1,5 @@
 package com.wasteofplastic.beaconz;
 
-import java.awt.geom.Point2D;
 import java.util.Random;
 
 import org.bukkit.Bukkit;
@@ -71,7 +70,7 @@ public class BeaconPopulator extends BlockPopulator {
 	    b.getRelative(BlockFace.NORTH_WEST).setType(Material.DIAMOND_BLOCK);
 
 	    // Register the beacon
-	    plugin.getRegister().addBeacon(null, new Point2D.Double((source.getX() * 16 + x), (source.getZ()*16 + z)));
+	    plugin.getRegister().addBeacon(null, (source.getX() * 16 + x), y, (source.getZ()*16 + z));
 	}
     }
 }
