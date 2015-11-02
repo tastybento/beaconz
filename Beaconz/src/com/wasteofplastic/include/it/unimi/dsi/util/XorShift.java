@@ -113,7 +113,7 @@ public class XorShift {
 	private static final double NORM_24 = 1. / ( 1L << 24 );
 
 	/** The internal state of the algorithm. */
-	private long[] s;
+	private long[] s = new long[] {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 	private int p;
 
 	/** Creates a new generator using a given seed.
@@ -121,6 +121,7 @@ public class XorShift {
 	 * @param seed a nonzero seed for the generator (if zero, the generator will be seeded with -1).
 	 */
 	public XorShift( final long[] seed ) {
+	    //Bukkit.getLogger().info("DEBUG: " + seed);
 		setState(seed);
 	}
 
@@ -190,6 +191,8 @@ public class XorShift {
 	 */
 	public void setState( final long[] state ) {
 		int i=0;
+		//Bukkit.getLogger().info("DEBUG: state length = " + state.length);
+		//Bukkit.getLogger().info("DEBUG: s length = " + s.length);
 		for(; i<state.length && i<s.length; i++) {
 			s[i]=state[i] ^ randomnessReserve[i];
 		}
