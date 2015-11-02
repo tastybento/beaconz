@@ -96,7 +96,7 @@ public class Beaconz extends JavaPlugin {
 	Settings.xCenter = getConfig().getInt("world.xcenter",0);
 	Settings.zCenter = getConfig().getInt("world.zcenter",0);
 	Settings.randomSpawn = getConfig().getBoolean("world.randomspawn", true);
-
+	Settings.seedAdjustment = getConfig().getLong("world.seedadjustment", 0);
     }
 
     public static World getBeaconzWorld() {

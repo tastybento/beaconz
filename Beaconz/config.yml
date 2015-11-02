@@ -11,5 +11,6 @@ world:
   zCenter: 0
   # Random spawn - if true, players will spawn randomly (within the world border if set)
   randomspawn: true
-  
+  # Seed adjustment
+  seedadjustment: 0  
   

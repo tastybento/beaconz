@@ -36,6 +36,16 @@ public class CmdHandler implements CommandExecutor {
 
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 	// Test commands
+	if (args.length == 0 || args[0].equalsIgnoreCase("help")) {
+	  sender.sendMessage("/" + label + " help - this help");
+	  sender.sendMessage("/" + label + " - teleport to the beaconz world and join a team");
+	  sender.sendMessage("/" + label + " distribution <fraction> - sets the distribution of beacons temporarily");
+	  sender.sendMessage("/" + label + " join <team name> - join a team (red or blue)");
+	  sender.sendMessage("/" + label + " list - lists all the known beacons");
+	  sender.sendMessage("/" + label + " score - lists the score");
+	  sender.sendMessage("/" + label + " claim UNOWNED/RED/BLUE - force-claims a beacon");
+	  sender.sendMessage("/" + label + " link x z - force-links a beacon you are standing on to one at x,z"); 
+	}
 	if (args.length == 0 || args[0].equalsIgnoreCase("go")) {
 	    if (!(sender instanceof Player)) {
 		sender.sendMessage("Only available to players");
