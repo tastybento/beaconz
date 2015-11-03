@@ -38,6 +38,10 @@ public class BeaconPopulator extends BlockPopulator {
 	if (nd < Settings.distribution) {
 	    int x = gen.nextInt(16);
 	    int z = gen.nextInt(16);
+	    // Check if there is already a beacon here, if not, don't make it again
+	    if (plugin.getRegister().getBeaconAt((source.getX() * 16 + x), (source.getZ()*16 + z)) != null) {
+		return;
+	    }
 	    int y = source.getChunkSnapshot().getHighestBlockYAt(x, z) - 1;
 	    Block b = source.getBlock(x, y, z);
 	    // Don't make in the ocean or deep ocean because they are too easy to find.

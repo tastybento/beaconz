@@ -1,8 +1,12 @@
 package com.wasteofplastic.beaconz;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map.Entry;
+import java.util.UUID;
 
+import org.bukkit.OfflinePlayer;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.material.MaterialData;
@@ -17,14 +21,20 @@ public class Scorecard {
     private ScoreboardManager manager;
     private Scoreboard scoreboard;
     private HashMap<Team, MaterialData> teamBlock;
+    //private HashMap<Team, List<UUID>> teamMembers;
+    //private HashMap<UUID, String> teamLookup;
+    
     /**
      * @param plugin
      */
     public Scorecard(Beaconz plugin) {
 	this.plugin = plugin;
 	this.manager = plugin.getServer().getScoreboardManager();
-	scoreboard = manager.getNewScoreboard();
+	this.scoreboard = manager.getNewScoreboard();
 	this.teamBlock = new HashMap<Team, MaterialData>();
+	//this.teamLookup = new HashMap<UUID, String>();
+	//this.teamMembers = new HashMap<Team, List<UUID>>();
+
 	Objective objective = scoreboard.registerNewObjective("Team score", "blocks");
 	objective.setDisplaySlot(DisplaySlot.SIDEBAR); 
 	//Setting the display name of the scoreboard/objective
@@ -107,5 +117,61 @@ public class Scorecard {
 	return scoreboard;
     }
 
+    /**
+     * Loads all the team members in UUID format
+     */
+    public void loadTeamMembers() {
+	for (Team team: scoreboard.getTeams()) {
+	    List<String> members = plugin.getConfig().getStringList(team.getName());
+	    //List<UUID> membersUUID = new ArrayList<UUID>();
+	    for (String uuid : members) {
+		try {
+		    UUID memberUUID = UUID.fromString(uuid);
+		    OfflinePlayer player = plugin.getServer().getOfflinePlayer(memberUUID);
+		    team.addPlayer(player);
+		    //teamLookup.put(memberUUID, team.getName());
+		} catch (Exception e) {
+		    plugin.getLogger().severe("Error loading team member " + team.toString() + " " + uuid + " - skipping");
+		}
+	    }
+	    //teamMembers.put(team,membersUUID);
+	}
+    }
+
+    /**
+     * Saves the teams to the config file
+     */
+    @SuppressWarnings("deprecation")
+    public void saveTeamMembers() {
+	for (Team team: scoreboard.getTeams()) {
+	    List<String> teamMembers = new ArrayList<String>();
+	    for (OfflinePlayer player : team.getPlayers()) {
+		try {
+		    teamMembers.add(player.getUniqueId().toString());
+		    //teamLookup.put(memberUUID, team.getName());
+		} catch (Exception e) {
+		    plugin.getLogger().severe("Error saving team member " + team.toString() + " " + player.getName() + " - skipping");
+		}
+	    }
+	    plugin.getConfig().set(team.getName(), teamMembers);
+	}
+    }
+    
+    /**
+     * @param member
+     * @return member's team if it exists, null otherwise
+     */
+    @SuppressWarnings("deprecation")
+    public Team getTeam(OfflinePlayer member) {
+	// Run through the teams and find the player
+	for (Team team : scoreboard.getTeams()) {
+	    for (OfflinePlayer player : team.getPlayers()) {
+		if (player.equals(member)) {
+		    return team;
+		}
+	    }
+	}
+	return null;
+    }
 
 }

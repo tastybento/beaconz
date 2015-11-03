@@ -109,6 +109,10 @@ public class TriangleField {
 	return null;
     }
     
+    public boolean contains(Point2D point) {
+	return triangle.contains(point);
+    }
+    
     @Override
     public String toString() {
 	return (int)a.getX() + ":" + (int)a.getY() + ":" + (int)b.getX() + ":" + (int)b.getY() + ":" 
@@ -126,4 +130,6 @@ public class TriangleField {
 	}
 	return false;
     }
+
+
 }

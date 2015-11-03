@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.Map.Entry;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -96,7 +97,7 @@ public class Register {
 		    BeaconObj newBeacon = new BeaconObj(plugin, x,y,z , plugin.getScorecard().getTeam(args[3]));
 		    // Check for links
 		    beaconLinks.put(newBeacon, configSec.getStringList(beacon + ".links"));
-		    
+
 		    beaconRegister.put(new Point2D.Double(x, z), newBeacon);
 		    // Map id
 		    if (configSec.contains(beacon + ".id")) {
@@ -156,7 +157,15 @@ public class Register {
     }
 
 
+    /**
+     * Return all the links for this team
+     * @param faction
+     * @return set of links or empty set if none
+     */
     public Set<Line2D> getFactionLinks(Team faction) {
+	if (links.get(faction) == null) {
+	    return new HashSet<Line2D>();
+	}
 	return links.get(faction);
     }
 
@@ -178,8 +187,9 @@ public class Register {
      * @param point2d
      * @param point2d2
      * @param point2d3
+     * @return 
      */
-    public void addTriangle(Point2D point2d, Point2D point2d2, Point2D point2d3, Team owner)  throws IllegalArgumentException {
+    public Boolean addTriangle(Point2D point2d, Point2D point2d2, Point2D point2d3, Team owner)  throws IllegalArgumentException {
 	plugin.getLogger().info("DEBUG: Adding triangle at " + point2d + " " + point2d2 + " " + point2d3);
 	// Check that locations are known beacons
 	if (beaconRegister.containsKey(point2d) && beaconRegister.containsKey(point2d2) && beaconRegister.containsKey(point2d3)) {
@@ -190,6 +200,16 @@ public class Register {
 		    && beaconRegister.get(point2d3).getOwnership().equals(owner)) {
 		plugin.getLogger().info("DEBUG: All beacons are owned by same faction");
 		TriangleField cf = new TriangleField(point2d, point2d2, point2d3, owner);
+		// Check to see if this control field would overlap enemy-held beacons
+		for (Entry<Point2D,BeaconObj> beacon : plugin.getRegister().getBeaconRegister().entrySet()) {
+		    if (!beacon.getValue().getOwnership().equals(owner)) {
+			// Check enemy beacons
+			if (cf.contains(beacon.getKey())) {
+			    plugin.getLogger().info("DEBUG: Enemy beacon found inside potential control field, not making control field");
+			    return false;
+			}
+		    }
+		}
 		if (triangleFields.add(cf)) {
 		    plugin.getLogger().info("DEBUG: Added control field!");
 		    // New control field, add to score
@@ -201,6 +221,7 @@ public class Register {
 			score.put(owner, cf.getArea());
 		    }
 		    plugin.getLogger().info("DEBUG: New score is " + cf.getArea());
+		    return true;
 		} else {
 		    plugin.getLogger().info("DEBUG: Control field already exists");
 		}
@@ -212,6 +233,7 @@ public class Register {
 	    plugin.getLogger().info("DEBUG: Location argument is not a beacon");
 	    throw new IllegalArgumentException("Location argument is not a beacon");
 	}
+	return false;
     }
 
     /**

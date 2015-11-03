@@ -90,6 +90,8 @@ public class CmdHandler implements CommandExecutor {
 			if (r-- == 0) {
 			    t.addPlayer(player);
 			    player.sendMessage("You are now a member of " + t.getDisplayName() + " team!");
+			    plugin.getServer().dispatchCommand(plugin.getServer().getConsoleSender(),
+				    "title " + player.getName() + " title {text:\"" + t.getDisplayName() + " team!\", color:gold}");
 			    break;
 			}
 		    }    

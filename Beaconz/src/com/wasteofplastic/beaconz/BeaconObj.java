@@ -5,8 +5,10 @@ import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Set;
 
+import org.bukkit.ChatColor;
 import org.bukkit.scoreboard.Team;
 
 public class BeaconObj {
@@ -117,9 +119,9 @@ public class BeaconObj {
 			    plugin.getLogger().info("DEBUG: Triangle found! ");
 			    // We have a winner
 			    try {
-				plugin.getRegister().addTriangle(starter.getLocation(), this.getLocation(), 
+				// Result is true if the triangle is made okay
+				result = plugin.getRegister().addTriangle(starter.getLocation(), this.getLocation(), 
 					p.getLocation(), ownership);
-				result = true;
 			    } catch (IllegalArgumentException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -236,14 +238,14 @@ public class BeaconObj {
 
     public void setId(int indexOf) {
 	id = indexOf;
-	
+
     }
 
     /**
      * @return the id
      */
     public Integer getId() {
-        return id;
+	return id;
     }
 
     /**
@@ -265,16 +267,16 @@ public class BeaconObj {
      * @return the height
      */
     public int getHeight() {
-        return height;
+	return height;
     }
 
     /**
      * @param height the height to set
      */
     public void setHeight(int height) {
-        this.height = height;
+	this.height = height;
     }
-    
-    
+
+
 
 }

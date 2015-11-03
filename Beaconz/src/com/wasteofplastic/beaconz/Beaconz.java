@@ -7,6 +7,7 @@ import org.bukkit.WorldType;
 import org.bukkit.generator.BlockPopulator;
 import org.bukkit.material.MaterialData;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scoreboard.Team;
 
 public class Beaconz extends JavaPlugin {
     BeaconPopulator beaconPop;
@@ -47,6 +48,9 @@ public class Beaconz extends JavaPlugin {
 		// Load the beacon register
 		register = new Register(plugin);
 		register.loadRegister();
+		
+		// Load the teams
+		scorecard.loadTeamMembers();
 
 		// Register the listeners - block break etc.
 		BeaconListeners ev = new BeaconListeners(plugin);
@@ -60,6 +64,9 @@ public class Beaconz extends JavaPlugin {
 	// Save the register
 	if (register != null) {
 	    register.saveRegister();
+	}
+	if (scorecard != null) {
+	    scorecard.saveTeamMembers();
 	}
 	getConfig().set("world.distribution", Settings.distribution);
 	saveConfig();

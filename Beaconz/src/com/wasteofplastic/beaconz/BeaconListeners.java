@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.UUID;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -28,7 +29,9 @@ import org.bukkit.event.block.BlockSpreadEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.world.WorldInitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -57,7 +60,7 @@ public class BeaconListeners implements Listener {
 	    }
 	}
     }
-
+    
     /**
      * Protects the underlying beacon from any damage
      * @param event
@@ -335,6 +338,26 @@ public class BeaconListeners implements Listener {
 		player.sendMessage(ChatColor.RED + "This beacon already has 8 outbound links!");
 		event.setCancelled(true);
 		return;
+	    }
+	    // Check if this link already exists
+	    if (beacon.getLinks().contains(mappedBeacon)) {
+		player.sendMessage(ChatColor.RED + "Link already exists!");
+		event.setCancelled(true);
+		return;
+	    }
+	    // Proposed link
+	    Line2D proposedLink = new Line2D.Double(beacon.getLocation(), mappedBeacon.getLocation());
+	    // Check if the link crosses opposition team's links
+	    for (Team oppositionTeam : plugin.getScorecard().getScoreboard().getTeams()) {
+		if (!oppositionTeam.equals(team)) {
+		    for (Line2D line : plugin.getRegister().getFactionLinks(oppositionTeam)) {
+			if (line.intersectsLine(proposedLink)) {
+			    player.sendMessage(ChatColor.RED + "Link cannot cross enemy link!");
+			    event.setCancelled(true);
+			    return;
+			}
+		    }
+		}
 	    }
 	    // Link the two beacons!
 	    boolean result = beacon.addOutboundLink(mappedBeacon);
