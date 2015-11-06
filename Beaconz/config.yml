@@ -13,5 +13,21 @@ world:
   randomspawn: false
   # Seed adjustment
   seedadjustment: 0  
-
+  # Hack cool down - how long a player has to wait until they can try to hack a beacon
+  # in minutes
+  hackcooldown: 1
+  # Rewards from hacking
+  # Format is "Id#/Material:[Durability/Qty]:Qty:%Chance"
+  enemygoodies:
+  - "DIAMOND:1:10"
+  - "MOB_SPAWNER:1:2"
+  - "GOLD_INGOT:1:15"
+  - "DIAMOND_SWORD:1:5"
+  - "DISPENSER:1:20"
+  - "REDSTONE_BLOCK:1:10"
+  teamgoodies:
+  - "DIAMOND:1:1"
+  - "OBSIDIAN:1:5"
+  - "STONE:1:30"
+  - "IRON_INGOT:1:5"  
   

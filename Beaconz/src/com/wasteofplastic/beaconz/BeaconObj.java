@@ -5,10 +5,10 @@ import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.Set;
+import java.util.TreeMap;
 
-import org.bukkit.ChatColor;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.scoreboard.Team;
 
 public class BeaconObj {
@@ -22,7 +22,6 @@ public class BeaconObj {
     private Set<BeaconObj> links;
     private int outgoing;
     private Integer id = null;
-
 
     /**
      * @param plugin
@@ -276,7 +275,5 @@ public class BeaconObj {
     public void setHeight(int height) {
 	this.height = height;
     }
-
-
 
 }

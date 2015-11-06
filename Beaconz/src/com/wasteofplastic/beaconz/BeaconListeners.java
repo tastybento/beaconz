@@ -7,7 +7,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.UUID;
+import java.util.Map.Entry;
+import java.util.Random;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -16,6 +17,7 @@ import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -29,9 +31,7 @@ import org.bukkit.event.block.BlockSpreadEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.world.WorldInitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -60,7 +60,7 @@ public class BeaconListeners implements Listener {
 	    }
 	}
     }
-    
+
     /**
      * Protects the underlying beacon from any damage
      * @param event
@@ -207,10 +207,14 @@ public class BeaconListeners implements Listener {
 	}
 	// Check if the block is a beacon or the surrounding pyramid
 	Block b = event.getBlock();
-	if (plugin.getRegister().isBeacon(b)) {
-	    // Cancel any breakage
-	    event.setCancelled(true);
+	BeaconObj beacon = plugin.getRegister().getBeacon(b);
+	if (beacon == null) {
+	    return;
 	}
+	plugin.getLogger().info("DEBUG: This is a beacon");
+	// Cancel any breakage
+	event.setCancelled(true);
+	// Check for obsidian/glass breakage - i.e., capture
 	if (b.getRelative(BlockFace.DOWN).getType().equals(Material.BEACON)) {
 	    //plugin.getLogger().info("DEBUG:beacon below");
 	    // Check if this is a real beacon
@@ -248,6 +252,49 @@ public class BeaconListeners implements Listener {
 		    }
 		}
 	    } 
+	} else {
+	    // Attempt to break another part of the beacon
+	    // Check for cool down, if it's still cooling down, don't do anything
+	    if (System.currentTimeMillis() > beacon.getHackTimer() + Settings.hackCoolDown) {
+		beacon.resetHackTimer();
+		// Give something to the player
+		Random rand = new Random();
+		int value = rand.nextInt(100) + 1;
+		//plugin.getLogger().info("DEBUG: random number = " + value);
+		if (beacon.getOwnership().equals(plugin.getScorecard().getTeam(player))) {
+		    // Own team
+		    /*
+		    for (Entry<Integer, ItemStack> ent : Settings.teamGoodies.entrySet()) {
+			plugin.getLogger().info("DEBUG: " + ent.getKey() + " " + ent.getValue());
+		    }*/
+		    Entry<Integer, ItemStack> en = Settings.teamGoodies.floorEntry(value);
+		    if (en != null && en.getValue() != null) {
+			player.getWorld().dropItemNaturally(event.getBlock().getLocation(), en.getValue());
+		    } else {
+			player.getWorld().spawnEntity(player.getLocation(),EntityType.ENDERMITE);
+			//plugin.getLogger().info("DEBUG: failed - max value was " + Settings.teamGoodies.lastKey());
+		    }
+		} else {
+		    // Enemy
+		    /*
+		    for (Entry<Integer, ItemStack> ent : Settings.enemyGoodies.entrySet()) {
+			plugin.getLogger().info("DEBUG: " + ent.getKey() + " " + ent.getValue());
+		    }*/
+		    Entry<Integer, ItemStack> en = Settings.enemyGoodies.floorEntry(value);
+		    if (en != null && en.getValue() != null) {
+			player.getWorld().dropItemNaturally(event.getBlock().getLocation(), en.getValue());
+		    } else {
+			player.getWorld().spawnEntity(player.getLocation(),EntityType.ENDERMITE);
+			//plugin.getLogger().info("DEBUG: failed - max value was " + Settings.enemyGoodies.lastKey());
+		    }
+
+		}
+	    } else {
+		// Damage player
+		int num = (int) (beacon.getHackTimer() + Settings.hackCoolDown - System.currentTimeMillis())/50;
+		player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_DIGGING, num,10));
+		plugin.getLogger().info("DEBUG: Applying mining fatigue for " + num + " ticks");
+	    }
 	}
     }   
 
