@@ -5,16 +5,14 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.world.ChunkLoadEvent;
 
-public class WorldLoader implements Listener {
-    private final Beaconz plugin;
+/**
+ * Class to force the world loading before plugins.
+ */
+public class WorldLoader extends BeaconzPluginDependent implements Listener {
     private boolean worldLoaded = false;
 
-    /**
-     * Class to force world loading before plugins.
-     * @param plugin
-     */
-    public WorldLoader(Beaconz plugin) {
-    this.plugin = plugin;
+    public WorldLoader(Beaconz beaconzPlugin) {
+        super(beaconzPlugin);
     }
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
@@ -22,7 +20,7 @@ public class WorldLoader implements Listener {
         if (worldLoaded) {
             return;
         }
-        plugin.getLogger().info("DEBUG: " + event.getWorld().getName());
+        getLogger().info("DEBUG: " + event.getWorld().getName());
         if (event.getWorld().getName().equals(Settings.worldName)) {
             return;
         }

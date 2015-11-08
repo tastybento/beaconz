@@ -19,11 +19,10 @@ import org.bukkit.material.SimpleAttachableMaterialData;
 import org.bukkit.material.TrapDoor;
 import org.bukkit.scoreboard.Team;
 
-public class CmdHandler implements CommandExecutor {
-    private final Beaconz plugin;
+public class CmdHandler extends BeaconzPluginDependent implements CommandExecutor {
 
-    public CmdHandler(Beaconz plugin) {
-        this.plugin = plugin;
+    public CmdHandler(Beaconz beaconzPlugin) {
+        super(beaconzPlugin);
     }
 
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -58,7 +57,7 @@ public class CmdHandler implements CommandExecutor {
                     int z = rand.nextInt(range);
                     z = rand.nextBoolean() ? z: -z;
                     z = z + Settings.zCenter;
-                    //teleportTo = plugin.getBeaconzWorld().getHighestBlockAt(x, z).getLocation();
+                    //teleportTo = getBeaconzWorld().getHighestBlockAt(x, z).getLocation();
                     //teleportTo.getChunk().load();
                     // Seach the chunk in this area
                     ChunkSnapshot searchChunk = Beaconz.getBeaconzWorld().getChunkAt(x/16, z/16).getChunkSnapshot();
@@ -74,18 +73,18 @@ public class CmdHandler implements CommandExecutor {
                 } while (!found);
             }
             player.teleport(teleportTo);
-            if (plugin.getScorecard().getTeam(player) == null) {
+            if (getScorecard().getTeam(player) == null) {
                 Random rand = new Random();
-                Set<Team> teams = plugin.getScorecard().getScoreboard().getTeams();
+                Set<Team> teams = getScorecard().getScoreboard().getTeams();
                 int r = rand.nextInt(teams.size());
                 for (Team t: teams) {
-                if (r-- == 0) {
-                    t.addPlayer(player);
-                    player.sendMessage("You are now a member of " + t.getDisplayName() + " team!");
-                    plugin.getServer().dispatchCommand(plugin.getServer().getConsoleSender(),
-                        "title " + player.getName() + " title {text:\"" + t.getDisplayName() + " team!\", color:gold}");
-                    break;
-                }
+                    if (r-- == 0) {
+                        t.addPlayer(player);
+                        player.sendMessage("You are now a member of " + t.getDisplayName() + " team!");
+                        getBeaconzPlugin().getServer().dispatchCommand(getBeaconzPlugin().getServer().getConsoleSender(),
+                            "title " + player.getName() + " title {text:\"" + t.getDisplayName() + " team!\", color:gold}");
+                        break;
+                    }
                 }
             }
             return true;
@@ -112,13 +111,13 @@ public class CmdHandler implements CommandExecutor {
                     return true;
                 }
                 if (args.length != 2) {
-                    sender.sendMessage(ChatColor.RED + "/" + label + " join [" + plugin.getScorecard().getTeamListString() + "]");
+                    sender.sendMessage(ChatColor.RED + "/" + label + " join [" + getScorecard().getTeamListString() + "]");
                     return true;
                 }
                 // Check if this is a known team name
-                Team team = plugin.getScorecard().getTeam(args[1]);
+                Team team = getScorecard().getTeam(args[1]);
                 if (team == null) {
-                    sender.sendMessage(ChatColor.RED + "/" + label + " join [" + plugin.getScorecard().getTeamListString() + "]");
+                    sender.sendMessage(ChatColor.RED + "/" + label + " join [" + getScorecard().getTeamListString() + "]");
                     return true;
                 }
                 team.addPlayer((Player)sender);
@@ -129,7 +128,7 @@ public class CmdHandler implements CommandExecutor {
             // list known beacons
             sender.sendMessage("Known beacons:");
             int count = 0;
-            for (BeaconObj p : plugin.getRegister().getBeaconRegister().values()) {
+            for (BeaconObj p : getRegister().getBeaconRegister().values()) {
                 count++;
                 sender.sendMessage(p.getLocation().toString() + " Owner:" + (p.getOwnership() == null ? "unowned":p.getOwnership().getDisplayName()) + " Links " + p.getLinks().size());
             }
@@ -141,8 +140,8 @@ public class CmdHandler implements CommandExecutor {
         if (args[0].equalsIgnoreCase("score")) {
             // list known beacons
             sender.sendMessage("Scores:");
-            for (Team faction : plugin.getRegister().getScore().keySet()) {
-                sender.sendMessage(faction.getDisplayName() + " :" + plugin.getRegister().getScore().get(faction) + " blocks");
+            for (Team faction : getRegister().getScore().keySet()) {
+                sender.sendMessage(faction.getDisplayName() + " :" + getRegister().getScore().get(faction) + " blocks");
             }
             return true;
         }
@@ -155,7 +154,7 @@ public class CmdHandler implements CommandExecutor {
                 }
                 Team team = null;
                 if (!args[1].equalsIgnoreCase("unowned")) {
-                    team = plugin.getScorecard().getTeam(args[1]);
+                    team = getScorecard().getTeam(args[1]);
                     if (team == null) {
                         sender.sendMessage(ChatColor.RED + "claim UNOWNED/RED/BLUE");
                         return true;
@@ -164,9 +163,9 @@ public class CmdHandler implements CommandExecutor {
                 Player p = (Player)sender;
                 Point2D newClaim = new Point2D.Double(p.getLocation().getBlockX(),p.getLocation().getBlockZ());
                 p.sendMessage("Claiming beacon at " + newClaim);
-                if (plugin.getRegister().getBeaconRegister().containsKey(newClaim)) {
+                if (getRegister().getBeaconRegister().containsKey(newClaim)) {
                     // Claim a beacon
-                    plugin.getRegister().getBeaconRegister().get(newClaim).setOwnership(team);
+                    getRegister().getBeaconRegister().get(newClaim).setOwnership(team);
                     p.sendMessage(ChatColor.GREEN + "Set ownership to " + args[1]);
                 } else {
                     p.sendMessage(ChatColor.RED + "You are not standing on a beacon");
@@ -187,8 +186,8 @@ public class CmdHandler implements CommandExecutor {
             }
             Player p = (Player)sender;
             Point2D from = new Point2D.Double(p.getLocation().getBlockX(), p.getLocation().getBlockZ());
-            if (plugin.getRegister().getBeaconRegister().containsKey(from)) {
-                BeaconObj start = plugin.getRegister().getBeaconRegister().get(from);
+            if (getRegister().getBeaconRegister().containsKey(from)) {
+                BeaconObj start = getRegister().getBeaconRegister().get(from);
                 if (start.getOutgoing() == 8) {
                     sender.sendMessage(ChatColor.RED + "beacon has 8 outbound links already!");
                     return true;
@@ -199,16 +198,16 @@ public class CmdHandler implements CommandExecutor {
                     return true;
                 }
                 p.sendMessage("Linking beacon from " + from.getX() + " " + from.getY() + " to " + to.getX() + " " + to.getY());
-                if (plugin.getRegister().getBeaconRegister().containsKey(to)) {
+                if (getRegister().getBeaconRegister().containsKey(to)) {
                     // Link a beacon
 
-                    BeaconObj end = plugin.getRegister().getBeaconRegister().get(to);
+                    BeaconObj end = getRegister().getBeaconRegister().get(to);
                     boolean result = start.addOutboundLink(end);
                     p.sendMessage(ChatColor.GREEN + "Link created!");
                     p.sendMessage(ChatColor.GREEN + "This beacon now has " + start.getOutgoing() + " links");
-                    p.sendMessage(ChatColor.GREEN +  plugin.getRegister().getBeaconRegister().get(from).getLinks().toString());
+                    p.sendMessage(ChatColor.GREEN +  getRegister().getBeaconRegister().get(from).getLinks().toString());
                     if (result) {
-                        p.sendMessage(ChatColor.GREEN + "Control field created! New score = " + plugin.getRegister().getScore());
+                        p.sendMessage(ChatColor.GREEN + "Control field created! New score = " + getRegister().getScore());
                     }
                 } else {
                     p.sendMessage(ChatColor.RED + "Destination is not a beacon");

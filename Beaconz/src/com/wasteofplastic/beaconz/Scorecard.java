@@ -16,21 +16,16 @@ import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.ScoreboardManager;
 import org.bukkit.scoreboard.Team;
 
-public class Scorecard {
-    private final Beaconz plugin;
-
+public class Scorecard extends BeaconzPluginDependent{
     private ScoreboardManager manager;
     private Scoreboard scoreboard;
     private HashMap<Team, MaterialData> teamBlock;
     //private HashMap<Team, List<UUID>> teamMembers;
     //private HashMap<UUID, String> teamLookup;
-    
-    /**
-     * @param plugin
-     */
-    public Scorecard(Beaconz plugin) {
-        this.plugin = plugin;
-        this.manager = plugin.getServer().getScoreboardManager();
+
+    public Scorecard(Beaconz beaconzPlugin) {
+        super(beaconzPlugin);
+        this.manager = beaconzPlugin.getServer().getScoreboardManager();
         this.scoreboard = manager.getNewScoreboard();
         this.teamBlock = new HashMap<Team, MaterialData>();
         //this.teamLookup = new HashMap<UUID, String>();
@@ -123,16 +118,16 @@ public class Scorecard {
      */
     public void loadTeamMembers() {
         for (Team team: scoreboard.getTeams()) {
-            List<String> members = plugin.getConfig().getStringList(team.getName());
+            List<String> members = getBeaconzPlugin().getConfig().getStringList(team.getName());
             //List<UUID> membersUUID = new ArrayList<UUID>();
             for (String uuid : members) {
                 try {
                     UUID memberUUID = UUID.fromString(uuid);
-                    OfflinePlayer player = plugin.getServer().getOfflinePlayer(memberUUID);
+                    OfflinePlayer player = getBeaconzPlugin().getServer().getOfflinePlayer(memberUUID);
                     team.addPlayer(player);
                     //teamLookup.put(memberUUID, team.getName());
                 } catch (Exception e) {
-                    plugin.getLogger().severe("Error loading team member " + team.toString() + " " + uuid + " - skipping");
+                    getLogger().severe("Error loading team member " + team.toString() + " " + uuid + " - skipping");
                 }
             }
             //teamMembers.put(team,membersUUID);
@@ -151,10 +146,10 @@ public class Scorecard {
                     teamMembers.add(player.getUniqueId().toString());
                     //teamLookup.put(memberUUID, team.getName());
                 } catch (Exception e) {
-                    plugin.getLogger().severe("Error saving team member " + team.toString() + " " + player.getName() + " - skipping");
+                    getLogger().severe("Error saving team member " + team.toString() + " " + player.getName() + " - skipping");
                 }
             }
-            plugin.getConfig().set(team.getName(), teamMembers);
+            getBeaconzPlugin().getConfig().set(team.getName(), teamMembers);
         }
     }
     

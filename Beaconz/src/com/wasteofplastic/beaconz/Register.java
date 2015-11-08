@@ -24,18 +24,17 @@ import org.bukkit.scoreboard.Team;
  * @author tastybento
  *
  */
-public class Register {
-    private final Beaconz plugin;
+public class Register extends BeaconzPluginDependent {
+
+    public Register(Beaconz beaconzPlugin) {
+        super(beaconzPlugin);
+    }
 
     private HashMap<Short, BeaconObj> beaconMaps = new HashMap<Short, BeaconObj>();
     private HashMap<Point2D, BeaconObj> beaconRegister = new HashMap<Point2D, BeaconObj>();
     private Set<TriangleField> triangleFields = new HashSet<TriangleField>();
     private HashMap<Team, Integer> score = new HashMap<Team, Integer>();
     private HashMap<Team, Set<Line2D>> links = new HashMap<Team, Set<Line2D>>();
-
-    public Register(Beaconz plugin) {
-    this.plugin = plugin;
-    }
 
     public void saveRegister() {
         // Beacons
@@ -45,22 +44,22 @@ public class Register {
             if (beacon.getOwnership() != null) {
                 owner = beacon.getOwnership().getName();
             }
-            plugin.getConfig().set("beacon." + count + ".location", beacon.getX() + ":" + beacon.getY() + ":" + beacon.getZ()
+            getBeaconzPlugin().getConfig().set("beacon." + count + ".location", beacon.getX() + ":" + beacon.getY() + ":" + beacon.getZ()
                 + ":" + owner);
             List<String> beaconLinks = new ArrayList<String>();
             for (BeaconObj linkedBeacon: beacon.getLinks()) {
                 beaconLinks.add((int)linkedBeacon.getLocation().getX() +":" + (int)linkedBeacon.getLocation().getY());
             }
-            plugin.getConfig().set("beacon." + count + ".links", beaconLinks);
+            getBeaconzPlugin().getConfig().set("beacon." + count + ".links", beaconLinks);
             if (beacon.getId() != null) {
-                plugin.getConfig().set("beacon." + count + ".id", beacon.getId());
+                getBeaconzPlugin().getConfig().set("beacon." + count + ".id", beacon.getId());
             }
             count++;
         }
         /*
         // Score
         for (FactionType faction: score.keySet()) {
-            plugin.getConfig().set("score." + faction.toString(), score.get(faction).toString());
+            getConfig().set("score." + faction.toString(), score.get(faction).toString());
         }
         // Control Fields
         List<String> list = new ArrayList<String>();
@@ -68,10 +67,10 @@ public class Register {
             list.add(cf.toString());
         }
         if (!list.isEmpty()) {
-            plugin.getConfig().set("controlfields",list);
+            getConfig().set("controlfields",list);
         }
          */
-        plugin.saveConfig();
+        getBeaconzPlugin().saveConfig();
     }
 
     /**
@@ -82,7 +81,7 @@ public class Register {
         beaconRegister.clear();
         beaconMaps.clear();
         HashMap<BeaconObj, List<String>> beaconLinks = new HashMap<BeaconObj, List<String>>();
-        FileConfiguration config = plugin.getConfig();
+        FileConfiguration config = getBeaconzPlugin().getConfig();
         ConfigurationSection configSec = config.getConfigurationSection("beacon");
         if (configSec != null) {
             for (String beacon : configSec.getValues(false).keySet()) {
@@ -92,7 +91,7 @@ public class Register {
                     int x = Integer.valueOf(args[0]);
                     int y = Integer.valueOf(args[1]);
                     int z = Integer.valueOf(args[2]);
-                    BeaconObj newBeacon = new BeaconObj(plugin, x,y,z , plugin.getScorecard().getTeam(args[3]));
+                    BeaconObj newBeacon = new BeaconObj(getBeaconzPlugin(), x,y,z , getScorecard().getTeam(args[3]));
                     // Check for links
                     beaconLinks.put(newBeacon, configSec.getStringList(beacon + ".links"));
 
@@ -101,7 +100,7 @@ public class Register {
                     if (configSec.contains(beacon + ".id")) {
                         addBeaconMap((short)configSec.getInt(beacon + ".id"), newBeacon);
                     }
-                    plugin.getLogger().info("DEBUG: loaded beacon at " + x + "," + y + "," + z);
+                    getLogger().info("DEBUG: loaded beacon at " + x + "," + y + "," + z);
                 }
             }
         }
@@ -174,8 +173,8 @@ public class Register {
     public void addBeacon(Team owner, int x, int y, int z) {
         // Create a beacon
         Point2D location = new Point2D.Double(x,z);
-        plugin.getLogger().info("DEBUG: registered beacon at " + location + " status " + owner);
-        BeaconObj p = new BeaconObj(plugin, x, y, z, owner);
+        getLogger().info("DEBUG: registered beacon at " + location + " status " + owner);
+        BeaconObj p = new BeaconObj(getBeaconzPlugin(), x, y, z, owner);
         beaconRegister.put(location, p);
     }
 
@@ -187,28 +186,28 @@ public class Register {
      * @return 
      */
     public Boolean addTriangle(Point2D point2d, Point2D point2d2, Point2D point2d3, Team owner)  throws IllegalArgumentException {
-        plugin.getLogger().info("DEBUG: Adding triangle at " + point2d + " " + point2d2 + " " + point2d3);
+        getLogger().info("DEBUG: Adding triangle at " + point2d + " " + point2d2 + " " + point2d3);
         // Check that locations are known beacons
         if (beaconRegister.containsKey(point2d) && beaconRegister.containsKey(point2d2) && beaconRegister.containsKey(point2d3)) {
-            plugin.getLogger().info("DEBUG: All three beacons are in the register");
+            getLogger().info("DEBUG: All three beacons are in the register");
             // Check the beacons are all owned by the same faction
             if (beaconRegister.get(point2d).getOwnership().equals(owner)
                 && beaconRegister.get(point2d2).getOwnership().equals(owner)
                 && beaconRegister.get(point2d3).getOwnership().equals(owner)) {
-                plugin.getLogger().info("DEBUG: All beacons are owned by same faction");
+                getLogger().info("DEBUG: All beacons are owned by same faction");
                 TriangleField cf = new TriangleField(point2d, point2d2, point2d3, owner);
                 // Check to see if this control field would overlap enemy-held beacons
-                for (Entry<Point2D,BeaconObj> beacon : plugin.getRegister().getBeaconRegister().entrySet()) {
+                for (Entry<Point2D,BeaconObj> beacon : getRegister().getBeaconRegister().entrySet()) {
                     if (beacon.getValue().getOwnership() != null && !beacon.getValue().getOwnership().equals(owner)) {
                         // Check enemy beacons
                         if (cf.contains(beacon.getKey())) {
-                            plugin.getLogger().info("DEBUG: Enemy beacon found inside potential control field, not making control field");
+                            getLogger().info("DEBUG: Enemy beacon found inside potential control field, not making control field");
                             return false;
                         }
                     }
                 }
                 if (triangleFields.add(cf)) {
-                    plugin.getLogger().info("DEBUG: Added control field!");
+                    getLogger().info("DEBUG: Added control field!");
                     // New control field, add to score
                     if (score.containsKey(owner)) {
                         int s = score.get(owner);
@@ -217,17 +216,17 @@ public class Register {
                     } else {
                         score.put(owner, cf.getArea());
                     }
-                    plugin.getLogger().info("DEBUG: New score is " + cf.getArea());
+                    getLogger().info("DEBUG: New score is " + cf.getArea());
                     return true;
                 } else {
-                    plugin.getLogger().info("DEBUG: Control field already exists");
+                    getLogger().info("DEBUG: Control field already exists");
                 }
             } else {
-                plugin.getLogger().info("DEBUG: beacons are not owned by the same faction");
+                getLogger().info("DEBUG: beacons are not owned by the same faction");
                 throw new IllegalArgumentException("beacons are not owned by the same faction");
             }
         } else {
-            plugin.getLogger().info("DEBUG: Location argument is not a beacon");
+            getLogger().info("DEBUG: Location argument is not a beacon");
             throw new IllegalArgumentException("Location argument is not a beacon");
         }
         return false;
@@ -301,43 +300,43 @@ public class Register {
      * @return BeaconObj or null if none
      */
     public BeaconObj getBeacon(Block b) {
-        //plugin.getLogger().info("DEBUG: material = " + b.getType());
+        //getLogger().info("DEBUG: material = " + b.getType());
         // Quick check
         if (!b.getType().equals(Material.BEACON) && !b.getType().equals(Material.DIAMOND_BLOCK)
             && !b.getType().equals(Material.OBSIDIAN) && !b.getType().equals(Material.STAINED_GLASS)) {
             return null;
         }
-        //plugin.getLogger().info("DEBUG: correct material");
+        //getLogger().info("DEBUG: correct material");
         Point2D point = new Point2D.Double(b.getLocation().getBlockX(),b.getLocation().getBlockZ());
-        //plugin.getLogger().info("DEBUG: checking point " + point);
+        //getLogger().info("DEBUG: checking point " + point);
 
         // Check glass or obsidian
         if (b.getType().equals(Material.OBSIDIAN) || b.getType().equals(Material.STAINED_GLASS)) {
             Block below = b.getRelative(BlockFace.DOWN);
             if (!below.getType().equals(Material.BEACON)) {
-                //plugin.getLogger().info("DEBUG: no beacon below here");
+                //getLogger().info("DEBUG: no beacon below here");
                 return null;
             }
             point = new Point2D.Double(below.getLocation().getBlockX(),below.getLocation().getBlockZ());
             // Beacon below
             if (beaconRegister.containsKey(point)) {
-                //plugin.getLogger().info("DEBUG: found in register");
+                //getLogger().info("DEBUG: found in register");
                 return beaconRegister.get(point);
             } else {
-                //plugin.getLogger().info("DEBUG: not found in register");
+                //getLogger().info("DEBUG: not found in register");
                 return null;
             }
         }
         // Check beacons
         if (b.getType().equals(Material.BEACON)) {
             if (beaconRegister.containsKey(point)) {
-                //plugin.getLogger().info("DEBUG: found in register");
+                //getLogger().info("DEBUG: found in register");
                 return beaconRegister.get(point);
             } else {
                 /*
-                plugin.getLogger().info("DEBUG: not found in register. Known points are:");
+                getLogger().info("DEBUG: not found in register. Known points are:");
                 for (Point2D points : beaconRegister.keySet()) {
-                    plugin.getLogger().info("DEBUG: " + points);
+                    getLogger().info("DEBUG: " + points);
                 }*/
                 return null;
             }
@@ -377,11 +376,11 @@ public class Register {
             while (it.hasNext()) {
                 TriangleField triangle = it.next();
                 if (triangle.hasVertex(point)) {
-                    plugin.getLogger().info("DEBUG: this beaon was part of a triangle");
+                    getLogger().info("DEBUG: this beaon was part of a triangle");
                     // Remove score
                     if (score.containsKey(oldOwner)) {
                         int sc = triangle.getArea();
-                        plugin.getLogger().info("DEBUG: Removing score " + sc + " from " + oldOwner.getDisplayName()
+                        getLogger().info("DEBUG: Removing score " + sc + " from " + oldOwner.getDisplayName()
                             + " team's score of " + score.get(beacon.getOwnership()));
                         int newScore = score.get(oldOwner) - sc;
                         score.put(oldOwner,newScore);
@@ -414,7 +413,7 @@ public class Register {
      */
     public void addBeaconMap(Short index, BeaconObj beacon) {
         beacon.setId(index);
-        plugin.getLogger().info("DEBUG: storing beacon map # " + index + " for beacon at "+ beacon.getLocation());
+        getLogger().info("DEBUG: storing beacon map # " + index + " for beacon at "+ beacon.getLocation());
         this.beaconMaps.put(index, beacon);
     }
 

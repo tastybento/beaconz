@@ -41,22 +41,18 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scoreboard.Team;
 
-public class BeaconListeners implements Listener {
-    private final Beaconz plugin;
+public class BeaconListeners extends BeaconzPluginDependent implements Listener {
 
-    /**
-     * @param plugin
-     */
-    public BeaconListeners(Beaconz plugin) {
-        this.plugin = plugin;
+    public BeaconListeners(Beaconz beaconzPlugin) {
+        super(beaconzPlugin);
     }
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onInit(WorldInitEvent event)
     {
         if (event.getWorld().equals(Beaconz.getBeaconzWorld())) {
-            if (!Beaconz.getBeaconzWorld().getPopulators().contains(plugin.getBp())) {
-                event.getWorld().getPopulators().add(plugin.getBp());
+            if (!Beaconz.getBeaconzWorld().getPopulators().contains(getBlockPopulator())) {
+                event.getWorld().getPopulators().add(getBlockPopulator());
             }
         }
     }
@@ -67,7 +63,7 @@ public class BeaconListeners implements Listener {
      */
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onBeaconDamage(EntityExplodeEvent event) {
-        //plugin.getLogger().info("DEBUG: " + event.getEventName());
+        //getLogger().info("DEBUG: " + event.getEventName());
         World world = event.getLocation().getWorld();
         if (!world.equals(Beaconz.getBeaconzWorld())) {
             return;
@@ -75,7 +71,7 @@ public class BeaconListeners implements Listener {
         // Check if the block is a beacon or the surrounding pyramid and remove it from the damaged blocks
         Iterator<Block> it = event.blockList().iterator();
         while (it.hasNext()) {
-            if (plugin.getRegister().isBeacon(it.next())) {
+            if (getRegister().isBeacon(it.next())) {
             it.remove();
             }
         }
@@ -89,10 +85,10 @@ public class BeaconListeners implements Listener {
     public void onBeaconPlace(BlockPlaceEvent event) {
         World world = event.getBlock().getWorld();
         if (!world.equals(Beaconz.getBeaconzWorld())) {
-            //plugin.getLogger().info("DEBUG: not right world");
+            //getLogger().info("DEBUG: not right world");
             return;
         }
-        BeaconObj beacon = plugin.getRegister().getBeaconAt(event.getBlock().getX(),event.getBlock().getZ());
+        BeaconObj beacon = getRegister().getBeaconAt(event.getBlock().getX(),event.getBlock().getZ());
         if (beacon != null && beacon.getY() < event.getBlock().getY()) {
             event.setCancelled(true);
             event.getPlayer().sendMessage(ChatColor.RED + "You cannot build on top of a beacon!");
@@ -107,10 +103,10 @@ public class BeaconListeners implements Listener {
     public void onBlockSpread(BlockSpreadEvent event) {
         World world = event.getBlock().getWorld();
         if (!world.equals(Beaconz.getBeaconzWorld())) {
-            //plugin.getLogger().info("DEBUG: not right world");
+            //getLogger().info("DEBUG: not right world");
             return;
         }
-        BeaconObj beacon = plugin.getRegister().getBeaconAt(event.getBlock().getX(),event.getBlock().getZ());
+        BeaconObj beacon = getRegister().getBeaconAt(event.getBlock().getX(),event.getBlock().getZ());
         if (beacon != null && beacon.getY() < event.getBlock().getY()) {
             event.setCancelled(true);
         }
@@ -124,17 +120,17 @@ public class BeaconListeners implements Listener {
     public void onPistonPush(BlockPistonExtendEvent event) {
     World world = event.getBlock().getWorld();
     if (!world.equals(Beaconz.getBeaconzWorld())) {
-        //plugin.getLogger().info("DEBUG: not right world");
+        //getLogger().info("DEBUG: not right world");
         return;
     }
     for (Block b : event.getBlocks()) {
         // If any block is part of a beacon cancel it
-        if (plugin.getRegister().isBeacon(b)) {
+        if (getRegister().isBeacon(b)) {
         event.setCancelled(true);
         return;
         }
         Block testBlock = b.getRelative(event.getDirection());
-        BeaconObj beacon = plugin.getRegister().getBeaconAt(testBlock.getX(),testBlock.getZ());
+        BeaconObj beacon = getRegister().getBeaconAt(testBlock.getX(),testBlock.getZ());
         if (beacon != null && beacon.getY() < testBlock.getY()) {
         event.setCancelled(true);
         }
@@ -147,13 +143,13 @@ public class BeaconListeners implements Listener {
      */
     @EventHandler(priority = EventPriority.LOW)
     public void onBucketEmpty(final PlayerBucketEmptyEvent event) {
-    //plugin.getLogger().info("DEBUG: " + event.getEventName());
+    //getLogger().info("DEBUG: " + event.getEventName());
     World world = event.getBlockClicked().getWorld();
     if (!world.equals(Beaconz.getBeaconzWorld())) {
-        //plugin.getLogger().info("DEBUG: not right world");
+        //getLogger().info("DEBUG: not right world");
         return;
     }
-    BeaconObj beacon = plugin.getRegister().getBeaconAt(event.getBlockClicked().getX(),event.getBlockClicked().getZ());
+    BeaconObj beacon = getRegister().getBeaconAt(event.getBlockClicked().getX(),event.getBlockClicked().getZ());
     if (beacon != null && beacon.getY() <= event.getBlockClicked().getY()) {
         event.setCancelled(true);
         event.getPlayer().sendMessage(ChatColor.RED + "You cannot place liquids above a beacon!");
@@ -167,16 +163,16 @@ public class BeaconListeners implements Listener {
      */
     @EventHandler(priority = EventPriority.LOW)
     public void onLiquidFlow(final BlockFromToEvent event) {
-    //plugin.getLogger().info("DEBUG: " + event.getEventName());
+    //getLogger().info("DEBUG: " + event.getEventName());
     World world = event.getBlock().getWorld();
     if (!world.equals(Beaconz.getBeaconzWorld())) {
-        //plugin.getLogger().info("DEBUG: not right world");
+        //getLogger().info("DEBUG: not right world");
         return;
     }
     // Only bother with horizontal flows
     if (event.getToBlock().getX() != event.getBlock().getX() || event.getToBlock().getZ() != event.getBlock().getZ()) {
-        //plugin.getLogger().info("DEBUG: " + event.getEventName());
-        BeaconObj beacon = plugin.getRegister().getBeaconAt(event.getToBlock().getX(),event.getToBlock().getZ());
+        //getLogger().info("DEBUG: " + event.getEventName());
+        BeaconObj beacon = getRegister().getBeaconAt(event.getToBlock().getX(),event.getToBlock().getZ());
         if (beacon != null && beacon.getY() < event.getToBlock().getY()) {
         event.setCancelled(true);
         }
@@ -190,15 +186,15 @@ public class BeaconListeners implements Listener {
     @SuppressWarnings("deprecation")
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=false)
     public void onBeaconBreak(BlockBreakEvent event) {
-    //plugin.getLogger().info("DEBUG: " + event.getEventName());
+    //getLogger().info("DEBUG: " + event.getEventName());
     World world = event.getBlock().getWorld();
     if (!world.equals(Beaconz.getBeaconzWorld())) {
-        //plugin.getLogger().info("DEBUG: not right world");
+        //getLogger().info("DEBUG: not right world");
         return;
     }
     Player player = event.getPlayer();
     // Get the player's team
-    Team team = plugin.getScorecard().getTeam(player);
+    Team team = getScorecard().getTeam(player);
     if (team == null) {
         // TODO: Probably should put the player in a team
         event.setCancelled(true);
@@ -207,48 +203,48 @@ public class BeaconListeners implements Listener {
     }
     // Check if the block is a beacon or the surrounding pyramid
     Block b = event.getBlock();
-    BeaconObj beacon = plugin.getRegister().getBeacon(b);
+    BeaconObj beacon = getRegister().getBeacon(b);
     if (beacon == null) {
         return;
     }
-    plugin.getLogger().info("DEBUG: This is a beacon");
+    getLogger().info("DEBUG: This is a beacon");
     // Cancel any breakage
     event.setCancelled(true);
     // Check for obsidian/glass breakage - i.e., capture
     if (b.getRelative(BlockFace.DOWN).getType().equals(Material.BEACON)) {
-        //plugin.getLogger().info("DEBUG:beacon below");
+        //getLogger().info("DEBUG:beacon below");
         // Check if this is a real beacon
-        if (plugin.getRegister().isBeacon(b.getRelative(BlockFace.DOWN))) {
-        //plugin.getLogger().info("DEBUG: registered beacon");
+        if (getRegister().isBeacon(b.getRelative(BlockFace.DOWN))) {
+        //getLogger().info("DEBUG: registered beacon");
         // It is a real beacon
         if (b.getType().equals(Material.OBSIDIAN)) {
-            //plugin.getLogger().info("DEBUG: obsidian");
+            //getLogger().info("DEBUG: obsidian");
             //Claiming unowned beacon
-            b.setType(plugin.getScorecard().getBlockID(team).getItemType());
-            b.setData(plugin.getScorecard().getBlockID(team).getData());
+            b.setType(getScorecard().getBlockID(team).getItemType());
+            b.setData(getScorecard().getBlockID(team).getData());
             event.setCancelled(true);
             // Register the beacon to this team
-            plugin.getRegister().addBeacon(team, b.getLocation());
+            getRegister().addBeacon(team, b.getLocation());
             player.sendMessage(ChatColor.GREEN + "You captured a beacon!");
         } else {
-            //plugin.getLogger().info("DEBUG: another block");
-            Team blockTeam = plugin.getScorecard().getTeamFromBlock(b);
+            //getLogger().info("DEBUG: another block");
+            Team blockTeam = getScorecard().getTeamFromBlock(b);
             if (blockTeam != null) {
-            //plugin.getLogger().info("DEBUG: known team block");
-            if (team.equals(blockTeam)) {
-                // You can't destroy your own beacon
-                player.sendMessage(ChatColor.RED + "You cannot destroy your own beacon");
+                //getLogger().info("DEBUG: known team block");
+                if (team.equals(blockTeam)) {
+                    // You can't destroy your own beacon
+                    player.sendMessage(ChatColor.RED + "You cannot destroy your own beacon");
+                    event.setCancelled(true);
+                    return;
+                }
+                // Enemy team has lost a beacon!
+                player.sendMessage(ChatColor.GOLD + blockTeam.getDisplayName() + " team has lost a beacon!");
+                player.sendMessage(ChatColor.GOLD + "TODO: remove score and links etc.");
+                getRegister().deleteBeacon(b);
+                b.setType(Material.OBSIDIAN);
                 event.setCancelled(true);
-                return;
-            }
-            // Enemy team has lost a beacon!
-            player.sendMessage(ChatColor.GOLD + blockTeam.getDisplayName() + " team has lost a beacon!");
-            player.sendMessage(ChatColor.GOLD + "TODO: remove score and links etc.");
-            plugin.getRegister().deleteBeacon(b);
-            b.setType(Material.OBSIDIAN);
-            event.setCancelled(true);
             } else {
-            plugin.getLogger().info("DEBUG: unknown team block");
+                getLogger().info("DEBUG: unknown team block");
             }
         }
         }
@@ -261,12 +257,12 @@ public class BeaconListeners implements Listener {
             // Give something to the player
             Random rand = new Random();
             int value = rand.nextInt(100) + 1;
-            //plugin.getLogger().info("DEBUG: random number = " + value);
-            if (beacon.getOwnership().equals(plugin.getScorecard().getTeam(player))) {
+            //getLogger().info("DEBUG: random number = " + value);
+            if (beacon.getOwnership().equals(getScorecard().getTeam(player))) {
             // Own team
             /*
             for (Entry<Integer, ItemStack> ent : Settings.teamGoodies.entrySet()) {
-            plugin.getLogger().info("DEBUG: " + ent.getKey() + " " + ent.getValue());
+            getLogger().info("DEBUG: " + ent.getKey() + " " + ent.getValue());
             }*/
             Entry<Integer, ItemStack> en = Settings.teamGoodies.floorEntry(value);
             if (en != null && en.getValue() != null) {
@@ -275,13 +271,13 @@ public class BeaconListeners implements Listener {
             } else {
                 player.getWorld().spawnEntity(player.getLocation(),EntityType.ENDERMITE);
                 beacon.resetHackTimer();
-                //plugin.getLogger().info("DEBUG: failed - max value was " + Settings.teamGoodies.lastKey());
+                //getLogger().info("DEBUG: failed - max value was " + Settings.teamGoodies.lastKey());
             }
             } else {
             // Enemy
             /*
             for (Entry<Integer, ItemStack> ent : Settings.enemyGoodies.entrySet()) {
-            plugin.getLogger().info("DEBUG: " + ent.getKey() + " " + ent.getValue());
+            getLogger().info("DEBUG: " + ent.getKey() + " " + ent.getValue());
             }*/
             Entry<Integer, ItemStack> en = Settings.enemyGoodies.floorEntry(value);
             if (en != null && en.getValue() != null) {
@@ -290,7 +286,7 @@ public class BeaconListeners implements Listener {
             } else {
                 player.getWorld().spawnEntity(player.getLocation(),EntityType.ENDERMITE);
                 beacon.resetHackTimer();
-                //plugin.getLogger().info("DEBUG: failed - max value was " + Settings.enemyGoodies.lastKey());
+                //getLogger().info("DEBUG: failed - max value was " + Settings.enemyGoodies.lastKey());
             }
 
             }
@@ -298,7 +294,7 @@ public class BeaconListeners implements Listener {
             // Damage player
             int num = (int) (beacon.getHackTimer() + Settings.hackCoolDown - System.currentTimeMillis())/50;
             player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_DIGGING, num,10));
-            plugin.getLogger().info("DEBUG: Applying mining fatigue for " + num + " ticks");
+            getLogger().info("DEBUG: Applying mining fatigue for " + num + " ticks");
         }
         }
     }
@@ -307,7 +303,7 @@ public class BeaconListeners implements Listener {
     @SuppressWarnings("deprecation")
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onPaperMapUse(final PlayerInteractEvent event) {
-    //plugin.getLogger().info("DEBUG: paper map " + event.getEventName());
+    //getLogger().info("DEBUG: paper map " + event.getEventName());
     if (!event.hasItem()) {
         return;
     }
@@ -319,12 +315,12 @@ public class BeaconListeners implements Listener {
     }
     World world = event.getClickedBlock().getWorld();
     if (!world.equals(Beaconz.getBeaconzWorld())) {
-        //plugin.getLogger().info("DEBUG: not right world");
+        //getLogger().info("DEBUG: not right world");
         return;
     }
     Player player = event.getPlayer();
     // Get the player's team
-    Team team = plugin.getScorecard().getTeam(player);
+    Team team = getScorecard().getTeam(player);
     if (team == null) {
         // TODO: Probably should put the player in a team
         event.setCancelled(true);
@@ -333,9 +329,9 @@ public class BeaconListeners implements Listener {
     }
     // Check if the block is a beacon or the surrounding pyramid
     Block b = event.getClickedBlock();
-    final BeaconObj beacon = plugin.getRegister().getBeacon(b);
+    final BeaconObj beacon = getRegister().getBeacon(b);
     if (beacon == null) {
-        //plugin.getLogger().info("DEBUG: not a beacon");
+        //getLogger().info("DEBUG: not a beacon");
         event.setCancelled(true);
         return;
     }
@@ -350,17 +346,17 @@ public class BeaconListeners implements Listener {
         player.sendMessage(ChatColor.GREEN + "You made a beacon map! Take it to another beacon to link them up!");
         int amount = event.getItem().getAmount() - 1;
         MapView map = Bukkit.createMap(Beaconz.beaconzWorld);
-        //map.setWorld(plugin.getBeaconzWorld());
+        //map.setWorld(getBeaconzWorld());
         map.setCenterX((int)beacon.getLocation().getX());
         map.setCenterZ((int)beacon.getLocation().getY());
         map.getRenderers().clear();
-        map.addRenderer(new BeaconMap(plugin));
+        map.addRenderer(new BeaconMap(getBeaconzPlugin()));
         event.getItem().setType(Material.MAP);
         event.getItem().setAmount(1);
         event.getItem().setDurability(map.getId());
         // Each map is unique and the durability defines the map ID, register it
-        plugin.getRegister().addBeaconMap(map.getId(), beacon);
-        //plugin.getLogger().info("DEBUG: beacon id = " + beacon.getId());
+        getRegister().addBeaconMap(map.getId(), beacon);
+        //getLogger().info("DEBUG: beacon id = " + beacon.getId());
         if (amount > 0) {
         HashMap<Integer, ItemStack> leftOver = player.getInventory().addItem(new ItemStack(Material.PAPER, amount));
         if (!leftOver.isEmpty()) {
@@ -377,7 +373,7 @@ public class BeaconListeners implements Listener {
         return;
     } else {
         // Map!
-        BeaconObj mappedBeacon = plugin.getRegister().getBeaconMap(event.getItem().getDurability());
+        BeaconObj mappedBeacon = getRegister().getBeaconMap(event.getItem().getDurability());
         if (mappedBeacon == null) {
         // This is not a beacon map
         return;
@@ -401,9 +397,9 @@ public class BeaconListeners implements Listener {
         // Proposed link
         Line2D proposedLink = new Line2D.Double(beacon.getLocation(), mappedBeacon.getLocation());
         // Check if the link crosses opposition team's links
-        for (Team oppositionTeam : plugin.getScorecard().getScoreboard().getTeams()) {
+        for (Team oppositionTeam : getScorecard().getScoreboard().getTeams()) {
         if (!oppositionTeam.equals(team)) {
-            for (Line2D line : plugin.getRegister().getFactionLinks(oppositionTeam)) {
+            for (Line2D line : getRegister().getFactionLinks(oppositionTeam)) {
             if (line.intersectsLine(proposedLink)) {
                 player.sendMessage(ChatColor.RED + "Link cannot cross enemy link!");
                 event.setCancelled(true);
@@ -417,7 +413,7 @@ public class BeaconListeners implements Listener {
         player.sendMessage(ChatColor.GREEN + "Link created! The beacon map disintegrates!");
         player.sendMessage(ChatColor.GREEN + "This beacon now has " + beacon.getOutgoing() + " links");
         if (result) {
-        player.sendMessage(ChatColor.GREEN + "Control field created! New score = " + plugin.getRegister().getScore(team));
+        player.sendMessage(ChatColor.GREEN + "Control field created! New score = " + getRegister().getScore(team));
         }
         player.setItemInHand(null);
         player.getWorld().playSound(player.getLocation(), Sound.FIREWORK_LARGE_BLAST, 1F, 1F);
@@ -438,14 +434,14 @@ public class BeaconListeners implements Listener {
         return;
     }
     // Get the player's team
-    Team team = plugin.getScorecard().getTeam(event.getPlayer());
+    Team team = getScorecard().getTeam(event.getPlayer());
     if (team == null) {
         return;
     }
     // Check the From
-    List<TriangleField> from = plugin.getRegister().getTriangle(event.getFrom().getBlockX(), event.getFrom().getBlockZ());
+    List<TriangleField> from = getRegister().getTriangle(event.getFrom().getBlockX(), event.getFrom().getBlockZ());
     // Check the To
-    List<TriangleField> to = plugin.getRegister().getTriangle(event.getTo().getBlockX(), event.getTo().getBlockZ());
+    List<TriangleField> to = getRegister().getTriangle(event.getTo().getBlockX(), event.getTo().getBlockZ());
     // Outside any field
     if (from.isEmpty() && to.isEmpty()) {
         return;
@@ -513,7 +509,7 @@ public class BeaconListeners implements Listener {
      * @param team
      */
     private void visualize(Player player, BeaconObj from, BeaconObj to, Team team) {
-        plugin.getLogger().info("from = " + from + " to = " + to);
+        getLogger().info("from = " + from + " to = " + to);
 
         //List<Point2D> points = new ArrayList<Point2D>();
         Line2D line = new Line2D.Double(from.getLocation(), to.getLocation());
@@ -523,7 +519,7 @@ public class BeaconListeners implements Listener {
             current = it.next();
             Block b = Beaconz.getBeaconzWorld().getBlockAt((int)current.getX(), Beaconz.getBeaconzWorld().getMaxHeight()-1, (int)current.getY());
             if (b.getType().equals(Material.AIR)) {
-                MaterialData md = plugin.getScorecard().getBlockID(team);
+                MaterialData md = getScorecard().getBlockID(team);
                 b.setType(md.getItemType());
                 b.setData(md.getData());
             }

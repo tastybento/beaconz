@@ -11,8 +11,7 @@ import java.util.TreeMap;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scoreboard.Team;
 
-public class BeaconObj {
-    private Beaconz plugin;
+public class BeaconObj extends BeaconzPluginDependent {
     private Point2D location;
     private int height;
     private long hackTimer;
@@ -25,7 +24,7 @@ public class BeaconObj {
     private boolean newBeacon = true;
 
     public BeaconObj(Beaconz plugin, int x, int y, int z, Team owner) {
-        this.plugin = plugin;
+        super(plugin);
         this.location = new Point2D.Double(x,z);
         this.height = y;
         this.hackTimer = System.currentTimeMillis();
@@ -67,22 +66,22 @@ public class BeaconObj {
      * @return true if control field made, false if the max outbound limit is reached or the link already exists
      */
     public boolean addOutboundLink(BeaconObj destination) {
-        plugin.getLogger().info("DEBUG: Trying to add link");
+        getLogger().info("DEBUG: Trying to add link");
         // There is a max of 8 outgoing links allowed
         if (this.outgoing == 8) {
-            plugin.getLogger().info("DEBUG: outbound link limit reached");
+            getLogger().info("DEBUG: outbound link limit reached");
             return false;
         }
         Line2D newLink = new Line2D.Double(this.location, destination.getLocation());
         // Add link to this beacon
         if (links.add(destination)) {
-            plugin.getLogger().info("DEBUG: Adding link from " + this.location + " to " + destination.getLocation());
+            getLogger().info("DEBUG: Adding link from " + this.location + " to " + destination.getLocation());
             // Add to global register for quick lookup
-            plugin.getRegister().addBeaconLink(ownership, newLink);
+            getRegister().addBeaconLink(ownership, newLink);
             // Increase the total links by one
             outgoing++;
             // Tell the destination beacon to add a link back
-            plugin.getLogger().info("DEBUG: Telling dest to add link");
+            getLogger().info("DEBUG: Telling dest to add link");
             return destination.addLink(this);
         }
         return false;
@@ -95,28 +94,28 @@ public class BeaconObj {
      * @return true if a field is made, false if not
      */
     public boolean addLink(BeaconObj starter) {
-        plugin.getLogger().info("DEBUG: Adding link back from " + this.location + " to " + starter.getLocation());
+        getLogger().info("DEBUG: Adding link back from " + this.location + " to " + starter.getLocation());
         Boolean result = links.add(starter);
         if (result) {
-            plugin.getLogger().info("DEBUG: link added");
+            getLogger().info("DEBUG: link added");
             // Reset result
             result = false;
             // Check to see if we have a triangle
-            plugin.getLogger().info("DEBUG: Checking for triangles");
+            getLogger().info("DEBUG: Checking for triangles");
             // Run through each of the beacons this beacon is directly linked to
             for (BeaconObj directlyLinkedBeacon : links) {
-                plugin.getLogger().info("DEBUG: Checking links from " + directlyLinkedBeacon.getLocation());
+                getLogger().info("DEBUG: Checking links from " + directlyLinkedBeacon.getLocation());
                 // See if any of the beacons linked to our direct links link back to us
                 for (BeaconObj indirectlyLinkedBeacon : directlyLinkedBeacon.getLinks()) {
                     if (!indirectlyLinkedBeacon.equals(this)) {
-                        plugin.getLogger().info("DEBUG: " + directlyLinkedBeacon.getLocation() + " => " + indirectlyLinkedBeacon.getLocation());
+                        getLogger().info("DEBUG: " + directlyLinkedBeacon.getLocation() + " => " + indirectlyLinkedBeacon.getLocation());
                         if (indirectlyLinkedBeacon.equals(starter)) {
-                            plugin.getLogger().info("DEBUG: Triangle found! ");
+                            getLogger().info("DEBUG: Triangle found! ");
                             // We have a winner
                             try {
                                 // Result is true if the triangle is made okay
-                                result = plugin.getRegister().addTriangle(starter.getLocation(), this.getLocation(),
-                                                                          directlyLinkedBeacon.getLocation(), ownership);
+                                result = getRegister().addTriangle(starter.getLocation(), this.getLocation(),
+                                                                   directlyLinkedBeacon.getLocation(), ownership);
                             } catch (IllegalArgumentException e) {
                                 // TODO Auto-generated catch block
                                 e.printStackTrace();

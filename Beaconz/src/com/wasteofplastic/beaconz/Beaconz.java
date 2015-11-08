@@ -23,42 +23,42 @@ public class Beaconz extends JavaPlugin {
 
     @Override
     public void onEnable() {
-    plugin = this;
-    // Save the default config from the jar
-    saveDefaultConfig();
-    loadConfig();
+        plugin = this;
+        // Save the default config from the jar
+        saveDefaultConfig();
+        loadConfig();
 
-    //getServer().getPluginManager().registerEvents(new WorldLoader(this), this);
+        //getServer().getPluginManager().registerEvents(new WorldLoader(this), this);
 
-    // Register command(s)
-    getCommand("beaconz").setExecutor(new CmdHandler(this));
+        // Register command(s)
+        getCommand("beaconz").setExecutor(new CmdHandler(this));
 
-    // Create the block populator
-    bp = new BeaconPopulator(this);
+        // Create the block populator
+        bp = new BeaconPopulator(this);
 
-    // Run commands that need to be run 1 tick after start
-    getServer().getScheduler().runTask(this, new Runnable() {
+        // Run commands that need to be run 1 tick after start
+        getServer().getScheduler().runTask(this, new Runnable() {
 
-        public void run() {
-        Beaconz.getBeaconzWorld();
-        // Load the scorecard
-        scorecard = new Scorecard(plugin);
-        // Add teams
-        MaterialData teamBlock = new MaterialData(Material.STAINED_GLASS,(byte) 11);
-        scorecard.addTeam("Blue", teamBlock);
-        teamBlock = new MaterialData(Material.STAINED_GLASS,(byte) 14);
-        scorecard.addTeam("Red", teamBlock);
+            public void run() {
+            Beaconz.getBeaconzWorld();
+            // Load the scorecard
+            scorecard = new Scorecard(plugin);
+            // Add teams
+            MaterialData teamBlock = new MaterialData(Material.STAINED_GLASS,(byte) 11);
+            scorecard.addTeam("Blue", teamBlock);
+            teamBlock = new MaterialData(Material.STAINED_GLASS,(byte) 14);
+            scorecard.addTeam("Red", teamBlock);
 
-        // Load the beacon register
-        register = new Register(plugin);
-        register.loadRegister();
+            // Load the beacon register
+            register = new Register(plugin);
+            register.loadRegister();
 
-        // Load the teams
-        scorecard.loadTeamMembers();
+            // Load the teams
+            scorecard.loadTeamMembers();
 
-        // Register the listeners - block break etc.
-        BeaconListeners ev = new BeaconListeners(plugin);
-        getServer().getPluginManager().registerEvents(ev, plugin);
+            // Register the listeners - block break etc.
+            BeaconListeners ev = new BeaconListeners(plugin);
+            getServer().getPluginManager().registerEvents(ev, plugin);
         }});
     }
 
