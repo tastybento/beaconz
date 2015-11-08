@@ -202,7 +202,7 @@ public class Register {
 		TriangleField cf = new TriangleField(point2d, point2d2, point2d3, owner);
 		// Check to see if this control field would overlap enemy-held beacons
 		for (Entry<Point2D,BeaconObj> beacon : plugin.getRegister().getBeaconRegister().entrySet()) {
-		    if (!beacon.getValue().getOwnership().equals(owner)) {
+		    if (beacon.getValue().getOwnership() != null && !beacon.getValue().getOwnership().equals(owner)) {
 			// Check enemy beacons
 			if (cf.contains(beacon.getKey())) {
 			    plugin.getLogger().info("DEBUG: Enemy beacon found inside potential control field, not making control field");
@@ -304,43 +304,44 @@ public class Register {
      * @return BeaconObj or null if none
      */
     public BeaconObj getBeacon(Block b) {
-	plugin.getLogger().info("DEBUG: material = " + b.getType());
+	//plugin.getLogger().info("DEBUG: material = " + b.getType());
 	// Quick check
 	if (!b.getType().equals(Material.BEACON) && !b.getType().equals(Material.DIAMOND_BLOCK) 
 		&& !b.getType().equals(Material.OBSIDIAN) && !b.getType().equals(Material.STAINED_GLASS)) {
 	    return null;
 	}
-	plugin.getLogger().info("DEBUG: correct material");
+	//plugin.getLogger().info("DEBUG: correct material");
 	Point2D point = new Point2D.Double(b.getLocation().getBlockX(),b.getLocation().getBlockZ());
-	plugin.getLogger().info("DEBUG: checking point " + point);
+	//plugin.getLogger().info("DEBUG: checking point " + point);
 
 	// Check glass or obsidian
 	if (b.getType().equals(Material.OBSIDIAN) || b.getType().equals(Material.STAINED_GLASS)) {
 	    Block below = b.getRelative(BlockFace.DOWN);
 	    if (!below.getType().equals(Material.BEACON)) {
-		plugin.getLogger().info("DEBUG: no beacon below here");
+		//plugin.getLogger().info("DEBUG: no beacon below here");
 		return null;
 	    }
 	    point = new Point2D.Double(below.getLocation().getBlockX(),below.getLocation().getBlockZ());
 	    // Beacon below
 	    if (beaconRegister.containsKey(point)) {
-		plugin.getLogger().info("DEBUG: found in register");
+		//plugin.getLogger().info("DEBUG: found in register");
 		return beaconRegister.get(point);
 	    } else {
-		plugin.getLogger().info("DEBUG: not found in register");
+		//plugin.getLogger().info("DEBUG: not found in register");
 		return null;
 	    }
 	}
 	// Check beacons
 	if (b.getType().equals(Material.BEACON)) {
 	    if (beaconRegister.containsKey(point)) {
-		plugin.getLogger().info("DEBUG: found in register");
+		//plugin.getLogger().info("DEBUG: found in register");
 		return beaconRegister.get(point);
 	    } else {
+		/*
 		plugin.getLogger().info("DEBUG: not found in register. Known points are:");
 		for (Point2D points : beaconRegister.keySet()) {
 		    plugin.getLogger().info("DEBUG: " + points);
-		}
+		}*/
 		return null;
 	    }
 	}

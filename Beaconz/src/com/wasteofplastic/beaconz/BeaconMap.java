@@ -31,7 +31,7 @@ public class BeaconMap extends MapRenderer {
 	// Draw the links and triangles?
 	for (int x = 0; x< 128; x++) {
 	    for (int z = 0; z<128; z++) {
-		
+		// TODO magic happens
 	    }
 	}
     }

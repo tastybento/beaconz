@@ -254,46 +254,52 @@ public class BeaconListeners implements Listener {
 	    } 
 	} else {
 	    // Attempt to break another part of the beacon
-	    // Check for cool down, if it's still cooling down, don't do anything
-	    if (System.currentTimeMillis() > beacon.getHackTimer() + Settings.hackCoolDown) {
-		beacon.resetHackTimer();
-		// Give something to the player
-		Random rand = new Random();
-		int value = rand.nextInt(100) + 1;
-		//plugin.getLogger().info("DEBUG: random number = " + value);
-		if (beacon.getOwnership().equals(plugin.getScorecard().getTeam(player))) {
-		    // Own team
-		    /*
+	    // Only do on owned beacons
+	    if (beacon.getOwnership() != null) {
+		// Check for cool down, if it's still cooling down, don't do anything
+		if (beacon.isNewBeacon() || System.currentTimeMillis() > beacon.getHackTimer() + Settings.hackCoolDown) {
+		    // Give something to the player
+		    Random rand = new Random();
+		    int value = rand.nextInt(100) + 1;
+		    //plugin.getLogger().info("DEBUG: random number = " + value);
+		    if (beacon.getOwnership().equals(plugin.getScorecard().getTeam(player))) {
+			// Own team
+			/*
 		    for (Entry<Integer, ItemStack> ent : Settings.teamGoodies.entrySet()) {
 			plugin.getLogger().info("DEBUG: " + ent.getKey() + " " + ent.getValue());
 		    }*/
-		    Entry<Integer, ItemStack> en = Settings.teamGoodies.floorEntry(value);
-		    if (en != null && en.getValue() != null) {
-			player.getWorld().dropItemNaturally(event.getBlock().getLocation(), en.getValue());
+			Entry<Integer, ItemStack> en = Settings.teamGoodies.floorEntry(value);
+			if (en != null && en.getValue() != null) {
+			    player.getWorld().dropItemNaturally(event.getBlock().getLocation(), en.getValue());
+			    beacon.resetHackTimer();
+			} else {
+			    player.getWorld().spawnEntity(player.getLocation(),EntityType.ENDERMITE);
+			    beacon.resetHackTimer();
+			    //plugin.getLogger().info("DEBUG: failed - max value was " + Settings.teamGoodies.lastKey());
+			}
 		    } else {
-			player.getWorld().spawnEntity(player.getLocation(),EntityType.ENDERMITE);
-			//plugin.getLogger().info("DEBUG: failed - max value was " + Settings.teamGoodies.lastKey());
-		    }
-		} else {
-		    // Enemy
-		    /*
+			// Enemy
+			/*
 		    for (Entry<Integer, ItemStack> ent : Settings.enemyGoodies.entrySet()) {
 			plugin.getLogger().info("DEBUG: " + ent.getKey() + " " + ent.getValue());
 		    }*/
-		    Entry<Integer, ItemStack> en = Settings.enemyGoodies.floorEntry(value);
-		    if (en != null && en.getValue() != null) {
-			player.getWorld().dropItemNaturally(event.getBlock().getLocation(), en.getValue());
-		    } else {
-			player.getWorld().spawnEntity(player.getLocation(),EntityType.ENDERMITE);
-			//plugin.getLogger().info("DEBUG: failed - max value was " + Settings.enemyGoodies.lastKey());
-		    }
+			Entry<Integer, ItemStack> en = Settings.enemyGoodies.floorEntry(value);
+			if (en != null && en.getValue() != null) {
+			    player.getWorld().dropItemNaturally(event.getBlock().getLocation(), en.getValue());
+			    beacon.resetHackTimer();
+			} else {
+			    player.getWorld().spawnEntity(player.getLocation(),EntityType.ENDERMITE);
+			    beacon.resetHackTimer();
+			    //plugin.getLogger().info("DEBUG: failed - max value was " + Settings.enemyGoodies.lastKey());
+			}
 
+		    }
+		} else {
+		    // Damage player
+		    int num = (int) (beacon.getHackTimer() + Settings.hackCoolDown - System.currentTimeMillis())/50;
+		    player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_DIGGING, num,10));
+		    plugin.getLogger().info("DEBUG: Applying mining fatigue for " + num + " ticks");
 		}
-	    } else {
-		// Damage player
-		int num = (int) (beacon.getHackTimer() + Settings.hackCoolDown - System.currentTimeMillis())/50;
-		player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_DIGGING, num,10));
-		plugin.getLogger().info("DEBUG: Applying mining fatigue for " + num + " ticks");
 	    }
 	}
     }   

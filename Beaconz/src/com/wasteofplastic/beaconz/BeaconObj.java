@@ -22,6 +22,7 @@ public class BeaconObj {
     private Set<BeaconObj> links;
     private int outgoing;
     private Integer id = null;
+    private boolean newBeacon = true;
 
     /**
      * @param plugin
@@ -40,6 +41,7 @@ public class BeaconObj {
 	this.mods = new ArrayList<Mod>();
 	this.links = new HashSet<BeaconObj>();
 	this.outgoing = 0;
+	this.newBeacon = true;
     }
 
     public int getX() {
@@ -148,6 +150,7 @@ public class BeaconObj {
      */
     public void resetHackTimer() {
 	this.hackTimer = System.currentTimeMillis();
+	this.newBeacon = false;
     }
 
     /**
@@ -274,6 +277,13 @@ public class BeaconObj {
      */
     public void setHeight(int height) {
 	this.height = height;
+    }
+
+    /**
+     * @return the newBeacon
+     */
+    public boolean isNewBeacon() {
+        return newBeacon;
     }
 
 }
