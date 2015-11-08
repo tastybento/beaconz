@@ -16,41 +16,37 @@ import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.ScoreboardManager;
 import org.bukkit.scoreboard.Team;
 
-public class Scorecard {
-    private Beaconz plugin;
+public class Scorecard extends BeaconzPluginDependent{
     private ScoreboardManager manager;
     private Scoreboard scoreboard;
     private HashMap<Team, MaterialData> teamBlock;
     //private HashMap<Team, List<UUID>> teamMembers;
     //private HashMap<UUID, String> teamLookup;
-    
-    /**
-     * @param plugin
-     */
-    public Scorecard(Beaconz plugin) {
-	this.plugin = plugin;
-	this.manager = plugin.getServer().getScoreboardManager();
-	this.scoreboard = manager.getNewScoreboard();
-	this.teamBlock = new HashMap<Team, MaterialData>();
-	//this.teamLookup = new HashMap<UUID, String>();
-	//this.teamMembers = new HashMap<Team, List<UUID>>();
 
-	Objective objective = scoreboard.registerNewObjective("Team score", "blocks");
-	objective.setDisplaySlot(DisplaySlot.SIDEBAR); 
-	//Setting the display name of the scoreboard/objective
-	objective.setDisplayName("Blocks Owned");
+    public Scorecard(Beaconz beaconzPlugin) {
+        super(beaconzPlugin);
+        this.manager = beaconzPlugin.getServer().getScoreboardManager();
+        this.scoreboard = manager.getNewScoreboard();
+        this.teamBlock = new HashMap<Team, MaterialData>();
+        //this.teamLookup = new HashMap<UUID, String>();
+        //this.teamMembers = new HashMap<Team, List<UUID>>();
+
+        Objective objective = scoreboard.registerNewObjective("Team score", "blocks");
+        objective.setDisplaySlot(DisplaySlot.SIDEBAR);
+        //Setting the display name of the scoreboard/objective
+        objective.setDisplayName("Blocks Owned");
     }
 
     public void addTeam(String teamName, MaterialData teamBlock) {
-	Team team = scoreboard.registerNewTeam(teamName);
-	team.setAllowFriendlyFire(false);
-	// Store the block for this team
-	this.teamBlock.put(team, teamBlock);
+        Team team = scoreboard.registerNewTeam(teamName);
+        team.setAllowFriendlyFire(false);
+        // Store the block for this team
+        this.teamBlock.put(team, teamBlock);
     }
 
     @SuppressWarnings("deprecation")
     public Team getTeam(Player player) {
-	return scoreboard.getPlayerTeam(player);
+    return scoreboard.getPlayerTeam(player);
     }
 
     /**
@@ -59,7 +55,7 @@ public class Scorecard {
      * @return block type
      */
     public MaterialData getBlockID(Team team) {
-	return teamBlock.get(team);
+    return teamBlock.get(team);
     }
 
     /**
@@ -68,74 +64,74 @@ public class Scorecard {
      * @return Team, or null if it doesn't exist
      */
     public Team getTeamFromBlock(Block b) {
-	for (Entry<Team, MaterialData> md: teamBlock.entrySet()) {
-	    if (md.getValue().getItemType().equals(b.getType()) && md.getValue().getData() == b.getData()) {
-		return md.getKey();
-	    }
-	}
-	return null;
+        for (Entry<Team, MaterialData> md: teamBlock.entrySet()) {
+            if (md.getValue().getItemType().equals(b.getType()) && md.getValue().getData() == b.getData()) {
+            return md.getKey();
+            }
+        }
+        return null;
     }
 
     /**
      * Gets a team from a team name, works even if the case is wrong too or if it is partial
-     * @param string
+     * @param teamName
      * @return team, or null if not found
      */
     public Team getTeam(String teamName) {
-	if (scoreboard.getTeam(teamName) != null) {
-	    return scoreboard.getTeam(teamName);
-	} else {
-	    for (Team team : scoreboard.getTeams()) {
-		if (team.getName().toLowerCase().startsWith(teamName.toLowerCase())) {
-		    return team;
-		}
-	    }
-	}
-	return null;
+        if (scoreboard.getTeam(teamName) != null) {
+            return scoreboard.getTeam(teamName);
+        } else {
+            for (Team team : scoreboard.getTeams()) {
+            if (team.getName().toLowerCase().startsWith(teamName.toLowerCase())) {
+                return team;
+            }
+            }
+        }
+        return null;
     }
 
     /**
      * Provide a user readable comma delimited list of the team names for use in commands
      * @return team list
      */
-    public String getTeamListString() {	
-	String result = "";
-	for (Team team : scoreboard.getTeams()) {
-	    if (result.isEmpty()) {
-		result = team.getName();
-	    } else {
-		result += ", " + team.getName();
-	    }
-	}
-	return result;
+    public String getTeamListString() {
+        String result = "";
+        for (Team team : scoreboard.getTeams()) {
+            if (result.isEmpty()) {
+                result = team.getName();
+            } else {
+                result += ", " + team.getName();
+            }
+        }
+        return result;
     }
 
     /**
      * @return the scoreboard
      */
     public Scoreboard getScoreboard() {
-	return scoreboard;
+    return scoreboard;
     }
 
     /**
      * Loads all the team members in UUID format
      */
     public void loadTeamMembers() {
-	for (Team team: scoreboard.getTeams()) {
-	    List<String> members = plugin.getConfig().getStringList(team.getName());
-	    //List<UUID> membersUUID = new ArrayList<UUID>();
-	    for (String uuid : members) {
-		try {
-		    UUID memberUUID = UUID.fromString(uuid);
-		    OfflinePlayer player = plugin.getServer().getOfflinePlayer(memberUUID);
-		    team.addPlayer(player);
-		    //teamLookup.put(memberUUID, team.getName());
-		} catch (Exception e) {
-		    plugin.getLogger().severe("Error loading team member " + team.toString() + " " + uuid + " - skipping");
-		}
-	    }
-	    //teamMembers.put(team,membersUUID);
-	}
+        for (Team team: scoreboard.getTeams()) {
+            List<String> members = getBeaconzPlugin().getConfig().getStringList(team.getName());
+            //List<UUID> membersUUID = new ArrayList<UUID>();
+            for (String uuid : members) {
+                try {
+                    UUID memberUUID = UUID.fromString(uuid);
+                    OfflinePlayer player = getBeaconzPlugin().getServer().getOfflinePlayer(memberUUID);
+                    team.addPlayer(player);
+                    //teamLookup.put(memberUUID, team.getName());
+                } catch (Exception e) {
+                    getLogger().severe("Error loading team member " + team.toString() + " " + uuid + " - skipping");
+                }
+            }
+            //teamMembers.put(team,membersUUID);
+        }
     }
 
     /**
@@ -143,18 +139,18 @@ public class Scorecard {
      */
     @SuppressWarnings("deprecation")
     public void saveTeamMembers() {
-	for (Team team: scoreboard.getTeams()) {
-	    List<String> teamMembers = new ArrayList<String>();
-	    for (OfflinePlayer player : team.getPlayers()) {
-		try {
-		    teamMembers.add(player.getUniqueId().toString());
-		    //teamLookup.put(memberUUID, team.getName());
-		} catch (Exception e) {
-		    plugin.getLogger().severe("Error saving team member " + team.toString() + " " + player.getName() + " - skipping");
-		}
-	    }
-	    plugin.getConfig().set(team.getName(), teamMembers);
-	}
+        for (Team team: scoreboard.getTeams()) {
+            List<String> teamMembers = new ArrayList<String>();
+            for (OfflinePlayer player : team.getPlayers()) {
+                try {
+                    teamMembers.add(player.getUniqueId().toString());
+                    //teamLookup.put(memberUUID, team.getName());
+                } catch (Exception e) {
+                    getLogger().severe("Error saving team member " + team.toString() + " " + player.getName() + " - skipping");
+                }
+            }
+            getBeaconzPlugin().getConfig().set(team.getName(), teamMembers);
+        }
     }
     
     /**
@@ -163,15 +159,14 @@ public class Scorecard {
      */
     @SuppressWarnings("deprecation")
     public Team getTeam(OfflinePlayer member) {
-	// Run through the teams and find the player
-	for (Team team : scoreboard.getTeams()) {
-	    for (OfflinePlayer player : team.getPlayers()) {
-		if (player.equals(member)) {
-		    return team;
-		}
-	    }
-	}
-	return null;
+        // Run through the teams and find the player
+        for (Team team : scoreboard.getTeams()) {
+            for (OfflinePlayer player : team.getPlayers()) {
+            if (player.equals(member)) {
+                return team;
+            }
+            }
+        }
+        return null;
     }
-
 }

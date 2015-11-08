@@ -15,5 +15,4 @@ public class Settings {
     public static long hackCoolDown;
     public static TreeMap<Integer,ItemStack> teamGoodies = new TreeMap<Integer,ItemStack>();
     public static TreeMap<Integer,ItemStack> enemyGoodies = new TreeMap<Integer,ItemStack>();
-
 }

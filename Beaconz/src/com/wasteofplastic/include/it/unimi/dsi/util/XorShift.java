@@ -2,7 +2,7 @@ package com.wasteofplastic.include.it.unimi.dsi.util;
 
 import java.util.Random;
 
-/*		 
+/*
  * DSI utilities
  *
  * Copyright (C) 2013-2014 Sebastiano Vigna 
@@ -85,66 +85,66 @@ import java.util.Random;
  * whenever a subset of bits is necessary. 
  */
 public class XorShift {
-	
-	private static long[] randomnessReserve=new long[]{
-		0x8b654c54c5a25ee5L,
-		0x75d986ee758ad676L,
-		0xb2cad20309e80705L,
-		0x3336695cdb7920a5L,
-		0x3264ce96e505c279L,
-		0xad8e0cebcc75264eL,
-		0x8017de927c35d7bfL,
-		0x733cde84a995cd7dL,
-		0xa2297f411a7856b4L,
-		0xbb9bc3b924a62341L,
-		0x01e84a6b90b1a56dL,
-		0x04a710dd1977377dL,
-		0xe669ae68f500148bL,
-		0x31ed0656c119508eL,
-		0x3bc874713bba82ddL,
-		0x8a1cf61baf444412L
-	};
-	
-	private static final long serialVersionUID = 1L;
 
-	/** 2<sup>-53</sup>. */
-	private static final double NORM_53 = 1. / ( 1L << 53 );
-	/** 2<sup>-24</sup>. */
-	private static final double NORM_24 = 1. / ( 1L << 24 );
+    private static long[] randomnessReserve=new long[]{
+        0x8b654c54c5a25ee5L,
+        0x75d986ee758ad676L,
+        0xb2cad20309e80705L,
+        0x3336695cdb7920a5L,
+        0x3264ce96e505c279L,
+        0xad8e0cebcc75264eL,
+        0x8017de927c35d7bfL,
+        0x733cde84a995cd7dL,
+        0xa2297f411a7856b4L,
+        0xbb9bc3b924a62341L,
+        0x01e84a6b90b1a56dL,
+        0x04a710dd1977377dL,
+        0xe669ae68f500148bL,
+        0x31ed0656c119508eL,
+        0x3bc874713bba82ddL,
+        0x8a1cf61baf444412L
+    };
 
-	/** The internal state of the algorithm. */
-	private long[] s = new long[] {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-	private int p;
+    private static final long serialVersionUID = 1L;
 
-	/** Creates a new generator using a given seed.
-	 * 
-	 * @param seed a nonzero seed for the generator (if zero, the generator will be seeded with -1).
-	 */
-	public XorShift( final long[] seed ) {
-	    //Bukkit.getLogger().info("DEBUG: " + seed);
-		setState(seed);
-	}
+    /** 2<sup>-53</sup>. */
+    private static final double NORM_53 = 1. / ( 1L << 53 );
+    /** 2<sup>-24</sup>. */
+    private static final double NORM_24 = 1. / ( 1L << 24 );
 
-	protected int next( int bits ) {
-		return (int)( nextLong() >>> 64 - bits );
-	}
-	
-	public long nextLong() {
-		long s0 = s[ p ];
-		long s1 = s[ p = ( p + 1 ) & 15 ];
-		s1 ^= s1 << 31;
-		return 1181783497276652981L * ( s[ p ] = s1 ^ s0 ^ ( s1 >>> 11 ) ^ ( s0 >>> 30 ) );
-	}
+    /** The internal state of the algorithm. */
+    private long[] s = new long[] {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+    private int p;
 
-	public int nextInt() {
-		return (int)nextLong();
-	}
-	
-	public int nextInt( final int n ) {
-		return (int)nextLong( n );
-	}
-	
-	/** Returns a pseudorandom uniformly distributed {@code long} value
+    /** Creates a new generator using a given seed.
+     *
+     * @param seed a nonzero seed for the generator (if zero, the generator will be seeded with -1).
+     */
+    public XorShift( final long[] seed ) {
+        //Bukkit.getLogger().info("DEBUG: " + seed);
+        setState(seed);
+    }
+
+    protected int next( int bits ) {
+        return (int)( nextLong() >>> 64 - bits );
+    }
+
+    public long nextLong() {
+        long s0 = s[ p ];
+        long s1 = s[ p = ( p + 1 ) & 15 ];
+        s1 ^= s1 << 31;
+        return 1181783497276652981L * ( s[ p ] = s1 ^ s0 ^ ( s1 >>> 11 ) ^ ( s0 >>> 30 ) );
+    }
+
+    public int nextInt() {
+        return (int)nextLong();
+    }
+
+    public int nextInt( final int n ) {
+        return (int)nextLong( n );
+    }
+
+    /** Returns a pseudorandom uniformly distributed {@code long} value
      * between 0 (inclusive) and the specified value (exclusive), drawn from
      * this random number generator's sequence. The algorithm used to generate
      * the value guarantees that the result is uniform, provided that the
@@ -153,55 +153,55 @@ public class XorShift {
      * @param n the positive bound on the random number to be returned.
      * @return the next pseudorandom {@code long} value between {@code 0} (inclusive) and {@code n} (exclusive).
      */
-	public long nextLong( final long n ) {
+    public long nextLong( final long n ) {
         if ( n <= 0 ) throw new IllegalArgumentException();
-		// No special provision for n power of two: all our bits are good.
-		for(;;) {
-			final long bits = nextLong() >>> 1;
-			final long value = bits % n;
-			if ( bits - value + ( n - 1 ) >= 0 ) return value;
-		}
-	}
-	
-	 public double nextDouble() {
-		return ( nextLong() >>> 11 ) * NORM_53;
-	}
-	
-	public float nextFloat() {
-		return (float)( ( nextLong() >>> 40 ) * NORM_24 );
-	}
+        // No special provision for n power of two: all our bits are good.
+        for(;;) {
+            final long bits = nextLong() >>> 1;
+            final long value = bits % n;
+            if ( bits - value + ( n - 1 ) >= 0 ) return value;
+        }
+    }
 
-	public boolean nextBoolean() {
-		return ( nextLong() & 1 ) != 0;
-	}
-	
-	public void nextBytes( final byte[] bytes ) {
-		int i = bytes.length, n = 0;
-		while( i != 0 ) {
-			n = Math.min( i, 8 );
-			for ( long bits = nextLong(); n-- != 0; bits >>= 8 ) bytes[ --i ] = (byte)bits;
-		}
-	}
+     public double nextDouble() {
+        return ( nextLong() >>> 11 ) * NORM_53;
+    }
 
-	/** Sets the state of this generator.
-	 * 
-	 * <p>The internal state of the generator will be reset, and the state array filled with the provided array.
-	 * 
-	 * @param state an array of 16 longs; at least one must be nonzero.
-	 */
-	public void setState( final long[] state ) {
-		int i=0;
-		//Bukkit.getLogger().info("DEBUG: state length = " + state.length);
-		//Bukkit.getLogger().info("DEBUG: s length = " + s.length);
-		for(; i<state.length && i<s.length; i++) {
-			s[i]=state[i] ^ randomnessReserve[i];
-		}
-		for(; i<s.length; i++)
-			s[i]=randomnessReserve[i];
-		//warm up the generator - this might be excessive
-		for(i=0; i<s.length * 8; i++) {
-			nextLong();
-		}
-		p = 0;
-	}
+    public float nextFloat() {
+        return (float)( ( nextLong() >>> 40 ) * NORM_24 );
+    }
+
+    public boolean nextBoolean() {
+        return ( nextLong() & 1 ) != 0;
+    }
+
+    public void nextBytes( final byte[] bytes ) {
+        int i = bytes.length, n = 0;
+        while( i != 0 ) {
+            n = Math.min( i, 8 );
+            for ( long bits = nextLong(); n-- != 0; bits >>= 8 ) bytes[ --i ] = (byte)bits;
+        }
+    }
+
+    /** Sets the state of this generator.
+     *
+     * <p>The internal state of the generator will be reset, and the state array filled with the provided array.
+     *
+     * @param state an array of 16 longs; at least one must be nonzero.
+     */
+    public void setState( final long[] state ) {
+        int i=0;
+        //Bukkit.getLogger().info("DEBUG: state length = " + state.length);
+        //Bukkit.getLogger().info("DEBUG: s length = " + s.length);
+        for(; i<state.length && i<s.length; i++) {
+            s[i]=state[i] ^ randomnessReserve[i];
+        }
+        for(; i<s.length; i++)
+            s[i]=randomnessReserve[i];
+        //warm up the generator - this might be excessive
+        for(i=0; i<s.length * 8; i++) {
+            nextLong();
+        }
+        p = 0;
+    }
 }
