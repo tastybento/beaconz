@@ -6,7 +6,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.world.ChunkLoadEvent;
 
 public class WorldLoader implements Listener {
-    private Beaconz plugin;
+    private final Beaconz plugin;
     private boolean worldLoaded = false;
 
     /**
@@ -14,20 +14,20 @@ public class WorldLoader implements Listener {
      * @param plugin
      */
     public WorldLoader(Beaconz plugin) {
-	this.plugin = plugin;
+    this.plugin = plugin;
     }
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onChunkLoad(final ChunkLoadEvent event) {
-	if (worldLoaded) {
-	    return;
-	}
-	plugin.getLogger().info("DEBUG: " + event.getWorld().getName());
-	if (event.getWorld().getName().equals(Settings.worldName)) {
-	    return;
-	}
-	// Load the world
-	worldLoaded = true;
-	Beaconz.getBeaconzWorld();
+        if (worldLoaded) {
+            return;
+        }
+        plugin.getLogger().info("DEBUG: " + event.getWorld().getName());
+        if (event.getWorld().getName().equals(Settings.worldName)) {
+            return;
+        }
+        // Load the world
+        worldLoaded = true;
+        Beaconz.getBeaconzWorld();
     }
 }
