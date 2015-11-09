@@ -6,6 +6,7 @@ import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
 import org.bukkit.map.MinecraftFont;
 
+
 public class BeaconMap extends MapRenderer {
     private final Beaconz plugin;
 

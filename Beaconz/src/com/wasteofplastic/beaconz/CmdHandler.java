@@ -25,6 +25,7 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
         super(beaconzPlugin);
     }
 
+    @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         // Test commands
         if (args.length == 0 || args[0].equalsIgnoreCase("help")) {
@@ -289,4 +290,5 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
         //Bukkit.getLogger().info("DEBUG: safe!");
         return true;
     }
+
 }

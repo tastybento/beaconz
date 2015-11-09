@@ -1,8 +1,8 @@
 package com.wasteofplastic.beaconz;
 
-import org.bukkit.generator.BlockPopulator;
-
 import java.util.logging.Logger;
+
+import org.bukkit.generator.BlockPopulator;
 
 /**
  * Base class for classes that depend on a {@link org.bukkit.plugin.Plugin}.
