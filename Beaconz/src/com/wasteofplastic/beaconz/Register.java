@@ -45,7 +45,7 @@ public class Register extends BeaconzPluginDependent {
                 owner = beacon.getOwnership().getName();
             }
             getBeaconzPlugin().getConfig().set("beacon." + count + ".location", beacon.getX() + ":" + beacon.getY() + ":" + beacon.getZ()
-                + ":" + owner);
+                    + ":" + owner);
             List<String> beaconLinks = new ArrayList<String>();
             for (BeaconObj linkedBeacon: beacon.getLinks()) {
                 beaconLinks.add((int)linkedBeacon.getLocation().getX() +":" + (int)linkedBeacon.getLocation().getY());
@@ -192,8 +192,8 @@ public class Register extends BeaconzPluginDependent {
             getLogger().info("DEBUG: All three beacons are in the register");
             // Check the beacons are all owned by the same faction
             if (beaconRegister.get(point2d).getOwnership().equals(owner)
-                && beaconRegister.get(point2d2).getOwnership().equals(owner)
-                && beaconRegister.get(point2d3).getOwnership().equals(owner)) {
+                    && beaconRegister.get(point2d2).getOwnership().equals(owner)
+                    && beaconRegister.get(point2d3).getOwnership().equals(owner)) {
                 getLogger().info("DEBUG: All beacons are owned by same faction");
                 TriangleField cf = new TriangleField(point2d, point2d2, point2d3, owner);
                 // Check to see if this control field would overlap enemy-held beacons
@@ -248,7 +248,7 @@ public class Register extends BeaconzPluginDependent {
      * @return the score
      */
     public HashMap<Team, Integer> getScore() {
-    return score;
+        return score;
     }
 
     /**
@@ -257,21 +257,21 @@ public class Register extends BeaconzPluginDependent {
      * @param score
      */
     public void setScore(Team faction, int score) {
-    this.score.put(faction, score);
+        this.score.put(faction, score);
     }    
 
     /**
      * @return the beaconRegister
      */
     public HashMap<Point2D, BeaconObj> getBeaconRegister() {
-    return beaconRegister;
+        return beaconRegister;
     }
 
     /**
      * @return the triangleFields
      */
     public Set<TriangleField> getTriangleFields() {
-    return triangleFields;
+        return triangleFields;
     }
 
     /**
@@ -280,7 +280,7 @@ public class Register extends BeaconzPluginDependent {
      * @return true if it is part of a beacon, false if not
      */
     public boolean isBeacon(Block b) {
-    return getBeacon(b) == null ? false:true;
+        return getBeacon(b) == null ? false:true;
     }
 
     /**
@@ -303,7 +303,7 @@ public class Register extends BeaconzPluginDependent {
         //getLogger().info("DEBUG: material = " + b.getType());
         // Quick check
         if (!b.getType().equals(Material.BEACON) && !b.getType().equals(Material.DIAMOND_BLOCK)
-            && !b.getType().equals(Material.OBSIDIAN) && !b.getType().equals(Material.STAINED_GLASS)) {
+                && !b.getType().equals(Material.OBSIDIAN) && !b.getType().equals(Material.STAINED_GLASS)) {
             return null;
         }
         //getLogger().info("DEBUG: correct material");
@@ -345,49 +345,44 @@ public class Register extends BeaconzPluginDependent {
         // Look for a beacon
         for (int modX = -1; modX < 2; modX++) {
             for (int modZ = -1; modZ < 2; modZ++) {
-            Block test = b.getRelative(modX, 1, modZ);
-            if (test.getType().equals(Material.BEACON)) {
-                point = new Point2D.Double(test.getLocation().getBlockX(),test.getLocation().getBlockZ());
-                if (beaconRegister.containsKey(point)) {
-                    return beaconRegister.get(point);
+                Block test = b.getRelative(modX, 1, modZ);
+                if (test.getType().equals(Material.BEACON)) {
+                    point = new Point2D.Double(test.getLocation().getBlockX(),test.getLocation().getBlockZ());
+                    if (beaconRegister.containsKey(point)) {
+                        return beaconRegister.get(point);
+                    }
                 }
-            }
             }
         }
         return null;
     }
     /**
      * Removes this block from faction ownership and makes it unowned
-     * @param b
+     * @param beacon
      */
-    public void deleteBeacon(Block test) {
-        Point2D point = new Point2D.Double(test.getLocation().getBlockX(),test.getLocation().getBlockZ());
-        if (beaconRegister.containsKey(point)) {
-            BeaconObj beacon = beaconRegister.get(point);
-            Team oldOwner = beacon.getOwnership();
-            beacon.setOwnership(null);
-            //TODO remove all the links and delete any score from the team that just lost it
-            for (BeaconObj linkedBeacon : beacon.getLinks()) {
-                linkedBeacon.removeLink(beacon);
-            }
-            beacon.removeLinks();
-            // Get any control triangles that have been removed because of this
-            Iterator<TriangleField> it = triangleFields.iterator();
-            while (it.hasNext()) {
-                TriangleField triangle = it.next();
-                if (triangle.hasVertex(point)) {
-                    getLogger().info("DEBUG: this beaon was part of a triangle");
-                    // Remove score
-                    if (score.containsKey(oldOwner)) {
-                        int sc = triangle.getArea();
-                        getLogger().info("DEBUG: Removing score " + sc + " from " + oldOwner.getDisplayName()
+    public void removeBeaconOwnership(BeaconObj beacon) {
+        Team oldOwner = beacon.getOwnership();
+        beacon.setOwnership(null);
+        for (BeaconObj linkedBeacon : beacon.getLinks()) {
+            linkedBeacon.removeLink(beacon);
+        }
+        beacon.removeLinks();
+        // Get any control triangles that have been removed because of this
+        Iterator<TriangleField> it = triangleFields.iterator();
+        while (it.hasNext()) {
+            TriangleField triangle = it.next();
+            if (triangle.hasVertex(beacon.getLocation())) {
+                getLogger().info("DEBUG: this beacon was part of a triangle");
+                // Remove score
+                if (score.containsKey(oldOwner)) {
+                    int sc = triangle.getArea();
+                    getLogger().info("DEBUG: Removing score " + sc + " from " + oldOwner.getDisplayName()
                             + " team's score of " + score.get(beacon.getOwnership()));
-                        int newScore = score.get(oldOwner) - sc;
-                        score.put(oldOwner,newScore);
-                    }
-                    // Remove triangle
-                    it.remove();
+                    int newScore = score.get(oldOwner) - sc;
+                    score.put(oldOwner,newScore);
                 }
+                // Remove triangle
+                it.remove();
             }
         }
     }
@@ -405,7 +400,7 @@ public class Register extends BeaconzPluginDependent {
      * @return the beaconMaps
      */
     public BeaconObj getBeaconMap(Short index) {
-    return beaconMaps.get(index);
+        return beaconMaps.get(index);
     }
 
     /**
@@ -443,5 +438,15 @@ public class Register extends BeaconzPluginDependent {
     public BeaconObj getBeaconAt(int x, int z) {
         Point2D point = new Point2D.Double((double)x,(double)z);
         return beaconRegister.get(point);
+    }
+
+    /**
+     * Sets the beacon ownership, team = null means it is unowned.
+     * @param beacon
+     * @param team
+     */
+    public void setBeaconOwner(BeaconObj beacon, Team team) {
+        beacon.setOwnership(team);
+        // TODO : Add other things in the future as a result of the ownership change
     }
 }

@@ -72,7 +72,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         Iterator<Block> it = event.blockList().iterator();
         while (it.hasNext()) {
             if (getRegister().isBeacon(it.next())) {
-            it.remove();
+                it.remove();
             }
         }
     }
@@ -108,7 +108,16 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         }
         BeaconObj beacon = getRegister().getBeaconAt(event.getBlock().getX(),event.getBlock().getZ());
         if (beacon != null && beacon.getY() < event.getBlock().getY()) {
-            event.setCancelled(true);
+            switch (event.getBlock().getType()) {
+            // Allow leaves to grow over the beacon
+            case LEAVES:
+            case LEAVES_2:
+                break;
+            default:
+                // For everything else, make sure there is air
+                event.getBlock().setType(Material.AIR);
+            }
+
         }
     }
 
@@ -118,23 +127,23 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
      */
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onPistonPush(BlockPistonExtendEvent event) {
-    World world = event.getBlock().getWorld();
-    if (!world.equals(Beaconz.getBeaconzWorld())) {
-        //getLogger().info("DEBUG: not right world");
-        return;
-    }
-    for (Block b : event.getBlocks()) {
-        // If any block is part of a beacon cancel it
-        if (getRegister().isBeacon(b)) {
-        event.setCancelled(true);
-        return;
+        World world = event.getBlock().getWorld();
+        if (!world.equals(Beaconz.getBeaconzWorld())) {
+            //getLogger().info("DEBUG: not right world");
+            return;
         }
-        Block testBlock = b.getRelative(event.getDirection());
-        BeaconObj beacon = getRegister().getBeaconAt(testBlock.getX(),testBlock.getZ());
-        if (beacon != null && beacon.getY() < testBlock.getY()) {
-        event.setCancelled(true);
+        for (Block b : event.getBlocks()) {
+            // If any block is part of a beacon cancel it
+            if (getRegister().isBeacon(b)) {
+                event.setCancelled(true);
+                return;
+            }
+            Block testBlock = b.getRelative(event.getDirection());
+            BeaconObj beacon = getRegister().getBeaconAt(testBlock.getX(),testBlock.getZ());
+            if (beacon != null && beacon.getY() < testBlock.getY()) {
+                event.setCancelled(true);
+            }
         }
-    }
     }
 
     /**
@@ -143,17 +152,17 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
      */
     @EventHandler(priority = EventPriority.LOW)
     public void onBucketEmpty(final PlayerBucketEmptyEvent event) {
-    //getLogger().info("DEBUG: " + event.getEventName());
-    World world = event.getBlockClicked().getWorld();
-    if (!world.equals(Beaconz.getBeaconzWorld())) {
-        //getLogger().info("DEBUG: not right world");
-        return;
-    }
-    BeaconObj beacon = getRegister().getBeaconAt(event.getBlockClicked().getX(),event.getBlockClicked().getZ());
-    if (beacon != null && beacon.getY() <= event.getBlockClicked().getY()) {
-        event.setCancelled(true);
-        event.getPlayer().sendMessage(ChatColor.RED + "You cannot place liquids above a beacon!");
-    }
+        //getLogger().info("DEBUG: " + event.getEventName());
+        World world = event.getBlockClicked().getWorld();
+        if (!world.equals(Beaconz.getBeaconzWorld())) {
+            //getLogger().info("DEBUG: not right world");
+            return;
+        }
+        BeaconObj beacon = getRegister().getBeaconAt(event.getBlockClicked().getX(),event.getBlockClicked().getZ());
+        if (beacon != null && beacon.getY() <= event.getBlockClicked().getY()) {
+            event.setCancelled(true);
+            event.getPlayer().sendMessage(ChatColor.RED + "You cannot place liquids above a beacon!");
+        }
     }
 
 
@@ -163,20 +172,20 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
      */
     @EventHandler(priority = EventPriority.LOW)
     public void onLiquidFlow(final BlockFromToEvent event) {
-    //getLogger().info("DEBUG: " + event.getEventName());
-    World world = event.getBlock().getWorld();
-    if (!world.equals(Beaconz.getBeaconzWorld())) {
-        //getLogger().info("DEBUG: not right world");
-        return;
-    }
-    // Only bother with horizontal flows
-    if (event.getToBlock().getX() != event.getBlock().getX() || event.getToBlock().getZ() != event.getBlock().getZ()) {
         //getLogger().info("DEBUG: " + event.getEventName());
-        BeaconObj beacon = getRegister().getBeaconAt(event.getToBlock().getX(),event.getToBlock().getZ());
-        if (beacon != null && beacon.getY() < event.getToBlock().getY()) {
-        event.setCancelled(true);
+        World world = event.getBlock().getWorld();
+        if (!world.equals(Beaconz.getBeaconzWorld())) {
+            //getLogger().info("DEBUG: not right world");
+            return;
         }
-    }
+        // Only bother with horizontal flows
+        if (event.getToBlock().getX() != event.getBlock().getX() || event.getToBlock().getZ() != event.getBlock().getZ()) {
+            //getLogger().info("DEBUG: " + event.getEventName());
+            BeaconObj beacon = getRegister().getBeaconAt(event.getToBlock().getX(),event.getToBlock().getZ());
+            if (beacon != null && beacon.getY() < event.getToBlock().getY()) {
+                event.setCancelled(true);
+            }
+        }
     }
 
     /**
@@ -186,319 +195,331 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
     @SuppressWarnings("deprecation")
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=false)
     public void onBeaconBreak(BlockBreakEvent event) {
-    //getLogger().info("DEBUG: " + event.getEventName());
-    World world = event.getBlock().getWorld();
-    if (!world.equals(Beaconz.getBeaconzWorld())) {
-        //getLogger().info("DEBUG: not right world");
-        return;
-    }
-    Player player = event.getPlayer();
-    // Get the player's team
-    Team team = getScorecard().getTeam(player);
-    if (team == null) {
-        // TODO: Probably should put the player in a team
-        event.setCancelled(true);
-        player.sendMessage(ChatColor.RED + "You must be in a team to play in this world");
-        return;
-    }
-    // Check if the block is a beacon or the surrounding pyramid
-    Block b = event.getBlock();
-    BeaconObj beacon = getRegister().getBeacon(b);
-    if (beacon == null) {
-        return;
-    }
-    getLogger().info("DEBUG: This is a beacon");
-    // Cancel any breakage
-    event.setCancelled(true);
-    // Check for obsidian/glass breakage - i.e., capture
-    if (b.getRelative(BlockFace.DOWN).getType().equals(Material.BEACON)) {
-        //getLogger().info("DEBUG:beacon below");
-        // Check if this is a real beacon
-        if (getRegister().isBeacon(b.getRelative(BlockFace.DOWN))) {
-        //getLogger().info("DEBUG: registered beacon");
-        // It is a real beacon
-        if (b.getType().equals(Material.OBSIDIAN)) {
-            //getLogger().info("DEBUG: obsidian");
-            //Claiming unowned beacon
-            b.setType(getScorecard().getBlockID(team).getItemType());
-            b.setData(getScorecard().getBlockID(team).getData());
+        //getLogger().info("DEBUG: " + event.getEventName());
+        World world = event.getBlock().getWorld();
+        if (!world.equals(Beaconz.getBeaconzWorld())) {
+            //getLogger().info("DEBUG: not right world");
+            return;
+        }
+        Player player = event.getPlayer();
+        // Get the player's team
+        Team team = getScorecard().getTeam(player);
+        if (team == null) {
+            // TODO: Probably should put the player in a team
             event.setCancelled(true);
-            // Register the beacon to this team
-            getRegister().addBeacon(team, b.getLocation());
-            player.sendMessage(ChatColor.GREEN + "You captured a beacon!");
-        } else {
-            //getLogger().info("DEBUG: another block");
-            Team blockTeam = getScorecard().getTeamFromBlock(b);
-            if (blockTeam != null) {
-                //getLogger().info("DEBUG: known team block");
-                if (team.equals(blockTeam)) {
-                    // You can't destroy your own beacon
-                    player.sendMessage(ChatColor.RED + "You cannot destroy your own beacon");
-                    event.setCancelled(true);
-                    return;
+            player.sendMessage(ChatColor.RED + "You must be in a team to play in this world");
+            return;
+        }
+        // Check if the block is a beacon or the surrounding pyramid
+        Block block = event.getBlock();
+        BeaconObj beacon = getRegister().getBeacon(block);
+        if (beacon == null) {
+            return;
+        }
+        getLogger().info("DEBUG: This is a beacon");
+        // Cancel any breakage
+        event.setCancelled(true);
+        // Check for obsidian/glass breakage - i.e., capture
+        if (block.getRelative(BlockFace.DOWN).getType().equals(Material.BEACON)) {
+            //getLogger().info("DEBUG:beacon below");
+            // Check if this is a real beacon
+            if (getRegister().isBeacon(block.getRelative(BlockFace.DOWN))) {
+                //getLogger().info("DEBUG: registered beacon");
+                // It is a real beacon
+                if (block.getType().equals(Material.OBSIDIAN)) {
+                    // Check that the beacon is clear of blocks
+                    if (!beacon.isClear()) {
+                        // You can't capture an uncleared beacon
+                        player.sendMessage(ChatColor.RED + "Clear around the beacon first!");
+                        event.setCancelled(true);
+                        return;
+                    }
+                    //getLogger().info("DEBUG: obsidian");
+                    //Claiming unowned beacon
+                    block.setType(getScorecard().getBlockID(team).getItemType());
+                    block.setData(getScorecard().getBlockID(team).getData());
+                    // Register the beacon to this team
+                    getRegister().setBeaconOwner(beacon,team);
+                    player.sendMessage(ChatColor.GREEN + "You captured a beacon!");
+                } else {
+                    //getLogger().info("DEBUG: another block");
+                    Team beaconTeam = beacon.getOwnership();
+                    if (beaconTeam != null) {
+                        //getLogger().info("DEBUG: known team block");
+                        if (team.equals(beaconTeam)) {
+                            // You can't destroy your own beacon
+                            player.sendMessage(ChatColor.RED + "You cannot destroy your own beacon");
+                            event.setCancelled(true);
+                            return;
+                        }
+                        // Check that the beacon is clear of blocks
+                        if (!beacon.isClear()) {
+                            // You can't capture an uncleared beacon
+                            player.sendMessage(ChatColor.RED + "Clear around the beacon first!");
+                            event.setCancelled(true);
+                            return;
+                        }
+                        // Enemy team has lost a beacon!
+                        player.sendMessage(ChatColor.GOLD + beaconTeam.getDisplayName() + " team has lost a beacon!");
+                        getRegister().removeBeaconOwnership(beacon);
+                        block.setType(Material.OBSIDIAN);
+                        event.setCancelled(true);
+                    } else {
+                        getLogger().info("DEBUG: unknown team block");
+                    }
                 }
-                // Enemy team has lost a beacon!
-                player.sendMessage(ChatColor.GOLD + blockTeam.getDisplayName() + " team has lost a beacon!");
-                player.sendMessage(ChatColor.GOLD + "TODO: remove score and links etc.");
-                getRegister().deleteBeacon(b);
-                b.setType(Material.OBSIDIAN);
-                event.setCancelled(true);
-            } else {
-                getLogger().info("DEBUG: unknown team block");
             }
-        }
-        }
-    } else {
-        // Attempt to break another part of the beacon
-        // Only do on owned beacons
-        if (beacon.getOwnership() != null) {
-        // Check for cool down, if it's still cooling down, don't do anything
-        if (beacon.isNewBeacon() || System.currentTimeMillis() > beacon.getHackTimer() + Settings.hackCoolDown) {
-            // Give something to the player
-            Random rand = new Random();
-            int value = rand.nextInt(100) + 1;
-            //getLogger().info("DEBUG: random number = " + value);
-            if (beacon.getOwnership().equals(getScorecard().getTeam(player))) {
-            // Own team
-            /*
+        } else {
+            // Attempt to break another part of the beacon
+            // Only do on owned beacons
+            if (beacon.getOwnership() != null) {
+                // Check for cool down, if it's still cooling down, don't do anything
+                if (beacon.isNewBeacon() || System.currentTimeMillis() > beacon.getHackTimer() + Settings.hackCoolDown) {
+                    // Give something to the player
+                    Random rand = new Random();
+                    int value = rand.nextInt(100) + 1;
+                    //getLogger().info("DEBUG: random number = " + value);
+                    if (beacon.getOwnership().equals(getScorecard().getTeam(player))) {
+                        // Own team
+                        /*
             for (Entry<Integer, ItemStack> ent : Settings.teamGoodies.entrySet()) {
             getLogger().info("DEBUG: " + ent.getKey() + " " + ent.getValue());
             }*/
-            Entry<Integer, ItemStack> en = Settings.teamGoodies.floorEntry(value);
-            if (en != null && en.getValue() != null) {
-                player.getWorld().dropItemNaturally(event.getBlock().getLocation(), en.getValue());
-                beacon.resetHackTimer();
-            } else {
-                player.getWorld().spawnEntity(player.getLocation(),EntityType.ENDERMITE);
-                beacon.resetHackTimer();
-                //getLogger().info("DEBUG: failed - max value was " + Settings.teamGoodies.lastKey());
-            }
-            } else {
-            // Enemy
-            /*
+                        Entry<Integer, ItemStack> en = Settings.teamGoodies.floorEntry(value);
+                        if (en != null && en.getValue() != null) {
+                            player.getWorld().dropItemNaturally(event.getBlock().getLocation(), en.getValue());
+                            beacon.resetHackTimer();
+                        } else {
+                            player.getWorld().spawnEntity(player.getLocation(),EntityType.ENDERMITE);
+                            beacon.resetHackTimer();
+                            //getLogger().info("DEBUG: failed - max value was " + Settings.teamGoodies.lastKey());
+                        }
+                    } else {
+                        // Enemy
+                        /*
             for (Entry<Integer, ItemStack> ent : Settings.enemyGoodies.entrySet()) {
             getLogger().info("DEBUG: " + ent.getKey() + " " + ent.getValue());
             }*/
-            Entry<Integer, ItemStack> en = Settings.enemyGoodies.floorEntry(value);
-            if (en != null && en.getValue() != null) {
-                player.getWorld().dropItemNaturally(event.getBlock().getLocation(), en.getValue());
-                beacon.resetHackTimer();
-            } else {
-                player.getWorld().spawnEntity(player.getLocation(),EntityType.ENDERMITE);
-                beacon.resetHackTimer();
-                //getLogger().info("DEBUG: failed - max value was " + Settings.enemyGoodies.lastKey());
-            }
+                        Entry<Integer, ItemStack> en = Settings.enemyGoodies.floorEntry(value);
+                        if (en != null && en.getValue() != null) {
+                            player.getWorld().dropItemNaturally(event.getBlock().getLocation(), en.getValue());
+                            beacon.resetHackTimer();
+                        } else {
+                            player.getWorld().spawnEntity(player.getLocation(),EntityType.ENDERMITE);
+                            beacon.resetHackTimer();
+                            //getLogger().info("DEBUG: failed - max value was " + Settings.enemyGoodies.lastKey());
+                        }
 
+                    }
+                } else {
+                    // Damage player
+                    int num = (int) (beacon.getHackTimer() + Settings.hackCoolDown - System.currentTimeMillis())/50;
+                    player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_DIGGING, num,10));
+                    getLogger().info("DEBUG: Applying mining fatigue for " + num + " ticks");
+                }
             }
-        } else {
-            // Damage player
-            int num = (int) (beacon.getHackTimer() + Settings.hackCoolDown - System.currentTimeMillis())/50;
-            player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_DIGGING, num,10));
-            getLogger().info("DEBUG: Applying mining fatigue for " + num + " ticks");
         }
-        }
-    }
     }   
 
     @SuppressWarnings("deprecation")
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onPaperMapUse(final PlayerInteractEvent event) {
-    //getLogger().info("DEBUG: paper map " + event.getEventName());
-    if (!event.hasItem()) {
-        return;
-    }
-    if (!event.getItem().getType().equals(Material.PAPER) && !event.getItem().getType().equals(Material.MAP)) {
-        return;
-    }
-    if (!event.getAction().equals(Action.RIGHT_CLICK_BLOCK)) {
-        return;
-    }
-    World world = event.getClickedBlock().getWorld();
-    if (!world.equals(Beaconz.getBeaconzWorld())) {
-        //getLogger().info("DEBUG: not right world");
-        return;
-    }
-    Player player = event.getPlayer();
-    // Get the player's team
-    Team team = getScorecard().getTeam(player);
-    if (team == null) {
-        // TODO: Probably should put the player in a team
-        event.setCancelled(true);
-        player.sendMessage(ChatColor.RED + "You must be in a team to play in this world");
-        return;
-    }
-    // Check if the block is a beacon or the surrounding pyramid
-    Block b = event.getClickedBlock();
-    final BeaconObj beacon = getRegister().getBeacon(b);
-    if (beacon == null) {
-        //getLogger().info("DEBUG: not a beacon");
-        event.setCancelled(true);
-        return;
-    }
-    // Check the team
-    if (beacon.getOwnership() == null || !beacon.getOwnership().equals(team)) {
-        player.sendMessage(ChatColor.RED + "You must capture this beacon first!");
-        event.setCancelled(true);
-        return;
-    }
-    if (event.getItem().getType().equals(Material.PAPER)) {
-        // Make a map!
-        player.sendMessage(ChatColor.GREEN + "You made a beacon map! Take it to another beacon to link them up!");
-        int amount = event.getItem().getAmount() - 1;
-        MapView map = Bukkit.createMap(Beaconz.beaconzWorld);
-        //map.setWorld(getBeaconzWorld());
-        map.setCenterX((int)beacon.getLocation().getX());
-        map.setCenterZ((int)beacon.getLocation().getY());
-        map.getRenderers().clear();
-        map.addRenderer(new BeaconMap(getBeaconzPlugin()));
-        event.getItem().setType(Material.MAP);
-        event.getItem().setAmount(1);
-        event.getItem().setDurability(map.getId());
-        // Each map is unique and the durability defines the map ID, register it
-        getRegister().addBeaconMap(map.getId(), beacon);
-        //getLogger().info("DEBUG: beacon id = " + beacon.getId());
-        if (amount > 0) {
-        HashMap<Integer, ItemStack> leftOver = player.getInventory().addItem(new ItemStack(Material.PAPER, amount));
-        if (!leftOver.isEmpty()) {
-            for (ItemStack stack: leftOver.values()) {
-            player.getLocation().getWorld().dropItemNaturally(player.getLocation(), stack);
+        //getLogger().info("DEBUG: paper map " + event.getEventName());
+        if (!event.hasItem()) {
+            return;
+        }
+        if (!event.getItem().getType().equals(Material.PAPER) && !event.getItem().getType().equals(Material.MAP)) {
+            return;
+        }
+        if (!event.getAction().equals(Action.RIGHT_CLICK_BLOCK)) {
+            return;
+        }
+        World world = event.getClickedBlock().getWorld();
+        if (!world.equals(Beaconz.getBeaconzWorld())) {
+            //getLogger().info("DEBUG: not right world");
+            return;
+        }
+        Player player = event.getPlayer();
+        // Get the player's team
+        Team team = getScorecard().getTeam(player);
+        if (team == null) {
+            // TODO: Probably should put the player in a team
+            event.setCancelled(true);
+            player.sendMessage(ChatColor.RED + "You must be in a team to play in this world");
+            return;
+        }
+        // Check if the block is a beacon or the surrounding pyramid
+        Block b = event.getClickedBlock();
+        final BeaconObj beacon = getRegister().getBeacon(b);
+        if (beacon == null) {
+            //getLogger().info("DEBUG: not a beacon");
+            event.setCancelled(true);
+            return;
+        }
+        // Check the team
+        if (beacon.getOwnership() == null || !beacon.getOwnership().equals(team)) {
+            player.sendMessage(ChatColor.RED + "You must capture this beacon first!");
+            event.setCancelled(true);
+            return;
+        }
+        if (event.getItem().getType().equals(Material.PAPER)) {
+            // Make a map!
+            player.sendMessage(ChatColor.GREEN + "You made a beacon map! Take it to another beacon to link them up!");
+            int amount = event.getItem().getAmount() - 1;
+            MapView map = Bukkit.createMap(Beaconz.beaconzWorld);
+            //map.setWorld(getBeaconzWorld());
+            map.setCenterX((int)beacon.getLocation().getX());
+            map.setCenterZ((int)beacon.getLocation().getY());
+            map.getRenderers().clear();
+            map.addRenderer(new BeaconMap(getBeaconzPlugin()));
+            event.getItem().setType(Material.MAP);
+            event.getItem().setAmount(1);
+            event.getItem().setDurability(map.getId());
+            // Each map is unique and the durability defines the map ID, register it
+            getRegister().addBeaconMap(map.getId(), beacon);
+            //getLogger().info("DEBUG: beacon id = " + beacon.getId());
+            if (amount > 0) {
+                HashMap<Integer, ItemStack> leftOver = player.getInventory().addItem(new ItemStack(Material.PAPER, amount));
+                if (!leftOver.isEmpty()) {
+                    for (ItemStack stack: leftOver.values()) {
+                        player.getLocation().getWorld().dropItemNaturally(player.getLocation(), stack);
+                    }
+                }
             }
-        }
-        }
-        ItemMeta meta = event.getItem().getItemMeta();
-        meta.setDisplayName("Beacon map for " + beacon.getName());
-        event.getItem().setItemMeta(meta);
-        // Stop the beacon inventory opening
-        event.setCancelled(true);
-        return;
-    } else {
-        // Map!
-        BeaconObj mappedBeacon = getRegister().getBeaconMap(event.getItem().getDurability());
-        if (mappedBeacon == null) {
-        // This is not a beacon map
-        return;
-        }
-        if (beacon.equals(mappedBeacon)) {
-        player.sendMessage(ChatColor.RED + "You cannot link a beacon to itself!");
-        event.setCancelled(true);
-        return;
-        }
-        if (beacon.getOutgoing() == 8) {
-        player.sendMessage(ChatColor.RED + "This beacon already has 8 outbound links!");
-        event.setCancelled(true);
-        return;
-        }
-        // Check if this link already exists
-        if (beacon.getLinks().contains(mappedBeacon)) {
-        player.sendMessage(ChatColor.RED + "Link already exists!");
-        event.setCancelled(true);
-        return;
-        }
-        // Proposed link
-        Line2D proposedLink = new Line2D.Double(beacon.getLocation(), mappedBeacon.getLocation());
-        // Check if the link crosses opposition team's links
-        for (Team oppositionTeam : getScorecard().getScoreboard().getTeams()) {
-        if (!oppositionTeam.equals(team)) {
-            for (Line2D line : getRegister().getFactionLinks(oppositionTeam)) {
-            if (line.intersectsLine(proposedLink)) {
-                player.sendMessage(ChatColor.RED + "Link cannot cross enemy link!");
+            ItemMeta meta = event.getItem().getItemMeta();
+            meta.setDisplayName("Beacon map for " + beacon.getName());
+            event.getItem().setItemMeta(meta);
+            // Stop the beacon inventory opening
+            event.setCancelled(true);
+            return;
+        } else {
+            // Map!
+            BeaconObj mappedBeacon = getRegister().getBeaconMap(event.getItem().getDurability());
+            if (mappedBeacon == null) {
+                // This is not a beacon map
+                return;
+            }
+            if (beacon.equals(mappedBeacon)) {
+                player.sendMessage(ChatColor.RED + "You cannot link a beacon to itself!");
                 event.setCancelled(true);
                 return;
             }
+            if (beacon.getOutgoing() == 8) {
+                player.sendMessage(ChatColor.RED + "This beacon already has 8 outbound links!");
+                event.setCancelled(true);
+                return;
             }
+            // Check if this link already exists
+            if (beacon.getLinks().contains(mappedBeacon)) {
+                player.sendMessage(ChatColor.RED + "Link already exists!");
+                event.setCancelled(true);
+                return;
+            }
+            // Proposed link
+            Line2D proposedLink = new Line2D.Double(beacon.getLocation(), mappedBeacon.getLocation());
+            // Check if the link crosses opposition team's links
+            for (Team oppositionTeam : getScorecard().getScoreboard().getTeams()) {
+                if (!oppositionTeam.equals(team)) {
+                    for (Line2D line : getRegister().getFactionLinks(oppositionTeam)) {
+                        if (line.intersectsLine(proposedLink)) {
+                            player.sendMessage(ChatColor.RED + "Link cannot cross enemy link!");
+                            event.setCancelled(true);
+                            return;
+                        }
+                    }
+                }
+            }
+            // Link the two beacons!
+            boolean result = beacon.addOutboundLink(mappedBeacon);
+            player.sendMessage(ChatColor.GREEN + "Link created! The beacon map disintegrates!");
+            player.sendMessage(ChatColor.GREEN + "This beacon now has " + beacon.getOutgoing() + " links");
+            if (result) {
+                player.sendMessage(ChatColor.GREEN + "Control field created! New score = " + getRegister().getScore(team));
+            }
+            player.setItemInHand(null);
+            player.getWorld().playSound(player.getLocation(), Sound.FIREWORK_LARGE_BLAST, 1F, 1F);
+            visualize(player, beacon, mappedBeacon, team);
+            event.setCancelled(true);
         }
-        }
-        // Link the two beacons!
-        boolean result = beacon.addOutboundLink(mappedBeacon);
-        player.sendMessage(ChatColor.GREEN + "Link created! The beacon map disintegrates!");
-        player.sendMessage(ChatColor.GREEN + "This beacon now has " + beacon.getOutgoing() + " links");
-        if (result) {
-        player.sendMessage(ChatColor.GREEN + "Control field created! New score = " + getRegister().getScore(team));
-        }
-        player.setItemInHand(null);
-        player.getWorld().playSound(player.getLocation(), Sound.FIREWORK_LARGE_BLAST, 1F, 1F);
-        visualize(player, beacon, mappedBeacon, team);
-        event.setCancelled(true);
-    }
     }
 
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onPlayerMove(PlayerMoveEvent event) {
-    World world = event.getTo().getWorld();
-    if (!world.equals(Beaconz.beaconzWorld)) {
-        return;
-    }
-    // Only proceed if there's been a change in X or Z coords
-    if (event.getFrom().getBlockX() == event.getTo().getBlockX() && event.getFrom().getBlockZ() == event.getTo().getBlockZ()) {
-        return;
-    }
-    // Get the player's team
-    Team team = getScorecard().getTeam(event.getPlayer());
-    if (team == null) {
-        return;
-    }
-    // Check the From
-    List<TriangleField> from = getRegister().getTriangle(event.getFrom().getBlockX(), event.getFrom().getBlockZ());
-    // Check the To
-    List<TriangleField> to = getRegister().getTriangle(event.getTo().getBlockX(), event.getTo().getBlockZ());
-    // Outside any field
-    if (from.isEmpty() && to.isEmpty()) {
-        return;
-    }
-    // Check if to is not a triangle
-    if (to.size() == 0) {
-        // Leaving a control triangle
-        event.getPlayer().sendMessage("Leaving " + from.get(0).getFaction().getDisplayName() + "'s control area");
-        return;
-    }
-
-    // Apply bad stuff
-    // Enemy team
-    /*
-     * 1 | Hunger
-     * 2 | Mining fatigue 1, hunger
-     * 3 | Weakness 1, mining fatigue 2, hunger
-     * 4 | Slowness 1, weakness 2, mining fatigue 2, hunger 2
-     * 5 | Nausea 1, slowness 2, weakness 3, mining fatigue 3, hunger 2
-     * 6 | Poison 1, nausea 1, slowness 3, weakness 3, mining fatigue 3
-     * 7 | Blindness, poison 2, slowness 4, weakness 4, mining fatigue 4
-     * 8+ | Wither*, blindness, slowness 5, weakness 5, mining fatigue 5
-     */
-    Team toOwner = null;
-    toOwner = to.get(0).getFaction();
-    Collection<PotionEffect> effects = new ArrayList<PotionEffect>();
-    if (toOwner != null && !toOwner.equals(team)) {
-        switch (to.size()) {
-        default:
-        case 8:
-        effects.add(new PotionEffect(PotionEffectType.WITHER,200,to.size()-7));
-        case 7:
-        effects.add(new PotionEffect(PotionEffectType.BLINDNESS,200,1));
-        case 6:
-        effects.add(new PotionEffect(PotionEffectType.POISON,200,1));
-        case 5:
-        effects.add(new PotionEffect(PotionEffectType.CONFUSION,200,1));
-        case 4:
-        effects.add(new PotionEffect(PotionEffectType.SLOW,200,1));
-        case 3:
-        effects.add(new PotionEffect(PotionEffectType.WEAKNESS,200,1));
-        case 2:
-        effects.add(new PotionEffect(PotionEffectType.SLOW_DIGGING,200,1));
-        case 1:
-        effects.add(new PotionEffect(PotionEffectType.HUNGER,200,1));
+        World world = event.getTo().getWorld();
+        if (!world.equals(Beaconz.beaconzWorld)) {
+            return;
         }
-        event.getPlayer().addPotionEffects(effects);
-    }
-    // Entering a field, or moving to a stronger field
-    if (from.size() < to.size()) {
-        event.getPlayer().sendMessage("Now entering " + toOwner.getDisplayName() + "'s area of control level " + to.size());
-        return;
-    }
-    if (to.size() < from.size()) {
-        event.getPlayer().sendMessage(toOwner.getDisplayName() + "'s control level dropping to " + to.size());
-        return;
-    }
+        // Only proceed if there's been a change in X or Z coords
+        if (event.getFrom().getBlockX() == event.getTo().getBlockX() && event.getFrom().getBlockZ() == event.getTo().getBlockZ()) {
+            return;
+        }
+        // Get the player's team
+        Team team = getScorecard().getTeam(event.getPlayer());
+        if (team == null) {
+            return;
+        }
+        // Check the From
+        List<TriangleField> from = getRegister().getTriangle(event.getFrom().getBlockX(), event.getFrom().getBlockZ());
+        // Check the To
+        List<TriangleField> to = getRegister().getTriangle(event.getTo().getBlockX(), event.getTo().getBlockZ());
+        // Outside any field
+        if (from.isEmpty() && to.isEmpty()) {
+            return;
+        }
+        // Check if to is not a triangle
+        if (to.size() == 0) {
+            // Leaving a control triangle
+            event.getPlayer().sendMessage("Leaving " + from.get(0).getFaction().getDisplayName() + "'s control area");
+            return;
+        }
+
+        // Apply bad stuff
+        // Enemy team
+        /*
+         * 1 | Hunger
+         * 2 | Mining fatigue 1, hunger
+         * 3 | Weakness 1, mining fatigue 2, hunger
+         * 4 | Slowness 1, weakness 2, mining fatigue 2, hunger 2
+         * 5 | Nausea 1, slowness 2, weakness 3, mining fatigue 3, hunger 2
+         * 6 | Poison 1, nausea 1, slowness 3, weakness 3, mining fatigue 3
+         * 7 | Blindness, poison 2, slowness 4, weakness 4, mining fatigue 4
+         * 8+ | Wither*, blindness, slowness 5, weakness 5, mining fatigue 5
+         */
+        Team toOwner = null;
+        toOwner = to.get(0).getFaction();
+        Collection<PotionEffect> effects = new ArrayList<PotionEffect>();
+        if (toOwner != null && !toOwner.equals(team)) {
+            switch (to.size()) {
+            default:
+            case 8:
+                effects.add(new PotionEffect(PotionEffectType.WITHER,200,to.size()-7));
+            case 7:
+                effects.add(new PotionEffect(PotionEffectType.BLINDNESS,200,1));
+            case 6:
+                effects.add(new PotionEffect(PotionEffectType.POISON,200,1));
+            case 5:
+                effects.add(new PotionEffect(PotionEffectType.CONFUSION,200,1));
+            case 4:
+                effects.add(new PotionEffect(PotionEffectType.SLOW,200,1));
+            case 3:
+                effects.add(new PotionEffect(PotionEffectType.WEAKNESS,200,1));
+            case 2:
+                effects.add(new PotionEffect(PotionEffectType.SLOW_DIGGING,200,1));
+            case 1:
+                effects.add(new PotionEffect(PotionEffectType.HUNGER,200,1));
+            }
+            event.getPlayer().addPotionEffects(effects);
+        }
+        // Entering a field, or moving to a stronger field
+        if (from.size() < to.size()) {
+            event.getPlayer().sendMessage("Now entering " + toOwner.getDisplayName() + "'s area of control level " + to.size());
+            return;
+        }
+        if (to.size() < from.size()) {
+            event.getPlayer().sendMessage(toOwner.getDisplayName() + "'s control level dropping to " + to.size());
+            return;
+        }
     }
 
     /**

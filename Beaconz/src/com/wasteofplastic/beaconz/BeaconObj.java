@@ -7,6 +7,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.bukkit.Material;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.scoreboard.Team;
 
 public class BeaconObj extends BeaconzPluginDependent {
@@ -35,27 +38,27 @@ public class BeaconObj extends BeaconzPluginDependent {
     }
 
     public int getX() {
-    return (int) location.getX();
+        return (int) location.getX();
     }
     public int getY() {
-    return height;
+        return height;
     }
     public int getZ() {
-    return (int) location.getY();
+        return (int) location.getY();
     }
 
     /**
      * @return the location of this beacon
      */
     public Point2D getLocation() {
-    return location;
+        return location;
     }
 
     /**
      * @return the beacons this beacon is directly linked to
      */
     public Set<BeaconObj> getLinks() {
-    return links;
+        return links;
     }
 
     /**
@@ -113,7 +116,7 @@ public class BeaconObj extends BeaconzPluginDependent {
                             try {
                                 // Result is true if the triangle is made okay
                                 result = getRegister().addTriangle(starter.getLocation(), this.getLocation(),
-                                                                   directlyLinkedBeacon.getLocation(), ownership);
+                                        directlyLinkedBeacon.getLocation(), ownership);
                             } catch (IllegalArgumentException e) {
                                 // TODO Auto-generated catch block
                                 e.printStackTrace();
@@ -132,7 +135,7 @@ public class BeaconObj extends BeaconzPluginDependent {
      * @return the hackTimer
      */
     public long getHackTimer() {
-    return hackTimer;
+        return hackTimer;
     }
 
     public void resetHackTimer() {
@@ -144,21 +147,21 @@ public class BeaconObj extends BeaconzPluginDependent {
      * @return the ownership
      */
     public Team getOwnership() {
-    return ownership;
+        return ownership;
     }
 
     /**
      * @param ownership the ownership to set
      */
     public void setOwnership(Team ownership) {
-    this.ownership = ownership;
+        this.ownership = ownership;
     }
 
     /**
      * @return the resonators
      */
     public List<Resonator> getResonators() {
-    return resonators;
+        return resonators;
     }
 
     public boolean addResonator(Resonator resonator) {
@@ -174,14 +177,14 @@ public class BeaconObj extends BeaconzPluginDependent {
      * @param resonators the resonators to set
      */
     public void setResonators(List<Resonator> resonators) {
-    this.resonators = resonators;
+        this.resonators = resonators;
     }
 
     /**
      * @return the mods
      */
     public List<Mod> getMods() {
-    return mods;
+        return mods;
     }
 
     public boolean addMod(Mod mod) {
@@ -204,14 +207,14 @@ public class BeaconObj extends BeaconzPluginDependent {
     }
 
     public void removeMod(Mod mod) {
-    mods.remove(mod);
+        mods.remove(mod);
     }
 
     /**
      * @return the outgoing
      */
     public int getOutgoing() {
-    return outgoing;
+        return outgoing;
     }
 
     /**
@@ -232,7 +235,7 @@ public class BeaconObj extends BeaconzPluginDependent {
      * @return the id
      */
     public Integer getId() {
-    return id;
+        return id;
     }
 
     /**
@@ -240,28 +243,28 @@ public class BeaconObj extends BeaconzPluginDependent {
      * @param beacon
      */
     public void removeLink(BeaconObj beacon) {
-    links.remove(beacon);
+        links.remove(beacon);
     }
 
     /**
      * Remove all links from this beacon
      */
     public void removeLinks() {
-    links.clear();
+        links.clear();
     }
 
     /**
      * @return the height
      */
     public int getHeight() {
-    return height;
+        return height;
     }
 
     /**
      * @param height the height to set
      */
     public void setHeight(int height) {
-    this.height = height;
+        this.height = height;
     }
 
     /**
@@ -269,6 +272,27 @@ public class BeaconObj extends BeaconzPluginDependent {
      */
     public boolean isNewBeacon() {
         return newBeacon;
+    }
+
+    /**
+     * Checks if a beacon base is clear of blocks
+     * @return true if clear, false if not
+     */
+    public boolean isClear() {
+        Block beacon = Beaconz.getBeaconzWorld().getBlockAt((int)location.getX(), height, (int)location.getY());
+        getLogger().info("DEBUG: block type is " + beacon.getType());
+        getLogger().info("DEBUG: location is " + (int)location.getX() + " " + height + " " + (int)location.getY());
+        if (beacon.getRelative(BlockFace.NORTH).getType().equals(Material.AIR)
+                && beacon.getRelative(BlockFace.SOUTH).getType().equals(Material.AIR)
+                && beacon.getRelative(BlockFace.EAST).getType().equals(Material.AIR)
+                && beacon.getRelative(BlockFace.WEST).getType().equals(Material.AIR)
+                && beacon.getRelative(BlockFace.NORTH_WEST).getType().equals(Material.AIR)
+                && beacon.getRelative(BlockFace.NORTH_EAST).getType().equals(Material.AIR)
+                && beacon.getRelative(BlockFace.SOUTH_WEST).getType().equals(Material.AIR)
+                && beacon.getRelative(BlockFace.SOUTH_EAST).getType().equals(Material.AIR)) {
+            return true;
+        }		
+        return false;
     }
 
 }
