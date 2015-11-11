@@ -48,7 +48,7 @@ public class Register extends BeaconzPluginDependent {
                     + ":" + owner);
             List<String> beaconLinks = new ArrayList<String>();
             for (BeaconObj linkedBeacon: beacon.getLinks()) {
-                beaconLinks.add((int)linkedBeacon.getLocation().getX() +":" + (int)linkedBeacon.getLocation().getY());
+                beaconLinks.add(linkedBeacon.getX() +":" + linkedBeacon.getZ());
             }
             getBeaconzPlugin().getConfig().set("beacon." + count + ".links", beaconLinks);
             if (beacon.getId() != null) {

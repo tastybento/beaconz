@@ -368,8 +368,8 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             int amount = event.getItem().getAmount() - 1;
             MapView map = Bukkit.createMap(Beaconz.beaconzWorld);
             //map.setWorld(getBeaconzWorld());
-            map.setCenterX((int)beacon.getLocation().getX());
-            map.setCenterZ((int)beacon.getLocation().getY());
+            map.setCenterX(beacon.getX());
+            map.setCenterZ(beacon.getZ());
             map.getRenderers().clear();
             map.addRenderer(new BeaconMap(getBeaconzPlugin()));
             event.getItem().setType(Material.MAP);
@@ -438,7 +438,6 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             }
             player.setItemInHand(null);
             player.getWorld().playSound(player.getLocation(), Sound.FIREWORK_LARGE_BLAST, 1F, 1F);
-            visualize(player, beacon, mappedBeacon, team);
             event.setCancelled(true);
         }
     }
@@ -519,31 +518,6 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         if (to.size() < from.size()) {
             event.getPlayer().sendMessage(toOwner.getDisplayName() + "'s control level dropping to " + to.size());
             return;
-        }
-    }
-
-    /**
-     * Draws a line of glass in the sky at 255 height of the team's block between two beacons
-     * @param player
-     * @param from
-     * @param to
-     * @param team
-     */
-    private void visualize(Player player, BeaconObj from, BeaconObj to, Team team) {
-        getLogger().info("from = " + from + " to = " + to);
-
-        //List<Point2D> points = new ArrayList<Point2D>();
-        Line2D line = new Line2D.Double(from.getLocation(), to.getLocation());
-        Point2D current;
-
-        for (Iterator<Point2D> it = new LineIterator(line); it.hasNext();) {
-            current = it.next();
-            Block b = Beaconz.getBeaconzWorld().getBlockAt((int)current.getX(), Beaconz.getBeaconzWorld().getMaxHeight()-1, (int)current.getY());
-            if (b.getType().equals(Material.AIR)) {
-                MaterialData md = getScorecard().getBlockID(team);
-                b.setType(md.getItemType());
-                b.setData(md.getData());
-            }
         }
     }
 }

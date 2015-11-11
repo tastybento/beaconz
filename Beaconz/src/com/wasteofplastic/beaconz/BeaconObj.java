@@ -4,16 +4,20 @@ import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.material.MaterialData;
 import org.bukkit.scoreboard.Team;
 
 public class BeaconObj extends BeaconzPluginDependent {
     private Point2D location;
+    private int x;
+    private int z;
     private int height;
     private long hackTimer;
     private Team ownership;
@@ -27,6 +31,8 @@ public class BeaconObj extends BeaconzPluginDependent {
     public BeaconObj(Beaconz plugin, int x, int y, int z, Team owner) {
         super(plugin);
         this.location = new Point2D.Double(x,z);
+        this.x = x;
+        this.z = z;
         this.height = y;
         this.hackTimer = System.currentTimeMillis();
         this.ownership = owner;
@@ -38,13 +44,13 @@ public class BeaconObj extends BeaconzPluginDependent {
     }
 
     public int getX() {
-        return (int) location.getX();
+        return x;
     }
     public int getY() {
         return height;
     }
     public int getZ() {
-        return (int) location.getY();
+        return z;
     }
 
     /**
@@ -99,6 +105,19 @@ public class BeaconObj extends BeaconzPluginDependent {
         Boolean result = links.add(starter);
         if (result) {
             getLogger().info("DEBUG: link added");
+            // Visualize
+            //List<Point2D> points = new ArrayList<Point2D>();
+            Line2D line = new Line2D.Double(starter.getLocation(), location);
+            Point2D current;
+            for (Iterator<Point2D> it = new LineIterator(line); it.hasNext();) {
+                current = it.next();
+                Block b = Beaconz.getBeaconzWorld().getBlockAt((int)current.getX(), Beaconz.getBeaconzWorld().getMaxHeight()-1, (int)current.getY());
+                if (b.getType().equals(Material.AIR)) {
+                    MaterialData md = getScorecard().getBlockID(ownership);
+                    b.setType(md.getItemType());
+                    b.setData(md.getData());
+                }
+            }
             // Reset result
             result = false;
             // Check to see if we have a triangle
@@ -222,8 +241,6 @@ public class BeaconObj extends BeaconzPluginDependent {
      * @return
      */
     public String getName() {
-        int x = (int)location.getX();
-        int z = (int)location.getY();
         return x + ", " + z;
     }
 
@@ -243,6 +260,20 @@ public class BeaconObj extends BeaconzPluginDependent {
      * @param beacon
      */
     public void removeLink(BeaconObj beacon) {
+        // Devisualize the link
+        //List<Point2D> points = new ArrayList<Point2D>();
+        Line2D line = new Line2D.Double(beacon.getLocation(), location);
+        Point2D current;
+        for (Iterator<Point2D> it = new LineIterator(line); it.hasNext();) {
+            current = it.next();
+            Block b = Beaconz.getBeaconzWorld().getBlockAt((int)current.getX(), Beaconz.getBeaconzWorld().getMaxHeight()-1, (int)current.getY());
+            if (!b.getType().equals(Material.AIR)) {
+                b.setType(Material.AIR);
+            }
+        }
+        // TODO: One block is being missed. It's a rounding issue. Need to make the line inclusive of these end points
+        Beaconz.getBeaconzWorld().getBlockAt(x, Beaconz.getBeaconzWorld().getMaxHeight()-1, z).setType(Material.AIR);
+        Beaconz.getBeaconzWorld().getBlockAt(beacon.getX(), Beaconz.getBeaconzWorld().getMaxHeight()-1, beacon.getZ()).setType(Material.AIR);
         links.remove(beacon);
     }
 
@@ -258,13 +289,6 @@ public class BeaconObj extends BeaconzPluginDependent {
      */
     public int getHeight() {
         return height;
-    }
-
-    /**
-     * @param height the height to set
-     */
-    public void setHeight(int height) {
-        this.height = height;
     }
 
     /**
