@@ -1,13 +1,19 @@
 package com.wasteofplastic.beaconz;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.UUID;
 
+import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.block.Block;
+import org.bukkit.configuration.InvalidConfigurationException;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.material.MaterialData;
 import org.bukkit.scoreboard.DisplaySlot;
@@ -31,15 +37,16 @@ public class Scorecard extends BeaconzPluginDependent{
         //this.teamLookup = new HashMap<UUID, String>();
         //this.teamMembers = new HashMap<Team, List<UUID>>();
 
-        Objective objective = scoreboard.registerNewObjective("Team score", "blocks");
+        Objective objective = scoreboard.registerNewObjective("teamscore", "blocks");
         objective.setDisplaySlot(DisplaySlot.SIDEBAR);
         //Setting the display name of the scoreboard/objective
-        objective.setDisplayName("Blocks Owned");
+        objective.setDisplayName(" blocks");
     }
 
     public void addTeam(String teamName, MaterialData teamBlock) {
         Team team = scoreboard.registerNewTeam(teamName);
         team.setAllowFriendlyFire(false);
+        team.setPrefix(ChatColor.DARK_PURPLE + "[" + teamName + "] ");
         // Store the block for this team
         this.teamBlock.put(team, teamBlock);
     }
@@ -117,8 +124,25 @@ public class Scorecard extends BeaconzPluginDependent{
      * Loads all the team members in UUID format
      */
     public void loadTeamMembers() {
+        File teamFile = new File(getBeaconzPlugin().getDataFolder(),"teams.yml");
+        if (!teamFile.exists()) {
+            return;
+        }
+        YamlConfiguration teamsYml = new YamlConfiguration();
+        try {
+            teamsYml.load(teamFile);
+        } catch (FileNotFoundException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (InvalidConfigurationException e) {
+            getLogger().severe("Problem with beaconz.yml formatting");
+            e.printStackTrace();
+        }
         for (Team team: scoreboard.getTeams()) {
-            List<String> members = getBeaconzPlugin().getConfig().getStringList(team.getName());
+            List<String> members = teamsYml.getStringList(team.getName());
             //List<UUID> membersUUID = new ArrayList<UUID>();
             for (String uuid : members) {
                 try {
@@ -139,6 +163,14 @@ public class Scorecard extends BeaconzPluginDependent{
      */
     @SuppressWarnings("deprecation")
     public void saveTeamMembers() {
+        File teamsFile = new File(getBeaconzPlugin().getDataFolder(),"teams.yml");
+        YamlConfiguration teamsYml = new YamlConfiguration();
+        // Backup the beacons file just in case
+        if (teamsFile.exists()) {
+            File backup = new File(getBeaconzPlugin().getDataFolder(),"teams.old");
+            teamsFile.renameTo(backup);
+        }   
+
         for (Team team: scoreboard.getTeams()) {
             List<String> teamMembers = new ArrayList<String>();
             for (OfflinePlayer player : team.getPlayers()) {
@@ -149,7 +181,13 @@ public class Scorecard extends BeaconzPluginDependent{
                     getLogger().severe("Error saving team member " + team.toString() + " " + player.getName() + " - skipping");
                 }
             }
-            getBeaconzPlugin().getConfig().set(team.getName(), teamMembers);
+            teamsYml.set(team.getName(), teamMembers);
+        }
+        try {
+            teamsYml.save(teamsFile);
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
         }
     }
     

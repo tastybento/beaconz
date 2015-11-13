@@ -3,9 +3,9 @@ world:
   # Beaconz world
   name: beaconz
   # Distribution of beacons the large the number, the more beacons are made
-  distribution: 0.01
+  distribution: 0.08
   # Size of the world - a barrier will be created using worldborder if size > 0
-  size: 0
+  size: 300
   # Center
   xCenter: 0
   zCenter: 0

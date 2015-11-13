@@ -2,6 +2,9 @@ package com.wasteofplastic.beaconz;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -15,7 +18,8 @@ import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.InvalidConfigurationException;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.scoreboard.Team;
 
 /**
@@ -37,52 +41,66 @@ public class Register extends BeaconzPluginDependent {
     private HashMap<Team, Set<Line2D>> links = new HashMap<Team, Set<Line2D>>();
 
     public void saveRegister() {
-        // Beacons
+        // Save the beacons
+        File beaconzFile = new File(getBeaconzPlugin().getDataFolder(),"beaconz.yml");
+        YamlConfiguration beaconzYml = new YamlConfiguration();
+        // Backup the beacons file just in case
+        if (beaconzFile.exists()) {
+            File backup = new File(getBeaconzPlugin().getDataFolder(),"beaconz.old");
+            beaconzFile.renameTo(backup);
+        }   
         int count = 0;
         for (BeaconObj beacon : beaconRegister.values()) {
             String owner = "unowned";
             if (beacon.getOwnership() != null) {
                 owner = beacon.getOwnership().getName();
             }
-            getBeaconzPlugin().getConfig().set("beacon." + count + ".location", beacon.getX() + ":" + beacon.getY() + ":" + beacon.getZ()
+            beaconzYml.set("beacon." + count + ".location", beacon.getX() + ":" + beacon.getY() + ":" + beacon.getZ()
                     + ":" + owner);
             List<String> beaconLinks = new ArrayList<String>();
             for (BeaconObj linkedBeacon: beacon.getLinks()) {
                 beaconLinks.add(linkedBeacon.getX() +":" + linkedBeacon.getZ());
             }
-            getBeaconzPlugin().getConfig().set("beacon." + count + ".links", beaconLinks);
+            beaconzYml.set("beacon." + count + ".links", beaconLinks);
             if (beacon.getId() != null) {
-                getBeaconzPlugin().getConfig().set("beacon." + count + ".id", beacon.getId());
+                beaconzYml.set("beacon." + count + ".id", beacon.getId());
             }
             count++;
         }
-        /*
-        // Score
-        for (FactionType faction: score.keySet()) {
-            getConfig().set("score." + faction.toString(), score.get(faction).toString());
+        try {
+            beaconzYml.save(beaconzFile);
+        } catch (IOException e) {
+            getLogger().severe("Problem saving beacons file!");
+            e.printStackTrace();
         }
-        // Control Fields
-        List<String> list = new ArrayList<String>();
-        for (ControlField cf: controlFields) {
-            list.add(cf.toString());
-        }
-        if (!list.isEmpty()) {
-            getConfig().set("controlfields",list);
-        }
-         */
-        getBeaconzPlugin().saveConfig();
     }
 
     /**
      * Loads game info
      */
     public void loadRegister() {
+        File beaconzFile = new File(getBeaconzPlugin().getDataFolder(),"beaconz.yml");
+        if (!beaconzFile.exists()) {
+            return;
+        }
+        YamlConfiguration beaconzYml = new YamlConfiguration();
+        try {
+            beaconzYml.load(beaconzFile);
+        } catch (FileNotFoundException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (InvalidConfigurationException e) {
+            getLogger().severe("Problem with beaconz.yml formatting");
+            e.printStackTrace();
+        }
         //beacons
         beaconRegister.clear();
         beaconMaps.clear();
         HashMap<BeaconObj, List<String>> beaconLinks = new HashMap<BeaconObj, List<String>>();
-        FileConfiguration config = getBeaconzPlugin().getConfig();
-        ConfigurationSection configSec = config.getConfigurationSection("beacon");
+        ConfigurationSection configSec = beaconzYml.getConfigurationSection("beacon");
         if (configSec != null) {
             for (String beacon : configSec.getValues(false).keySet()) {
                 String info = configSec.getString(beacon + ".location","");
@@ -105,12 +123,15 @@ public class Register extends BeaconzPluginDependent {
             }
         }
         // Add links
-        for (BeaconObj p: beaconLinks.keySet()) {
-            for (String link : beaconLinks.get(p)) {
+        for (BeaconObj beacon: beaconLinks.keySet()) {
+            for (String link : beaconLinks.get(beacon)) {
                 String[] args = link.split(":");
                 BeaconObj dest = beaconRegister.get(new Point2D.Double(Double.valueOf(args[0]), Double.valueOf(args[1])));
                 if (dest != null) {
-                    p.addLink(dest);
+                    LinkResult result = beacon.addLink(dest);
+                    if (result.isSuccess()) {
+                        addBeaconLink(beacon.getOwnership(), result.getLink());
+                    }
                 }
             }
         }
@@ -158,7 +179,7 @@ public class Register extends BeaconzPluginDependent {
      * @param faction
      * @return set of links or empty set if none
      */
-    public Set<Line2D> getFactionLinks(Team faction) {
+    public Set<Line2D> getTeamLinks(Team faction) {
         if (links.get(faction) == null) {
             return new HashSet<Line2D>();
         }
@@ -195,8 +216,10 @@ public class Register extends BeaconzPluginDependent {
                     && beaconRegister.get(point2d2).getOwnership().equals(owner)
                     && beaconRegister.get(point2d3).getOwnership().equals(owner)) {
                 getLogger().info("DEBUG: All beacons are owned by same faction");
-                TriangleField cf = new TriangleField(point2d, point2d2, point2d3, owner);
+                TriangleField triangle = new TriangleField(point2d, point2d2, point2d3, owner);
                 // Check to see if this control field would overlap enemy-held beacons
+                // Allow this for now
+                /*
                 for (Entry<Point2D,BeaconObj> beacon : getRegister().getBeaconRegister().entrySet()) {
                     if (beacon.getValue().getOwnership() != null && !beacon.getValue().getOwnership().equals(owner)) {
                         // Check enemy beacons
@@ -205,18 +228,38 @@ public class Register extends BeaconzPluginDependent {
                             return false;
                         }
                     }
+                }*/
+                // Check if any triangle or lines intersect
+                for (TriangleField triangleField : triangleFields) {
+                    // Check if triangle is inside any of the known triangles
+                    if (triangle.getOwner() != triangleField.getOwner() && triangleField.contains(triangle) || triangle.contains(triangleField)) {
+                        getLogger().info("DEBUG: Enemy triangle found inside triangle!");
+                        return false;
+                    }
                 }
-                if (triangleFields.add(cf)) {
+                for (Entry<Team, Set<Line2D>> linkSet : links.entrySet()) {
+                    if (!linkSet.getKey().equals(owner)) {
+                        for (Line2D link : linkSet.getValue()) {
+                            for (Line2D side : triangle.getSides()) {
+                                if (side.intersectsLine(link)) {
+                                    getLogger().info("DEBUG: Enemy beacon link found inside triangle!");
+                                    return false;
+                                }
+                            }
+                        }
+                    }
+                }
+                if (triangleFields.add(triangle)) {
                     getLogger().info("DEBUG: Added control field!");
                     // New control field, add to score
                     if (score.containsKey(owner)) {
                         int s = score.get(owner);
-                        s += cf.getArea();
+                        s += triangle.getArea();
                         score.put(owner, s);
                     } else {
-                        score.put(owner, cf.getArea());
+                        score.put(owner, triangle.getArea());
                     }
-                    getLogger().info("DEBUG: New score is " + cf.getArea());
+                    getLogger().info("DEBUG: New score is " + triangle.getArea());
                     return true;
                 } else {
                     getLogger().info("DEBUG: Control field already exists");
@@ -366,6 +409,14 @@ public class Register extends BeaconzPluginDependent {
         for (BeaconObj linkedBeacon : beacon.getLinks()) {
             linkedBeacon.removeLink(beacon);
         }
+        // Remove links from this register (I'm not happy about the duplication here)
+        Iterator<Line2D> linkIterator = links.get(oldOwner).iterator();
+        while (linkIterator.hasNext()) {
+            Line2D link = linkIterator.next();
+            if (link.getP1().equals(beacon.getLocation()) || link.getP2().equals(beacon.getLocation())) {
+                linkIterator.remove();
+            }
+        }
         beacon.removeLinks();
         // Get any control triangles that have been removed because of this
         Iterator<TriangleField> it = triangleFields.iterator();
@@ -448,5 +499,23 @@ public class Register extends BeaconzPluginDependent {
     public void setBeaconOwner(BeaconObj beacon, Team team) {
         beacon.setOwnership(team);
         // TODO : Add other things in the future as a result of the ownership change
+    }
+
+    /**
+     * Gets all enemy links not of team
+     * @param team
+     * @return set of links
+     */
+    public Set<Line2D> getEnemyLinks(Team team) {
+        Set<Line2D> result = new HashSet<Line2D>();
+        getLogger().info("DEBUG: There are " + links.keySet().size() + " teams in the link database");
+        for (Team opposition : links.keySet()) {
+            getLogger().info("DEBUG: checking team " + opposition.getName() + " links");
+            if (!team.equals(opposition)) {
+                result.addAll(links.get(opposition));
+                getLogger().info("DEBUG: added " + links.get(opposition).size() + " links");
+            }
+        }
+        return result;
     }
 }

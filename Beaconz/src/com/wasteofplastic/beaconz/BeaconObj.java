@@ -70,14 +70,15 @@ public class BeaconObj extends BeaconzPluginDependent {
     /**
      * Add a link from this beacon to another beacon
      * @param destination
+     * @param player 
      * @return true if control field made, false if the max outbound limit is reached or the link already exists
      */
-    public boolean addOutboundLink(BeaconObj destination) {
+    public LinkResult addOutboundLink(BeaconObj destination) {
         getLogger().info("DEBUG: Trying to add link");
         // There is a max of 8 outgoing links allowed
         if (this.outgoing == 8) {
             getLogger().info("DEBUG: outbound link limit reached");
-            return false;
+            return new LinkResult(0,false,0);
         }
         Line2D newLink = new Line2D.Double(this.location, destination.getLocation());
         // Add link to this beacon
@@ -91,7 +92,7 @@ public class BeaconObj extends BeaconzPluginDependent {
             getLogger().info("DEBUG: Telling dest to add link");
             return destination.addLink(this);
         }
-        return false;
+        return new LinkResult(0,false,0);
     }
 
     /**
@@ -100,53 +101,56 @@ public class BeaconObj extends BeaconzPluginDependent {
      * @param starter
      * @return true if a field is made, false if not
      */
-    public boolean addLink(BeaconObj starter) {
-        getLogger().info("DEBUG: Adding link back from " + this.location + " to " + starter.getLocation());
-        Boolean result = links.add(starter);
-        if (result) {
-            getLogger().info("DEBUG: link added");
-            // Visualize
-            //List<Point2D> points = new ArrayList<Point2D>();
-            Line2D line = new Line2D.Double(starter.getLocation(), location);
-            Point2D current;
-            for (Iterator<Point2D> it = new LineIterator(line); it.hasNext();) {
-                current = it.next();
-                Block b = Beaconz.getBeaconzWorld().getBlockAt((int)current.getX(), Beaconz.getBeaconzWorld().getMaxHeight()-1, (int)current.getY());
-                if (b.getType().equals(Material.AIR)) {
-                    MaterialData md = getScorecard().getBlockID(ownership);
-                    b.setType(md.getItemType());
-                    b.setData(md.getData());
-                }
-            }
-            // Reset result
-            result = false;
-            // Check to see if we have a triangle
-            getLogger().info("DEBUG: Checking for triangles");
-            // Run through each of the beacons this beacon is directly linked to
-            for (BeaconObj directlyLinkedBeacon : links) {
-                getLogger().info("DEBUG: Checking links from " + directlyLinkedBeacon.getLocation());
-                // See if any of the beacons linked to our direct links link back to us
-                for (BeaconObj indirectlyLinkedBeacon : directlyLinkedBeacon.getLinks()) {
-                    if (!indirectlyLinkedBeacon.equals(this)) {
-                        getLogger().info("DEBUG: " + directlyLinkedBeacon.getLocation() + " => " + indirectlyLinkedBeacon.getLocation());
-                        if (indirectlyLinkedBeacon.equals(starter)) {
-                            getLogger().info("DEBUG: Triangle found! ");
-                            // We have a winner
-                            try {
-                                // Result is true if the triangle is made okay
-                                result = getRegister().addTriangle(starter.getLocation(), this.getLocation(),
-                                        directlyLinkedBeacon.getLocation(), ownership);
-                            } catch (IllegalArgumentException e) {
-                                // TODO Auto-generated catch block
-                                e.printStackTrace();
+    public LinkResult addLink(BeaconObj starter) {
+        //getLogger().info("DEBUG: Adding link back from " + this.location + " to " + starter.getLocation());
+        if (!links.add(starter)) {
+            return new LinkResult(0, false, 0);
+        }
+        int fieldsMade = 0;
+        int fieldsFailed = 0;
+        //getLogger().info("DEBUG: link added");
+        // Check to see if we have a triangle
+        getLogger().info("DEBUG: Checking for triangles");
+        // Run through each of the beacons this beacon is directly linked to
+        for (BeaconObj directlyLinkedBeacon : links) {
+            getLogger().info("DEBUG: Checking links from " + directlyLinkedBeacon.getLocation());
+            // See if any of the beacons linked to our direct links link back to us
+            for (BeaconObj indirectlyLinkedBeacon : directlyLinkedBeacon.getLinks()) {
+                if (!indirectlyLinkedBeacon.equals(this)) {
+                    getLogger().info("DEBUG: " + directlyLinkedBeacon.getLocation() + " => " + indirectlyLinkedBeacon.getLocation());
+                    if (indirectlyLinkedBeacon.equals(starter)) {
+                        getLogger().info("DEBUG: Triangle found! ");
+                        // We have a winner
+                        try {
+                            // Result is true if the triangle is made okay, otherwise, don't make the link and return false
+                            if (getRegister().addTriangle(starter.getLocation(), this.getLocation(),
+                                    directlyLinkedBeacon.getLocation(), ownership)) {
+                                fieldsMade++;                             
+                            } else {
+                                fieldsFailed++;
                             }
-                            // There could be more than one, so continue
+                        } catch (IllegalArgumentException e) {
+                            // TODO Auto-generated catch block
+                            e.printStackTrace();
                         }
+                        // There could be more than one, so continue
                     }
                 }
             }
         }
-        return result;
+         // Visualize
+        Line2D line = new Line2D.Double(starter.getLocation(), location);
+        Point2D current;
+        for (Iterator<Point2D> it = new LineIterator(line); it.hasNext();) {
+            current = it.next();
+            Block b = Beaconz.getBeaconzWorld().getBlockAt((int)current.getX(), Beaconz.getBeaconzWorld().getMaxHeight()-1, (int)current.getY());
+            if (b.getType().equals(Material.AIR)) {
+                MaterialData md = getScorecard().getBlockID(ownership);
+                b.setType(md.getItemType());
+                b.setData(md.getData());
+            }
+        }
+        return new LinkResult(fieldsMade, true, fieldsFailed, line);
     }
 
 

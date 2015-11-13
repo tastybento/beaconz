@@ -29,14 +29,14 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         // Test commands
         if (args.length == 0 || args[0].equalsIgnoreCase("help")) {
-          sender.sendMessage("/" + label + " help - this help");
-          sender.sendMessage("/" + label + " - teleport to the beaconz world and join a team");
-          sender.sendMessage("/" + label + " distribution <fraction> - sets the distribution of beacons temporarily");
-          sender.sendMessage("/" + label + " join <team name> - join a team (red or blue)");
-          sender.sendMessage("/" + label + " list - lists all the known beacons");
-          sender.sendMessage("/" + label + " score - lists the score");
-          sender.sendMessage("/" + label + " claim UNOWNED/RED/BLUE - force-claims a beacon");
-          sender.sendMessage("/" + label + " link x z - force-links a beacon you are standing on to one at x,z");
+            sender.sendMessage("/" + label + " help - this help");
+            sender.sendMessage("/" + label + " - teleport to the beaconz world and join a team");
+            sender.sendMessage("/" + label + " distribution <fraction> - sets the distribution of beacons temporarily");
+            sender.sendMessage("/" + label + " join <team name> - join a team (red or blue)");
+            sender.sendMessage("/" + label + " list - lists all the known beacons");
+            sender.sendMessage("/" + label + " score - lists the score");
+            sender.sendMessage("/" + label + " claim UNOWNED/RED/BLUE - force-claims a beacon");
+            sender.sendMessage("/" + label + " link x z - force-links a beacon you are standing on to one at x,z");
         }
         if (args.length == 0 || args[0].equalsIgnoreCase("go")) {
             if (!(sender instanceof Player)) {
@@ -44,9 +44,48 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
                 return true;
             }
             Player player = (Player)sender;
-            if (!player.getWorld().equals(Beaconz.getBeaconzWorld())) {
+
             player.sendMessage(ChatColor.GREEN + "Teleporting you to the world...");
+            // Teleport teams to different locations
             Location teleportTo = Beaconz.getBeaconzWorld().getSpawnLocation();
+            BlockFace blockFace = BlockFace.NORTH;
+            Set<Team> teams = getScorecard().getScoreboard().getTeams();
+            // We allow up to 8 teams
+            int direction = 0;
+            for (Team team : teams) {
+                if (team.equals(getScorecard().getTeam(player))) {
+                    switch (direction) {
+                    case 0:
+                        blockFace = BlockFace.NORTH;
+                        break;
+                    case 1:
+                        blockFace = BlockFace.SOUTH;
+                        break;
+                    case 2:
+                        blockFace = BlockFace.EAST;
+                        break;
+                    case 3:
+                        blockFace = BlockFace.WEST;
+                        break;
+                    case 4:
+                        blockFace = BlockFace.NORTH_EAST;
+                        break;
+                    case 5:
+                        blockFace = BlockFace.NORTH_WEST;
+                        break;
+                    case 6:
+                        blockFace = BlockFace.SOUTH_EAST;
+                        break;
+                    case 7:
+                        blockFace = BlockFace.SOUTH_WEST;
+                        break;
+                    }
+                }
+                direction++;
+            }
+            teleportTo = teleportTo.getBlock().getRelative(blockFace, Settings.size / 4).getLocation();
+            teleportTo = Beaconz.getBeaconzWorld().getHighestBlockAt(teleportTo).getLocation().add(0.5, 0, 0.5);
+            teleportTo.getBlock().getRelative(BlockFace.DOWN).setType(Material.BEDROCK);
             boolean found = false;
             if (Settings.randomSpawn) {
                 Random rand = new Random();
@@ -76,19 +115,17 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
             player.teleport(teleportTo);
             if (getScorecard().getTeam(player) == null) {
                 Random rand = new Random();
-                Set<Team> teams = getScorecard().getScoreboard().getTeams();
+                teams = getScorecard().getScoreboard().getTeams();
                 int r = rand.nextInt(teams.size());
                 for (Team t: teams) {
                     if (r-- == 0) {
                         t.addPlayer(player);
                         player.sendMessage("You are now a member of " + t.getDisplayName() + " team!");
                         getBeaconzPlugin().getServer().dispatchCommand(getBeaconzPlugin().getServer().getConsoleSender(),
-                            "title " + player.getName() + " title {text:\"" + t.getDisplayName() + " team!\", color:gold}");
+                                "title " + player.getName() + " title {text:\"" + t.getDisplayName() + " team!\", color:gold}");
                         break;
                     }
                 }
-            }
-            return true;
             }
             return true;
         } else if (args[0].equalsIgnoreCase("distribution")) {
@@ -96,9 +133,9 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
                 try {
                     double dist = Double.valueOf(args[1]);
                     if (dist > 0D && dist < 1D) {
-                    Settings.distribution = dist;
-                    sender.sendMessage(ChatColor.GREEN + "Setting beacon distribution to " + dist);
-                    return true;
+                        Settings.distribution = dist;
+                        sender.sendMessage(ChatColor.GREEN + "Setting beacon distribution to " + dist);
+                        return true;
                     }
                 } catch (Exception e) {}
             }
@@ -122,6 +159,7 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
                     return true;
                 }
                 team.addPlayer((Player)sender);
+                ((Player)sender).setScoreboard(getScorecard().getScoreboard());
                 sender.sendMessage(ChatColor.GREEN + "You joined " + team.getDisplayName());
                 return true;
             }
@@ -176,47 +214,6 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
             }
             return true;
         }
-        if (args[0].equalsIgnoreCase("link")) {
-            if (!(sender instanceof Player)) {
-                sender.sendMessage("Only players can link beacons");
-            }
-            // Link a beacon to another beacon
-            if (args.length != 3) {
-                sender.sendMessage(ChatColor.RED + "link x z");
-                return true;
-            }
-            Player p = (Player)sender;
-            Point2D from = new Point2D.Double(p.getLocation().getBlockX(), p.getLocation().getBlockZ());
-            if (getRegister().getBeaconRegister().containsKey(from)) {
-                BeaconObj start = getRegister().getBeaconRegister().get(from);
-                if (start.getOutgoing() == 8) {
-                    sender.sendMessage(ChatColor.RED + "beacon has 8 outbound links already!");
-                    return true;
-                }
-                Point2D to = new Point2D.Double(Integer.valueOf(args[1]), Integer.valueOf(args[2]));
-                if (to.equals(from)) {
-                    p.sendMessage("You cannot link a beacon to itself!");
-                    return true;
-                }
-                p.sendMessage("Linking beacon from " + from.getX() + " " + from.getY() + " to " + to.getX() + " " + to.getY());
-                if (getRegister().getBeaconRegister().containsKey(to)) {
-                    // Link a beacon
-
-                    BeaconObj end = getRegister().getBeaconRegister().get(to);
-                    boolean result = start.addOutboundLink(end);
-                    p.sendMessage(ChatColor.GREEN + "Link created!");
-                    p.sendMessage(ChatColor.GREEN + "This beacon now has " + start.getOutgoing() + " links");
-                    p.sendMessage(ChatColor.GREEN +  getRegister().getBeaconRegister().get(from).getLinks().toString());
-                    if (result) {
-                        p.sendMessage(ChatColor.GREEN + "Control field created! New score = " + getRegister().getScore());
-                    }
-                } else {
-                    p.sendMessage(ChatColor.RED + "Destination is not a beacon");
-                }
-            } else {
-                p.sendMessage(ChatColor.RED + "You are not standing on a beacon");
-            }
-        }
         return true;
     }
 
@@ -243,7 +240,7 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
         //Bukkit.getLogger().info("DEBUG: space 2 = " + space2.getType());
         // Portals are not "safe"
         if (space1.getType() == Material.PORTAL || ground.getType() == Material.PORTAL || space2.getType() == Material.PORTAL
-            || space1.getType() == Material.ENDER_PORTAL || ground.getType() == Material.ENDER_PORTAL || space2.getType() == Material.ENDER_PORTAL) {
+                || space1.getType() == Material.ENDER_PORTAL || ground.getType() == Material.ENDER_PORTAL || space2.getType() == Material.ENDER_PORTAL) {
             return false;
         }
         // If ground is AIR, then this is either not good, or they are on slab,
@@ -271,7 +268,7 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
             //Bukkit.getLogger().info("DEBUG: trapdoor closed");
         }
         if (ground.getType().equals(Material.CACTUS) || ground.getType().equals(Material.BOAT) || ground.getType().equals(Material.FENCE)
-            || ground.getType().equals(Material.NETHER_FENCE) || ground.getType().equals(Material.SIGN_POST) || ground.getType().equals(Material.WALL_SIGN)) {
+                || ground.getType().equals(Material.NETHER_FENCE) || ground.getType().equals(Material.SIGN_POST) || ground.getType().equals(Material.WALL_SIGN)) {
             // Bukkit.getLogger().info("DEBUG: cactus");
             return false;
         }

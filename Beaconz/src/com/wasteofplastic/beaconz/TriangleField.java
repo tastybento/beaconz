@@ -1,7 +1,10 @@
 package com.wasteofplastic.beaconz;
 
 import java.awt.Polygon;
+import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.bukkit.scoreboard.Team;
 
@@ -12,12 +15,13 @@ import org.bukkit.scoreboard.Team;
  *
  */
 public class TriangleField {
-    public Team faction;
+    public Team owner;
     public Point2D a;
     public Point2D b;
     public Point2D c;
     public double area;
     private Polygon triangle;
+    private Set<Line2D> sides;
 
     /**
      * Fields are 2D. Only x and z coordinates count
@@ -27,7 +31,7 @@ public class TriangleField {
      * @param owner
      */
     public TriangleField(Point2D point2d, Point2D point2d2, Point2D point2d3, Team owner) {
-        this.faction = owner;
+        this.owner = owner;
         this.triangle = new Polygon();
         this.triangle.addPoint((int)point2d.getX(), (int)point2d.getY());
         this.triangle.addPoint((int)point2d2.getX(), (int)point2d2.getY());
@@ -35,11 +39,15 @@ public class TriangleField {
         this.a = point2d;
         this.b = point2d2;
         this.c = point2d3;
-        System.out.println("DEBUG: Control field made " + a.toString() + " " + b.toString() + " " + c.toString());
+        this.sides = new HashSet<Line2D>();
+        sides.add(new Line2D.Double(a,b));
+        sides.add(new Line2D.Double(b,c));
+        sides.add(new Line2D.Double(c,a));
+        //System.out.println("DEBUG: Control field made " + a.toString() + " " + b.toString() + " " + c.toString());
         double d = (a.getX() * (b.getY() - c.getY()) + b.getX() * (c.getY() - a.getY())
             + c.getX() * (a.getY() - b.getY())) / 2D;
         this.area = Math.abs(d);
-        System.out.println("DEBUG: area = " + area);
+        //System.out.println("DEBUG: area = " + area);
     }
     
     /* (non-Javadoc)
@@ -50,7 +58,7 @@ public class TriangleField {
         //System.out.println("DEBUG: hashCode " + a.toString() + " " + b.toString() + " " + c.toString());
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((faction == null) ? 0 : faction.hashCode());
+        result = prime * result + ((owner == null) ? 0 : owner.hashCode());
         result = prime * result + ((a == null) ? 0 : a.hashCode());
         result = prime * result + ((b == null) ? 0 : b.hashCode());
         result = prime * result + ((c == null) ? 0 : c.hashCode());
@@ -87,17 +95,17 @@ public class TriangleField {
     }
     
     /**
-     * @return the faction
+     * @return the owner
      */
-    public Team getFaction() {
-    return faction;
+    public Team getOwner() {
+    return owner;
     }
 
     /**
-     * @param faction the faction to set
+     * @param owner the owner to set
      */
-    public void setFaction(Team faction) {
-    this.faction = faction;
+    public void setOwner(Team owner) {
+    this.owner = owner;
     }
     
     public int getArea() {
@@ -106,7 +114,7 @@ public class TriangleField {
 
     public Team contains(int x, int y) {
         if (triangle.contains(x,y)) {
-            return faction;
+            return owner;
         }
         return null;
     }
@@ -118,7 +126,7 @@ public class TriangleField {
     @Override
     public String toString() {
     return (int)a.getX() + ":" + (int)a.getY() + ":" + (int)b.getX() + ":" + (int)b.getY() + ":"
-        + (int)c.getX() + ":" + (int)c.getY() + ":" + faction.getName();
+        + (int)c.getX() + ":" + (int)c.getY() + ":" + owner.getName();
     }
 
     /**
@@ -128,6 +136,27 @@ public class TriangleField {
      */
     public boolean hasVertex(Point2D point) {
         if (a.equals(point) || b.equals(point) || c.equals(point)) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Get triangle sides
+     * @return the sides of the triangle
+     */
+    public Set<Line2D> getSides() {
+        return sides;
+    }
+
+    /**
+     * Checks whether this triangle contains another triangle or overlaps
+     * Will be true if any point on the triangle is inside the triangle
+     * @param triangle2
+     * @return
+     */
+    public boolean contains(TriangleField triangle2) {
+        if (triangle.contains(triangle2.a) || triangle.contains(triangle2.b) || triangle.contains(triangle2.c)) {
             return true;
         }
         return false;

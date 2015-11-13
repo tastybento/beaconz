@@ -22,6 +22,14 @@ public class BeaconPopulator extends BlockPopulator {
 
     @Override
     public void populate(World world, Random unused, Chunk source) {
+        // Don't bother to make anything if it is outside the border. Make it just a bit bigger than the border
+        int minX = (Settings.xCenter - Settings.size/2) / 16 - 1;
+        int minZ = (Settings.zCenter - Settings.size/2) / 16 - 1;
+        int maxX = (Settings.xCenter + Settings.size/2) / 16 + 1;
+        int maxZ = (Settings.zCenter + Settings.size/2) / 16 + 1;
+        if (source.getX() < minX || source.getX() > maxX || source.getZ() < minZ || source.getZ() > maxZ) {
+            return;
+        }
         //plugin.getLogger().info("DEBUG: Chunk x=" + source.getX() + " z=" + source.getZ() + " seed=" + world.getSeed() + " seed adj =" + Settings.seedAdjustment);
         // pseudo-randomly place a beacon
         XorShift gen=new XorShift(new long[] {

@@ -71,8 +71,8 @@ public class Beaconz extends JavaPlugin {
         if (scorecard != null) {
             scorecard.saveTeamMembers();
         }
-        getConfig().set("world.distribution", Settings.distribution);
-        saveConfig();
+        //getConfig().set("world.distribution", Settings.distribution);
+        //saveConfig();
     }
 
     /**
@@ -102,10 +102,10 @@ public class Beaconz extends JavaPlugin {
     @SuppressWarnings("deprecation")
     public void loadConfig() {
         Settings.worldName = getConfig().getString("world.name", "beaconz");
-        Settings.distribution = getConfig().getDouble("world.distribution", 0.01D);
+        Settings.distribution = getConfig().getDouble("world.distribution", 0.05D);
         Settings.size = getConfig().getInt("world.size",0);
-        Settings.xCenter = getConfig().getInt("world.xcenter",0);
-        Settings.zCenter = getConfig().getInt("world.zcenter",0);
+        Settings.xCenter = getConfig().getInt("world.xCenter",0);
+        Settings.zCenter = getConfig().getInt("world.zCenter",0);
         Settings.randomSpawn = getConfig().getBoolean("world.randomspawn", true);
         Settings.seedAdjustment = getConfig().getLong("world.seedadjustment", 0);
         Settings.hackCoolDown = getConfig().getInt("world.hackcooldown", 1) * 60000; // Minutes in millis
@@ -269,6 +269,7 @@ public class Beaconz extends JavaPlugin {
             beaconzWorld = WorldCreator.name(Settings.worldName).type(WorldType.NORMAL).environment(World.Environment.NORMAL).createWorld();
             beaconzWorld.getPopulators().add(bp);
         }
+        beaconzWorld.setSpawnLocation(Settings.xCenter, beaconzWorld.getHighestBlockYAt(Settings.xCenter, Settings.zCenter), Settings.zCenter);
         beaconzWorld.getWorldBorder().setCenter(Settings.xCenter, Settings.zCenter);
         if (Settings.size > 0) {
             beaconzWorld.getWorldBorder().setSize(Settings.size);
