@@ -782,7 +782,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                 } else {
                     // Damage player
                     int num = (int) (beacon.getHackTimer() + Settings.hackCoolDown - System.currentTimeMillis())/50;
-                    player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_DIGGING, num,10));
+                    player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_DIGGING, num,1));
                     getLogger().info("DEBUG: Applying mining fatigue for " + num + " ticks");
                 }
             }

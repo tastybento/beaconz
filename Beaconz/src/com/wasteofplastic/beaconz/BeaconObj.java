@@ -8,11 +8,14 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.material.MaterialData;
 import org.bukkit.scoreboard.Team;
+
+import com.wasteofplastic.particleeffect.ParticleEffect;
 
 public class BeaconObj extends BeaconzPluginDependent {
     private Point2D location;
@@ -308,8 +311,8 @@ public class BeaconObj extends BeaconzPluginDependent {
      */
     public boolean isClear() {
         Block beacon = Beaconz.getBeaconzWorld().getBlockAt((int)location.getX(), height, (int)location.getY());
-        getLogger().info("DEBUG: block type is " + beacon.getType());
-        getLogger().info("DEBUG: location is " + (int)location.getX() + " " + height + " " + (int)location.getY());
+        //getLogger().info("DEBUG: block type is " + beacon.getType());
+        //getLogger().info("DEBUG: location is " + (int)location.getX() + " " + height + " " + (int)location.getY());
         if (beacon.getRelative(BlockFace.NORTH).getType().equals(Material.AIR)
                 && beacon.getRelative(BlockFace.SOUTH).getType().equals(Material.AIR)
                 && beacon.getRelative(BlockFace.EAST).getType().equals(Material.AIR)

@@ -232,7 +232,7 @@ public class Register extends BeaconzPluginDependent {
                 // Check if any triangle or lines intersect
                 for (TriangleField triangleField : triangleFields) {
                     // Check if triangle is inside any of the known triangles
-                    if (triangle.getOwner() != triangleField.getOwner() && triangleField.contains(triangle) || triangle.contains(triangleField)) {
+                    if (!triangle.getOwner().equals(triangleField.getOwner()) && (triangleField.contains(triangle) || triangle.contains(triangleField))) {
                         getLogger().info("DEBUG: Enemy triangle found inside triangle!");
                         return false;
                     }
