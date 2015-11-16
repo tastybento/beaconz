@@ -16,9 +16,9 @@ import org.bukkit.plugin.java.JavaPlugin;
 public class Beaconz extends JavaPlugin {
     BeaconPopulator beaconPop;
     Register register;
-    static World beaconzWorld;
+    World beaconzWorld;
     private static Beaconz plugin;
-    static BlockPopulator bp;
+    static BlockPopulator beaconPopulator;
     private Scorecard scorecard;
 
     @Override
@@ -28,38 +28,43 @@ public class Beaconz extends JavaPlugin {
         saveDefaultConfig();
         loadConfig();
 
-        //getServer().getPluginManager().registerEvents(new WorldLoader(this), this);
-
         // Register command(s)
         getCommand("beaconz").setExecutor(new CmdHandler(this));
 
-        // Create the block populator
-        bp = new BeaconPopulator(this);
+        //getServer().getPluginManager().registerEvents(new WorldLoader(this), this);
+
 
         // Run commands that need to be run 1 tick after start
         getServer().getScheduler().runTask(this, new Runnable() {
 
             public void run() {
-            Beaconz.getBeaconzWorld();
-            // Load the scorecard
-            scorecard = new Scorecard(plugin);
-            // Add teams
-            MaterialData teamBlock = new MaterialData(Material.STAINED_GLASS,(byte) 11);
-            scorecard.addTeam("Blue", teamBlock);
-            teamBlock = new MaterialData(Material.STAINED_GLASS,(byte) 14);
-            scorecard.addTeam("Red", teamBlock);
 
-            // Load the beacon register
-            register = new Register(plugin);
-            register.loadRegister();
+                // Load the scorecard - cannot be done until after the server starts
+                scorecard = new Scorecard(plugin);
+                // Add teams
+                MaterialData teamBlock = new MaterialData(Material.STAINED_GLASS,(byte) 11);
+                scorecard.addTeam("Blue", teamBlock);
+                teamBlock = new MaterialData(Material.STAINED_GLASS,(byte) 14);
+                scorecard.addTeam("Red", teamBlock);
 
-            // Load the teams
-            scorecard.loadTeamMembers();
+                // Load the beacon register
+                register = new Register(plugin);
+                register.loadRegister();
 
-            // Register the listeners - block break etc.
-            BeaconListeners ev = new BeaconListeners(plugin);
-            getServer().getPluginManager().registerEvents(ev, plugin);
-        }});
+                // Load the teams
+                scorecard.loadTeamMembers();
+                
+                // Create the block populator
+                if (beaconPopulator == null) {
+                    getBp();
+                }
+                // Create the world
+                getBeaconzWorld();
+
+                // Register the listeners - block break etc.
+                BeaconListeners ev = new BeaconListeners(plugin);
+                getServer().getPluginManager().registerEvents(ev, plugin);
+            }});
     }
 
     @Override
@@ -79,21 +84,24 @@ public class Beaconz extends JavaPlugin {
      * @return the register
      */
     public Register getRegister() {
-    return register;
+        return register;
     }
 
     /**
      * @return the bp
      */
     public BlockPopulator getBp() {
-    return bp;
+        if (beaconPopulator == null) {
+            beaconPopulator = new BeaconPopulator(this);
+        }
+        return beaconPopulator;
     }
 
     /**
      * @return the scorecard
      */
     public Scorecard getScorecard() {
-    return scorecard;
+        return scorecard;
     }
 
     /**
@@ -171,7 +179,7 @@ public class Beaconz extends JavaPlugin {
                         Material itemType = Material.valueOf(split[0]);
                         ItemStack item = new ItemStack(itemType, qty);
                         item.setDurability((short)durability);
-                    Settings.enemyGoodies.put(chance, item);
+                        Settings.enemyGoodies.put(chance, item);
                     } catch (Exception e) {
                         getLogger().severe("Could not parse enemy beacon goodie material " + split[0] + " skipping...");
                     }
@@ -262,13 +270,22 @@ public class Beaconz extends JavaPlugin {
         }
     }
 
-    public static World getBeaconzWorld() {
+    /**
+     * Get the world that Beaconz runs in and if it doesn't exist, make it
+     * @return
+     */
+    public World getBeaconzWorld() {
         // Check to see if the world exists, and if not, make it
         if (beaconzWorld == null) {
             // World doesn't exist, so make it
-            plugin.getLogger().info("World is '" + Settings.worldName + "'");
-            beaconzWorld = WorldCreator.name(Settings.worldName).type(WorldType.NORMAL).environment(World.Environment.NORMAL).createWorld();
-            beaconzWorld.getPopulators().add(bp);
+            getLogger().info("World is '" + Settings.worldName + "'");
+            try {
+                beaconzWorld = WorldCreator.name(Settings.worldName).type(WorldType.NORMAL).environment(World.Environment.NORMAL).createWorld();
+            } catch (Exception e) {
+                getLogger().info("Could not make world yet..");
+                return null;
+            }
+            beaconzWorld.getPopulators().add(getBp());
         }
         beaconzWorld.setSpawnLocation(Settings.xCenter, beaconzWorld.getHighestBlockYAt(Settings.xCenter, Settings.zCenter), Settings.zCenter);
         beaconzWorld.getWorldBorder().setCenter(Settings.xCenter, Settings.zCenter);

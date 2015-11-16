@@ -52,8 +52,9 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onInit(WorldInitEvent event)
     {
-        if (event.getWorld().equals(Beaconz.getBeaconzWorld())) {
-            if (!Beaconz.getBeaconzWorld().getPopulators().contains(getBlockPopulator())) {
+        //Bukkit.getLogger().info("On World Init called");
+        if (event.getWorld().equals(getBeaconzWorld())) {
+            if (!getBeaconzWorld().getPopulators().contains(getBlockPopulator())) {
                 event.getWorld().getPopulators().add(getBlockPopulator());
             }
         }
@@ -69,7 +70,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
     public void onBeaconDamage(BlockDamageEvent event) {
         //getLogger().info("DEBUG: " + event.getEventName());
         World world = event.getBlock().getWorld();
-        if (!world.equals(Beaconz.getBeaconzWorld())) {
+        if (!world.equals(getBeaconzWorld())) {
             return;
         }
         // Check if the block is a beacon or the surrounding pyramid
@@ -113,7 +114,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
     public void onExplode(EntityExplodeEvent event) {
         //getLogger().info("DEBUG: " + event.getEventName());
         World world = event.getLocation().getWorld();
-        if (!world.equals(Beaconz.getBeaconzWorld())) {
+        if (!world.equals(getBeaconzWorld())) {
             return;
         }
         // Check if the block is a beacon or the surrounding pyramid and remove it from the damaged blocks
@@ -132,7 +133,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onBlockSpread(BlockSpreadEvent event) {
         World world = event.getBlock().getWorld();
-        if (!world.equals(Beaconz.getBeaconzWorld())) {
+        if (!world.equals(getBeaconzWorld())) {
             //getLogger().info("DEBUG: not right world");
             return;
         }
@@ -158,7 +159,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onPistonPush(BlockPistonExtendEvent event) {
         World world = event.getBlock().getWorld();
-        if (!world.equals(Beaconz.getBeaconzWorld())) {
+        if (!world.equals(getBeaconzWorld())) {
             //getLogger().info("DEBUG: not right world");
             return;
         }
@@ -184,7 +185,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
     public void onBucketEmpty(final PlayerBucketEmptyEvent event) {
         //getLogger().info("DEBUG: " + event.getEventName());
         World world = event.getBlockClicked().getWorld();
-        if (!world.equals(Beaconz.getBeaconzWorld())) {
+        if (!world.equals(getBeaconzWorld())) {
             //getLogger().info("DEBUG: not right world");
             return;
         }
@@ -201,14 +202,14 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
      */
     @EventHandler(priority = EventPriority.LOW)
     public void onJoin(final PlayerJoinEvent event) {
-        if (event.getPlayer().getWorld().equals(Beaconz.beaconzWorld)) {
+        if (event.getPlayer().getWorld().equals(getBeaconzWorld())) {
             event.getPlayer().setScoreboard(getScorecard().getScoreboard());
         }
     }
 
     @EventHandler(priority = EventPriority.LOW)
     public void onWorldChange(final PlayerChangedWorldEvent event) {
-        if (event.getPlayer().getWorld().equals(Beaconz.beaconzWorld)) {
+        if (event.getPlayer().getWorld().equals(getBeaconzWorld())) {
             event.getPlayer().setScoreboard(getScorecard().getScoreboard());
 
         } 
@@ -222,7 +223,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
     public void onLiquidFlow(final BlockFromToEvent event) {
         //getLogger().info("DEBUG: " + event.getEventName());
         World world = event.getBlock().getWorld();
-        if (!world.equals(Beaconz.getBeaconzWorld())) {
+        if (!world.equals(getBeaconzWorld())) {
             //getLogger().info("DEBUG: not right world");
             return;
         }
@@ -244,7 +245,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
     public void onBlockPlace(BlockPlaceEvent event) {
         //getLogger().info("DEBUG: " + event.getEventName());
         World world = event.getBlock().getWorld();
-        if (!world.equals(Beaconz.getBeaconzWorld())) {
+        if (!world.equals(getBeaconzWorld())) {
             //getLogger().info("DEBUG: not right world");
             return;
         }
@@ -265,7 +266,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         if (beacon == null) {
             return;
         }
-        getLogger().info("DEBUG: This is a beacon");
+        //getLogger().info("DEBUG: This is a beacon");
         Player player = event.getPlayer();
         // Get the player's team
         Team team = getScorecard().getTeam(player);
@@ -666,7 +667,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
     public void onBeaconBreak(BlockBreakEvent event) {
         //getLogger().info("DEBUG: " + event.getEventName());
         World world = event.getBlock().getWorld();
-        if (!world.equals(Beaconz.getBeaconzWorld())) {
+        if (!world.equals(getBeaconzWorld())) {
             //getLogger().info("DEBUG: not right world");
             return;
         }
@@ -676,7 +677,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         if (beacon == null) {
             return;
         }
-        getLogger().info("DEBUG: This is a beacon");
+        //getLogger().info("DEBUG: This is a beacon");
         Player player = event.getPlayer();
         // Get the player's team
         Team team = getScorecard().getTeam(player);
@@ -813,7 +814,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             return;
         }
         World world = event.getClickedBlock().getWorld();
-        if (!world.equals(Beaconz.getBeaconzWorld())) {
+        if (!world.equals(getBeaconzWorld())) {
             //getLogger().info("DEBUG: not right world");
             return;
         }
@@ -844,7 +845,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             // Make a map!
             player.sendMessage(ChatColor.GREEN + "You made a beacon map! Take it to another beacon to link them up!");
             int amount = event.getItem().getAmount() - 1;
-            MapView map = Bukkit.createMap(Beaconz.beaconzWorld);
+            MapView map = Bukkit.createMap(getBeaconzWorld());
             //map.setWorld(getBeaconzWorld());
             map.setCenterX(beacon.getX());
             map.setCenterZ(beacon.getZ());
@@ -940,7 +941,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onPlayerMove(PlayerMoveEvent event) {
         World world = event.getTo().getWorld();
-        if (!world.equals(Beaconz.beaconzWorld)) {
+        if (!world.equals(getBeaconzWorld())) {
             return;
         }
         // Only proceed if there's been a change in X or Z coords

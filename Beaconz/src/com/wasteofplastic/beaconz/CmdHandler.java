@@ -47,7 +47,7 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
 
             player.sendMessage(ChatColor.GREEN + "Teleporting you to the world...");
             // Teleport teams to different locations
-            Location teleportTo = Beaconz.getBeaconzWorld().getSpawnLocation();
+            Location teleportTo = getBeaconzWorld().getSpawnLocation();
             BlockFace blockFace = BlockFace.NORTH;
             Set<Team> teams = getScorecard().getScoreboard().getTeams();
             // We allow up to 8 teams
@@ -84,7 +84,7 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
                 direction++;
             }
             teleportTo = teleportTo.getBlock().getRelative(blockFace, Settings.size / 4).getLocation();
-            teleportTo = Beaconz.getBeaconzWorld().getHighestBlockAt(teleportTo).getLocation().add(0.5, 0, 0.5);
+            teleportTo = getBeaconzWorld().getHighestBlockAt(teleportTo).getLocation().add(0.5, 0, 0.5);
             teleportTo.getBlock().getRelative(BlockFace.DOWN).setType(Material.BEDROCK);
             boolean found = false;
             if (Settings.randomSpawn) {
@@ -100,10 +100,10 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
                     //teleportTo = getBeaconzWorld().getHighestBlockAt(x, z).getLocation();
                     //teleportTo.getChunk().load();
                     // Seach the chunk in this area
-                    ChunkSnapshot searchChunk = Beaconz.getBeaconzWorld().getChunkAt(x/16, z/16).getChunkSnapshot();
+                    ChunkSnapshot searchChunk = getBeaconzWorld().getChunkAt(x/16, z/16).getChunkSnapshot();
                     for (int xx = 0; xx < 16; xx++) {
                         for (int zz = 0; zz < 16; zz++) {
-                            teleportTo = Beaconz.beaconzWorld.getBlockAt(x + xx, searchChunk.getHighestBlockYAt(xx, zz), z +zz).getLocation();
+                            teleportTo = getBeaconzWorld().getBlockAt(x + xx, searchChunk.getHighestBlockYAt(xx, zz), z +zz).getLocation();
                             if (isSafeLocation(teleportTo)) {
                                 found = true;
                                 break;

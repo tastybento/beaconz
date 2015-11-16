@@ -165,7 +165,7 @@ public class Register extends BeaconzPluginDependent {
                 // Devisualize - TODO: make async or something
                 for (Iterator<Point2D> lineIt = new LineIterator(line); lineIt.hasNext();) {
                     Point2D current = lineIt.next();
-                    Block b = Beaconz.getBeaconzWorld().getBlockAt((int)current.getX(), Beaconz.getBeaconzWorld().getMaxHeight()-1, (int)current.getY());
+                    Block b = getBeaconzWorld().getBlockAt((int)current.getX(), getBeaconzWorld().getMaxHeight()-1, (int)current.getY());
                     b.setType(Material.AIR);
                 }
                 it.remove();
@@ -194,7 +194,7 @@ public class Register extends BeaconzPluginDependent {
     public void addBeacon(Team owner, int x, int y, int z) {
         // Create a beacon
         Point2D location = new Point2D.Double(x,z);
-        getLogger().info("DEBUG: registered beacon at " + location + " status " + owner);
+        //getLogger().info("DEBUG: registered beacon at " + location + " status " + owner);
         BeaconObj p = new BeaconObj(getBeaconzPlugin(), x, y, z, owner);
         beaconRegister.put(location, p);
     }
@@ -207,15 +207,15 @@ public class Register extends BeaconzPluginDependent {
      * @return 
      */
     public Boolean addTriangle(Point2D point2d, Point2D point2d2, Point2D point2d3, Team owner)  throws IllegalArgumentException {
-        getLogger().info("DEBUG: Adding triangle at " + point2d + " " + point2d2 + " " + point2d3);
+        //getLogger().info("DEBUG: Adding triangle at " + point2d + " " + point2d2 + " " + point2d3);
         // Check that locations are known beacons
         if (beaconRegister.containsKey(point2d) && beaconRegister.containsKey(point2d2) && beaconRegister.containsKey(point2d3)) {
-            getLogger().info("DEBUG: All three beacons are in the register");
+            //getLogger().info("DEBUG: All three beacons are in the register");
             // Check the beacons are all owned by the same faction
             if (beaconRegister.get(point2d).getOwnership().equals(owner)
                     && beaconRegister.get(point2d2).getOwnership().equals(owner)
                     && beaconRegister.get(point2d3).getOwnership().equals(owner)) {
-                getLogger().info("DEBUG: All beacons are owned by same faction");
+                //getLogger().info("DEBUG: All beacons are owned by same faction");
                 TriangleField triangle = new TriangleField(point2d, point2d2, point2d3, owner);
                 // Check to see if this control field would overlap enemy-held beacons
                 // Allow this for now
@@ -233,7 +233,7 @@ public class Register extends BeaconzPluginDependent {
                 for (TriangleField triangleField : triangleFields) {
                     // Check if triangle is inside any of the known triangles
                     if (!triangle.getOwner().equals(triangleField.getOwner()) && (triangleField.contains(triangle) || triangle.contains(triangleField))) {
-                        getLogger().info("DEBUG: Enemy triangle found inside triangle!");
+                        //getLogger().info("DEBUG: Enemy triangle found inside triangle!");
                         return false;
                     }
                 }
@@ -242,7 +242,7 @@ public class Register extends BeaconzPluginDependent {
                         for (Line2D link : linkSet.getValue()) {
                             for (Line2D side : triangle.getSides()) {
                                 if (side.intersectsLine(link)) {
-                                    getLogger().info("DEBUG: Enemy beacon link found inside triangle!");
+                                    //getLogger().info("DEBUG: Enemy beacon link found inside triangle!");
                                     return false;
                                 }
                             }
@@ -250,7 +250,7 @@ public class Register extends BeaconzPluginDependent {
                     }
                 }
                 if (triangleFields.add(triangle)) {
-                    getLogger().info("DEBUG: Added control field!");
+                    //getLogger().info("DEBUG: Added control field!");
                     // New control field, add to score
                     if (score.containsKey(owner)) {
                         int s = score.get(owner);
@@ -259,17 +259,17 @@ public class Register extends BeaconzPluginDependent {
                     } else {
                         score.put(owner, triangle.getArea());
                     }
-                    getLogger().info("DEBUG: New score is " + triangle.getArea());
+                    //getLogger().info("DEBUG: New score is " + triangle.getArea());
                     return true;
                 } else {
-                    getLogger().info("DEBUG: Control field already exists");
+                   // getLogger().info("DEBUG: Control field already exists");
                 }
             } else {
-                getLogger().info("DEBUG: beacons are not owned by the same faction");
+                //getLogger().info("DEBUG: beacons are not owned by the same faction");
                 throw new IllegalArgumentException("beacons are not owned by the same faction");
             }
         } else {
-            getLogger().info("DEBUG: Location argument is not a beacon");
+            //getLogger().info("DEBUG: Location argument is not a beacon");
             throw new IllegalArgumentException("Location argument is not a beacon");
         }
         return false;
@@ -423,12 +423,12 @@ public class Register extends BeaconzPluginDependent {
         while (it.hasNext()) {
             TriangleField triangle = it.next();
             if (triangle.hasVertex(beacon.getLocation())) {
-                getLogger().info("DEBUG: this beacon was part of a triangle");
+                //getLogger().info("DEBUG: this beacon was part of a triangle");
                 // Remove score
                 if (score.containsKey(oldOwner)) {
                     int sc = triangle.getArea();
-                    getLogger().info("DEBUG: Removing score " + sc + " from " + oldOwner.getDisplayName()
-                            + " team's score of " + score.get(beacon.getOwnership()));
+                    //getLogger().info("DEBUG: Removing score " + sc + " from " + oldOwner.getDisplayName()
+                    //        + " team's score of " + score.get(beacon.getOwnership()));
                     int newScore = score.get(oldOwner) - sc;
                     score.put(oldOwner,newScore);
                 }
@@ -459,7 +459,7 @@ public class Register extends BeaconzPluginDependent {
      */
     public void addBeaconMap(Short index, BeaconObj beacon) {
         beacon.setId(index);
-        getLogger().info("DEBUG: storing beacon map # " + index + " for beacon at "+ beacon.getLocation());
+        //getLogger().info("DEBUG: storing beacon map # " + index + " for beacon at "+ beacon.getLocation());
         this.beaconMaps.put(index, beacon);
     }
 
@@ -508,12 +508,12 @@ public class Register extends BeaconzPluginDependent {
      */
     public Set<Line2D> getEnemyLinks(Team team) {
         Set<Line2D> result = new HashSet<Line2D>();
-        getLogger().info("DEBUG: There are " + links.keySet().size() + " teams in the link database");
+        //getLogger().info("DEBUG: There are " + links.keySet().size() + " teams in the link database");
         for (Team opposition : links.keySet()) {
-            getLogger().info("DEBUG: checking team " + opposition.getName() + " links");
+            //getLogger().info("DEBUG: checking team " + opposition.getName() + " links");
             if (!team.equals(opposition)) {
                 result.addAll(links.get(opposition));
-                getLogger().info("DEBUG: added " + links.get(opposition).size() + " links");
+                //getLogger().info("DEBUG: added " + links.get(opposition).size() + " links");
             }
         }
         return result;

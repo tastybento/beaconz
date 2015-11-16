@@ -8,14 +8,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.material.MaterialData;
 import org.bukkit.scoreboard.Team;
-
-import com.wasteofplastic.particleeffect.ParticleEffect;
 
 public class BeaconObj extends BeaconzPluginDependent {
     private Point2D location;
@@ -24,8 +21,6 @@ public class BeaconObj extends BeaconzPluginDependent {
     private int height;
     private long hackTimer;
     private Team ownership;
-    private List<Resonator> resonators;
-    private List<Mod> mods;
     private Set<BeaconObj> links;
     private int outgoing;
     private Integer id = null;
@@ -39,8 +34,6 @@ public class BeaconObj extends BeaconzPluginDependent {
         this.height = y;
         this.hackTimer = System.currentTimeMillis();
         this.ownership = owner;
-        this.resonators = new ArrayList<Resonator>();
-        this.mods = new ArrayList<Mod>();
         this.links = new HashSet<BeaconObj>();
         this.outgoing = 0;
         this.newBeacon = true;
@@ -146,7 +139,7 @@ public class BeaconObj extends BeaconzPluginDependent {
         Point2D current;
         for (Iterator<Point2D> it = new LineIterator(line); it.hasNext();) {
             current = it.next();
-            Block b = Beaconz.getBeaconzWorld().getBlockAt((int)current.getX(), Beaconz.getBeaconzWorld().getMaxHeight()-1, (int)current.getY());
+            Block b = getBeaconzWorld().getBlockAt((int)current.getX(), getBeaconzWorld().getMaxHeight()-1, (int)current.getY());
             if (b.getType().equals(Material.AIR)) {
                 MaterialData md = getScorecard().getBlockID(ownership);
                 b.setType(md.getItemType());
@@ -181,59 +174,6 @@ public class BeaconObj extends BeaconzPluginDependent {
      */
     public void setOwnership(Team ownership) {
         this.ownership = ownership;
-    }
-
-    /**
-     * @return the resonators
-     */
-    public List<Resonator> getResonators() {
-        return resonators;
-    }
-
-    public boolean addResonator(Resonator resonator) {
-        // Check that this player can add a resonator or not
-        if (resonators.size() < 9) {
-            resonators.add(resonator);
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * @param resonators the resonators to set
-     */
-    public void setResonators(List<Resonator> resonators) {
-        this.resonators = resonators;
-    }
-
-    /**
-     * @return the mods
-     */
-    public List<Mod> getMods() {
-        return mods;
-    }
-
-    public boolean addMod(Mod mod) {
-        // Players can only add up to 2 mods each, there can be a max of 4 mods total
-        if (mods.size() == 4) {
-            return false;
-        }
-        int playerCount = 0;
-        for (Mod m : mods) {
-            if (m.getPlacedBy().equals(mod.getPlacedBy())) {
-                playerCount++;
-                if (playerCount == 2) {
-                    return false;
-                }
-            }
-        }
-        // Less than two
-        mods.add(mod);
-        return true;
-    }
-
-    public void removeMod(Mod mod) {
-        mods.remove(mod);
     }
 
     /**
@@ -273,14 +213,14 @@ public class BeaconObj extends BeaconzPluginDependent {
         Point2D current;
         for (Iterator<Point2D> it = new LineIterator(line); it.hasNext();) {
             current = it.next();
-            Block b = Beaconz.getBeaconzWorld().getBlockAt((int)current.getX(), Beaconz.getBeaconzWorld().getMaxHeight()-1, (int)current.getY());
+            Block b = getBeaconzWorld().getBlockAt((int)current.getX(), getBeaconzWorld().getMaxHeight()-1, (int)current.getY());
             if (!b.getType().equals(Material.AIR)) {
                 b.setType(Material.AIR);
             }
         }
         // TODO: One block is being missed. It's a rounding issue. Need to make the line inclusive of these end points
-        Beaconz.getBeaconzWorld().getBlockAt(x, Beaconz.getBeaconzWorld().getMaxHeight()-1, z).setType(Material.AIR);
-        Beaconz.getBeaconzWorld().getBlockAt(beacon.getX(), Beaconz.getBeaconzWorld().getMaxHeight()-1, beacon.getZ()).setType(Material.AIR);
+        getBeaconzWorld().getBlockAt(x, getBeaconzWorld().getMaxHeight()-1, z).setType(Material.AIR);
+        getBeaconzWorld().getBlockAt(beacon.getX(), getBeaconzWorld().getMaxHeight()-1, beacon.getZ()).setType(Material.AIR);
         links.remove(beacon);
     }
 
@@ -310,7 +250,7 @@ public class BeaconObj extends BeaconzPluginDependent {
      * @return true if clear, false if not
      */
     public boolean isClear() {
-        Block beacon = Beaconz.getBeaconzWorld().getBlockAt((int)location.getX(), height, (int)location.getY());
+        Block beacon = getBeaconzWorld().getBlockAt((int)location.getX(), height, (int)location.getY());
         //getLogger().info("DEBUG: block type is " + beacon.getType());
         //getLogger().info("DEBUG: location is " + (int)location.getX() + " " + height + " " + (int)location.getY());
         if (beacon.getRelative(BlockFace.NORTH).getType().equals(Material.AIR)

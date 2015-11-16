@@ -7,8 +7,8 @@ world:
   # Size of the world - a barrier will be created using worldborder if size > 0
   size: 300
   # Center
-  xcenter: 0
-  zcenter: 0
+  xcenter: 1000
+  zcenter: 1000
   # Random spawn - if true, players will spawn randomly (within the world border if set)
   randomspawn: false
   # Seed adjustment

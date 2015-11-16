@@ -20,12 +20,12 @@ public class WorldLoader extends BeaconzPluginDependent implements Listener {
         if (worldLoaded) {
             return;
         }
-        getLogger().info("DEBUG: " + event.getWorld().getName());
+        //getLogger().info("DEBUG: " + event.getWorld().getName());
         if (event.getWorld().getName().equals(Settings.worldName)) {
             return;
         }
         // Load the world
         worldLoaded = true;
-        Beaconz.getBeaconzWorld();
+        getBeaconzWorld();
     }
 }
