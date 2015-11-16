@@ -1,5 +1,6 @@
 package com.wasteofplastic.beaconz;
 
+import java.util.List;
 import java.util.TreeMap;
 
 import org.bukkit.inventory.ItemStack;
@@ -13,6 +14,7 @@ public class Settings {
     public static boolean randomSpawn;
     public static long seedAdjustment;
     public static long hackCoolDown;
+    public static List<String> overHackEffects;
     public static TreeMap<Integer,ItemStack> teamGoodies = new TreeMap<Integer,ItemStack>();
     public static TreeMap<Integer,ItemStack> enemyGoodies = new TreeMap<Integer,ItemStack>();
 }

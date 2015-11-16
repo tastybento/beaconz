@@ -7,8 +7,8 @@ world:
   # Size of the world - a barrier will be created using worldborder if size > 0
   size: 300
   # Center
-  xCenter: 0
-  zCenter: 0
+  xcenter: 0
+  zcenter: 0
   # Random spawn - if true, players will spawn randomly (within the world border if set)
   randomspawn: false
   # Seed adjustment
@@ -16,6 +16,11 @@ world:
   # Hack cool down - how long a player has to wait until they can try to hack a beacon
   # in minutes
   hackcooldown: 1
+  # Effect if you hack during the cooldown period. Format is Effect:Amplifier
+  # Options are: Blindness, Confusion, Harm, Hunger, Slow, Slow_digging, Weakness, Wither
+  # Amplifier is a number, .e.g, 0, 1
+  overhackeffects:
+  - "SLOW_DIGGING:1"
   # Rewards from hacking
   # Format is "Id#/Material:[Durability/Qty]:Qty:%Chance"
   enemygoodies:
@@ -26,7 +31,7 @@ world:
   - "DISPENSER:1:20"
   - "REDSTONE_BLOCK:1:10"
   teamgoodies:
-  - "DIAMOND:1:1"
+  - "DIAMOND:1:5"
   - "OBSIDIAN:1:5"
   - "STONE:1:30"
   - "IRON_INGOT:1:5"  

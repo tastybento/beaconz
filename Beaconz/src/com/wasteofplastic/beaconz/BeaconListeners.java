@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Random;
 
+import org.apache.commons.lang.math.NumberUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -772,18 +773,27 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                         if (en != null && en.getValue() != null) {
                             player.getWorld().dropItemNaturally(event.getBlock().getLocation(), en.getValue());
                             beacon.resetHackTimer();
-                        } else {
-                            player.getWorld().spawnEntity(player.getLocation(),EntityType.ENDERMITE);
-                            beacon.resetHackTimer();
-                            //getLogger().info("DEBUG: failed - max value was " + Settings.enemyGoodies.lastKey());
                         }
-
                     }
                 } else {
                     // Damage player
                     int num = (int) (beacon.getHackTimer() + Settings.hackCoolDown - System.currentTimeMillis())/50;
-                    player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_DIGGING, num,1));
-                    getLogger().info("DEBUG: Applying mining fatigue for " + num + " ticks");
+                    for (String effect : Settings.overHackEffects) {
+                        String[] split = effect.split(":");
+                        if (split.length == 2) {
+                            int amplifier = 0;
+                            if (NumberUtils.isNumber(split[1])) {
+                                amplifier = Integer.valueOf(split[1]);
+                            }
+                            PotionEffectType potionEffectType = PotionEffectType.getByName(effect);
+                            if (potionEffectType != null) {
+                                player.addPotionEffect(new PotionEffect(potionEffectType, num,amplifier));
+                                getLogger().info("DEBUG: Applying " + potionEffectType.toString() + ":" + amplifier + " for " + num + " ticks");
+                            }
+                        }
+                            
+                            
+                    }
                 }
             }
         }

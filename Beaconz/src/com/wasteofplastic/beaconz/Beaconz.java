@@ -104,11 +104,12 @@ public class Beaconz extends JavaPlugin {
         Settings.worldName = getConfig().getString("world.name", "beaconz");
         Settings.distribution = getConfig().getDouble("world.distribution", 0.05D);
         Settings.size = getConfig().getInt("world.size",0);
-        Settings.xCenter = getConfig().getInt("world.xCenter",0);
-        Settings.zCenter = getConfig().getInt("world.zCenter",0);
+        Settings.xCenter = getConfig().getInt("world.xcenter",0);
+        Settings.zCenter = getConfig().getInt("world.zcenter",0);
         Settings.randomSpawn = getConfig().getBoolean("world.randomspawn", true);
         Settings.seedAdjustment = getConfig().getLong("world.seedadjustment", 0);
         Settings.hackCoolDown = getConfig().getInt("world.hackcooldown", 1) * 60000; // Minutes in millis
+        Settings.overHackEffects = getConfig().getStringList("world.overhackeffects");
         List<String> goodies = getConfig().getStringList("world.enemygoodies");
         Settings.enemyGoodies.clear();
         for (String goodie: goodies) {
