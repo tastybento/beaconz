@@ -984,6 +984,24 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         toOwner = to.get(0).getOwner();
         Collection<PotionEffect> effects = new ArrayList<PotionEffect>();
         if (toOwner != null && !toOwner.equals(team)) {
+            for (int i = 0; i <= to.size(); i++) {
+                if (Settings.enemyFieldEffects.containsKey(i)) {
+                    effects.addAll(Settings.enemyFieldEffects.get(i));
+                }
+            }
+            event.getPlayer().addPotionEffects(effects);
+        }
+        effects.clear();
+        // Friendly triangle
+        if (toOwner != null && toOwner.equals(team)) {
+            for (int i = 0; i <= to.size(); i++) {
+                if (Settings.friendlyFieldEffects.containsKey(i)) {
+                    effects.addAll(Settings.friendlyFieldEffects.get(i));
+                }
+            }
+            event.getPlayer().addPotionEffects(effects);
+        }   
+            /*
             switch (to.size()) {
             default:
             case 8:
@@ -1004,7 +1022,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                 effects.add(new PotionEffect(PotionEffectType.HUNGER,200,1));
             }
             event.getPlayer().addPotionEffects(effects);
-        }
+        }*/
         // Entering a field, or moving to a stronger field
         if (from.size() < to.size()) {
             event.getPlayer().sendMessage("Now entering " + toOwner.getDisplayName() + "'s area of control level " + to.size());

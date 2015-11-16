@@ -1,5 +1,7 @@
 package com.wasteofplastic.beaconz;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 
@@ -8,10 +10,13 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
 import org.bukkit.WorldType;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.generator.BlockPopulator;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.material.MaterialData;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 public class Beaconz extends JavaPlugin {
     BeaconPopulator beaconPop;
@@ -117,6 +122,62 @@ public class Beaconz extends JavaPlugin {
         Settings.randomSpawn = getConfig().getBoolean("world.randomspawn", true);
         Settings.seedAdjustment = getConfig().getLong("world.seedadjustment", 0);
         Settings.hackCoolDown = getConfig().getInt("world.hackcooldown", 1) * 60000; // Minutes in millis
+        ConfigurationSection enemyFieldSection = getConfig().getConfigurationSection("world.enemyfieldeffects");
+        // Step through the numbers
+        Settings.enemyFieldEffects = new HashMap<Integer, List<PotionEffect>>();
+        for (Entry<String, Object> part : enemyFieldSection.getValues(false).entrySet()) {
+            if (NumberUtils.isNumber(part.getKey())) {
+                // It is a number, now get the string list
+                List<PotionEffect> effects = new ArrayList<PotionEffect>();
+                List<String> effectsList = getConfig().getStringList("world.enemyfieldeffects." + part.getKey());
+                for (String effectString : effectsList) {
+                    String[] split = effectString.split(":");
+                    if (split.length == 3) {
+                        PotionEffectType type = PotionEffectType.getByName(split[0]);
+                        if (type != null) {
+                            if (NumberUtils.isNumber(split[1]) && NumberUtils.isNumber(split[2])) {
+                                getLogger().info("DEBUG: adding enemy effect " + type.toString());
+                                effects.add(new PotionEffect(type, NumberUtils.toInt(split[1]), NumberUtils.toInt(split[2])));
+                            }
+                        }
+                        
+                    }
+                           
+                }
+                Settings.enemyFieldEffects.put(NumberUtils.toInt(part.getKey()), effects);               
+            }
+        }
+        Settings.friendlyFieldEffects = new HashMap<Integer, List<PotionEffect>>();
+        ConfigurationSection friendlyFieldSection = getConfig().getConfigurationSection("world.friendlyfieldeffects");
+        // Step through the numbers
+        for (Entry<String, Object> part : friendlyFieldSection.getValues(false).entrySet()) {
+          getLogger().info("DEBUG: Field: " + part.getKey());
+            if (NumberUtils.isNumber(part.getKey())) {
+                getLogger().info("DEBUG: Field is a number");
+                // It is a number, now get the string list
+                List<PotionEffect> effects = new ArrayList<PotionEffect>();
+                List<String> effectsList = getConfig().getStringList("world.friendlyfieldeffects." + part.getKey());
+                getLogger().info("DEBUG: Effects list: " + effectsList);
+                for (String effectString : effectsList) {
+                    String[] split = effectString.split(":");
+                    if (split.length == 3) {
+                        getLogger().info("DEBUG: Potion found " + split[0]);
+                        PotionEffectType type = PotionEffectType.getByName(split[0]);
+                        if (type != null) {
+                            getLogger().info("DEBUG: Potion is known");
+                            if (NumberUtils.isNumber(split[1]) && NumberUtils.isNumber(split[2])) {
+                                
+                                getLogger().info("DEBUG: adding friendly effect " + type.toString());
+                                effects.add(new PotionEffect(type, NumberUtils.toInt(split[1]), NumberUtils.toInt(split[2])));
+                            }
+                        }
+                        
+                    }
+                           
+                }
+                Settings.friendlyFieldEffects.put(NumberUtils.toInt(part.getKey()), effects);               
+            }
+        }
         Settings.overHackEffects = getConfig().getStringList("world.overhackeffects");
         List<String> goodies = getConfig().getStringList("world.enemygoodies");
         Settings.enemyGoodies.clear();

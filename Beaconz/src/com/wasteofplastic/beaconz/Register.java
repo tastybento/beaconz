@@ -79,6 +79,13 @@ public class Register extends BeaconzPluginDependent {
      * Loads game info
      */
     public void loadRegister() {
+        // Clear the data
+        beaconMaps.clear();
+        beaconRegister.clear();
+        triangleFields.clear();
+        score.clear();
+        links.clear();
+        
         File beaconzFile = new File(getBeaconzPlugin().getDataFolder(),"beaconz.yml");
         if (!beaconzFile.exists()) {
             return;
@@ -97,8 +104,6 @@ public class Register extends BeaconzPluginDependent {
             e.printStackTrace();
         }
         //beacons
-        beaconRegister.clear();
-        beaconMaps.clear();
         HashMap<BeaconObj, List<String>> beaconLinks = new HashMap<BeaconObj, List<String>>();
         ConfigurationSection configSec = beaconzYml.getConfigurationSection("beacon");
         if (configSec != null) {
@@ -122,7 +127,7 @@ public class Register extends BeaconzPluginDependent {
                 }
             }
         }
-        // Add links
+        // Add links        
         for (BeaconObj beacon: beaconLinks.keySet()) {
             for (String link : beaconLinks.get(beacon)) {
                 String[] args = link.split(":");
