@@ -13,6 +13,11 @@ world:
   randomspawn: false
   # Seed adjustment
   seedadjustment: 0  
+  # Starter inventory
+  # Format Material:Qty or Material:Data:Qty
+  newbiekit:
+  - "DIAMOND_PICKAXE:1"
+  - "SUGAR_CANE:1"
   # Hack cool down - how long a player has to wait until they can try to hack a beacon
   # in minutes
   hackcooldown: 1
@@ -22,19 +27,19 @@ world:
   overhackeffects:
   - "SLOW_DIGGING:1"
   # Rewards from hacking
-  # Format is "Id#/Material:[Durability/Qty]:Qty:%Chance"
+  # Format is "Id#/Material:[Durability/Qty]:Qty=%Chance"
   enemygoodies:
-  - "DIAMOND:1:10"
-  - "MOB_SPAWNER:1:2"
-  - "GOLD_INGOT:1:15"
-  - "DIAMOND_SWORD:1:5"
-  - "DISPENSER:1:20"
-  - "REDSTONE_BLOCK:1:10"
+  - "DIAMOND:1=10"
+  - "MOB_SPAWNER:1=2"
+  - "GOLD_INGOT:1=15"
+  - "DIAMOND_SWORD:1=5"
+  - "DISPENSER:1=20"
+  - "REDSTONE_BLOCK:1=10"
   teamgoodies:
-  - "DIAMOND:1:5"
-  - "OBSIDIAN:1:5"
-  - "STONE:1:30"
-  - "IRON_INGOT:1:5"  
+  - "DIAMOND:1=5"
+  - "OBSIDIAN:1=5"
+  - "STONE:1=30"
+  - "IRON_INGOT:1=5"  
   # Effects from going into enemy triangle fields
   # Effects are cumulative
   enemyfieldeffects:

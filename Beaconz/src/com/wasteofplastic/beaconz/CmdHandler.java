@@ -1,6 +1,7 @@
 package com.wasteofplastic.beaconz;
 
 import java.awt.geom.Point2D;
+import java.util.HashMap;
 import java.util.Random;
 import java.util.Set;
 
@@ -14,6 +15,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.material.MaterialData;
 import org.bukkit.material.SimpleAttachableMaterialData;
 import org.bukkit.material.TrapDoor;
@@ -46,10 +48,28 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
             Player player = (Player)sender;
 
             player.sendMessage(ChatColor.GREEN + "Teleporting you to the world...");
+            Set<Team> teams = getScorecard().getScoreboard().getTeams();
+            boolean newPlayer = false;
+            // Set the team
+            if (getScorecard().getTeam(player) == null) {
+                // New player!
+                newPlayer = true;
+                Random rand = new Random();
+                teams = getScorecard().getScoreboard().getTeams();
+                int r = rand.nextInt(teams.size());
+                for (Team t: teams) {
+                    if (r-- == 0) {
+                        t.addPlayer(player);
+                        player.sendMessage("You are now a member of " + t.getDisplayName() + " team!");
+                        getBeaconzPlugin().getServer().dispatchCommand(getBeaconzPlugin().getServer().getConsoleSender(),
+                                "title " + player.getName() + " title {text:\"" + t.getDisplayName() + " team!\", color:gold}");
+                        break;
+                    }
+                }
+            }
             // Teleport teams to different locations
             Location teleportTo = getBeaconzWorld().getSpawnLocation();
             BlockFace blockFace = BlockFace.NORTH;
-            Set<Team> teams = getScorecard().getScoreboard().getTeams();
             // We allow up to 8 teams
             int direction = 0;
             for (Team team : teams) {
@@ -85,6 +105,7 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
             }
             teleportTo = teleportTo.getBlock().getRelative(blockFace, Settings.borderSize / 4).getLocation();
             teleportTo = getBeaconzWorld().getHighestBlockAt(teleportTo).getLocation().add(0.5, 0, 0.5);
+            // This will result in bedrock blocks being created up and up if the bedrock is covered...
             teleportTo.getBlock().getRelative(BlockFace.DOWN).setType(Material.BEDROCK);
             boolean found = false;
             if (Settings.randomSpawn) {
@@ -113,17 +134,15 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
                 } while (!found);
             }
             player.teleport(teleportTo);
-            if (getScorecard().getTeam(player) == null) {
-                Random rand = new Random();
-                teams = getScorecard().getScoreboard().getTeams();
-                int r = rand.nextInt(teams.size());
-                for (Team t: teams) {
-                    if (r-- == 0) {
-                        t.addPlayer(player);
-                        player.sendMessage("You are now a member of " + t.getDisplayName() + " team!");
-                        getBeaconzPlugin().getServer().dispatchCommand(getBeaconzPlugin().getServer().getConsoleSender(),
-                                "title " + player.getName() + " title {text:\"" + t.getDisplayName() + " team!\", color:gold}");
-                        break;
+            // Give newbie kit
+            if (newPlayer) {
+                player.getInventory().clear();
+                for (ItemStack item : Settings.newbieKit) {
+                    HashMap<Integer, ItemStack> tooBig = player.getInventory().addItem(item);
+                    if (!tooBig.isEmpty()) {
+                        for (ItemStack items : tooBig.values()) {
+                            player.getWorld().dropItemNaturally(player.getLocation(), items);
+                        }
                     }
                 }
             }

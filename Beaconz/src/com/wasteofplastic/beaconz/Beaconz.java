@@ -80,10 +80,10 @@ public class Beaconz extends JavaPlugin {
                 if (Settings.borderSize > 0) {
                     // Check corners
                     Set<Point2D> corners = new HashSet<Point2D>();
-                    int xMin = Settings.xCenter - (Settings.borderSize /2) + 1;
-                    int xMax = Settings.xCenter + (Settings.borderSize /2) - 2;
-                    int zMin = Settings.zCenter - (Settings.borderSize /2) + 1;
-                    int zMax = Settings.zCenter + (Settings.borderSize /2) - 2;
+                    int xMin = Settings.xCenter - (Settings.borderSize /2) + 2;
+                    int xMax = Settings.xCenter + (Settings.borderSize /2) - 3;
+                    int zMin = Settings.zCenter - (Settings.borderSize /2) + 2;
+                    int zMax = Settings.zCenter + (Settings.borderSize /2) - 3;
                     corners.add(new Point2D.Double(xMin,zMin));
                     corners.add(new Point2D.Double(xMin,zMax));
                     corners.add(new Point2D.Double(xMax,zMin));
@@ -102,6 +102,8 @@ public class Beaconz extends JavaPlugin {
                                 // Create a beacon
                                 Bukkit.getLogger().info("DEBUG: made beacon at " + b.getLocation());
                                 b.setType(Material.BEACON);
+                                // Register the beacon
+                                register.addBeacon(null, b.getLocation());
                                 // Add the capstone
                                 b.getRelative(BlockFace.UP).setType(Material.OBSIDIAN);
                                 // Create the pyramid
@@ -118,8 +120,7 @@ public class Beaconz extends JavaPlugin {
                                 b.getRelative(BlockFace.NORTH_EAST).setType(Material.DIAMOND_BLOCK);
                                 b.getRelative(BlockFace.NORTH_WEST).setType(Material.DIAMOND_BLOCK);
 
-                                // Register the beacon
-                                register.addBeacon(null, b.getLocation());
+              
                             }
                         }
                     }
@@ -237,71 +238,22 @@ public class Beaconz extends JavaPlugin {
         List<String> goodies = getConfig().getStringList("world.enemygoodies");
         Settings.enemyGoodies.clear();
         for (String goodie: goodies) {
-            String[] split = goodie.split(":");
+            String[] split = goodie.split("=");
             int lastChance = 0;
             if (!Settings.enemyGoodies.isEmpty() ) {
                 lastChance = Settings.enemyGoodies.lastKey();
             }
-            // No durability option - Material/#:Qty:Chance
-            if (split.length == 3) {
+            if (split.length == 2) {
                 // Get chance
                 int chance = 0;
-                if (NumberUtils.isNumber(split[2])) {
-                    chance = NumberUtils.toInt(split[2]) + lastChance;
-                }
-                // Get the qty
-                int qty = 0;
                 if (NumberUtils.isNumber(split[1])) {
-                    qty = NumberUtils.toInt(split[1]);
+                    chance = NumberUtils.toInt(split[1]) + lastChance;
                 }
-                // Try to get #
-                if (NumberUtils.isNumber(split[0])) {
-                    int itemType = NumberUtils.toInt(split[0]);
-                    ItemStack item = new ItemStack(itemType, qty);
+                ItemStack item = getItemFromString(split[0]);
+                if (item != null) {
                     Settings.enemyGoodies.put(chance, item);
-                } else {
-                    try {
-                        Material itemType = Material.valueOf(split[0]);
-                        ItemStack item = new ItemStack(itemType, qty);
-                        Settings.enemyGoodies.put(chance, item);
-                    } catch (Exception e) {
-                        getLogger().severe("Could not parse enemy beacon goodie material " + split[0] + " skipping...");
-                    }
-                }
-            } else if (split.length == 4) {
-                // Get chance
-                int chance = 0;
-                if (NumberUtils.isNumber(split[3])) {
-                    chance = NumberUtils.toInt(split[2]) + lastChance;
-                }
-                // Get the qty
-                int qty = 0;
-                if (NumberUtils.isNumber(split[2])) {
-                    qty = NumberUtils.toInt(split[2]);
-                }
-                // Get the durability
-                int durability = 0;
-                if (NumberUtils.isNumber(split[1])) {
-                    durability = NumberUtils.toInt(split[1]);
-                }
-                // Try to get #
-                if (NumberUtils.isNumber(split[0])) {
-                    int itemType = NumberUtils.toInt(split[0]);
-                    ItemStack item = new ItemStack(itemType, qty);
-                    item.setDurability((short)durability);
-                    Settings.enemyGoodies.put(chance, item);
-                } else {
-                    try {
-                        Material itemType = Material.valueOf(split[0]);
-                        ItemStack item = new ItemStack(itemType, qty);
-                        item.setDurability((short)durability);
-                        Settings.enemyGoodies.put(chance, item);
-                    } catch (Exception e) {
-                        getLogger().severe("Could not parse enemy beacon goodie material " + split[0] + " skipping...");
-                    }
                 }
             }
-
         }
         // Add the final element - any number above this value will return a null element
         Settings.enemyGoodies.put(Settings.enemyGoodies.lastKey() + 1, null);
@@ -313,67 +265,20 @@ public class Beaconz extends JavaPlugin {
         goodies = getConfig().getStringList("world.teamgoodies");
         Settings.teamGoodies.clear();
         for (String goodie: goodies) {
-            String[] split = goodie.split(":");
+            String[] split = goodie.split("=");
             int lastChance = 0;
             if (!Settings.teamGoodies.isEmpty() ) {
                 lastChance = Settings.teamGoodies.lastKey();
-            } // No durability option - Material/#:Qty:Chance
-            if (split.length == 3) {
+            }
+            if (split.length == 2) {
                 // Get chance
                 int chance = 0;
-                if (NumberUtils.isNumber(split[2])) {
-                    chance = NumberUtils.toInt(split[2]) + lastChance;
-                }
-                // Get the qty
-                int qty = 0;
                 if (NumberUtils.isNumber(split[1])) {
-                    qty = NumberUtils.toInt(split[1]);
+                    chance = NumberUtils.toInt(split[1]) + lastChance;
                 }
-                // Try to get #
-                if (NumberUtils.isNumber(split[0])) {
-                    int itemType = NumberUtils.toInt(split[0]);
-                    ItemStack item = new ItemStack(itemType, qty);
+                ItemStack item = getItemFromString(split[0]);
+                if (item != null) {
                     Settings.teamGoodies.put(chance, item);
-                } else {
-                    try {
-                        Material itemType = Material.valueOf(split[0]);
-                        ItemStack item = new ItemStack(itemType, qty);
-                        Settings.teamGoodies.put(chance, item);
-                    } catch (Exception e) {
-                        getLogger().severe("Could not parse team beacon goodie material " + split[0] + " skipping...");
-                    }
-                }
-            } else if (split.length == 4) {
-                // Get chance
-                int chance = 0;
-                if (NumberUtils.isNumber(split[3])) {
-                    chance = NumberUtils.toInt(split[2]) + lastChance;
-                }
-                // Get the qty
-                int qty = 0;
-                if (NumberUtils.isNumber(split[2])) {
-                    qty = NumberUtils.toInt(split[2]);
-                }
-                // Get the durability
-                int durability = 0;
-                if (NumberUtils.isNumber(split[1])) {
-                    durability = NumberUtils.toInt(split[1]);
-                }
-                // Try to get #
-                if (NumberUtils.isNumber(split[0])) {
-                    int itemType = NumberUtils.toInt(split[0]);
-                    ItemStack item = new ItemStack(itemType, qty);
-                    item.setDurability((short)durability);
-                    Settings.teamGoodies.put(chance, item);
-                } else {
-                    try {
-                        Material itemType = Material.valueOf(split[0]);
-                        ItemStack item = new ItemStack(itemType, qty);
-                        item.setDurability((short)durability);
-                        Settings.teamGoodies.put(chance, item);
-                    } catch (Exception e) {
-                        getLogger().severe("Could not parse team beacon goodie material " + split[0] + " skipping...");
-                    }
                 }
             }
         }
@@ -384,6 +289,72 @@ public class Beaconz extends JavaPlugin {
         for (Entry<Integer, ItemStack> ent : Settings.teamGoodies.entrySet()) {
             plugin.getLogger().info("DEBUG: " + ent.getKey() + " " + ent.getValue());
         }
+        
+        // Add initial inventory
+        List<String> newbieKit = getConfig().getStringList("world.newbiekit");
+        Settings.newbieKit.clear();
+        for (String item : newbieKit) {
+            Settings.newbieKit.add(getItemFromString(item));
+        }
+    }
+
+    /**
+     * Format is Material:Qty or Material:Data:Qty or Integer:Qty or Integer:Data:Qty
+     * @param item
+     * @return
+     */
+    private ItemStack getItemFromString(String goodie) {
+        String[] split = goodie.split(":");
+        // No durability option - Material/#:Qty
+        if (split.length == 2) {
+            // Get the qty
+            int qty = 0;
+            if (NumberUtils.isNumber(split[1])) {
+                qty = NumberUtils.toInt(split[1]);
+            }
+            // Try to get #
+            if (NumberUtils.isNumber(split[0])) {
+                int itemType = NumberUtils.toInt(split[0]);
+                return new ItemStack(itemType, qty);
+            } else {
+                try {
+                    Material itemType = Material.valueOf(split[0]);
+                    return new ItemStack(itemType, qty); 
+                } catch (Exception e) {
+                    getLogger().severe("Could not parse " + split[0] + " skipping...");
+                    return null;
+                }
+            }
+        } else if (split.length == 3) {
+            // Get the qty
+            int qty = 0;
+            if (NumberUtils.isNumber(split[2])) {
+                qty = NumberUtils.toInt(split[2]);
+            }
+            // Get the durability
+            int durability = 0;
+            if (NumberUtils.isNumber(split[1])) {
+                durability = NumberUtils.toInt(split[1]);
+            }
+            // Try to get #
+            if (NumberUtils.isNumber(split[0])) {
+                int itemType = NumberUtils.toInt(split[0]);
+                ItemStack item = new ItemStack(itemType, qty);
+                item.setDurability((short)durability);
+                return item;
+            } else {
+                try {
+                    Material itemType = Material.valueOf(split[0]);
+                    ItemStack item = new ItemStack(itemType, qty);
+                    item.setDurability((short)durability);
+                    return item;
+                } catch (Exception e) {
+                    getLogger().severe("Could not parse " + split[0] + " skipping...");
+                    return null;
+                }
+            }
+        }
+        return null;
     }
 
     /**

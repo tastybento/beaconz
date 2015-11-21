@@ -123,7 +123,7 @@ public class Register extends BeaconzPluginDependent {
                     if (configSec.contains(beacon + ".id")) {
                         addBeaconMap((short)configSec.getInt(beacon + ".id"), newBeacon);
                     }
-                    getLogger().info("DEBUG: loaded beacon at " + x + "," + y + "," + z);
+                    //getLogger().info("DEBUG: loaded beacon at " + x + "," + y + "," + z);
                 }
             }
         }

@@ -73,12 +73,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         if (!world.equals(getBeaconzWorld())) {
             return;
         }
-        // Check if the block is a beacon or the surrounding pyramid
-        Block block = event.getBlock();
-        BeaconObj beacon = getRegister().getBeacon(block);
-        if (beacon == null) {
-            return;
-        }
+        //getLogger().info("DEBUG: This is a beacon");
         Player player = event.getPlayer();
         // Get the player's team
         Team team = getScorecard().getTeam(player);
@@ -86,6 +81,15 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             // TODO: Probably should put the player in a team
             event.setCancelled(true);
             player.sendMessage(ChatColor.RED + "You must be in a team to play in this world");
+            return;
+        }
+        // Apply triangle effects
+        applyEffects(player, getRegister().getTriangle(player.getLocation().getBlockX(), player.getLocation().getBlockZ()), team);
+
+        // Check if the block is a beacon or the surrounding pyramid
+        Block block = event.getBlock();
+        BeaconObj beacon = getRegister().getBeacon(block);
+        if (beacon == null) {
             return;
         }
         // Check for obsidian/glass breakage - i.e., capture
@@ -249,6 +253,18 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             //getLogger().info("DEBUG: not right world");
             return;
         }
+        Player player = event.getPlayer();
+        // Get the player's team
+        Team team = getScorecard().getTeam(player);
+        if (team == null) {
+            // TODO: Probably should put the player in a team
+            event.setCancelled(true);
+            player.sendMessage(ChatColor.RED + "You must be in a team to play in this world");
+            return;
+        }
+        // Apply triangle effects
+        applyEffects(player, getRegister().getTriangle(player.getLocation().getBlockX(), player.getLocation().getBlockZ()), team);
+        // Stop placing blocks on a beacon
         BeaconObj beacon = getRegister().getBeaconAt(event.getBlock().getX(),event.getBlock().getZ());
         if (beacon != null && beacon.getY() < event.getBlock().getY()) {
             event.setCancelled(true);
@@ -267,15 +283,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             return;
         }
         //getLogger().info("DEBUG: This is a beacon");
-        Player player = event.getPlayer();
-        // Get the player's team
-        Team team = getScorecard().getTeam(player);
-        if (team == null) {
-            // TODO: Probably should put the player in a team
-            event.setCancelled(true);
-            player.sendMessage(ChatColor.RED + "You must be in a team to play in this world");
-            return;
-        }
+
         // Check if the team is placing a block on their own beacon or not
         if (beacon.getOwnership() != null && beacon.getOwnership().equals(team)) {
             // Check what type of block it is:
@@ -671,12 +679,6 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             //getLogger().info("DEBUG: not right world");
             return;
         }
-        // Check if the block is a beacon or the surrounding pyramid
-        Block block = event.getBlock();
-        BeaconObj beacon = getRegister().getBeacon(block);
-        if (beacon == null) {
-            return;
-        }
         //getLogger().info("DEBUG: This is a beacon");
         Player player = event.getPlayer();
         // Get the player's team
@@ -686,7 +688,16 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             event.setCancelled(true);
             player.sendMessage(ChatColor.RED + "You must be in a team to play in this world");
             return;
-        }     
+        }
+        // Apply triangle effects
+        applyEffects(player, getRegister().getTriangle(player.getLocation().getBlockX(), player.getLocation().getBlockZ()), team);
+
+        // Check if the block is a beacon or the surrounding pyramid
+        Block block = event.getBlock();
+        BeaconObj beacon = getRegister().getBeacon(block);
+        if (beacon == null) {
+            return;
+        }
         // Cancel any breakage
         event.setCancelled(true);
         // Check for obsidian/glass breakage - i.e., capture
@@ -827,12 +838,14 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             player.sendMessage(ChatColor.RED + "You must be in a team to play in this world");
             return;
         }
+        // Apply triangle effects
+        applyEffects(player, getRegister().getTriangle(player.getLocation().getBlockX(), player.getLocation().getBlockZ()), team);
+
         // Check if the block is a beacon or the surrounding pyramid
         Block b = event.getClickedBlock();
         final BeaconObj beacon = getRegister().getBeacon(b);
         if (beacon == null) {
             //getLogger().info("DEBUG: not a beacon");
-            event.setCancelled(true);
             return;
         }
         // Check the team
@@ -967,70 +980,51 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             event.getPlayer().sendMessage("Leaving " + from.get(0).getOwner().getDisplayName() + "'s control area");
             return;
         }
+        // Apply triangle effects
+        applyEffects(event.getPlayer(), to, team);
 
+        // Entering a field, or moving to a stronger field
+        if (from.size() < to.size()) {
+            event.getPlayer().sendMessage("Now entering " + to.get(0).getOwner().getDisplayName() + "'s area of control level " + to.size());
+            return;
+        }
+        if (to.size() < from.size()) {
+            event.getPlayer().sendMessage(to.get(0).getOwner().getDisplayName() + "'s control level dropping to " + to.size());
+            return;
+        }
+    }
+
+    /**
+     * Applies triangle effects to a player
+     * @param player
+     * @param to
+     * @param team
+     */
+    private void applyEffects(Player player, List<TriangleField> to, Team team) {
+        if (to.isEmpty() || team == null) {
+            return;
+        }
         // Apply bad stuff
         // Enemy team
-        /*
-         * 1 | Hunger
-         * 2 | Mining fatigue 1, hunger
-         * 3 | Weakness 1, mining fatigue 2, hunger
-         * 4 | Slowness 1, weakness 2, mining fatigue 2, hunger 2
-         * 5 | Nausea 1, slowness 2, weakness 3, mining fatigue 3, hunger 2
-         * 6 | Poison 1, nausea 1, slowness 3, weakness 3, mining fatigue 3
-         * 7 | Blindness, poison 2, slowness 4, weakness 4, mining fatigue 4
-         * 8+ | Wither*, blindness, slowness 5, weakness 5, mining fatigue 5
-         */
-        Team toOwner = null;
-        toOwner = to.get(0).getOwner();
+        Team triangleOwner = to.get(0).getOwner();
         Collection<PotionEffect> effects = new ArrayList<PotionEffect>();
-        if (toOwner != null && !toOwner.equals(team)) {
+        if (triangleOwner != null && !triangleOwner.equals(team)) {
             for (int i = 0; i <= to.size(); i++) {
                 if (Settings.enemyFieldEffects.containsKey(i)) {
                     effects.addAll(Settings.enemyFieldEffects.get(i));
                 }
             }
-            event.getPlayer().addPotionEffects(effects);
+            player.addPotionEffects(effects);
         }
         effects.clear();
         // Friendly triangle
-        if (toOwner != null && toOwner.equals(team)) {
+        if (triangleOwner != null && triangleOwner.equals(team)) {
             for (int i = 0; i <= to.size(); i++) {
                 if (Settings.friendlyFieldEffects.containsKey(i)) {
                     effects.addAll(Settings.friendlyFieldEffects.get(i));
                 }
             }
-            event.getPlayer().addPotionEffects(effects);
-        }   
-            /*
-            switch (to.size()) {
-            default:
-            case 8:
-                effects.add(new PotionEffect(PotionEffectType.WITHER,200,to.size()-7));
-            case 7:
-                effects.add(new PotionEffect(PotionEffectType.BLINDNESS,200,1));
-            case 6:
-                effects.add(new PotionEffect(PotionEffectType.POISON,200,1));
-            case 5:
-                effects.add(new PotionEffect(PotionEffectType.CONFUSION,200,1));
-            case 4:
-                effects.add(new PotionEffect(PotionEffectType.SLOW,200,1));
-            case 3:
-                effects.add(new PotionEffect(PotionEffectType.WEAKNESS,200,1));
-            case 2:
-                effects.add(new PotionEffect(PotionEffectType.SLOW_DIGGING,200,1));
-            case 1:
-                effects.add(new PotionEffect(PotionEffectType.HUNGER,200,1));
-            }
-            event.getPlayer().addPotionEffects(effects);
-        }*/
-        // Entering a field, or moving to a stronger field
-        if (from.size() < to.size()) {
-            event.getPlayer().sendMessage("Now entering " + toOwner.getDisplayName() + "'s area of control level " + to.size());
-            return;
-        }
-        if (to.size() < from.size()) {
-            event.getPlayer().sendMessage(toOwner.getDisplayName() + "'s control level dropping to " + to.size());
-            return;
-        }
+            player.addPotionEffects(effects);
+        }         
     }
 }

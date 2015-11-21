@@ -1,5 +1,6 @@
 package com.wasteofplastic.beaconz;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.TreeMap;
@@ -67,4 +68,10 @@ public class Settings {
      * Integer is the level of triangle overlap. 
      */
     public static HashMap<Integer, List<PotionEffect>> friendlyFieldEffects;
+    
+    /**
+     * What newbies get when they join the game
+     * Format is "Id#/Material:[Durability/Qty]:Qty"
+     */
+    public static List<ItemStack> newbieKit = new ArrayList<ItemStack>();
 }
