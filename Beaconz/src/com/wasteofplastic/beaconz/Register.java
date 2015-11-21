@@ -366,7 +366,7 @@ public class Register extends BeaconzPluginDependent {
         }
         return result;        
     }
-    
+
     /**
      * Returns beacons by index
      * @param index
@@ -451,11 +451,13 @@ public class Register extends BeaconzPluginDependent {
             linkedBeacon.removeLink(beacon);
         }
         // Remove links from this register (I'm not happy about the duplication here)
-        Iterator<Line2D> linkIterator = links.get(oldOwner).iterator();
-        while (linkIterator.hasNext()) {
-            Line2D link = linkIterator.next();
-            if (link.getP1().equals(beacon.getLocation()) || link.getP2().equals(beacon.getLocation())) {
-                linkIterator.remove();
+        if (links.get(oldOwner) != null) {
+            Iterator<Line2D> linkIterator = links.get(oldOwner).iterator();
+            while (linkIterator.hasNext()) {
+                Line2D link = linkIterator.next();
+                if (link.getP1().equals(beacon.getLocation()) || link.getP2().equals(beacon.getLocation())) {
+                    linkIterator.remove();
+                }
             }
         }
         beacon.removeLinks();
