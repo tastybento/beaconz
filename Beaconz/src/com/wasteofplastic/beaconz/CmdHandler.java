@@ -56,16 +56,18 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
                 newPlayer = true;
                 Random rand = new Random();
                 teams = getScorecard().getScoreboard().getTeams();
-                int r = rand.nextInt(teams.size());
+                int minSize=Integer.MAX_VALUE;
+                Team smallestTeam=null;
                 for (Team t: teams) {
-                    if (r-- == 0) {
-                        t.addPlayer(player);
-                        player.sendMessage("You are now a member of " + t.getDisplayName() + " team!");
-                        getBeaconzPlugin().getServer().dispatchCommand(getBeaconzPlugin().getServer().getConsoleSender(),
-                                "title " + player.getName() + " title {text:\"" + t.getDisplayName() + " team!\", color:gold}");
-                        break;
+                    if(t.size() < minSize) {
+                        minSize=t.size();
+                        smallestTeam=t;
                     }
                 }
+                smallestTeam.addPlayer(player);
+                player.sendMessage("You are now a member of " + smallestTeam.getDisplayName() + " team!");
+                        getBeaconzPlugin().getServer().dispatchCommand(getBeaconzPlugin().getServer().getConsoleSender(),
+                        "title " + player.getName() + " title {text:\"" + t.getDisplayName() + " team!\", color:gold}");
             }
             // Teleport teams to different locations
             Location teleportTo = getBeaconzWorld().getSpawnLocation();
