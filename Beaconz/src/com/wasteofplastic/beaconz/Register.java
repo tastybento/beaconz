@@ -85,7 +85,7 @@ public class Register extends BeaconzPluginDependent {
         triangleFields.clear();
         score.clear();
         links.clear();
-        
+
         File beaconzFile = new File(getBeaconzPlugin().getDataFolder(),"beaconz.yml");
         if (!beaconzFile.exists()) {
             return;
@@ -267,7 +267,7 @@ public class Register extends BeaconzPluginDependent {
                     //getLogger().info("DEBUG: New score is " + triangle.getArea());
                     return true;
                 } else {
-                   // getLogger().info("DEBUG: Control field already exists");
+                    // getLogger().info("DEBUG: Control field already exists");
                 }
             } else {
                 //getLogger().info("DEBUG: beacons are not owned by the same faction");
@@ -331,6 +331,42 @@ public class Register extends BeaconzPluginDependent {
         return getBeacon(b) == null ? false:true;
     }
 
+    /**
+     * Checks if a beacon is within the range around point
+     * @param point
+     * @param range
+     * @return true if beacon is there, false if not
+     */
+    public boolean isNearBeacon(Point2D point, int range) {
+        int distSquared = range*range;
+        for (Point2D beacon : beaconRegister.keySet()) {
+            // Distance squared check is less computationally intensive than checking the square
+            if (distSquared > point.distanceSq(beacon)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Get a list of all nearby beacons within range
+     * @param location
+     * @param range
+     * @return list of nearby beacons
+     */
+    public List<BeaconObj> getNearbyBeacons(Location location, int range) {
+        int distSquared = range*range;
+        List<BeaconObj> result = new ArrayList<BeaconObj>();
+        Point2D point = new Point2D.Double(location.getX(), location.getZ());
+        for (Point2D beacon : beaconRegister.keySet()) {
+            // Distance squared check is less computationally intensive than checking the square
+            if (distSquared > point.distanceSq(beacon)) {
+                result.add(beaconRegister.get(beacon));
+            }
+        }
+        return result;        
+    }
+    
     /**
      * Returns beacons by index
      * @param index

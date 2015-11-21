@@ -27,11 +27,11 @@ public class BeaconPopulator extends BlockPopulator {
         //        + " Settings.size =" + Settings.size);
 
         // Don't bother to make anything if it is outside the border. Make it just a bit smaller than the border
-        if (Settings.size > 0) {
-            int minX = (Settings.xCenter - Settings.size/2) / 16 + 1;
-            int minZ = (Settings.zCenter - Settings.size/2) / 16 + 1;
-            int maxX = (Settings.xCenter + Settings.size/2) / 16 - 1;
-            int maxZ = (Settings.zCenter + Settings.size/2) / 16 - 1;
+        if (Settings.borderSize > 0) {
+            int minX = (Settings.xCenter - Settings.borderSize/2) / 16 + 1;
+            int minZ = (Settings.zCenter - Settings.borderSize/2) / 16 + 1;
+            int maxX = (Settings.xCenter + Settings.borderSize/2) / 16 - 1;
+            int maxZ = (Settings.zCenter + Settings.borderSize/2) / 16 - 1;
             if (source.getX() < minX || source.getX() > maxX || source.getZ() < minZ || source.getZ() > maxZ) {
                 return;
             }
@@ -52,16 +52,20 @@ public class BeaconPopulator extends BlockPopulator {
             if (plugin.getRegister().getBeaconAt((source.getX() * 16 + x), (source.getZ()*16 + z)) != null) {
                 return;
             }
-            int y = source.getChunkSnapshot().getHighestBlockYAt(x, z) - 1;
+            int y = source.getChunkSnapshot().getHighestBlockYAt(x, z);
             Block b = source.getBlock(x, y, z);
             // Don't make in the ocean or deep ocean because they are too easy to find.
             // Frozen ocean okay for now.
             if (b.getBiome().equals(Biome.OCEAN) || b.getBiome().equals(Biome.DEEP_OCEAN)) {
                 return;
             }
-            if (b.getType().equals(Material.LEAVES) || b.getType().equals(Material.LEAVES_2)
-                    || b.getType().equals(Material.LOG) || b.getType().equals(Material.LOG_2)) {
-                return;
+            while (b.getType().equals(Material.AIR) || b.getType().equals(Material.LEAVES) || b.getType().equals(Material.LEAVES_2)) {
+                y--;
+                if (y == 0) {
+                    // Oops, nothing here
+                    return;
+                }
+                b = source.getBlock(x, y, z);
             }
             // Else make it into a beacon
             //beacons.add(new Vector(x,y,z));

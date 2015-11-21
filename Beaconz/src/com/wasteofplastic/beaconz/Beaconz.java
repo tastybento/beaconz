@@ -1,15 +1,21 @@
 package com.wasteofplastic.beaconz;
 
+import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.apache.commons.lang.math.NumberUtils;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
 import org.bukkit.WorldType;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.generator.BlockPopulator;
 import org.bukkit.inventory.ItemStack;
@@ -58,17 +64,66 @@ public class Beaconz extends JavaPlugin {
 
                 // Load the teams
                 scorecard.loadTeamMembers();
-                
+
                 // Create the block populator
                 if (beaconPopulator == null) {
                     getBp();
                 }
                 // Create the world
-                getBeaconzWorld();
+                World world = getBeaconzWorld();
 
                 // Register the listeners - block break etc.
                 BeaconListeners ev = new BeaconListeners(plugin);
                 getServer().getPluginManager().registerEvents(ev, plugin);
+
+                // Create the corner beacons if world boarder is active
+                if (Settings.borderSize > 0) {
+                    // Check corners
+                    Set<Point2D> corners = new HashSet<Point2D>();
+                    int xMin = Settings.xCenter - (Settings.borderSize /2) + 1;
+                    int xMax = Settings.xCenter + (Settings.borderSize /2) - 2;
+                    int zMin = Settings.zCenter - (Settings.borderSize /2) + 1;
+                    int zMax = Settings.zCenter + (Settings.borderSize /2) - 2;
+                    corners.add(new Point2D.Double(xMin,zMin));
+                    corners.add(new Point2D.Double(xMin,zMax));
+                    corners.add(new Point2D.Double(xMax,zMin));
+                    corners.add(new Point2D.Double(xMax,zMax));
+                    for (Point2D point : corners) {
+                        if (!register.isNearBeacon(point, 5)) {
+                            Block b = world.getHighestBlockAt((int)point.getX(), (int)point.getY());
+                            while (b.getType().equals(Material.AIR) || b.getType().equals(Material.LEAVES) || b.getType().equals(Material.LEAVES_2)) {          
+                                if (b.getY() == 0) {
+                                    // Oops, nothing here
+                                    break;
+                                }
+                                b = b.getRelative(BlockFace.DOWN);
+                            }
+                            if (b.getY() > 3) {
+                                // Create a beacon
+                                Bukkit.getLogger().info("DEBUG: made beacon at " + b.getLocation());
+                                b.setType(Material.BEACON);
+                                // Add the capstone
+                                b.getRelative(BlockFace.UP).setType(Material.OBSIDIAN);
+                                // Create the pyramid
+                                b = b.getRelative(BlockFace.DOWN);
+
+                                // All diamond blocks for now
+                                b.setType(Material.DIAMOND_BLOCK);
+                                b.getRelative(BlockFace.SOUTH).setType(Material.DIAMOND_BLOCK);
+                                b.getRelative(BlockFace.SOUTH_EAST).setType(Material.DIAMOND_BLOCK);
+                                b.getRelative(BlockFace.SOUTH_WEST).setType(Material.DIAMOND_BLOCK);
+                                b.getRelative(BlockFace.EAST).setType(Material.DIAMOND_BLOCK);
+                                b.getRelative(BlockFace.WEST).setType(Material.DIAMOND_BLOCK);
+                                b.getRelative(BlockFace.NORTH).setType(Material.DIAMOND_BLOCK);
+                                b.getRelative(BlockFace.NORTH_EAST).setType(Material.DIAMOND_BLOCK);
+                                b.getRelative(BlockFace.NORTH_WEST).setType(Material.DIAMOND_BLOCK);
+
+                                // Register the beacon
+                                register.addBeacon(null, b.getLocation());
+                            }
+                        }
+                    }
+                }
             }});
     }
 
@@ -116,7 +171,7 @@ public class Beaconz extends JavaPlugin {
     public void loadConfig() {
         Settings.worldName = getConfig().getString("world.name", "beaconz");
         Settings.distribution = getConfig().getDouble("world.distribution", 0.05D);
-        Settings.size = getConfig().getInt("world.size",0);
+        Settings.borderSize = getConfig().getInt("world.size",0);
         Settings.xCenter = getConfig().getInt("world.xcenter",0);
         Settings.zCenter = getConfig().getInt("world.zcenter",0);
         Settings.randomSpawn = getConfig().getBoolean("world.randomspawn", true);
@@ -140,9 +195,9 @@ public class Beaconz extends JavaPlugin {
                                 effects.add(new PotionEffect(type, NumberUtils.toInt(split[1]), NumberUtils.toInt(split[2])));
                             }
                         }
-                        
+
                     }
-                           
+
                 }
                 Settings.enemyFieldEffects.put(NumberUtils.toInt(part.getKey()), effects);               
             }
@@ -151,7 +206,7 @@ public class Beaconz extends JavaPlugin {
         ConfigurationSection friendlyFieldSection = getConfig().getConfigurationSection("world.friendlyfieldeffects");
         // Step through the numbers
         for (Entry<String, Object> part : friendlyFieldSection.getValues(false).entrySet()) {
-          getLogger().info("DEBUG: Field: " + part.getKey());
+            getLogger().info("DEBUG: Field: " + part.getKey());
             if (NumberUtils.isNumber(part.getKey())) {
                 getLogger().info("DEBUG: Field is a number");
                 // It is a number, now get the string list
@@ -166,14 +221,14 @@ public class Beaconz extends JavaPlugin {
                         if (type != null) {
                             getLogger().info("DEBUG: Potion is known");
                             if (NumberUtils.isNumber(split[1]) && NumberUtils.isNumber(split[2])) {
-                                
+
                                 getLogger().info("DEBUG: adding friendly effect " + type.toString());
                                 effects.add(new PotionEffect(type, NumberUtils.toInt(split[1]), NumberUtils.toInt(split[2])));
                             }
                         }
-                        
+
                     }
-                           
+
                 }
                 Settings.friendlyFieldEffects.put(NumberUtils.toInt(part.getKey()), effects);               
             }
@@ -350,8 +405,8 @@ public class Beaconz extends JavaPlugin {
         }
         beaconzWorld.setSpawnLocation(Settings.xCenter, beaconzWorld.getHighestBlockYAt(Settings.xCenter, Settings.zCenter), Settings.zCenter);
         beaconzWorld.getWorldBorder().setCenter(Settings.xCenter, Settings.zCenter);
-        if (Settings.size > 0) {
-            beaconzWorld.getWorldBorder().setSize(Settings.size);
+        if (Settings.borderSize > 0) {
+            beaconzWorld.getWorldBorder().setSize(Settings.borderSize);
         }
         return beaconzWorld;
     }

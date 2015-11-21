@@ -83,13 +83,13 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
                 }
                 direction++;
             }
-            teleportTo = teleportTo.getBlock().getRelative(blockFace, Settings.size / 4).getLocation();
+            teleportTo = teleportTo.getBlock().getRelative(blockFace, Settings.borderSize / 4).getLocation();
             teleportTo = getBeaconzWorld().getHighestBlockAt(teleportTo).getLocation().add(0.5, 0, 0.5);
             teleportTo.getBlock().getRelative(BlockFace.DOWN).setType(Material.BEDROCK);
             boolean found = false;
             if (Settings.randomSpawn) {
                 Random rand = new Random();
-                int range = Settings.size > 0 ? (Settings.size/2):50000;
+                int range = Settings.borderSize > 0 ? (Settings.borderSize/2):50000;
                 do {
                     int x = rand.nextInt(range);
                     x = rand.nextBoolean() ? x: -x;
