@@ -54,7 +54,6 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
             if (getScorecard().getTeam(player) == null) {
                 // New player!
                 newPlayer = true;
-                Random rand = new Random();
                 teams = getScorecard().getScoreboard().getTeams();
                 int minSize=Integer.MAX_VALUE;
                 Team smallestTeam=null;
