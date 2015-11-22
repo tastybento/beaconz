@@ -59,15 +59,15 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
                 int minSize=Integer.MAX_VALUE;
                 Team smallestTeam=null;
                 for (Team t: teams) {
-                    if(t.size() < minSize) {
-                        minSize=t.size();
+                    if(t.getSize() < minSize) {
+                        minSize=t.getSize();
                         smallestTeam=t;
                     }
                 }
                 smallestTeam.addPlayer(player);
                 player.sendMessage("You are now a member of " + smallestTeam.getDisplayName() + " team!");
                         getBeaconzPlugin().getServer().dispatchCommand(getBeaconzPlugin().getServer().getConsoleSender(),
-                        "title " + player.getName() + " title {text:\"" + t.getDisplayName() + " team!\", color:gold}");
+                        "title " + player.getName() + " title {text:\"" + smallestTeam.getDisplayName() + " team!\", color:gold}");
             }
             // Teleport teams to different locations
             Location teleportTo = getBeaconzWorld().getSpawnLocation();
