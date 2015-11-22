@@ -38,7 +38,7 @@ public class Scorecard extends BeaconzPluginDependent{
         //this.teamMembers = new HashMap<Team, List<UUID>>();
 
         Objective objective = scoreboard.registerNewObjective("teamscore", "blocks");
-        objective.setDisplaySlot(DisplaySlot.SIDEBAR);
+        //objective.setDisplaySlot(DisplaySlot.SIDEBAR);
         //Setting the display name of the scoreboard/objective
         objective.setDisplayName(" blocks");
     }
