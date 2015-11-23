@@ -46,4 +46,19 @@
 		</repository>		
 	</repositories>
 	<artifactId>beaconz</artifactId>
+	<issueManagement>
+		<system>github</system>
+		<url>https://github.com/tastybento/beaconz/issues</url>
+	</issueManagement>
+	<ciManagement>
+		<system>Travis CI</system>
+		<url>https://travis-ci.org/tastybento/beaconz</url>
+	</ciManagement>
+	<organization>
+		<name>Silicon Valley Minecraft Meetup</name>
+		<url>http://www.meetup.com/SV-Minecraft/</url>
+	</organization>
+	<name>Beaconz</name>
+	<url>https://github.com/tastybento/beaconz/wiki</url>
+	<description>Beaconz is a minecraft mod that adds area control and capture point features to default minecraft. It's runs on Spigot 1.8.8 and or Bukkit servers and runs server side with no client requirements.</description>
 </project>
