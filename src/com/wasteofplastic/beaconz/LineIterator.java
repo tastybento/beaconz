@@ -1,3 +1,7 @@
+/*
+ * Taken from https://snipt.net/nikoschwarz/iterate-all-points-on-a-line-using-bresenhams-algorithm/
+ */
+
 package com.wasteofplastic.beaconz;
 
 import java.awt.geom.Line2D;
