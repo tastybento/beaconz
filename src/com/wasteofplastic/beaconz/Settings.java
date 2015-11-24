@@ -96,4 +96,9 @@ public class Settings {
      * Format is "Id#/Material:[Durability/Qty]:Qty"
      */
     public static List<ItemStack> newbieKit = new ArrayList<ItemStack>();
+    
+    /*
+     * Whether teamchat is on or not
+     */
+    public static boolean teamChat;
 }

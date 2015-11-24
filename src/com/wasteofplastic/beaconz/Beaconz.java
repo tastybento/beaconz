@@ -47,9 +47,8 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
 public class Beaconz extends JavaPlugin {
-    BeaconPopulator beaconPop;
-    Register register;
-    World beaconzWorld;
+    private Register register;
+    private World beaconzWorld;
     private static Beaconz plugin;
     static BlockPopulator beaconPopulator;
     private Scorecard scorecard;
@@ -97,6 +96,7 @@ public class Beaconz extends JavaPlugin {
                 // Register the listeners - block break etc.
                 BeaconListeners ev = new BeaconListeners(plugin);
                 getServer().getPluginManager().registerEvents(ev, plugin);
+                getServer().getPluginManager().registerEvents(new ChatListener(plugin), plugin);
 
                 // Create the corner beacons if world boarder is active
                 if (Settings.borderSize > 0) {
@@ -190,8 +190,8 @@ public class Beaconz extends JavaPlugin {
     /**
      * Loads settings from config.yml
      */
-    @SuppressWarnings("deprecation")
     public void loadConfig() {
+        Settings.teamChat = true;
         Settings.worldName = getConfig().getString("world.name", "beaconz");
         Settings.distribution = getConfig().getDouble("world.distribution", 0.05D);
         Settings.borderSize = getConfig().getInt("world.size",0);
