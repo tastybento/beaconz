@@ -30,6 +30,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Random;
+import java.util.UUID;
 
 import org.apache.commons.lang.math.NumberUtils;
 import org.bukkit.Bukkit;
@@ -67,8 +68,21 @@ import org.bukkit.scoreboard.Team;
 
 public class BeaconListeners extends BeaconzPluginDependent implements Listener {
 
-    public BeaconListeners(Beaconz beaconzPlugin) {
-        super(beaconzPlugin);
+    private HashMap<UUID, BeaconObj> standingOn = new HashMap<UUID, BeaconObj>();
+
+    public BeaconListeners(Beaconz plugin) {
+        super(plugin);
+        // Work out if players are on beacons or not
+        standingOn.clear();
+        for (Player player : getServer().getOnlinePlayers()) {
+            if (player.getWorld().equals(getBeaconzWorld())) {
+                BeaconObj beacon = getRegister().getBeaconAt(player.getLocation().getBlockX(), player.getLocation().getBlockZ());
+                if (beacon != null) {
+                    // Add players to beacon standing
+                    standingOn.put(player.getUniqueId(), beacon);
+                } 
+            }
+        }
     }
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
@@ -235,10 +249,14 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
 
     @EventHandler(priority = EventPriority.LOW)
     public void onWorldChange(final PlayerChangedWorldEvent event) {
+        // Entering Beaconz world
         if (event.getPlayer().getWorld().equals(getBeaconzWorld())) {
             event.getPlayer().setScoreboard(getScorecard().getScoreboard());
-
-        } 
+        } else {
+            // Leaving Beaconz world
+            // Remove player from map
+            standingOn.remove(event.getPlayer().getUniqueId());
+        }
     }
 
     /**
@@ -825,8 +843,8 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                                 getLogger().info("DEBUG: Applying " + potionEffectType.toString() + ":" + amplifier + " for " + num + " ticks");
                             }
                         }
-                            
-                            
+
+
                     }
                 }
             }
@@ -913,65 +931,78 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                 // This is not a beacon map
                 return;
             }
-            if (beacon.equals(mappedBeacon)) {
-                player.sendMessage(ChatColor.RED + "You cannot link a beacon to itself!");
-                event.setCancelled(true);
-                return;
-            }
-            if (beacon.getOutgoing() == 8) {
-                player.sendMessage(ChatColor.RED + "This beacon already has 8 outbound links!");
-                event.setCancelled(true);
-                return;
-            }
-            // Check if this link already exists
-            if (beacon.getLinks().contains(mappedBeacon)) {
-                player.sendMessage(ChatColor.RED + "Link already exists!");
-                event.setCancelled(true);
-                return;
-            }
-            // Proposed link
-            Line2D proposedLink = new Line2D.Double(beacon.getLocation(), mappedBeacon.getLocation());
-            // Check if the link crosses opposition team's links
-            getLogger().info("DEBUG: Check if the link crosses opposition team's links");
-            for (Line2D line : getRegister().getEnemyLinks(team)) {
-                getLogger().info("DEBUG: checking line " + line.getP1() + " to " + line.getP2());
-                if (line.intersectsLine(proposedLink)) {
-                    player.sendMessage(ChatColor.RED + "Link cannot cross enemy link!");
-                    event.setCancelled(true);
-                    return;
-                }
-            }
-
-            // Link the two beacons!
-            LinkResult result = beacon.addOutboundLink(mappedBeacon);
-            if (result.isSuccess()) {
-                player.sendMessage(ChatColor.GREEN + "Link created! The beacon map disintegrates!");
-                player.sendMessage(ChatColor.GREEN + "This beacon now has " + beacon.getOutgoing() + " links");
-                player.setItemInHand(null);
-                player.getWorld().playSound(player.getLocation(), Sound.FIREWORK_LARGE_BLAST, 1F, 1F);
-                player.getWorld().spawnEntity(player.getLocation(), EntityType.EXPERIENCE_ORB);
-            } else {
-                player.sendMessage(ChatColor.RED + "Link could not be created!");
-            }
-            if (result.getFieldsMade() > 0) {
-                if (result.getFieldsMade() == 1) {
-                    player.sendMessage(ChatColor.GREEN + "Triangle created! New score = " + getRegister().getScore(team));
-                } else {
-                    player.sendMessage(ChatColor.GREEN + String.valueOf(result.getFieldsMade()) + " triangle created! New score = " + getRegister().getScore(team));
-                }
-                player.getWorld().spawnEntity(player.getLocation(), EntityType.EXPERIENCE_ORB);
-            }
-            if (result.getFieldsFailedToMake() > 0) {
-                if (result.getFieldsFailedToMake() == 1) {
-                    player.sendMessage(ChatColor.RED + "One triangle could not be created because of overlapping enemy elements!");
-                } else {
-                    player.sendMessage(ChatColor.RED + String.valueOf(result.getFieldsFailedToMake()) + " triangle could not be created because of overlapping enemy elements!");
-                }
-            }          
             event.setCancelled(true);
+            if (linkBeacons(player, team, beacon, mappedBeacon)) {
+                player.sendMessage(ChatColor.GREEN + "The map disintegrates!");
+            }
         }
     }
 
+
+    /**
+     * Tries to link two beacons
+     * @param player
+     * @param team
+     * @param beacon
+     * @param otherBeacon
+     * @return true if link is made successfully
+     */
+    private boolean linkBeacons(Player player, Team team, BeaconObj beacon,
+            BeaconObj otherBeacon) {
+        if (beacon.equals(otherBeacon)) {
+            player.sendMessage(ChatColor.RED + "You cannot link a beacon to itself!");
+            return false;
+        }
+        if (beacon.getOutgoing() == 8) {
+            player.sendMessage(ChatColor.RED + "This beacon already has 8 outbound links!");
+            return false;
+        }
+        // Check if this link already exists
+        if (beacon.getLinks().contains(otherBeacon)) {
+            player.sendMessage(ChatColor.RED + "Link already exists!");
+            return false;
+        }
+        // Proposed link
+        Line2D proposedLink = new Line2D.Double(beacon.getLocation(), otherBeacon.getLocation());
+        // Check if the link crosses opposition team's links
+        getLogger().info("DEBUG: Check if the link crosses opposition team's links");
+        for (Line2D line : getRegister().getEnemyLinks(team)) {
+            getLogger().info("DEBUG: checking line " + line.getP1() + " to " + line.getP2());
+            if (line.intersectsLine(proposedLink)) {
+                player.sendMessage(ChatColor.RED + "Link cannot cross enemy link!");
+                return false;
+            }
+        }
+
+        // Link the two beacons!
+        LinkResult result = beacon.addOutboundLink(otherBeacon);
+        if (result.isSuccess()) {
+            player.sendMessage(ChatColor.GREEN + "Link created!");
+            player.sendMessage(ChatColor.GREEN + "This beacon now has " + beacon.getOutgoing() + " links");
+            player.setItemInHand(null);
+            player.getWorld().playSound(player.getLocation(), Sound.FIREWORK_LARGE_BLAST, 1F, 1F);
+            player.getWorld().spawnEntity(player.getLocation(), EntityType.EXPERIENCE_ORB);
+        } else {
+            player.sendMessage(ChatColor.RED + "Link could not be created!");
+            return false;
+        }
+        if (result.getFieldsMade() > 0) {
+            if (result.getFieldsMade() == 1) {
+                player.sendMessage(ChatColor.GREEN + "Triangle created! New score = " + getRegister().getScore(team));
+            } else {
+                player.sendMessage(ChatColor.GREEN + String.valueOf(result.getFieldsMade()) + " triangle created! New score = " + getRegister().getScore(team));
+            }
+            player.getWorld().spawnEntity(player.getLocation(), EntityType.EXPERIENCE_ORB);
+        }
+        if (result.getFieldsFailedToMake() > 0) {
+            if (result.getFieldsFailedToMake() == 1) {
+                player.sendMessage(ChatColor.RED + "One triangle could not be created because of overlapping enemy elements!");
+            } else {
+                player.sendMessage(ChatColor.RED + String.valueOf(result.getFieldsFailedToMake()) + " triangle could not be created because of overlapping enemy elements!");
+            }
+        }          
+        return true;
+    }
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onPlayerMove(PlayerMoveEvent event) {
@@ -987,6 +1018,40 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         Team team = getScorecard().getTeam(event.getPlayer());
         if (team == null) {
             return;
+        }
+        // Check if player is standing on a beacon
+        BeaconObj beacon = getRegister().getBeaconAt(event.getTo().getBlockX(), event.getTo().getBlockZ());
+        if (beacon != null) {
+            // Check if the beacon is captured by this team
+            if (beacon.getOwnership() != null && beacon.getOwnership().equals(team)) {
+                // Check if they are on the same beacon
+                BeaconObj currentBeacon = standingOn.get(event.getPlayer().getUniqueId());
+                if (currentBeacon == null || !currentBeacon.equals(beacon)) {
+                    standingOn.remove(event.getPlayer().getUniqueId());
+                    // Check if any other team players are on beacons and link to them
+                    for (UUID others : standingOn.keySet()) {
+                        Player player = getServer().getPlayer(others);
+                        if (player != null) {
+                            // Check team
+                            if (getScorecard().getTeam(player).equals(team)) {
+                                // Only do if beacons are different locations
+                                if (player.getLocation().getBlockX() != event.getTo().getBlockX() 
+                                        && player.getLocation().getBlockZ() != event.getTo().getBlockZ()) {
+                                    // Check if this link already exists
+                                    if (!beacon.getLinks().contains(standingOn.get(others))) {
+                                        // Try to link
+                                        linkBeacons(event.getPlayer(),team,beacon,standingOn.get(others));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    standingOn.put(event.getPlayer().getUniqueId(), beacon); 
+                }
+            }
+        } else {
+            // Remove player from map
+            standingOn.remove(event.getPlayer().getUniqueId());
         }
         // Check the From
         List<TriangleField> from = getRegister().getTriangle(event.getFrom().getBlockX(), event.getFrom().getBlockZ());
