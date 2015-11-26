@@ -52,6 +52,7 @@ public class Beaconz extends JavaPlugin {
     private static Beaconz plugin;
     static BlockPopulator beaconPopulator;
     private Scorecard scorecard;
+    private Messages messages;
 
     @Override
     public void onEnable() {
@@ -91,7 +92,7 @@ public class Beaconz extends JavaPlugin {
                     getBp();
                 }
                 // Create the world
-                World world = getBeaconzWorld();
+                getBeaconzWorld();
 
                 // Register the listeners - block break etc.
                 BeaconListeners ev = new BeaconListeners(plugin);
@@ -100,55 +101,66 @@ public class Beaconz extends JavaPlugin {
 
                 // Create the corner beacons if world boarder is active
                 if (Settings.borderSize > 0) {
-                    // Check corners
-                    Set<Point2D> corners = new HashSet<Point2D>();
-                    int xMin = Settings.xCenter - (Settings.borderSize /2) + 2;
-                    int xMax = Settings.xCenter + (Settings.borderSize /2) - 3;
-                    int zMin = Settings.zCenter - (Settings.borderSize /2) + 2;
-                    int zMax = Settings.zCenter + (Settings.borderSize /2) - 3;
-                    corners.add(new Point2D.Double(xMin,zMin));
-                    corners.add(new Point2D.Double(xMin,zMax));
-                    corners.add(new Point2D.Double(xMax,zMin));
-                    corners.add(new Point2D.Double(xMax,zMax));
-                    for (Point2D point : corners) {
-                        if (!register.isNearBeacon(point, 5)) {
-                            Block b = world.getHighestBlockAt((int)point.getX(), (int)point.getY());
-                            while (b.getType().equals(Material.AIR) || b.getType().equals(Material.LEAVES) || b.getType().equals(Material.LEAVES_2)) {          
-                                if (b.getY() == 0) {
-                                    // Oops, nothing here
-                                    break;
-                                }
-                                b = b.getRelative(BlockFace.DOWN);
-                            }
-                            if (b.getY() > 3) {
-                                // Create a beacon
-                                Bukkit.getLogger().info("DEBUG: made beacon at " + b.getLocation());
-                                b.setType(Material.BEACON);
-                                // Register the beacon
-                                register.addBeacon(null, b.getLocation());
-                                // Add the capstone
-                                b.getRelative(BlockFace.UP).setType(Material.OBSIDIAN);
-                                // Create the pyramid
-                                b = b.getRelative(BlockFace.DOWN);
-
-                                // All diamond blocks for now
-                                b.setType(Material.DIAMOND_BLOCK);
-                                b.getRelative(BlockFace.SOUTH).setType(Material.DIAMOND_BLOCK);
-                                b.getRelative(BlockFace.SOUTH_EAST).setType(Material.DIAMOND_BLOCK);
-                                b.getRelative(BlockFace.SOUTH_WEST).setType(Material.DIAMOND_BLOCK);
-                                b.getRelative(BlockFace.EAST).setType(Material.DIAMOND_BLOCK);
-                                b.getRelative(BlockFace.WEST).setType(Material.DIAMOND_BLOCK);
-                                b.getRelative(BlockFace.NORTH).setType(Material.DIAMOND_BLOCK);
-                                b.getRelative(BlockFace.NORTH_EAST).setType(Material.DIAMOND_BLOCK);
-                                b.getRelative(BlockFace.NORTH_WEST).setType(Material.DIAMOND_BLOCK);
-
-              
-                            }
-                        }
-                    }
+                    createCorners();
                 }
+                
+                // Load messages for players
+                messages = new Messages(plugin);
             }});
     }
+
+    /**
+     * Creates the corner-most beaconz so that the map can be theoretically be covered entirely (almost)
+     */
+    private void createCorners() {
+
+        // Check corners
+        Set<Point2D> corners = new HashSet<Point2D>();
+        int xMin = Settings.xCenter - (Settings.borderSize /2) + 2;
+        int xMax = Settings.xCenter + (Settings.borderSize /2) - 3;
+        int zMin = Settings.zCenter - (Settings.borderSize /2) + 2;
+        int zMax = Settings.zCenter + (Settings.borderSize /2) - 3;
+        corners.add(new Point2D.Double(xMin,zMin));
+        corners.add(new Point2D.Double(xMin,zMax));
+        corners.add(new Point2D.Double(xMax,zMin));
+        corners.add(new Point2D.Double(xMax,zMax));
+        for (Point2D point : corners) {
+            if (!register.isNearBeacon(point, 5)) {
+                Block b = getBeaconzWorld().getHighestBlockAt((int)point.getX(), (int)point.getY());
+                while (b.getType().equals(Material.AIR) || b.getType().equals(Material.LEAVES) || b.getType().equals(Material.LEAVES_2)) {          
+                    if (b.getY() == 0) {
+                        // Oops, nothing here
+                        break;
+                    }
+                    b = b.getRelative(BlockFace.DOWN);
+                }
+                if (b.getY() > 3) {
+                    // Create a beacon
+                    //Bukkit.getLogger().info("DEBUG: made beacon at " + b.getLocation());
+                    b.setType(Material.BEACON);
+                    // Register the beacon
+                    register.addBeacon(null, b.getLocation());
+                    // Add the capstone
+                    b.getRelative(BlockFace.UP).setType(Material.OBSIDIAN);
+                    // Create the pyramid
+                    b = b.getRelative(BlockFace.DOWN);
+
+                    // All diamond blocks for now
+                    b.setType(Material.DIAMOND_BLOCK);
+                    b.getRelative(BlockFace.SOUTH).setType(Material.DIAMOND_BLOCK);
+                    b.getRelative(BlockFace.SOUTH_EAST).setType(Material.DIAMOND_BLOCK);
+                    b.getRelative(BlockFace.SOUTH_WEST).setType(Material.DIAMOND_BLOCK);
+                    b.getRelative(BlockFace.EAST).setType(Material.DIAMOND_BLOCK);
+                    b.getRelative(BlockFace.WEST).setType(Material.DIAMOND_BLOCK);
+                    b.getRelative(BlockFace.NORTH).setType(Material.DIAMOND_BLOCK);
+                    b.getRelative(BlockFace.NORTH_EAST).setType(Material.DIAMOND_BLOCK);
+                    b.getRelative(BlockFace.NORTH_WEST).setType(Material.DIAMOND_BLOCK);
+                }
+            }
+        }
+    }
+
+
 
     @Override
     public void onDisable()
@@ -191,6 +203,7 @@ public class Beaconz extends JavaPlugin {
      * Loads settings from config.yml
      */
     public void loadConfig() {
+        Settings.pairLinking = getConfig().getBoolean("pairs", true);
         Settings.teamChat = true;
         Settings.worldName = getConfig().getString("world.name", "beaconz");
         Settings.distribution = getConfig().getDouble("world.distribution", 0.05D);
@@ -311,7 +324,7 @@ public class Beaconz extends JavaPlugin {
         for (Entry<Integer, ItemStack> ent : Settings.teamGoodies.entrySet()) {
             plugin.getLogger().info("DEBUG: " + ent.getKey() + " " + ent.getValue());
         }
-        
+
         // Add initial inventory
         List<String> newbieKit = getConfig().getStringList("world.newbiekit");
         Settings.newbieKit.clear();
@@ -402,5 +415,12 @@ public class Beaconz extends JavaPlugin {
             beaconzWorld.getWorldBorder().setSize(Settings.borderSize);
         }
         return beaconzWorld;
+    }
+
+    /**
+     * @return the messages
+     */
+    public Messages getMessages() {
+        return messages;
     }
 }

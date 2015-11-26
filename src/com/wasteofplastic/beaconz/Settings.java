@@ -97,8 +97,13 @@ public class Settings {
      */
     public static List<ItemStack> newbieKit = new ArrayList<ItemStack>();
     
-    /*
+    /**
      * Whether teamchat is on or not
      */
     public static boolean teamChat;
+    
+    /**
+     * Determines how links will be created (player pairs or maps)
+     */
+    public static boolean pairLinking;
 }

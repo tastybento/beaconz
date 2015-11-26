@@ -1,0 +1,249 @@
+/*
+ * Copyright (c) 2015 tastybento
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
+package com.wasteofplastic.beaconz;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.UUID;
+
+import org.bukkit.OfflinePlayer;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
+import org.bukkit.scoreboard.Team;
+
+/**
+ * Handles offline messaging to players and teams
+ * 
+ * @author tastybento
+ * 
+ */
+public class Messages extends BeaconzPluginDependent {
+
+    // Offline Messages
+    private HashMap<UUID, List<String>> messages = new HashMap<UUID, List<String>>();
+    private YamlConfiguration messageStore;
+
+
+    /**
+     * @param plugin
+     */
+    public Messages(Beaconz plugin) {
+        super(plugin);
+    }
+
+    /**
+     * Returns what messages are waiting for the player or null if none
+     * 
+     * @param playerUUID
+     * @return
+     */
+    public List<String> getMessages(UUID playerUUID) {
+        List<String> playerMessages = messages.get(playerUUID);
+        return playerMessages;
+    }
+
+    /**
+     * Clears any messages for player
+     * 
+     * @param playerUUID
+     */
+    public void clearMessages(UUID playerUUID) {
+        messages.remove(playerUUID);
+    }
+
+    public void saveMessages() {
+        if (messageStore == null) {
+            return;
+        }
+        getLogger().info("Saving offline messages...");
+        try {
+            // Convert to a serialized string
+            final HashMap<String, Object> offlineMessages = new HashMap<String, Object>();
+            for (UUID p : messages.keySet()) {
+                offlineMessages.put(p.toString(), messages.get(p));
+            }
+            // Convert to YAML
+            messageStore.set("messages", offlineMessages);
+            File messageFile = new File(getDataFolder(), "messages.yml");
+            messageStore.save(messageFile);
+            return;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return;
+        }
+    }
+
+    public boolean loadMessages() {
+        getLogger().info("Loading offline messages...");
+        try {
+            File messageFile = new File(getDataFolder(), "messages.yml");
+            messageStore.load(messageFile);
+            if (messageStore.getConfigurationSection("messages") == null) {
+                messageStore.createSection("messages"); // This is only used to
+                // create
+            }
+            HashMap<String, Object> temp = (HashMap<String, Object>) messageStore.getConfigurationSection("messages").getValues(true);
+            for (String s : temp.keySet()) {
+                List<String> messageList = messageStore.getStringList("messages." + s);
+                if (!messageList.isEmpty()) {
+                    messages.put(UUID.fromString(s), messageList);
+                }
+            }
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * Provides the messages for the player
+     * 
+     * @param playerUUID
+     * @return List of messages
+     */
+    public List<String> get(UUID playerUUID) {
+        return messages.get(playerUUID);
+    }
+
+    /**
+     * Stores a message for player
+     * 
+     * @param playerUUID
+     * @param playerMessages
+     */
+    public void put(UUID playerUUID, List<String> playerMessages) {
+        messages.put(playerUUID, playerMessages);
+
+    }
+
+    /**
+     * Sends a message to every player in the team that is offline
+     * 
+     * @param playerUUID
+     * @param message
+     */
+    public void tellOfflineTeam(UUID playerUUID, String message) {
+        OfflinePlayer player = getServer().getPlayer(playerUUID);
+        Team team = getScorecard().getTeam(player);
+        // getLogger().info("DEBUG: tell offline team called");
+        if (team == null) {
+            // getLogger().info("DEBUG: player is not in a team");
+            return;
+        }
+        for (OfflinePlayer member : team.getPlayers()) {
+            // getLogger().info("DEBUG: trying UUID " + member.toString());
+            if (!member.isOnline()) {
+                // Offline player
+                setMessage(member.getUniqueId(), message);
+            }
+        }
+    }
+
+    /**
+     * Tells all online team members something happened
+     * 
+     * @param playerUUID
+     * @param message
+     */
+    public void tellTeam(UUID playerUUID, String message) {
+        OfflinePlayer player = getServer().getPlayer(playerUUID);
+        Team team = getScorecard().getTeam(player);
+        // getLogger().info("DEBUG: tell offline team called");
+        if (team == null) {
+            // getLogger().info("DEBUG: player is not in a team");
+            return;
+        }
+        for (OfflinePlayer member : team.getPlayers()) {
+            // getLogger().info("DEBUG: trying UUID " + member.toString());
+            if (member.isOnline() && !member.equals(player)) {
+                // Offline player
+                ((Player)member).sendMessage(message);
+            }
+        }
+    }
+
+    /**
+     * Sets a message for the player to receive next time they login
+     * 
+     * @param player
+     * @param message
+     * @return true if player is offline, false if online
+     */
+    public boolean setMessage(UUID playerUUID, String message) {
+        // getLogger().info("DEBUG: received message - " + message);
+        Player player = getServer().getPlayer(playerUUID);
+        // Check if player is online
+        if (player != null) {
+            if (player.isOnline()) {
+                // player.sendMessage(message);
+                return false;
+            }
+        }
+        // Player is offline so store the message
+        // getLogger().info("DEBUG: player is offline - storing message");
+        List<String> playerMessages = get(playerUUID);
+        if (playerMessages != null) {
+            playerMessages.add(message);
+        } else {
+            playerMessages = new ArrayList<String>(Arrays.asList(message));
+        }
+        put(playerUUID, playerMessages);
+        return true;
+    }
+
+    /**
+     * Broadcast a message to all other teams than this one
+     * @param team
+     * @param message
+     */
+    public void tellOtherTeams(Team team, String message) {
+        for (Team otherTeam : getScorecard().getScoreboard().getTeams()) {
+            if (!team.equals(otherTeam)) {
+                // Tell other players
+                tellTeam(otherTeam, message);
+            }
+        }
+
+    }
+
+    /**
+     * Tells all the online members of team a message
+     * @param team
+     * @param message
+     */
+    @SuppressWarnings("deprecation")
+    public void tellTeam(Team team, String message) {
+        // Tell other players
+        for (OfflinePlayer player : team.getPlayers()) {
+            if (player.isOnline()) {
+                if (((Player)player).getWorld().equals(getBeaconzWorld())) {
+                    ((Player)player).sendMessage(message);
+                }
+            }
+        }
+    } 
+}

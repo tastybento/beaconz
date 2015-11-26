@@ -48,6 +48,7 @@ public class Scorecard extends BeaconzPluginDependent{
     private ScoreboardManager manager;
     private Scoreboard scoreboard;
     private HashMap<Team, MaterialData> teamBlock;
+    private HashMap<Team, Integer> score = new HashMap<Team, Integer>();
     //private HashMap<Team, List<UUID>> teamMembers;
     //private HashMap<UUID, String> teamLookup;
 
@@ -56,6 +57,7 @@ public class Scorecard extends BeaconzPluginDependent{
         this.manager = beaconzPlugin.getServer().getScoreboardManager();
         this.scoreboard = manager.getNewScoreboard();
         this.teamBlock = new HashMap<Team, MaterialData>();
+        this.score.clear();
         //this.teamLookup = new HashMap<UUID, String>();
         //this.teamMembers = new HashMap<Team, List<UUID>>();
 
@@ -229,4 +231,59 @@ public class Scorecard extends BeaconzPluginDependent{
         }
         return null;
     }
+    
+    /**
+     * @return the score
+     */
+    public HashMap<Team, Integer> getScore() {
+        return score;
+    }
+
+    /**
+     * Set the score for a team
+     * @param team
+     * @param score
+     */
+    public void setScore(Team team, int score) {
+        this.score.put(team, score);
+    } 
+    
+    /**
+     * @param team
+     * @return score for faction
+     */
+    public int getScore(Team team) {
+        if (score.containsKey(team)) {
+            return score.get(team);
+        }
+        return 0;
+    }
+
+    /**
+     * Adds score to team
+     * @param owner
+     * @param area
+     */
+    public void addScore(Team owner, int area) {
+        if (score.containsKey(owner)) {
+            int s = score.get(owner);
+            s += area;
+            score.put(owner, s);
+        } else {
+            score.put(owner, area);
+        } 
+    }  
+    
+    /**
+     * Removes score from team
+     * @param owner
+     * @param area
+     */
+    public void removeScore(Team owner, int area) {
+        addScore(owner, -area);
+        if (score.get(owner) < 0) {
+            score.put(owner, 0);
+        }
+    }
+
 }

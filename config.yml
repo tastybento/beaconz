@@ -12,7 +12,10 @@ world:
   # Random spawn - if true, players will spawn randomly (within the world border if set)
   randomspawn: false
   # Seed adjustment
-  seedadjustment: 0  
+  seedadjustment: 0
+  # Use maps or player pairs to make links
+  # If false, maps will be used
+  pairs: true
   # Starter inventory
   # Format Material:Qty or Material:Data:Qty
   newbiekit:

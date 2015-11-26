@@ -52,7 +52,7 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         // Test commands
-        if (args.length == 0 || args[0].equalsIgnoreCase("help")) {
+        if (args[0].equalsIgnoreCase("help")) {
             sender.sendMessage("/" + label + " help - this help");
             sender.sendMessage("/" + label + " - teleport to the beaconz world and join a team");
             sender.sendMessage("/" + label + " distribution <fraction> - sets the distribution of beacons temporarily");
@@ -220,9 +220,9 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
         }
         if (args[0].equalsIgnoreCase("score")) {
             // list known beacons
-            sender.sendMessage("Scores:");
-            for (Team faction : getRegister().getScore().keySet()) {
-                sender.sendMessage(faction.getDisplayName() + " :" + getRegister().getScore().get(faction) + " blocks");
+            sender.sendMessage(ChatColor.AQUA + "Scores:");
+            for (Team team : getScorecard().getScoreboard().getTeams()) {
+                sender.sendMessage(ChatColor.AQUA + team.getDisplayName() + ChatColor.AQUA + ": " + getScorecard().getScore(team) + " blocks");
             }
             return true;
         }

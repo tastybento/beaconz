@@ -44,7 +44,6 @@ public class BeaconObj extends BeaconzPluginDependent {
     private long hackTimer;
     private Team ownership;
     private Set<BeaconObj> links;
-    private int outgoing;
     private Integer id = null;
     private boolean newBeacon = true;
 
@@ -57,7 +56,6 @@ public class BeaconObj extends BeaconzPluginDependent {
         this.hackTimer = System.currentTimeMillis();
         this.ownership = owner;
         this.links = new HashSet<BeaconObj>();
-        this.outgoing = 0;
         this.newBeacon = true;
     }
 
@@ -94,20 +92,18 @@ public class BeaconObj extends BeaconzPluginDependent {
     public LinkResult addOutboundLink(BeaconObj destination) {
         getLogger().info("DEBUG: Trying to add link");
         // There is a max of 8 outgoing links allowed
-        if (this.outgoing == 8) {
+        if (links.size() == 8) {
             getLogger().info("DEBUG: outbound link limit reached");
             return new LinkResult(0,false,0);
         }
         Line2D newLink = new Line2D.Double(this.location, destination.getLocation());
         // Add link to this beacon
         if (links.add(destination)) {
-            getLogger().info("DEBUG: Adding link from " + this.location + " to " + destination.getLocation());
+            //getLogger().info("DEBUG: Adding link from " + this.location + " to " + destination.getLocation());
             // Add to global register for quick lookup
             getRegister().addBeaconLink(ownership, newLink);
-            // Increase the total links by one
-            outgoing++;
             // Tell the destination beacon to add a link back
-            getLogger().info("DEBUG: Telling dest to add link");
+            //getLogger().info("DEBUG: Telling dest to add link");
             return destination.addLink(this);
         }
         return new LinkResult(0,false,0);
@@ -128,16 +124,16 @@ public class BeaconObj extends BeaconzPluginDependent {
         int fieldsFailed = 0;
         //getLogger().info("DEBUG: link added");
         // Check to see if we have a triangle
-        getLogger().info("DEBUG: Checking for triangles");
+        //getLogger().info("DEBUG: Checking for triangles");
         // Run through each of the beacons this beacon is directly linked to
         for (BeaconObj directlyLinkedBeacon : links) {
-            getLogger().info("DEBUG: Checking links from " + directlyLinkedBeacon.getLocation());
+            //getLogger().info("DEBUG: Checking links from " + directlyLinkedBeacon.getLocation());
             // See if any of the beacons linked to our direct links link back to us
             for (BeaconObj indirectlyLinkedBeacon : directlyLinkedBeacon.getLinks()) {
                 if (!indirectlyLinkedBeacon.equals(this)) {
-                    getLogger().info("DEBUG: " + directlyLinkedBeacon.getLocation() + " => " + indirectlyLinkedBeacon.getLocation());
+                    //getLogger().info("DEBUG: " + directlyLinkedBeacon.getLocation() + " => " + indirectlyLinkedBeacon.getLocation());
                     if (indirectlyLinkedBeacon.equals(starter)) {
-                        getLogger().info("DEBUG: Triangle found! ");
+                        //getLogger().info("DEBUG: Triangle found! ");
                         // We have a winner
                         try {
                             // Result is true if the triangle is made okay, otherwise, don't make the link and return false
@@ -199,10 +195,10 @@ public class BeaconObj extends BeaconzPluginDependent {
     }
 
     /**
-     * @return the outgoing
+     * @return the number of links
      */
-    public int getOutgoing() {
-        return outgoing;
+    public int getNumberOfLinks() {
+        return links.size();
     }
 
     /**

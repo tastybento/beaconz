@@ -22,6 +22,7 @@
 
 package com.wasteofplastic.beaconz;
 
+import java.io.File;
 import java.util.logging.Logger;
 
 import org.bukkit.Server;
@@ -70,5 +71,13 @@ public abstract class BeaconzPluginDependent {
     
     public final Server getServer() {
         return this.beaconzPlugin.getServer();
+    }
+    
+    public final File getDataFolder() {
+        return this.beaconzPlugin.getDataFolder();
+    }
+    
+    public final Messages getMessages() {
+        return this.beaconzPlugin.getMessages();
     }
 }

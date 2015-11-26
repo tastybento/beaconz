@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -59,7 +60,6 @@ public class Register extends BeaconzPluginDependent {
     private HashMap<Short, BeaconObj> beaconMaps = new HashMap<Short, BeaconObj>();
     private HashMap<Point2D, BeaconObj> beaconRegister = new HashMap<Point2D, BeaconObj>();
     private Set<TriangleField> triangleFields = new HashSet<TriangleField>();
-    private HashMap<Team, Integer> score = new HashMap<Team, Integer>();
     private HashMap<Team, Set<Line2D>> links = new HashMap<Team, Set<Line2D>>();
 
     public void saveRegister() {
@@ -105,7 +105,6 @@ public class Register extends BeaconzPluginDependent {
         beaconMaps.clear();
         beaconRegister.clear();
         triangleFields.clear();
-        score.clear();
         links.clear();
 
         File beaconzFile = new File(getBeaconzPlugin().getDataFolder(),"beaconz.yml");
@@ -279,13 +278,7 @@ public class Register extends BeaconzPluginDependent {
                 if (triangleFields.add(triangle)) {
                     //getLogger().info("DEBUG: Added control field!");
                     // New control field, add to score
-                    if (score.containsKey(owner)) {
-                        int s = score.get(owner);
-                        s += triangle.getArea();
-                        score.put(owner, s);
-                    } else {
-                        score.put(owner, triangle.getArea());
-                    }
+                    getScorecard().addScore(owner, triangle.getArea());
                     //getLogger().info("DEBUG: New score is " + triangle.getArea());
                     return true;
                 } else {
@@ -301,34 +294,6 @@ public class Register extends BeaconzPluginDependent {
         }
         return false;
     }
-
-    /**
-     * @param faction
-     * @return score for faction
-     */
-    public int getScore(Team faction) {
-        if (score.containsKey(faction)) {
-            return score.get(faction);
-        }
-        return 0;
-    }
-
-
-    /**
-     * @return the score
-     */
-    public HashMap<Team, Integer> getScore() {
-        return score;
-    }
-
-    /**
-     * Set the score for a faction
-     * @param faction
-     * @param score
-     */
-    public void setScore(Team faction, int score) {
-        this.score.put(faction, score);
-    }    
 
     /**
      * @return the beaconRegister
@@ -463,7 +428,7 @@ public class Register extends BeaconzPluginDependent {
         return null;
     }
     /**
-     * Removes this block from faction ownership and makes it unowned
+     * Removes this block from team ownership and makes it unowned
      * @param beacon
      */
     public void removeBeaconOwnership(BeaconObj beacon) {
@@ -472,14 +437,24 @@ public class Register extends BeaconzPluginDependent {
         for (BeaconObj linkedBeacon : beacon.getLinks()) {
             linkedBeacon.removeLink(beacon);
         }
-        // Remove links from this register (I'm not happy about the duplication here)
+        // Remove links from this register 
         if (links.get(oldOwner) != null) {
             Iterator<Line2D> linkIterator = links.get(oldOwner).iterator();
+            int linkLossCount = 0;
             while (linkIterator.hasNext()) {
                 Line2D link = linkIterator.next();
                 if (link.getP1().equals(beacon.getLocation()) || link.getP2().equals(beacon.getLocation())) {
+                    linkLossCount++;
                     linkIterator.remove();
                 }
+            }
+            if (linkLossCount == 1) {
+                // Tell folks what's going on
+                getMessages().tellTeam(oldOwner, ChatColor.RED + "Your team lost a link!");
+                getMessages().tellOtherTeams(oldOwner, ChatColor.GREEN + oldOwner.getDisplayName() + ChatColor.GREEN + " lost a link!");
+            } else if (linkLossCount > 1) {
+                getMessages().tellTeam(oldOwner, ChatColor.RED + "Your team lost " + linkLossCount + " links!");
+                getMessages().tellOtherTeams(oldOwner, ChatColor.GREEN + oldOwner.getDisplayName() + ChatColor.GREEN + " lost " + linkLossCount + " links!");  
             }
         }
         beacon.removeLinks();
@@ -490,13 +465,10 @@ public class Register extends BeaconzPluginDependent {
             if (triangle.hasVertex(beacon.getLocation())) {
                 //getLogger().info("DEBUG: this beacon was part of a triangle");
                 // Remove score
-                if (score.containsKey(oldOwner)) {
-                    int sc = triangle.getArea();
-                    //getLogger().info("DEBUG: Removing score " + sc + " from " + oldOwner.getDisplayName()
-                    //        + " team's score of " + score.get(beacon.getOwnership()));
-                    int newScore = score.get(oldOwner) - sc;
-                    score.put(oldOwner,newScore);
-                }
+                getScorecard().removeScore(oldOwner, triangle.getArea());
+                // Tell folks what's going on
+                getMessages().tellTeam(triangle.getOwner(), ChatColor.RED + "Your team lost a triangle worth " + triangle.getArea() + "!");
+                getMessages().tellOtherTeams(triangle.getOwner(), ChatColor.GREEN + triangle.getOwner().getDisplayName() + ChatColor.GREEN + " lost a triangle worth " + triangle.getArea() + "!");
                 // Remove triangle
                 it.remove();
             }
