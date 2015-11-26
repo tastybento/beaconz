@@ -52,7 +52,7 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         // Test commands
-        if (args[0].equalsIgnoreCase("help")) {
+        if (args.length == 1 && args[0].equalsIgnoreCase("help")) {
             sender.sendMessage("/" + label + " help - this help");
             sender.sendMessage("/" + label + " - teleport to the beaconz world and join a team");
             sender.sendMessage("/" + label + " distribution <fraction> - sets the distribution of beacons temporarily");
