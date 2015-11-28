@@ -16,11 +16,13 @@ world:
   # Use maps or player pairs to make links
   # If false, maps will be used
   pairs: true
+  # Defense height - max height of blocks that can be placed around a beacon
+  defenseheight: 8
   # Starter inventory
   # Format Material:Qty or Material:Data:Qty
   newbiekit:
   - "DIAMOND_PICKAXE:1"
-  - "SUGAR_CANE:1"
+  #- "SUGAR_CANE:1"
   # Hack cool down - how long a player has to wait until they can try to hack a beacon
   # in minutes
   hackcooldown: 1

@@ -342,7 +342,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             event.getPlayer().sendMessage(ChatColor.RED + "You cannot build on top of a beacon!");
             return;
         }
-
+/*
         // Check if the block is the surrounding pyramid
         Block block = event.getBlock().getRelative(BlockFace.DOWN);
         // Check that it's diamond
@@ -734,6 +734,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             player.sendMessage(ChatColor.RED + "You can only place blocks on a captured beacon!");
             event.setCancelled(true);
         }
+        */
     }
 
 

@@ -98,6 +98,7 @@ public class Beaconz extends JavaPlugin {
                 BeaconListeners ev = new BeaconListeners(plugin);
                 getServer().getPluginManager().registerEvents(ev, plugin);
                 getServer().getPluginManager().registerEvents(new ChatListener(plugin), plugin);
+                getServer().getPluginManager().registerEvents(new BeaconDefenseListener(plugin), plugin);
 
                 // Create the corner beacons if world boarder is active
                 if (Settings.borderSize > 0) {
@@ -203,11 +204,21 @@ public class Beaconz extends JavaPlugin {
      * Loads settings from config.yml
      */
     public void loadConfig() {
-        Settings.pairLinking = getConfig().getBoolean("pairs", true);
+        Settings.defenseHeight = getConfig().getInt("world.defenseheight", 8);
+        if (Settings.defenseHeight < 1) {
+            Settings.defenseHeight = 1;
+        }
+        Settings.pairLinking = getConfig().getBoolean("world.pairs", true);
         Settings.teamChat = true;
         Settings.worldName = getConfig().getString("world.name", "beaconz");
         Settings.distribution = getConfig().getDouble("world.distribution", 0.05D);
+        if (Settings.distribution < 0.001D) {
+            Settings.distribution = 0.001D;
+        }
         Settings.borderSize = getConfig().getInt("world.size",0);
+        if (Settings.borderSize < 0) {
+            Settings.borderSize = 0;
+        }
         Settings.xCenter = getConfig().getInt("world.xcenter",0);
         Settings.zCenter = getConfig().getInt("world.zcenter",0);
         Settings.randomSpawn = getConfig().getBoolean("world.randomspawn", true);
