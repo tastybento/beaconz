@@ -29,6 +29,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -65,13 +66,7 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
         if (!world.equals(getBeaconzWorld())) {
             return;
         }
-        // Check if the block is a beacon or the surrounding pyramid and remove it from the damaged blocks
-        Iterator<Block> it = event.blockList().iterator();
-        while (it.hasNext()) {
-            if (getRegister().isBeacon(it.next())) {
-                it.remove();
-            }
-        }
+        // Only allow blocks at the top of defenses to be removed by explosions
     }
 
     /**
@@ -86,16 +81,14 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
             return;
         }
         for (Block b : event.getBlocks()) {
-            // If any block is part of a beacon cancel it
-            if (getRegister().isBeacon(b)) {
-                event.setCancelled(true);
-                return;
-            }
+            // Only allow blocks at the top be removed by pistons.
+            /*
             Block testBlock = b.getRelative(event.getDirection());
             BeaconObj beacon = getRegister().getBeaconAt(testBlock.getX(),testBlock.getZ());
             if (beacon != null && beacon.getY() < testBlock.getY()) {
                 event.setCancelled(true);
             }
+             */
         }
     }
 
@@ -112,16 +105,6 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
             //getLogger().info("DEBUG: not right world");
             return;
         }
-        // Check if the block is a defensive block
-        Block block = event.getBlock();
-        BeaconObj beacon = getRegister().getBeaconDefenseAt(new Point2D.Double(block.getX(), block.getZ()));
-        if (beacon == null || beacon.getOwnership() == null) {
-            return;
-        }
-        // Check blocks below the beacon
-        if (beacon.getY() > block.getY()) {
-            return;
-        }
         //getLogger().info("DEBUG: This is a beacon");
         Player player = event.getPlayer();
         // Get the player's team
@@ -131,7 +114,54 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
             event.setCancelled(true);
             player.sendMessage(ChatColor.RED + "You must be in a team to play in this world");
             return;
-        }      
+        } 
+        // Check if block is a beacon extension block
+        Block block = event.getBlock();
+        if (block.getType().equals(Material.EMERALD_BLOCK)) {
+            // Check to see if it is being placed adjacent to a beacon
+            Block adjBlock = block.getRelative(BlockFace.NORTH);
+            BeaconObj adjacentBeacon = getRegister().getBeaconDefenseAt(new Point2D.Double(adjBlock.getX(), adjBlock.getZ()));
+            if (adjacentBeacon == null) {
+                adjBlock = block.getRelative(BlockFace.SOUTH);
+                adjacentBeacon = getRegister().getBeaconDefenseAt(new Point2D.Double(adjBlock.getX(), adjBlock.getZ()));
+                if (adjacentBeacon == null) {
+                    adjBlock = block.getRelative(BlockFace.EAST);
+                    adjacentBeacon = getRegister().getBeaconDefenseAt(new Point2D.Double(adjBlock.getX(), adjBlock.getZ()));
+                    if (adjacentBeacon == null) {
+                        adjBlock = block.getRelative(BlockFace.WEST);
+                        adjacentBeacon = getRegister().getBeaconDefenseAt(new Point2D.Double(adjBlock.getX(), adjBlock.getZ()));
+                    }
+                }
+            }
+            if (adjacentBeacon != null) {
+                // Check block is at the right height
+                if (block.getY() + 1 == adjacentBeacon.getY()) {
+                    // Check if the team is placing a block on their own beacon or not
+                    if (adjacentBeacon.getOwnership() == null || !adjacentBeacon.getOwnership().equals(team)) {
+                        player.sendMessage(ChatColor.RED + "You can only extend a captured beacon!");
+                        event.setCancelled(true);
+                        return;
+                    }
+                    // Extend beacon
+                    getRegister().addBeaconDefenseBlock(block.getLocation(), adjacentBeacon);
+                    player.sendMessage(ChatColor.GREEN + "You extended the beacon!");
+                    // TODO: give experience?
+                    return;
+                }
+            }
+        }
+
+        // Check if the block is a defensive block
+
+        BeaconObj beacon = getRegister().getBeaconDefenseAt(new Point2D.Double(block.getX(), block.getZ()));
+        if (beacon == null || beacon.getOwnership() == null) {
+            return;
+        }
+        // Check blocks below the beacon
+        if (beacon.getY() > block.getY()) {
+            return;
+        }
+
         // Check if the team is placing a block on their own beacon or not
         if (!beacon.getOwnership().equals(team)) {
             player.sendMessage(ChatColor.RED + "You can only place blocks on a captured beacon!");
@@ -252,7 +282,7 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
             player.sendMessage(ChatColor.GREEN + "Drip, drop, drip");
             break;
         case EMERALD_BLOCK:
-            player.sendMessage(ChatColor.GREEN + "Commerce with thrive!");
+            player.sendMessage(ChatColor.GREEN + "Place adjacent to the beacon base to extend the beacon!");
             break;
         case EMERALD_ORE:
             break;
@@ -409,6 +439,10 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
             player.sendMessage(ChatColor.RED + "It's red");
             break;
         case SAND:
+            if (block.getData() == (byte)1) {
+                player.sendMessage(ChatColor.YELLOW + "It's red");
+                break; 
+            }
         case SANDSTONE:
         case SANDSTONE_STAIRS:
             player.sendMessage(ChatColor.YELLOW + "It's yellow");
@@ -542,11 +576,11 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
         }
         // Check height
         if (block.getY() < beacon.getHeight()) {
-            getLogger().info("DEBUG: below beacon");
+            //getLogger().info("DEBUG: below beacon");
             return;
         }
         // Check that breakage is being done top-down
-        if (block.getY() != getHighestBlockYAt(block)) {
+        if (block.getY() != getHighestDefenseBlockYAt(block, beacon.getY() + Settings.defenseHeight - 1)) {
             event.getPlayer().sendMessage(ChatColor.RED + "Remove blocks top-down");
             event.setCancelled(true);
             return;
@@ -589,11 +623,11 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
         }
         // Check height
         if (block.getY() < beacon.getHeight()) {
-            getLogger().info("DEBUG: below beacon");
+            //getLogger().info("DEBUG: below beacon");
             return;
         }
         // Check that breakage is being done top-down
-        if (block.getY() != getHighestBlockYAt(block)) {
+        if (block.getY() != getHighestDefenseBlockYAt(block, beacon.getY() + Settings.defenseHeight - 1)){
             event.getPlayer().sendMessage(ChatColor.RED + "Remove blocks top-down");
             event.setCancelled(true);
             return;
@@ -602,12 +636,12 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
     }
 
     /**
-     * Gets the highest block in the world at x,z ignoring the topermost block at 255 because that is used for glass
+     * Gets the highest defense block in the world at x,z starting at the max height a defense block can be
      * @param block
-     * @return Y value
+     * @param y
+     * @return
      */
-    private int getHighestBlockYAt(Block block) {
-        int y = 254;
+    private int getHighestDefenseBlockYAt(Block block, int y) {
         while (y > 0 && getBeaconzWorld().getBlockAt(block.getX(), y, block.getZ()).getType().equals(Material.AIR)) {
             y--;
         };

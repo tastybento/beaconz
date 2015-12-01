@@ -152,7 +152,7 @@ public class BeaconObj extends BeaconzPluginDependent {
                 }
             }
         }
-         // Visualize
+        // Visualize
         Line2D line = new Line2D.Double(starter.getLocation(), location);
         Point2D current;
         for (Iterator<Point2D> it = new LineIterator(line); it.hasNext();) {
@@ -279,6 +279,13 @@ public class BeaconObj extends BeaconzPluginDependent {
                 && beacon.getRelative(BlockFace.NORTH_EAST).getType().equals(Material.AIR)
                 && beacon.getRelative(BlockFace.SOUTH_WEST).getType().equals(Material.AIR)
                 && beacon.getRelative(BlockFace.SOUTH_EAST).getType().equals(Material.AIR)) {
+            // Check all the defense blocks too
+            for (Point2D point: getRegister().getDefensesAtBeacon(this)) {
+                beacon = getBeaconzWorld().getBlockAt((int)point.getX(), height, (int)point.getY());
+                if (!beacon.getType().equals(Material.AIR)) {
+                    return false;
+                }
+            }
             return true;
         }		
         return false;

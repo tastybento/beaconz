@@ -845,46 +845,45 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                     //getLogger().info("DEBUG: random number = " + value);
                     if (beacon.getOwnership().equals(getScorecard().getTeam(player))) {
                         // Own team
-                        /*
-            for (Entry<Integer, ItemStack> ent : Settings.teamGoodies.entrySet()) {
-            getLogger().info("DEBUG: " + ent.getKey() + " " + ent.getValue());
-            }*/
                         Entry<Integer, ItemStack> en = Settings.teamGoodies.floorEntry(value);
+                        if (en != null && en.getValue() != null) {
+                            player.getWorld().dropItemNaturally(event.getBlock().getLocation(), en.getValue());
+                            beacon.resetHackTimer();
+                            player.sendMessage(ChatColor.GREEN + "Success! Cooldown " + (Settings.hackCoolDown/60000) + " minute(s)");
+                        } else {
+                            player.getWorld().spawnEntity(player.getLocation(),EntityType.ENDERMITE);
+                            player.sendMessage(ChatColor.RED + "Failure!");
+                        }
+                    } else {
+                        // Enemy
+                        Entry<Integer, ItemStack> en = Settings.enemyGoodies.floorEntry(value);
                         if (en != null && en.getValue() != null) {
                             player.getWorld().dropItemNaturally(event.getBlock().getLocation(), en.getValue());
                             beacon.resetHackTimer();
                         } else {
                             player.getWorld().spawnEntity(player.getLocation(),EntityType.ENDERMITE);
-                            beacon.resetHackTimer();
-                            //getLogger().info("DEBUG: failed - max value was " + Settings.teamGoodies.lastKey());
-                        }
-                    } else {
-                        // Enemy
-                        /*
-            for (Entry<Integer, ItemStack> ent : Settings.enemyGoodies.entrySet()) {
-            getLogger().info("DEBUG: " + ent.getKey() + " " + ent.getValue());
-            }*/
-                        Entry<Integer, ItemStack> en = Settings.enemyGoodies.floorEntry(value);
-                        if (en != null && en.getValue() != null) {
-                            player.getWorld().dropItemNaturally(event.getBlock().getLocation(), en.getValue());
-                            beacon.resetHackTimer();
+                            player.sendMessage(ChatColor.RED + "Failure!");
                         }
                     }
                 } else {
                     // Damage player
+                    //getLogger().info("DEBUG: hack cooldown " + Settings.overHackEffects);
                     int num = (int) (beacon.getHackTimer() + Settings.hackCoolDown - System.currentTimeMillis())/50;
                     for (String effect : Settings.overHackEffects) {
                         String[] split = effect.split(":");
                         if (split.length == 2) {
-                            int amplifier = 0;
+                            int amplifier = 1;
                             if (NumberUtils.isNumber(split[1])) {
                                 amplifier = Integer.valueOf(split[1]);
+                                //getLogger().info("DEBUG: Amplifier is " + amplifier);
                             }
-                            PotionEffectType potionEffectType = PotionEffectType.getByName(effect);
+                            PotionEffectType potionEffectType = PotionEffectType.getByName(split[0]);
                             if (potionEffectType != null) {
                                 player.addPotionEffect(new PotionEffect(potionEffectType, num,amplifier));
-                                getLogger().info("DEBUG: Applying " + potionEffectType.toString() + ":" + amplifier + " for " + num + " ticks");
+                                //getLogger().info("DEBUG: Applying " + potionEffectType.toString() + ":" + amplifier + " for " + num + " ticks");
                             }
+                        } else {
+                            getLogger().warning("Unknown hack cooldown effect" + effect);
                         }
 
 
