@@ -62,6 +62,15 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
             sender.sendMessage("/" + label + " claim UNOWNED/RED/BLUE - force-claims a beacon");
             sender.sendMessage("/" + label + " link x z - force-links a beacon you are standing on to one at x,z");
         }
+        if (args.length == 1 && args[0].equalsIgnoreCase("newgame")) {
+            if (sender.isOp()) {
+                getBeaconzPlugin().newGame();
+                return true;
+            } else {
+                sender.sendMessage(ChatColor.RED + "Only ops can do this");
+                return true;
+            }
+        }
         if (args.length == 0 || args[0].equalsIgnoreCase("go")) {
             if (!(sender instanceof Player)) {
                 sender.sendMessage("Only available to players");
@@ -73,61 +82,25 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
             Set<Team> teams = getScorecard().getScoreboard().getTeams();
             boolean newPlayer = false;
             // Set the team
-            if (getScorecard().getTeam(player) == null) {
+            Team team = getScorecard().getTeam(player);
+            if (team == null) {
                 // New player!
                 newPlayer = true;
                 teams = getScorecard().getScoreboard().getTeams();
                 int minSize=Integer.MAX_VALUE;
-                Team smallestTeam=null;
                 for (Team t: teams) {
                     if(t.getSize() < minSize) {
                         minSize=t.getSize();
-                        smallestTeam=t;
+                        team=t;
                     }
                 }
-                smallestTeam.addPlayer(player);
-                player.sendMessage("You are now a member of " + smallestTeam.getDisplayName() + " team!");
+                team.addPlayer(player);
+                player.sendMessage("You are now a member of " + team.getDisplayName() + " team!");
                         getBeaconzPlugin().getServer().dispatchCommand(getBeaconzPlugin().getServer().getConsoleSender(),
-                        "title " + player.getName() + " title {text:\"" + smallestTeam.getDisplayName() + " team!\", color:gold}");
+                        "title " + player.getName() + " title {text:\"" + team.getDisplayName() + " team!\", color:gold}");
             }
             // Teleport teams to different locations
-            Location teleportTo = getBeaconzWorld().getSpawnLocation();
-            BlockFace blockFace = BlockFace.NORTH;
-            // We allow up to 8 teams
-            int direction = 0;
-            for (Team team : teams) {
-                if (team.equals(getScorecard().getTeam(player))) {
-                    switch (direction) {
-                    case 0:
-                        blockFace = BlockFace.NORTH;
-                        break;
-                    case 1:
-                        blockFace = BlockFace.SOUTH;
-                        break;
-                    case 2:
-                        blockFace = BlockFace.EAST;
-                        break;
-                    case 3:
-                        blockFace = BlockFace.WEST;
-                        break;
-                    case 4:
-                        blockFace = BlockFace.NORTH_EAST;
-                        break;
-                    case 5:
-                        blockFace = BlockFace.NORTH_WEST;
-                        break;
-                    case 6:
-                        blockFace = BlockFace.SOUTH_EAST;
-                        break;
-                    case 7:
-                        blockFace = BlockFace.SOUTH_WEST;
-                        break;
-                    }
-                }
-                direction++;
-            }
-            teleportTo = teleportTo.getBlock().getRelative(blockFace, Settings.borderSize / 4).getLocation();
-            teleportTo = getBeaconzWorld().getHighestBlockAt(teleportTo).getLocation().add(0.5, 0, 0.5);
+            Location teleportTo = getScorecard().getTeamSpawnPoint(team);
             // This will result in bedrock blocks being created up and up if the bedrock is covered...
             teleportTo.getBlock().getRelative(BlockFace.DOWN).setType(Material.BEDROCK);
             boolean found = false;

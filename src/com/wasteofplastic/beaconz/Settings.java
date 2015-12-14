@@ -111,4 +111,9 @@ public class Settings {
      * Max height above a beacon that defenses can be built.
      */
     public static int defenseHeight;
+    
+    /**
+     * Distance between repeated games. Reuses the same world between games
+     */
+    public static int gameDistance;
 }

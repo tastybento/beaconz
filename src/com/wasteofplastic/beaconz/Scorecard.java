@@ -32,13 +32,14 @@ import java.util.Map.Entry;
 import java.util.UUID;
 
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.material.MaterialData;
-import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.ScoreboardManager;
@@ -284,6 +285,59 @@ public class Scorecard extends BeaconzPluginDependent{
         if (score.get(owner) < 0) {
             score.put(owner, 0);
         }
+    }
+
+    /**
+     * Clears the score and removes team members from teams
+     */
+    public void clear() {
+        // Clear the score
+        score.clear();     
+    }
+
+    /**
+     * Returns the location where a team should spawn
+     * @param playerTeam
+     * @return Location
+     */
+    public Location getTeamSpawnPoint(Team playerTeam) {
+        Location teleportTo = getBeaconzWorld().getSpawnLocation();
+        BlockFace blockFace = BlockFace.NORTH;
+        // We allow up to 8 teams
+        int direction = 0;
+        for (Team team : scoreboard.getTeams()) {
+            if (team.equals(playerTeam)) {
+                switch (direction) {
+                case 0:
+                    blockFace = BlockFace.NORTH;
+                    break;
+                case 1:
+                    blockFace = BlockFace.SOUTH;
+                    break;
+                case 2:
+                    blockFace = BlockFace.EAST;
+                    break;
+                case 3:
+                    blockFace = BlockFace.WEST;
+                    break;
+                case 4:
+                    blockFace = BlockFace.NORTH_EAST;
+                    break;
+                case 5:
+                    blockFace = BlockFace.NORTH_WEST;
+                    break;
+                case 6:
+                    blockFace = BlockFace.SOUTH_EAST;
+                    break;
+                case 7:
+                    blockFace = BlockFace.SOUTH_WEST;
+                    break;
+                }
+            }
+            direction++;
+        }
+        teleportTo = teleportTo.getBlock().getRelative(blockFace, Settings.borderSize / 4).getLocation();
+        return getBeaconzWorld().getHighestBlockAt(teleportTo).getLocation().add(0.5, 0, 0.5);
     }
 
 }

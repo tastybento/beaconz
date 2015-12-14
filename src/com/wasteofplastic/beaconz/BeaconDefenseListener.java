@@ -23,7 +23,6 @@
 package com.wasteofplastic.beaconz;
 
 import java.awt.geom.Point2D;
-import java.util.Iterator;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Material;

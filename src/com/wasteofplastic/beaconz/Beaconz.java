@@ -31,7 +31,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.commons.lang.math.NumberUtils;
-import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
@@ -39,12 +39,14 @@ import org.bukkit.WorldType;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.Player;
 import org.bukkit.generator.BlockPopulator;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.material.MaterialData;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.scoreboard.Team;
 
 public class Beaconz extends JavaPlugin {
     private Register register;
@@ -94,6 +96,9 @@ public class Beaconz extends JavaPlugin {
                 // Create the world
                 getBeaconzWorld();
 
+                // Set the world border
+                setWorldBorder();
+
                 // Register the listeners - block break etc.
                 BeaconListeners ev = new BeaconListeners(plugin);
                 getServer().getPluginManager().registerEvents(ev, plugin);
@@ -104,10 +109,22 @@ public class Beaconz extends JavaPlugin {
                 if (Settings.borderSize > 0) {
                     createCorners();
                 }
-                
+
                 // Load messages for players
                 messages = new Messages(plugin);
-            }});
+            }
+
+        });
+    }
+
+    /**
+     * Sets the world border if the border exits
+     */
+    private void setWorldBorder() {
+        beaconzWorld.getWorldBorder().setCenter(Settings.xCenter, Settings.zCenter);
+        if (Settings.borderSize > 0) {
+            beaconzWorld.getWorldBorder().setSize(Settings.borderSize);
+        }
     }
 
     /**
@@ -219,6 +236,7 @@ public class Beaconz extends JavaPlugin {
         if (Settings.borderSize < 0) {
             Settings.borderSize = 0;
         }
+        Settings.gameDistance = getConfig().getInt("world.distance", Settings.borderSize);
         Settings.xCenter = getConfig().getInt("world.xcenter",0);
         Settings.zCenter = getConfig().getInt("world.zcenter",0);
         Settings.randomSpawn = getConfig().getBoolean("world.randomspawn", true);
@@ -421,10 +439,6 @@ public class Beaconz extends JavaPlugin {
             beaconzWorld.getPopulators().add(getBp());
         }
         beaconzWorld.setSpawnLocation(Settings.xCenter, beaconzWorld.getHighestBlockYAt(Settings.xCenter, Settings.zCenter), Settings.zCenter);
-        beaconzWorld.getWorldBorder().setCenter(Settings.xCenter, Settings.zCenter);
-        if (Settings.borderSize > 0) {
-            beaconzWorld.getWorldBorder().setSize(Settings.borderSize);
-        }
         return beaconzWorld;
     }
 
@@ -434,4 +448,74 @@ public class Beaconz extends JavaPlugin {
     public Messages getMessages() {
         return messages;
     }
+
+    public void newGame() {
+        // Remove the world border
+        beaconzWorld.getWorldBorder().reset();
+        // Remove the old beacons from the register
+        register.clear();
+        // Clear scores, (does not clear teams)
+        scorecard.clear();
+        // Move game to a new location
+        nextGameLocation();
+        // Regenerate the play area - do this before teleporting players to the spot
+        regenerateGame();
+        // Reset default spawn location - needed to calculate the correct team teleport spawn points
+        getBeaconzWorld();
+        // Move all the players to their team spawn positions
+        for (Player player : beaconzWorld.getPlayers()) {
+            Team team = scorecard.getTeam(player);
+            Location spawn = scorecard.getTeamSpawnPoint(team);
+            spawn.getBlock().getRelative(BlockFace.DOWN).setType(Material.BEDROCK);
+            player.teleport(spawn);
+            player.sendMessage("You are a member of " + team.getDisplayName() + " team!");
+            getServer().dispatchCommand(getServer().getConsoleSender(),
+                    "title " + player.getName() + " title {text:\"New Game!\", color:gold}");
+            getServer().dispatchCommand(getServer().getConsoleSender(),
+                    "title " + player.getName() + " subtitle {text:\"" + team.getDisplayName() + " team\", color:blue}");
+        }
+        // Put the world border up
+        setWorldBorder();
+    }
+
+    /**
+     * Cleans up the game area so it can be played again
+     */
+    private void regenerateGame() {
+        int xMin = (Settings.xCenter - (Settings.borderSize /2) -15) / 16;
+        int xMax = (Settings.xCenter + (Settings.borderSize /2) + 15) / 16;
+        int zMin = (Settings.zCenter - (Settings.borderSize /2) -15) / 16;
+        int zMax = (Settings.zCenter + (Settings.borderSize /2) + 15) / 16;
+        for (int x = xMin; x <= xMax; x++) {
+            for (int z = zMin; z <= zMax; z++) {
+                beaconzWorld.regenerateChunk(x, z);
+            }
+        }
+
+    }
+
+    public void nextGameLocation() {
+        if (Settings.xCenter < Settings.zCenter) {
+            if (-1 * Settings.xCenter < Settings.zCenter) {
+                Settings.xCenter += Settings.gameDistance;
+                return;
+            }
+            Settings.zCenter += Settings.gameDistance;
+            return;
+        }
+        if (Settings.xCenter > Settings.zCenter) {
+            if (-1 * Settings.xCenter >= Settings.zCenter) {
+                Settings.xCenter -= Settings.gameDistance;
+                return;
+            }
+            Settings.zCenter -= Settings.gameDistance;
+            return;
+        }
+        if (Settings.xCenter <= 0) {
+            Settings.zCenter += Settings.gameDistance;
+            return;
+        }
+        Settings.zCenter -= Settings.gameDistance;
+    }
+
 }

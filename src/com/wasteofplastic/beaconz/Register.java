@@ -115,10 +115,7 @@ public class Register extends BeaconzPluginDependent {
      */
     public void loadRegister() {
         // Clear the data
-        beaconMaps.clear();
-        beaconRegister.clear();
-        triangleFields.clear();
-        links.clear();
+        clear();
 
         File beaconzFile = new File(getBeaconzPlugin().getDataFolder(),"beaconz.yml");
         if (!beaconzFile.exists()) {
@@ -194,6 +191,16 @@ public class Register extends BeaconzPluginDependent {
             }
         }
         // Score and control fields should be automatically created
+    }
+
+    /**
+     * Clears all the data in the register
+     */
+    public void clear() {
+        beaconMaps.clear();
+        beaconRegister.clear();
+        triangleFields.clear();
+        links.clear();  
     }
 
     public void addBeaconLink(Team faction, Line2D link) {

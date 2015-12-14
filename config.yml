@@ -6,9 +6,11 @@ world:
   distribution: 0.08
   # Size of the world - a barrier will be created using worldborder if size > 0
   size: 300
-  # Center
-  xcenter: 1000
-  zcenter: 1000
+  # Distance between new games (mini game mode). Must be at least size of the barrier
+  distance: 600
+  # Starting center point
+  xcenter: 0
+  zcenter: 0
   # Random spawn - if true, players will spawn randomly (within the world border if set)
   randomspawn: false
   # Seed adjustment
