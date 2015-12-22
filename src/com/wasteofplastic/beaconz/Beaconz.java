@@ -221,6 +221,16 @@ public class Beaconz extends JavaPlugin {
      * Loads settings from config.yml
      */
     public void loadConfig() {
+        Settings.beaconMineExhaustChance = getConfig().getInt("world.beaconmineexhaustchance", 10);
+        if (Settings.beaconMineExhaustChance < 0) {
+            Settings.beaconMineExhaustChance = 0;
+        } else if (Settings.beaconMineExhaustChance > 100) {
+            Settings.beaconMineExhaustChance = 100;
+        }
+        Settings.beaconMineExpRequired = getConfig().getInt("world.beaconmineexp", 10);
+        if (Settings.beaconMineExpRequired < 0) {
+            Settings.beaconMineExpRequired = 0;
+        }
         Settings.defenseHeight = getConfig().getInt("world.defenseheight", 8);
         if (Settings.defenseHeight < 1) {
             Settings.defenseHeight = 1;
@@ -241,7 +251,7 @@ public class Beaconz extends JavaPlugin {
         Settings.zCenter = getConfig().getInt("world.zcenter",0);
         Settings.randomSpawn = getConfig().getBoolean("world.randomspawn", true);
         Settings.seedAdjustment = getConfig().getLong("world.seedadjustment", 0);
-        Settings.hackCoolDown = getConfig().getInt("world.hackcooldown", 1) * 60000; // Minutes in millis
+        Settings.mineCoolDown = getConfig().getInt("world.minecooldown", 1) * 60000; // Minutes in millis
         ConfigurationSection enemyFieldSection = getConfig().getConfigurationSection("world.enemyfieldeffects");
         // Step through the numbers
         Settings.enemyFieldEffects = new HashMap<Integer, List<PotionEffect>>();
@@ -256,7 +266,7 @@ public class Beaconz extends JavaPlugin {
                         PotionEffectType type = PotionEffectType.getByName(split[0]);
                         if (type != null) {
                             if (NumberUtils.isNumber(split[1]) && NumberUtils.isNumber(split[2])) {
-                                getLogger().info("DEBUG: adding enemy effect " + type.toString());
+                                //getLogger().info("DEBUG: adding enemy effect " + type.toString());
                                 effects.add(new PotionEffect(type, NumberUtils.toInt(split[1]), NumberUtils.toInt(split[2])));
                             }
                         }
@@ -271,23 +281,23 @@ public class Beaconz extends JavaPlugin {
         ConfigurationSection friendlyFieldSection = getConfig().getConfigurationSection("world.friendlyfieldeffects");
         // Step through the numbers
         for (Entry<String, Object> part : friendlyFieldSection.getValues(false).entrySet()) {
-            getLogger().info("DEBUG: Field: " + part.getKey());
+            //getLogger().info("DEBUG: Field: " + part.getKey());
             if (NumberUtils.isNumber(part.getKey())) {
-                getLogger().info("DEBUG: Field is a number");
+                //getLogger().info("DEBUG: Field is a number");
                 // It is a number, now get the string list
                 List<PotionEffect> effects = new ArrayList<PotionEffect>();
                 List<String> effectsList = getConfig().getStringList("world.friendlyfieldeffects." + part.getKey());
-                getLogger().info("DEBUG: Effects list: " + effectsList);
+                //getLogger().info("DEBUG: Effects list: " + effectsList);
                 for (String effectString : effectsList) {
                     String[] split = effectString.split(":");
                     if (split.length == 3) {
-                        getLogger().info("DEBUG: Potion found " + split[0]);
+                        //getLogger().info("DEBUG: Potion found " + split[0]);
                         PotionEffectType type = PotionEffectType.getByName(split[0]);
                         if (type != null) {
-                            getLogger().info("DEBUG: Potion is known");
+                            //getLogger().info("DEBUG: Potion is known");
                             if (NumberUtils.isNumber(split[1]) && NumberUtils.isNumber(split[2])) {
 
-                                getLogger().info("DEBUG: adding friendly effect " + type.toString());
+                                //getLogger().info("DEBUG: adding friendly effect " + type.toString());
                                 effects.add(new PotionEffect(type, NumberUtils.toInt(split[1]), NumberUtils.toInt(split[2])));
                             }
                         }
@@ -298,7 +308,7 @@ public class Beaconz extends JavaPlugin {
                 Settings.friendlyFieldEffects.put(NumberUtils.toInt(part.getKey()), effects);               
             }
         }
-        Settings.overHackEffects = getConfig().getStringList("world.overhackeffects");
+        Settings.minePenalty = getConfig().getStringList("world.minepenalty");
         List<String> goodies = getConfig().getStringList("world.enemygoodies");
         Settings.enemyGoodies.clear();
         for (String goodie: goodies) {
@@ -322,9 +332,11 @@ public class Beaconz extends JavaPlugin {
         // Add the final element - any number above this value will return a null element
         Settings.enemyGoodies.put(Settings.enemyGoodies.lastKey() + 1, null);
         // Debug
+        /*
         for (Entry<Integer, ItemStack> ent : Settings.enemyGoodies.entrySet()) {
             plugin.getLogger().info("DEBUG: " + ent.getKey() + " " + ent.getValue());
         }
+        */
         // Team goodies
         goodies = getConfig().getStringList("world.teamgoodies");
         Settings.teamGoodies.clear();
@@ -350,10 +362,11 @@ public class Beaconz extends JavaPlugin {
         // Add the final element - any number above this value will return a null element
         Settings.teamGoodies.put(Settings.teamGoodies.lastKey() + 1, null);
         // Own team
+        /*
         for (Entry<Integer, ItemStack> ent : Settings.teamGoodies.entrySet()) {
             plugin.getLogger().info("DEBUG: " + ent.getKey() + " " + ent.getValue());
         }
-
+         */
         // Add initial inventory
         List<String> newbieKit = getConfig().getStringList("world.newbiekit");
         Settings.newbieKit.clear();

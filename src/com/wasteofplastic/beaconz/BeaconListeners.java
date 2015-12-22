@@ -347,7 +347,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             event.getPlayer().sendMessage(ChatColor.RED + "You cannot build on top of a beacon!");
             return;
         }
-/*
+        /*
         // Check if the block is the surrounding pyramid
         Block block = event.getBlock().getRelative(BlockFace.DOWN);
         // Check that it's diamond
@@ -739,7 +739,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             player.sendMessage(ChatColor.RED + "You can only place blocks on a captured beacon!");
             event.setCancelled(true);
         }
-        */
+         */
     }
 
 
@@ -822,7 +822,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                         getMessages().tellOtherTeams(team, ChatColor.RED + team.getDisplayName() + " team destroyed " + beaconTeam.getDisplayName() + "'s beacon!");
                         getMessages().tellTeam(player.getUniqueId(), player.getDisplayName() + " destroyed one of " + beaconTeam.getDisplayName() + "'s beacons!");
                         player.sendMessage(ChatColor.GREEN + "You destroyed " + beaconTeam.getDisplayName() + " team's beacon!");
-                
+
                         getRegister().removeBeaconOwnership(beacon);
                         block.setType(Material.OBSIDIAN);
                         event.setCancelled(true);
@@ -843,28 +843,44 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             // Only do on owned beacons
             if (beacon.getOwnership() != null) {
                 // Check for cool down, if it's still cooling down, don't do anything
-                if (beacon.isNewBeacon() || System.currentTimeMillis() > beacon.getHackTimer() + Settings.hackCoolDown) {
-                    // Give something to the player
+                if (beacon.isNewBeacon() || System.currentTimeMillis() > beacon.getHackTimer() + Settings.mineCoolDown) {
+                    // Give something to the player if they have enough experience
+                    // Remove experience
+                    //getLogger().info("DEBUG: player has " + player.getTotalExperience() + " and needs " + Settings.beaconMineExpRequired);
+                    if (!testForExp(player, Settings.beaconMineExpRequired)) {
+                        player.sendMessage(ChatColor.RED + "You do not have enough experience to mine this beacon!");
+                        return;
+                    }
                     Random rand = new Random();
-                    int value = rand.nextInt(100) + 1;
                     //getLogger().info("DEBUG: random number = " + value);
                     if (beacon.getOwnership().equals(getScorecard().getTeam(player))) {
                         // Own team
+                        int value = rand.nextInt(Settings.teamGoodies.lastKey()) + 1;
                         Entry<Integer, ItemStack> en = Settings.teamGoodies.floorEntry(value);
                         if (en != null && en.getValue() != null) {
                             player.getWorld().dropItemNaturally(event.getBlock().getLocation(), en.getValue());
-                            beacon.resetHackTimer();
-                            player.sendMessage(ChatColor.GREEN + "Success! Cooldown " + (Settings.hackCoolDown/60000) + " minute(s)");
+                            if (rand.nextInt(100) < Settings.beaconMineExhaustChance) {
+                                beacon.resetHackTimer();
+                                player.sendMessage(ChatColor.GREEN + "Success! Beacon is exhausted. Try again in " + (Settings.mineCoolDown/60000) + " minute(s)");
+                            } else {
+                                player.sendMessage(ChatColor.GREEN + "Success!");
+                            }
                         } else {
                             player.getWorld().spawnEntity(player.getLocation(),EntityType.ENDERMITE);
                             player.sendMessage(ChatColor.RED + "Failure!");
                         }
                     } else {
                         // Enemy
+                        int value = rand.nextInt(Settings.enemyGoodies.lastKey()) + 1;
                         Entry<Integer, ItemStack> en = Settings.enemyGoodies.floorEntry(value);
                         if (en != null && en.getValue() != null) {
                             player.getWorld().dropItemNaturally(event.getBlock().getLocation(), en.getValue());
-                            beacon.resetHackTimer();
+                            if (rand.nextInt(100) < Settings.beaconMineExhaustChance) {
+                                beacon.resetHackTimer();
+                                player.sendMessage(ChatColor.GREEN + "Success! Beacon is exhausted. Try again in " + (Settings.mineCoolDown/60000) + " minute(s)");
+                            } else {
+                                player.sendMessage(ChatColor.GREEN + "Success!");
+                            }
                         } else {
                             player.getWorld().spawnEntity(player.getLocation(),EntityType.ENDERMITE);
                             player.sendMessage(ChatColor.RED + "Failure!");
@@ -873,8 +889,8 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                 } else {
                     // Damage player
                     //getLogger().info("DEBUG: hack cooldown " + Settings.overHackEffects);
-                    int num = (int) (beacon.getHackTimer() + Settings.hackCoolDown - System.currentTimeMillis())/50;
-                    for (String effect : Settings.overHackEffects) {
+                    int num = (int) (beacon.getHackTimer() + Settings.mineCoolDown - System.currentTimeMillis())/50;
+                    for (String effect : Settings.minePenalty) {
                         String[] split = effect.split(":");
                         if (split.length == 2) {
                             int amplifier = 1;
@@ -1043,7 +1059,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                     Player otherPlayer = getServer().getPlayer(standingOn.inverse().get(otherBeacon));
                     if (otherPlayer != null) {
                         otherPlayer.sendMessage(ChatColor.GREEN + "Link created!");
-       
+
                         otherPlayer.getWorld().playSound(otherPlayer.getLocation(), Sound.FIREWORK_LARGE_BLAST, 1F, 1F);
                         otherPlayer.getWorld().spawnEntity(otherPlayer.getLocation(), EntityType.EXPERIENCE_ORB);
                     }
@@ -1200,5 +1216,30 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             }
             player.addPotionEffects(effects);
         }         
+    }
+
+    /**
+     * Tests if a player has the required experience to perform the action. If so, the experience
+     * is deducted. This function updates the client's UI exp bar.
+     * @param player
+     * @param xpRequired
+     * @return true if sufficient experience points otherwise false
+     */
+    public boolean testForExp(Player player , int xpRequired){
+        int xp = player.getTotalExperience();
+        if (xp >= xpRequired) {
+            int total = player.getTotalExperience() - xpRequired;
+            player.setTotalExperience(total);
+            player.setLevel(0);
+            player.setExp(0);
+            for(;total > player.getExpToLevel();) {
+                total -= player.getExpToLevel();
+                player.setLevel(player.getLevel()+1);
+            }
+            float exp = (float)total / (float)player.getExpToLevel();
+            player.setExp(exp);
+            return true;
+        }
+        return false;
     }
 }

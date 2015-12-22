@@ -2,36 +2,52 @@
 world:
   # Beaconz world
   name: beaconz
+  
   # Distribution of beacons the large the number, the more beacons are made
   distribution: 0.08
+  
   # Size of the world - a barrier will be created using worldborder if size > 0
   size: 300
+  
   # Distance between new games (mini game mode). Must be at least size of the barrier
   distance: 600
+  
   # Starting center point
   xcenter: 0
   zcenter: 0
+  
   # Random spawn - if true, players will spawn randomly (within the world border if set)
   randomspawn: false
+  
   # Seed adjustment
   seedadjustment: 0
+  
   # Use maps or player pairs to make links
   # If false, maps will be used
   pairs: true
+  
   # Defense height - max height of blocks that can be placed around a beacon
   defenseheight: 8
+  
   # Starter inventory
   # Format Material:Qty or Material:Data:Qty
   newbiekit:
   - "DIAMOND_PICKAXE:1"
   #- "SUGAR_CANE:1"
-  # Hack cool down - how long a player has to wait until they can try to hack a beacon
+  
+  # Beacon mine settings
+  # Chance that mining a beacon will result in it becoming exhausted and enter
+  # a cool down period
+  beaconmineexhaustchance: 10
+  
+  # Mine cool down - how long a player has to wait until they can try to mine a beacon
   # in minutes
-  hackcooldown: 1
-  # Effect if you hack during the cooldown period. Format is Effect:Amplifier
+  minecooldown: 1
+  
+  # Effect if you mine a beacon during the cooldown period. Format is Effect:Amplifier
   # Options are: Blindness, Confusion, Harm, Hunger, Slow, Slow_digging, Weakness, Wither
   # Amplifier is a number, .e.g, 0, 1
-  overhackeffects:
+  minepenalty:
   - "SLOW_DIGGING:1"
   # Rewards from hacking
   # Format is "Id#/Material:[Durability/Qty]:Qty=%Chance"

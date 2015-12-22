@@ -63,13 +63,13 @@ public class Settings {
     /**
      * Time in seconds that players must wait between trying to hack a beacon
      */
-    public static long hackCoolDown;
+    public static long mineCoolDown;
     /**
      * Effect if you hack during the cooldown period. Format is Effect:Amplifier
      * Options are: Blindness, Confusion, Harm, Hunger, Slow, Slow_digging, Weakness, Wither
      * Amplifier is a number, .e.g, 0, 1
      */
-    public static List<String> overHackEffects;
+    public static List<String> minePenalty;
     /**
      *   Rewards from hacking your own team beacon
      *   Format is "Id#/Material:[Durability/Qty]:Qty:%Chance"
@@ -116,4 +116,14 @@ public class Settings {
      * Distance between repeated games. Reuses the same world between games
      */
     public static int gameDistance;
+    
+    /**
+     * The experience required to mine a beacon
+     */
+    public static int beaconMineExpRequired;
+    
+    /**
+     * Chance that the beacon becomes exhausted and enters a cool down period
+     */
+    public static int beaconMineExhaustChance;
 }
