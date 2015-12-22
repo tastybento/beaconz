@@ -88,10 +88,10 @@ public class BeaconObj extends BeaconzPluginDependent {
      * @return true if control field made, false if the max outbound limit is reached or the link already exists
      */
     public LinkResult addOutboundLink(BeaconObj destination) {
-        getLogger().info("DEBUG: Trying to add link");
+        //getLogger().info("DEBUG: Trying to add link");
         // There is a max of 8 outgoing links allowed
         if (links.size() == 8) {
-            getLogger().info("DEBUG: outbound link limit reached");
+            //getLogger().info("DEBUG: outbound link limit reached");
             return new LinkResult(0,false,0);
         }
         Line2D newLink = new Line2D.Double(this.location, destination.getLocation());
@@ -150,18 +150,11 @@ public class BeaconObj extends BeaconzPluginDependent {
                 }
             }
         }
-        // Visualize
+        // The resulting line
         Line2D line = new Line2D.Double(starter.getLocation(), location);
-        Point2D current;
-        for (Iterator<Point2D> it = new LineIterator(line); it.hasNext();) {
-            current = it.next();
-            Block b = getBeaconzWorld().getBlockAt((int)current.getX(), getBeaconzWorld().getMaxHeight()-1, (int)current.getY());
-            if (b.getType().equals(Material.AIR)) {
-                MaterialData md = getScorecard().getBlockID(ownership);
-                b.setType(md.getItemType());
-                b.setData(md.getData());
-            }
-        }
+        // Visualize
+        new LineVisualizer(this.getBeaconzPlugin(),line, ownership);
+        // Return the result
         return new LinkResult(fieldsMade, true, fieldsFailed, line);
     }
 

@@ -79,30 +79,14 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
             Player player = (Player)sender;
 
             player.sendMessage(ChatColor.GREEN + "Teleporting you to the world...");
-            Set<Team> teams = getScorecard().getScoreboard().getTeams();
-            boolean newPlayer = false;
+            boolean newPlayer = !getScorecard().inTeam(player);
             // Set the team
             Team team = getScorecard().getTeam(player);
-            if (team == null) {
-                // New player!
-                newPlayer = true;
-                teams = getScorecard().getScoreboard().getTeams();
-                int minSize=Integer.MAX_VALUE;
-                for (Team t: teams) {
-                    if(t.getSize() < minSize) {
-                        minSize=t.getSize();
-                        team=t;
-                    }
-                }
-                team.addPlayer(player);
-                player.sendMessage("You are now a member of " + team.getDisplayName() + " team!");
-                        getBeaconzPlugin().getServer().dispatchCommand(getBeaconzPlugin().getServer().getConsoleSender(),
-                        "title " + player.getName() + " title {text:\"" + team.getDisplayName() + " team!\", color:gold}");
-            }
+            player.sendMessage("You are now a member of " + team.getDisplayName() + " team!");
+            getBeaconzPlugin().getServer().dispatchCommand(getBeaconzPlugin().getServer().getConsoleSender(),
+                    "title " + player.getName() + " title {text:\"" + team.getDisplayName() + " team!\", color:gold}");
             // Teleport teams to different locations
             Location teleportTo = getScorecard().getTeamSpawnPoint(team);
-            // This will result in bedrock blocks being created up and up if the bedrock is covered...
-            teleportTo.getBlock().getRelative(BlockFace.DOWN).setType(Material.BEDROCK);
             boolean found = false;
             if (Settings.randomSpawn) {
                 Random rand = new Random();

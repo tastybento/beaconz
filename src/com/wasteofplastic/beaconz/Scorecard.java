@@ -33,6 +33,7 @@ import java.util.UUID;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -76,9 +77,26 @@ public class Scorecard extends BeaconzPluginDependent{
         this.teamBlock.put(team, teamBlock);
     }
 
+    /**
+     * Returns the player's team. If the player does not have a team, he is put in one
+     * @param player
+     * @return Team
+     */
     @SuppressWarnings("deprecation")
     public Team getTeam(Player player) {
-    return scoreboard.getPlayerTeam(player);
+        Team team = scoreboard.getPlayerTeam(player);
+        if (team == null) {
+            // New player!
+            int minSize=Integer.MAX_VALUE;
+            for (Team t: getScorecard().getScoreboard().getTeams()) {
+                if(t.getSize() < minSize) {
+                    minSize=t.getSize();
+                    team=t;
+                }
+            }
+            team.addPlayer(player);
+        }
+        return team;
     }
 
     /**
@@ -87,7 +105,7 @@ public class Scorecard extends BeaconzPluginDependent{
      * @return block type
      */
     public MaterialData getBlockID(Team team) {
-    return teamBlock.get(team);
+        return teamBlock.get(team);
     }
 
     /**
@@ -98,7 +116,7 @@ public class Scorecard extends BeaconzPluginDependent{
     public Team getTeamFromBlock(Block b) {
         for (Entry<Team, MaterialData> md: teamBlock.entrySet()) {
             if (md.getValue().getItemType().equals(b.getType()) && md.getValue().getData() == b.getData()) {
-            return md.getKey();
+                return md.getKey();
             }
         }
         return null;
@@ -114,9 +132,9 @@ public class Scorecard extends BeaconzPluginDependent{
             return scoreboard.getTeam(teamName);
         } else {
             for (Team team : scoreboard.getTeams()) {
-            if (team.getName().toLowerCase().startsWith(teamName.toLowerCase())) {
-                return team;
-            }
+                if (team.getName().toLowerCase().startsWith(teamName.toLowerCase())) {
+                    return team;
+                }
             }
         }
         return null;
@@ -142,7 +160,7 @@ public class Scorecard extends BeaconzPluginDependent{
      * @return the scoreboard
      */
     public Scoreboard getScoreboard() {
-    return scoreboard;
+        return scoreboard;
     }
 
     /**
@@ -215,7 +233,7 @@ public class Scorecard extends BeaconzPluginDependent{
             e.printStackTrace();
         }
     }
-    
+
     /**
      * @param member
      * @return member's team if it exists, null otherwise
@@ -225,14 +243,14 @@ public class Scorecard extends BeaconzPluginDependent{
         // Run through the teams and find the player
         for (Team team : scoreboard.getTeams()) {
             for (OfflinePlayer player : team.getPlayers()) {
-            if (player.equals(member)) {
-                return team;
-            }
+                if (player.equals(member)) {
+                    return team;
+                }
             }
         }
         return null;
     }
-    
+
     /**
      * @return the score
      */
@@ -248,7 +266,7 @@ public class Scorecard extends BeaconzPluginDependent{
     public void setScore(Team team, int score) {
         this.score.put(team, score);
     } 
-    
+
     /**
      * @param team
      * @return score for faction
@@ -274,7 +292,7 @@ public class Scorecard extends BeaconzPluginDependent{
             score.put(owner, area);
         } 
     }  
-    
+
     /**
      * Removes score from team
      * @param owner
@@ -337,7 +355,23 @@ public class Scorecard extends BeaconzPluginDependent{
             direction++;
         }
         teleportTo = teleportTo.getBlock().getRelative(blockFace, Settings.borderSize / 4).getLocation();
-        return getBeaconzWorld().getHighestBlockAt(teleportTo).getLocation().add(0.5, 0, 0.5);
+        teleportTo = getBeaconzWorld().getHighestBlockAt(teleportTo).getLocation().add(0.5, 0, 0.5);
+        // This will result in bedrock blocks being created up and up if the bedrock is covered...
+        // TODO these spawn points need special protection, or something. An enemy team could place a lot of blocks
+        teleportTo.getBlock().getRelative(BlockFace.DOWN).setType(Material.BEDROCK);
+        return teleportTo;
+    }
+
+    /**
+     * Player in team or not
+     * @param player
+     * @return true if in team, false if not
+     */
+    public boolean inTeam(Player player) {
+        if (scoreboard.getPlayerTeam(player) != null) {
+            return true;
+        }
+        return false;
     }
 
 }

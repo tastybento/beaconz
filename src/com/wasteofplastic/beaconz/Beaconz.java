@@ -460,13 +460,14 @@ public class Beaconz extends JavaPlugin {
         nextGameLocation();
         // Regenerate the play area - do this before teleporting players to the spot
         regenerateGame();
+        // Create the corners - TODO needs more work for the minigame
+        //createCorners();
         // Reset default spawn location - needed to calculate the correct team teleport spawn points
         getBeaconzWorld();
         // Move all the players to their team spawn positions
         for (Player player : beaconzWorld.getPlayers()) {
             Team team = scorecard.getTeam(player);
             Location spawn = scorecard.getTeamSpawnPoint(team);
-            spawn.getBlock().getRelative(BlockFace.DOWN).setType(Material.BEDROCK);
             player.teleport(spawn);
             player.sendMessage("You are a member of " + team.getDisplayName() + " team!");
             getServer().dispatchCommand(getServer().getConsoleSender(),

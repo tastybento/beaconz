@@ -253,6 +253,11 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             final Player player = event.getPlayer();
             final UUID playerUUID = player.getUniqueId();
             player.setScoreboard(getScorecard().getScoreboard());
+            // If the player is not in a team, assign one
+            // TODO
+            Team team = getScorecard().getTeam(player);
+            // Teleport the player to the right spot
+            player.teleport(getScorecard().getTeamSpawnPoint(team));
             // Check messages
             // Load any messages for the player
             // plugin.getLogger().info("DEBUG: Checking messages for " +
