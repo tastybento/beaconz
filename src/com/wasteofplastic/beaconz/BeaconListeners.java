@@ -1003,6 +1003,19 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                 return;
             }
             event.setCancelled(true);
+            if (Settings.linkDistance >= 0 && Settings.expDistance > 0) {
+                // Check if the player has sufficient experience to link the beacons
+                double distance = beacon.getLocation().distance(mappedBeacon.getLocation());
+                distance -= Settings.linkDistance;
+                if (distance > 0) {
+                    if (!testForExp(player, (int)(distance/Settings.expDistance))) {
+                        player.sendMessage(ChatColor.RED + "You do not have enough experience to link to this beacon!");
+                        player.sendMessage(ChatColor.RED + "You can link up to " + (int)(Settings.expDistance * player.getTotalExperience()) + " blocks away.");
+                        player.sendMessage(ChatColor.RED + "This beacon is " + (int)distance + " blocks away.");
+                        return;
+                    }
+                }    
+            }
             if (linkBeacons(player, team, beacon, mappedBeacon)) {
                 player.sendMessage(ChatColor.GREEN + "The map disintegrates!");
                 player.setItemInHand(null);

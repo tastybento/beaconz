@@ -97,6 +97,7 @@ public class Beaconz extends JavaPlugin {
                 getBeaconzWorld();
 
                 // Set the world border
+                beaconzWorld.getWorldBorder().reset();
                 setWorldBorder();
 
                 // Register the listeners - block break etc.
@@ -221,6 +222,8 @@ public class Beaconz extends JavaPlugin {
      * Loads settings from config.yml
      */
     public void loadConfig() {
+        Settings.linkDistance = getConfig().getDouble("world.linkdistance", 0);
+        Settings.expDistance = getConfig().getDouble("world.expdistance", 10);
         Settings.beaconMineExhaustChance = getConfig().getInt("world.beaconmineexhaustchance", 10);
         if (Settings.beaconMineExhaustChance < 0) {
             Settings.beaconMineExhaustChance = 0;

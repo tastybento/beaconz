@@ -26,6 +26,14 @@ world:
   # If false, maps will be used
   pairs: true
   
+  # The base distance in blocks that players can link beacons without experience points
+  # If set to -1, beacons can be any distance apart
+  linkdistance: 0
+  
+  # The distance that each exp point will go when linking a beacon
+  # If zero, there is no exp cost to link beacons
+  expdistance: 5
+  
   # Defense height - max height of blocks that can be placed around a beacon
   defenseheight: 8
   

@@ -126,4 +126,18 @@ public class Settings {
      * Chance that the beacon becomes exhausted and enters a cool down period
      */
     public static int beaconMineExhaustChance;
+    
+    /**
+     * The base distance in blocks that players can link beacons without experience points
+     * If set to -1, beacons can be any distance apart
+     */
+    public static double linkDistance;
+    
+    /**
+     * The distance that each exp point will go when linking a beacon
+     * If zero, there is no exp cost to link beacons
+     */
+    public static double expDistance;
+    
+    
 }
