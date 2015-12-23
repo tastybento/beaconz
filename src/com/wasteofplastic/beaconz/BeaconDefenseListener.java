@@ -141,6 +141,14 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
                         event.setCancelled(true);
                         return;
                     }
+                    // Check what blocks are above the emerald block
+                    int highestBlock = getHighestDefenseBlockYAt(block, this.getBeaconzWorld().getMaxHeight()-1) + 1;
+                    //getLogger().info("DEBUG: highest block y = " + highestBlock + " difference = " + (highestBlock - adjacentBeacon.getY()));
+                    if (highestBlock - adjacentBeacon.getY() > Settings.defenseHeight) {
+                        event.getPlayer().sendMessage(ChatColor.RED + "Too many blocks above this block!");
+                        event.setCancelled(true);
+                        return;
+                    }
                     // Extend beacon
                     getRegister().addBeaconDefenseBlock(block.getLocation(), adjacentBeacon);
                     player.sendMessage(ChatColor.GREEN + "You extended the beacon!");
@@ -151,7 +159,6 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
         }
 
         // Check if the block is a defensive block
-
         BeaconObj beacon = getRegister().getBeaconDefenseAt(new Point2D.Double(block.getX(), block.getZ()));
         if (beacon == null || beacon.getOwnership() == null) {
             return;
@@ -173,22 +180,34 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
             event.setCancelled(true);
             return;
         }
+        // Check if the player has the experience level required to place the block
+        int level = block.getY() - beacon.getY();
+        int levelRequired = 0;
+        getLogger().info("DEBUG: level = " + level);
+        try {
+            levelRequired = Settings.defenseLevels.get(level);
+            if (player.getLevel() < levelRequired) {
+                player.sendMessage(ChatColor.RED + "You need to be level " + levelRequired + " to place blocks that high around the beacon!");
+                event.setCancelled(true);
+                return;
+            }
+        } catch (Exception e) {
+            getLogger().severe("Defense level for height " + level + " does not exist!");
+        }
+        String levelPlaced = "";
+        if (levelRequired > 0) {
+            levelPlaced = " [Level " + levelRequired + "]";
+        }
         // Check what type of block it is:
         // TODO: Add implications of placement.
         switch (event.getBlock().getType()) {
-        case ACACIA_DOOR:
-        case BIRCH_DOOR:
-        case DARK_OAK_DOOR:
-        case JUNGLE_DOOR:
-        case SPRUCE_DOOR:
-            break;
         case ACACIA_FENCE:
         case BIRCH_FENCE:
         case DARK_OAK_FENCE:
         case JUNGLE_FENCE:
         case SPRUCE_FENCE:
         case FENCE:
-            player.sendMessage(ChatColor.GREEN + "Fence protection!");
+            player.sendMessage(ChatColor.GREEN + "Fence protection!" + levelPlaced);
             break;
         case ACACIA_FENCE_GATE:
         case BIRCH_FENCE_GATE:
@@ -196,346 +215,249 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
         case JUNGLE_FENCE_GATE:
         case SPRUCE_FENCE_GATE:
         case FENCE_GATE:
-            player.sendMessage(ChatColor.GREEN + "Gate protection!");
-            break;
-        case ACACIA_STAIRS:
-        case BIRCH_WOOD_STAIRS:
-        case DARK_OAK_STAIRS:
-        case JUNGLE_WOOD_STAIRS:
-        case SPRUCE_WOOD_STAIRS:
-        case WOOD_STAIRS:
-            break;
-        case ACTIVATOR_RAIL:
-            break;
-        case ANVIL:
-            break;
-        case ARMOR_STAND:
-            break;
-        case BANNER:
+            player.sendMessage(ChatColor.GREEN + "Gate protection!" + levelPlaced);
             break;
         case BEACON:
-            player.sendMessage(ChatColor.GREEN + "Dummy?");
+            player.sendMessage(ChatColor.GREEN + "Dummy?" + levelPlaced);
             break;
         case BEDROCK:
-            player.sendMessage(ChatColor.GREEN + "Ultimate defense! Hope you didn't make a mistake!");
+            player.sendMessage(ChatColor.GREEN + "Ultimate defense! Hope you didn't make a mistake!" + levelPlaced);
             break;
         case BED_BLOCK:
-            player.sendMessage(ChatColor.GREEN + "Sleep, sleep, sleep");
+            player.sendMessage(ChatColor.GREEN + "Sleep, sleep, sleep" + levelPlaced);
             break;
         case BOOKSHELF:
-            player.sendMessage(ChatColor.GREEN + "Knowledge is power!");
+            player.sendMessage(ChatColor.GREEN + "Knowledge is power!" + levelPlaced);
             break;
         case BREWING_STAND:
-            player.sendMessage(ChatColor.GREEN + "Potion attack!");
-            break;
-        case BRICK:
-            break;
-        case BRICK_STAIRS:
+            player.sendMessage(ChatColor.GREEN + "Potion attack!" + levelPlaced);
             break;
         case CAKE_BLOCK:
-            player.sendMessage(ChatColor.GREEN + "Hunger benefits");
+            player.sendMessage(ChatColor.GREEN + "Hunger benefits" + levelPlaced);
             break;
         case CARPET:
-            player.sendMessage(ChatColor.GREEN + "Hmm, pretty!");
+            player.sendMessage(ChatColor.GREEN + "Hmm, pretty!" + levelPlaced);
             break;
         case CAULDRON:
-            player.sendMessage(ChatColor.GREEN + "Witch's brew!");
+            player.sendMessage(ChatColor.GREEN + "Witch's brew!" + levelPlaced);
             break;
         case CHEST:
-            player.sendMessage(ChatColor.GREEN + "I wonder what you will put in it");
+            player.sendMessage(ChatColor.GREEN + "I wonder what you will put in it" + levelPlaced);
             break;
         case COAL_BLOCK:
-            player.sendMessage(ChatColor.GREEN + "Energy up!");
-            break;
-        case COBBLESTONE:
-            break;
-        case COBBLESTONE_STAIRS:
-            break;
-        case COBBLE_WALL:
+            player.sendMessage(ChatColor.GREEN + "Energy up!" + levelPlaced);
             break;
         case DAYLIGHT_DETECTOR:
-            player.sendMessage(ChatColor.GREEN + "Let night be day!");
+            player.sendMessage(ChatColor.GREEN + "Let night be day!" + levelPlaced);
             break;
         case DETECTOR_RAIL:
             break;
         case DIAMOND_BLOCK:
-            player.sendMessage(ChatColor.GREEN + "Fortune will smile upon you!");
-            break;
-        case DIAMOND_ORE:
-            break;
-        case DIODE_BLOCK_OFF:
-            break;
-        case DIRT:
+            player.sendMessage(ChatColor.GREEN + "Fortune will smile upon you!" + levelPlaced);
             break;
         case DISPENSER:
-            player.sendMessage(ChatColor.GREEN + "Load it up!");
-            break;
-        case DOUBLE_STEP:
-            break;
-        case DOUBLE_STONE_SLAB2:
+            player.sendMessage(ChatColor.GREEN + "Load it up!" + levelPlaced);
             break;
         case DRAGON_EGG:
-            player.sendMessage(ChatColor.GREEN + "The end is nigh!");
+            player.sendMessage(ChatColor.GREEN + "The end is nigh!" + levelPlaced);
             break;
         case DROPPER:
-            player.sendMessage(ChatColor.GREEN + "Drip, drop, drip");
+            player.sendMessage(ChatColor.GREEN + "Drip, drop, drip" + levelPlaced);
             break;
         case EMERALD_BLOCK:
-            player.sendMessage(ChatColor.GREEN + "Place adjacent to the beacon base to extend the beacon!");
+            player.sendMessage(ChatColor.GREEN + "Place adjacent to the beacon base to extend the beacon!" + levelPlaced);
             break;
         case EMERALD_ORE:
             break;
         case ENCHANTMENT_TABLE:
-            player.sendMessage(ChatColor.GREEN + "Magic will occur");
+            player.sendMessage(ChatColor.GREEN + "Magic will occur" + levelPlaced);
             break;
         case ENDER_CHEST:
-            player.sendMessage(ChatColor.GREEN + "I wonder what is inside?");
+            player.sendMessage(ChatColor.GREEN + "I wonder what is inside?" + levelPlaced);
             break;
         case ENDER_STONE:
-            player.sendMessage(ChatColor.GREEN + "End attack!");
+            player.sendMessage(ChatColor.GREEN + "End attack!" + levelPlaced);
             break;
         case FLOWER_POT:
-            player.sendMessage(ChatColor.GREEN + "I wonder what this will do...");
+            player.sendMessage(ChatColor.GREEN + "I wonder what this will do..." + levelPlaced);
             break;
         case FURNACE:
-            player.sendMessage(ChatColor.GREEN + "Fire attack! If it's hot.");
+            player.sendMessage(ChatColor.GREEN + "Fire attack! If it's hot." + levelPlaced);
             break;
         case GLASS:
-            player.sendMessage(ChatColor.GREEN + "I can see clearly now");
+            player.sendMessage(ChatColor.GREEN + "I can see clearly now" + levelPlaced);
             break;
         case GLOWSTONE:
-            player.sendMessage(ChatColor.GREEN + "Glow, glow");
+            player.sendMessage(ChatColor.GREEN + "Glow, glow" + levelPlaced);
             break;
         case GOLD_BLOCK:
-            player.sendMessage(ChatColor.GREEN + "Money, money, money");
-            break;
-        case GOLD_ORE:
-            break;
-        case GRASS:
-            break;
-        case GRAVEL:
-            break;
-        case HARD_CLAY:
-            break;
-        case HAY_BLOCK:
-            break;
-        case HOPPER:
+            player.sendMessage(ChatColor.GREEN + "Money, money, money" + levelPlaced);
             break;
         case ICE:
-            player.sendMessage(ChatColor.GREEN + "Brrr, it's cold");
+            player.sendMessage(ChatColor.GREEN + "Brrr, it's cold" + levelPlaced);
             break;
         case IRON_BLOCK:
-            player.sendMessage(ChatColor.GREEN + "Protection");
+            player.sendMessage(ChatColor.GREEN + "Protection" + levelPlaced);
             break;
         case IRON_DOOR_BLOCK:
-            player.sendMessage(ChatColor.GREEN + "Knock, knock");
-            break;
-        case IRON_FENCE:
-            break;
-        case IRON_ORE:
-            break;
-        case IRON_TRAPDOOR:
-            break;
-        case ITEM_FRAME:
+            player.sendMessage(ChatColor.GREEN + "Knock, knock" + levelPlaced);
             break;
         case JACK_O_LANTERN:
-            player.sendMessage(ChatColor.GREEN + "Boo!");
-            break;
-        case JUKEBOX:
+            player.sendMessage(ChatColor.GREEN + "Boo!" + levelPlaced);
             break;
         case LADDER:
-            player.sendMessage(ChatColor.GREEN + "Up we go!");
+            player.sendMessage(ChatColor.GREEN + "Up we go!" + levelPlaced);
             break;
         case LAPIS_BLOCK:
-            player.sendMessage(ChatColor.GREEN + "Everything is blue!");
+            player.sendMessage(ChatColor.GREEN + "Everything is blue!" + levelPlaced);
             break;
         case LAVA:
-            player.sendMessage(ChatColor.GREEN + "Hot stuff!");
+            player.sendMessage(ChatColor.GREEN + "Hot stuff!" + levelPlaced);
             break;
         case LEAVES:
         case LEAVES_2:
-            player.sendMessage(ChatColor.GREEN + "Camoflage");
+            player.sendMessage(ChatColor.GREEN + "Camoflage" + levelPlaced);
             break;
         case LEVER:
-            player.sendMessage(ChatColor.GREEN + "I wonder what this does!");
+            player.sendMessage(ChatColor.GREEN + "I wonder what this does!" + levelPlaced);
             break;
         case LOG:
         case LOG_2:
-            player.sendMessage(ChatColor.GREEN + "It's a tree!");
+            player.sendMessage(ChatColor.GREEN + "It's a tree!" + levelPlaced);
             break;
         case MELON_BLOCK:
-            player.sendMessage(ChatColor.GREEN + "Hungry?");
+            player.sendMessage(ChatColor.GREEN + "Hungry?" + levelPlaced);
             break;
         case MOB_SPAWNER:
-            player.sendMessage(ChatColor.GREEN + "That's what I'm talking about!");
-            break;
-        case MOSSY_COBBLESTONE:
+            player.sendMessage(ChatColor.GREEN + "That's what I'm talking about!" + levelPlaced);
             break;
         case MYCEL:
-            player.sendMessage(ChatColor.GREEN + "Smelly!");
+            player.sendMessage(ChatColor.GREEN + "Smelly!" + levelPlaced);
             break;
         case NETHERRACK:
         case NETHER_BRICK:
         case NETHER_BRICK_STAIRS:
         case NETHER_FENCE:
-            player.sendMessage(ChatColor.GREEN + "That's not from around here!");
+            player.sendMessage(ChatColor.GREEN + "That's not from around here!" + levelPlaced);
             break;
         case NOTE_BLOCK:
-            player.sendMessage(ChatColor.GREEN + "I hear things?");
+            player.sendMessage(ChatColor.GREEN + "I hear things?" + levelPlaced);
             break;
         case OBSIDIAN:
-            player.sendMessage(ChatColor.GREEN + "Tough protection!");
+            player.sendMessage(ChatColor.GREEN + "Tough protection!" + levelPlaced);
             break;
         case PACKED_ICE:
-            player.sendMessage(ChatColor.GREEN + "Cold, so cold...");
+            player.sendMessage(ChatColor.GREEN + "Cold, so cold..." + levelPlaced);
             break;
         case PISTON_BASE:
         case PISTON_STICKY_BASE:
-            player.sendMessage(ChatColor.GREEN + "Pushy!");
+            player.sendMessage(ChatColor.GREEN + "Pushy!" + levelPlaced);
             break;
         case POWERED_RAIL:
-            player.sendMessage(ChatColor.GREEN + "Power to the people!");
+            player.sendMessage(ChatColor.GREEN + "Power to the people!" + levelPlaced);
             break;
         case PRISMARINE:
-            player.sendMessage(ChatColor.GREEN + "Aqua");
+            player.sendMessage(ChatColor.GREEN + "Aqua" + levelPlaced);
             break;
         case PUMPKIN:
-            player.sendMessage(ChatColor.GREEN + "Farming?");
+            player.sendMessage(ChatColor.GREEN + "Farming?" + levelPlaced);
             break;
         case QUARTZ_BLOCK:
-            player.sendMessage(ChatColor.GREEN + "Pretty");
-            break;
-        case QUARTZ_ORE:
-            break;
-        case QUARTZ_STAIRS:
+            player.sendMessage(ChatColor.GREEN + "Pretty" + levelPlaced);
             break;
         case RAILS:
-            player.sendMessage(ChatColor.GREEN + "Where do they go?");
+            player.sendMessage(ChatColor.GREEN + "Where do they go?" + levelPlaced);
             break;
         case REDSTONE_BLOCK:
-            player.sendMessage(ChatColor.GREEN + "Power up!");
+            player.sendMessage(ChatColor.GREEN + "Power up!" + levelPlaced);
             break;
         case REDSTONE_COMPARATOR:
         case REDSTONE_COMPARATOR_OFF:
         case REDSTONE_COMPARATOR_ON:
-            player.sendMessage(ChatColor.GREEN + "What's the question?");
+            player.sendMessage(ChatColor.GREEN + "What's the question?" + levelPlaced);
             break;
         case REDSTONE_LAMP_OFF:
         case REDSTONE_LAMP_ON:
-            player.sendMessage(ChatColor.GREEN + "Light?");
-            break;
-        case REDSTONE_ORE:
+            player.sendMessage(ChatColor.GREEN + "Light?" + levelPlaced);
             break;
         case REDSTONE_TORCH_OFF:
         case REDSTONE_TORCH_ON:
-            player.sendMessage(ChatColor.GREEN + "Power gen");
+            player.sendMessage(ChatColor.GREEN + "Power gen" + levelPlaced);
             break;
         case REDSTONE_WIRE:
-            player.sendMessage(ChatColor.GREEN + "Does it glow?");
+            player.sendMessage(ChatColor.GREEN + "Does it glow?" + levelPlaced);
             break;
         case RED_SANDSTONE:
         case RED_SANDSTONE_STAIRS:
-            player.sendMessage(ChatColor.RED + "It's red");
+            player.sendMessage(ChatColor.RED + "It's red" + levelPlaced);
             break;
         case SAND:
             if (block.getData() == (byte)1) {
-                player.sendMessage(ChatColor.YELLOW + "It's red");
+                player.sendMessage(ChatColor.YELLOW + "It's red" + levelPlaced);
                 break; 
             }
         case SANDSTONE:
         case SANDSTONE_STAIRS:
-            player.sendMessage(ChatColor.YELLOW + "It's yellow");
+            player.sendMessage(ChatColor.YELLOW + "It's yellow" + levelPlaced);
             break;
         case SEA_LANTERN:
-            player.sendMessage(ChatColor.GREEN + "Nice! Sea attack!");
+            player.sendMessage(ChatColor.GREEN + "Nice! Sea attack!" + levelPlaced);
             break;
         case SIGN_POST:
-            player.sendMessage(ChatColor.GREEN + "Warning message set!");
+            player.sendMessage(ChatColor.GREEN + "Warning message set!" + levelPlaced);
             break;
         case SKULL:
-            player.sendMessage(ChatColor.GREEN + "Death to this entity!");
+            player.sendMessage(ChatColor.GREEN + "Death to this entity!" + levelPlaced);
             break;
         case SLIME_BLOCK:
-            player.sendMessage(ChatColor.GREEN + "Boing, boing, boing!");
-            break;
-        case SMOOTH_BRICK:
-            break;
-        case SMOOTH_STAIRS:
+            player.sendMessage(ChatColor.GREEN + "Boing, boing, boing!" + levelPlaced);
             break;
         case SNOW_BLOCK:
-            player.sendMessage(ChatColor.GREEN + "Cold!");
+            player.sendMessage(ChatColor.GREEN + "Cold!" + levelPlaced);
             break;
         case SOUL_SAND:
-            player.sendMessage(ChatColor.GREEN + "<scream>");
+            player.sendMessage(ChatColor.GREEN + "<scream>" + levelPlaced);
             break;
         case SPONGE:
-            player.sendMessage(ChatColor.GREEN + "Slurp!");
-            break;
-        case STAINED_CLAY:
+            player.sendMessage(ChatColor.GREEN + "Slurp!" + levelPlaced);
             break;
         case STAINED_GLASS:
-            player.sendMessage(ChatColor.GREEN + "Pretty!");
-            break;
         case STAINED_GLASS_PANE:
+            player.sendMessage(ChatColor.GREEN + "Pretty!" + levelPlaced);
             break;
         case STANDING_BANNER:
-            player.sendMessage(ChatColor.GREEN + "Be proud!");
+            player.sendMessage(ChatColor.GREEN + "Be proud!" + levelPlaced);
             break;
         case STATIONARY_LAVA:
         case STATIONARY_WATER:
-            player.sendMessage(ChatColor.GREEN + "A moat?");
-            break;
-        case STEP:
-            break;
-        case STONE:
+            player.sendMessage(ChatColor.GREEN + "A moat?" + levelPlaced);
             break;
         case STONE_PLATE:
-            player.sendMessage(ChatColor.GREEN + "A trap?");
-            break;
-        case STONE_SLAB2:
+            player.sendMessage(ChatColor.GREEN + "A trap?" + levelPlaced);
             break;
         case THIN_GLASS:
-            player.sendMessage(ChatColor.GREEN + "Not much protection...");
+            player.sendMessage(ChatColor.GREEN + "Not much protection..." + levelPlaced);
             break;
         case TNT:
-            player.sendMessage(ChatColor.GREEN + "Explosive protection!");
-            break;
-        case TRAP_DOOR:
-            break;
-        case TRIPWIRE:
-            break;
-        case TRIPWIRE_HOOK:
-            break;
-        case VINE:
-            break;
-        case WALL_BANNER:
+            player.sendMessage(ChatColor.GREEN + "Explosive protection!" + levelPlaced);
             break;
         case WALL_SIGN:
-            player.sendMessage(ChatColor.GREEN + "Goodbye message set");
+            player.sendMessage(ChatColor.GREEN + "Send a message!" + levelPlaced);
             break;
         case WEB:
-            player.sendMessage(ChatColor.GREEN + "Slow down the enemy!");
+            player.sendMessage(ChatColor.GREEN + "Slow down the enemy!" + levelPlaced);
             break;
-        case WOOD:
-            break;
-        case WOODEN_DOOR:
-            break;
-        case WOOD_DOOR:
-            break;
-        case WOOD_DOUBLE_STEP:
-            break;
-        case WOOD_PLATE:
-            player.sendMessage(ChatColor.GREEN + "Trap?");
-            break;
-        case WOOD_STEP:
+       case WOOD_PLATE:
+            player.sendMessage(ChatColor.GREEN + "Trap?" + levelPlaced);
             break;
         case WOOL:
-            player.sendMessage(ChatColor.GREEN + "Keep warm!");
+            player.sendMessage(ChatColor.GREEN + "Keep warm!" + levelPlaced);
             break;
         case WORKBENCH:
-            player.sendMessage(ChatColor.GREEN + "That's helpful!");
+            player.sendMessage(ChatColor.GREEN + "That's helpful!" + levelPlaced);
             break;
         default:
+            player.sendMessage(ChatColor.GREEN + "Defense placed" + levelPlaced);
             break;
         }
     }
@@ -579,12 +501,26 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
             return;
         }
         // Check that breakage is being done top-down
-        if (block.getY() != getHighestDefenseBlockYAt(block, beacon.getY() + Settings.defenseHeight - 1)) {
+        if (block.getY() < getHighestDefenseBlockYAt(block, beacon.getY() + Settings.defenseHeight - 1)) {
             event.getPlayer().sendMessage(ChatColor.RED + "Remove blocks top-down");
             event.setCancelled(true);
             return;
         }
-        // TODO: Add any other effects?
+        // Check if the player has the experience level required to break the block
+        int level = block.getY() - beacon.getY();
+        int levelRequired = 0;
+        getLogger().info("DEBUG: level = " + level);
+        try {
+            levelRequired = Settings.attackLevels.get(level);
+            if (player.getLevel() < levelRequired) {
+                player.sendMessage(ChatColor.RED + "You need to be level " + levelRequired + " to break blocks that high around the beacon!");
+                event.setCancelled(true);
+                return;
+            }
+        } catch (Exception e) {
+            getLogger().severe("Attack level for height " + level + " does not exist!");
+        }
+        // TODO : give exp? Rewards?
     }
 
     /**
@@ -626,12 +562,25 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
             return;
         }
         // Check that breakage is being done top-down
-        if (block.getY() != getHighestDefenseBlockYAt(block, beacon.getY() + Settings.defenseHeight - 1)){
+        if (block.getY() < getHighestDefenseBlockYAt(block, beacon.getY() + Settings.defenseHeight - 1)){
             event.getPlayer().sendMessage(ChatColor.RED + "Remove blocks top-down");
             event.setCancelled(true);
             return;
         }
-        // TODO: Add any other effects?
+        // Check if the player has the experience level required to break the block
+        int level = block.getY() - beacon.getY();
+        int levelRequired = 0;
+        getLogger().info("DEBUG: level = " + level);
+        try {
+            levelRequired = Settings.attackLevels.get(level);
+            if (player.getLevel() < levelRequired) {
+                player.sendMessage(ChatColor.RED + "You need to be level " + levelRequired + " to attempt to break blocks that high!");
+                event.setCancelled(true);
+                return;
+            }
+        } catch (Exception e) {
+            getLogger().severe("Attack level for height " + level + " does not exist!");
+        }
     }
 
     /**

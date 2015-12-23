@@ -7,7 +7,7 @@ world:
   distribution: 0.08
   
   # Size of the world - a barrier will be created using worldborder if size > 0
-  size: 300
+  size: 0
   
   # Distance between new games (mini game mode). Must be at least size of the barrier
   distance: 600
@@ -36,6 +36,35 @@ world:
   
   # Defense height - max height of blocks that can be placed around a beacon
   defenseheight: 8
+  
+  # Defense levels
+  # Defines what levels are required to place a block at the height around the beacon
+  # The numbers listed should correspond to their defenseheight. If a number is missing
+  # the previous level will be used. A level of 0 means any level can place.
+  defenselevel:
+     1: 0
+     2: 2
+     3: 5
+     4: 10
+     5: 15
+     6: 20
+     7: 25
+     8: 30
+     
+  # Attack levels
+  # Defines what level an attack must be to be able to mine the block at that level
+  # above the beacon. 
+  # The numbers listed should correspond to their defenseheight. If a number is missing
+  # the previous level will be used. A level of 0 means any level can place.
+  attacklevel:
+     1: 0
+     2: 2
+     3: 5
+     4: 10
+     5: 15
+     6: 20
+     7: 25
+     8: 30  
   
   # Starter inventory
   # Format Material:Qty or Material:Data:Qty

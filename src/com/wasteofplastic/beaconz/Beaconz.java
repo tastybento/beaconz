@@ -238,6 +238,66 @@ public class Beaconz extends JavaPlugin {
         if (Settings.defenseHeight < 1) {
             Settings.defenseHeight = 1;
         }
+        // Load the defense and attack levels
+        // The end result is a list of what levels are required for a player to have to build or attack at that
+        // height above a beacon.
+        // This is a list where the index is the height (minus 1), and the value is the level required.
+        if (getConfig().contains("world.defenselevel")) {
+            Settings.defenseLevels = new ArrayList<Integer>();
+            // Zero the index
+            for (int i = 0; i < Settings.defenseHeight; i++) {
+                Settings.defenseLevels.add(0);
+            }
+            // Load from the config
+            for (String level : getConfig().getConfigurationSection("world.defenselevel").getValues(false).keySet()) {
+                try {
+                    int index = Integer.valueOf(level) - 1;
+                    if (index >= 0) {
+                        int levelReq = getConfig().getInt("world.defenselevel." + level, 0);
+                        Settings.defenseLevels.add(index, levelReq);
+                    } else {
+                        getLogger().severe("Level in world.deferencelevel must be an integer value or 1 or more");
+                    }
+                } catch (Exception e) {
+                    getLogger().warning("Level in world.deferencelevel must be an integer value. This is not valid:" + level);
+                }
+
+            }
+            // Go through zeros and set to the previous value
+            for (int i = 1; i < Settings.defenseHeight; i++) {
+                if (Settings.defenseLevels.get(i) == 0) {
+                    Settings.defenseLevels.set(i, Settings.defenseLevels.get(i-1));
+                }
+            }
+        }
+        if (getConfig().contains("world.attacklevel")) {
+            Settings.attackLevels = new ArrayList<Integer>();
+            // Zero the index
+            for (int i = 0; i < Settings.defenseHeight; i++) {
+                Settings.attackLevels.add(0);
+            }
+            // Load from the config
+            for (String level : getConfig().getConfigurationSection("world.attacklevel").getValues(false).keySet()) {
+                try {
+                    int index = Integer.valueOf(level) - 1;
+                    if (index >= 0) {
+                        int levelReq = getConfig().getInt("world.attacklevel." + level, 0);
+                        Settings.attackLevels.add(index, levelReq);
+                    } else {
+                        getLogger().severe("Level in world.attacklevel must be an integer value or 1 or more");
+                    }
+                } catch (Exception e) {
+                    getLogger().warning("Level in world.attacklevel must be an integer value. This is not valid:" + level);
+                }
+
+            }
+            // Go through zeros and set to the previous value
+            for (int i = 1; i < Settings.defenseHeight; i++) {
+                if (Settings.attackLevels.get(i) == 0) {
+                    Settings.attackLevels.set(i, Settings.attackLevels.get(i-1));
+                }
+            }
+        }
         Settings.pairLinking = getConfig().getBoolean("world.pairs", true);
         Settings.teamChat = true;
         Settings.worldName = getConfig().getString("world.name", "beaconz");
@@ -339,7 +399,7 @@ public class Beaconz extends JavaPlugin {
         for (Entry<Integer, ItemStack> ent : Settings.enemyGoodies.entrySet()) {
             plugin.getLogger().info("DEBUG: " + ent.getKey() + " " + ent.getValue());
         }
-        */
+         */
         // Team goodies
         goodies = getConfig().getStringList("world.teamgoodies");
         Settings.teamGoodies.clear();

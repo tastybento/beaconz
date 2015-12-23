@@ -139,5 +139,15 @@ public class Settings {
      */
     public static double expDistance;
     
+    /**
+     * List of levels required to build at each level around a beacon
+     */
+    public static List<Integer> defenseLevels;
+    
+    /**
+     * List of levels required to attack at each level around a beacon
+     */
+    public static List<Integer> attackLevels;
+    
     
 }
