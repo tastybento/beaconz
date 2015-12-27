@@ -105,6 +105,7 @@ public class Beaconz extends JavaPlugin {
                 getServer().getPluginManager().registerEvents(ev, plugin);
                 getServer().getPluginManager().registerEvents(new ChatListener(plugin), plugin);
                 getServer().getPluginManager().registerEvents(new BeaconDefenseListener(plugin), plugin);
+                getServer().getPluginManager().registerEvents(new SkyListeners(plugin), plugin);
 
                 // Create the corner beacons if world boarder is active
                 if (Settings.borderSize > 0) {
