@@ -31,6 +31,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.commons.lang.math.NumberUtils;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -65,6 +66,7 @@ public class Beaconz extends JavaPlugin {
 
         // Register command(s)
         getCommand("beaconz").setExecutor(new CmdHandler(this));
+        getCommand("badmin").setExecutor(new AdminCmdHandler(this));
 
         //getServer().getPluginManager().registerEvents(new WorldLoader(this), this);
 
@@ -77,10 +79,7 @@ public class Beaconz extends JavaPlugin {
                 // Load the scorecard - cannot be done until after the server starts
                 scorecard = new Scorecard(plugin);
                 // Add teams
-                MaterialData teamBlock = new MaterialData(Material.STAINED_GLASS,(byte) 11);
-                scorecard.addTeam("Blue", teamBlock);
-                teamBlock = new MaterialData(Material.STAINED_GLASS,(byte) 14);
-                scorecard.addTeam("Red", teamBlock);
+                addTeams();
 
                 // Load the beacon register
                 register = new Register(plugin);
@@ -120,9 +119,21 @@ public class Beaconz extends JavaPlugin {
     }
 
     /**
+     * Adds teams to the game from the config file
+     */
+    protected void addTeams() {
+        scorecard.clear();
+        for (String teamName: getConfig().getConfigurationSection("teams").getValues(false).keySet()) {
+            MaterialData teamBlock = new MaterialData(Material.STAINED_GLASS,(byte) getConfig().getInt("teams." + teamName + ".glasscolor"));
+            Team team = scorecard.addTeam(teamName, teamBlock);
+            team.setDisplayName(ChatColor.translateAlternateColorCodes('&', getConfig().getString("teams." + teamName + ".displayname", teamName)));
+        }
+    }
+
+    /**
      * Sets the world border if the border exits
      */
-    private void setWorldBorder() {
+    public void setWorldBorder() {
         beaconzWorld.getWorldBorder().setCenter(Settings.xCenter, Settings.zCenter);
         if (Settings.borderSize > 0) {
             beaconzWorld.getWorldBorder().setSize(Settings.borderSize);
@@ -191,6 +202,10 @@ public class Beaconz extends JavaPlugin {
         if (scorecard != null) {
             scorecard.saveTeamMembers();
         }
+        beaconzWorld.getPopulators().clear();
+        if (beaconPopulator != null) {     
+            //beaconzWorld.getPopulators().remove(beaconPopulator);
+        }
         //getConfig().set("world.distribution", Settings.distribution);
         //saveConfig();
     }
@@ -221,6 +236,7 @@ public class Beaconz extends JavaPlugin {
 
     /**
      * Loads settings from config.yml
+     * Clears all old settings
      */
     public void loadConfig() {
         Settings.linkDistance = getConfig().getDouble("world.linkdistance", 0);

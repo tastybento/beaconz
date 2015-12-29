@@ -69,12 +69,19 @@ public class Scorecard extends BeaconzPluginDependent{
         objective.setDisplayName(" blocks");
     }
 
-    public void addTeam(String teamName, MaterialData teamBlock) {
+    /**
+     * Adds a team to the scoreboard and returns the team that was made
+     * @param teamName
+     * @param teamBlock
+     * @return team
+     */
+    public Team addTeam(String teamName, MaterialData teamBlock) {
         Team team = scoreboard.registerNewTeam(teamName);
         team.setAllowFriendlyFire(false);
         team.setPrefix(ChatColor.DARK_PURPLE + "[" + teamName + "] ");
         // Store the block for this team
         this.teamBlock.put(team, teamBlock);
+        return team;
     }
 
     /**

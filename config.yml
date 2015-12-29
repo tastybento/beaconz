@@ -4,7 +4,7 @@ world:
   name: beaconz
   
   # Distribution of beacons the large the number, the more beacons are made
-  distribution: 0.08
+  distribution: 0.05
   
   # Size of the world - a barrier will be created using worldborder if size > 0
   size: 0
@@ -24,7 +24,7 @@ world:
   
   # Use maps or player pairs to make links
   # If false, maps will be used
-  pairs: true
+  pairs: false
   
   # The base distance in blocks that players can link beacons without experience points
   # If set to -1, beacons can be any distance apart
@@ -162,3 +162,30 @@ world:
     - "NIGHT_VISION:800:1"
     8:
     - "INVISIBILITY:800:1"
+
+# Team configuration
+# Teams have glass colors that can be picked from these. They must be different.
+# 0: White Stained Glass
+# 1: Orange Stained Glass
+# 2: Magenta Stained Glass
+# 3: Light Blue Stained Glass
+# 4: Yellow Stained Glass
+# 5: Lime Stained Glass
+# 6: Pink Stained Glass
+# 7: Gray Stained Glass
+# 8: Light Gray Stained Glass
+# 9: Cyan Stained Glass
+# 10: Purple Stained Glass
+# 11: Blue Stained Glass
+# 12: Brown Stained Glass
+# 13: Green Stained Glass
+# 14: Red Stained Glass
+# 15: Black Stained Glass
+teams:
+  red:
+    displayname: "Red"
+    glasscolor: 14
+  blue:
+    displayname: "Blue"
+    glasscolor: 11
+    

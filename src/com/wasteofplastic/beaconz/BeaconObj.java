@@ -31,7 +31,6 @@ import java.util.Set;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.material.MaterialData;
 import org.bukkit.scoreboard.Team;
 
 public class BeaconObj extends BeaconzPluginDependent {
