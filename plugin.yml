@@ -11,3 +11,8 @@ commands:
         aliases: [beacons]
         usage:  |
              /beaconz help
+    badmin:
+        description: Beaconz admin command
+        usage:  |
+             /badmin help
+    

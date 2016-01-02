@@ -31,7 +31,8 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.commons.lang.math.NumberUtils;
-import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
@@ -39,20 +40,22 @@ import org.bukkit.WorldType;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.Player;
 import org.bukkit.generator.BlockPopulator;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.material.MaterialData;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.scoreboard.Team;
 
 public class Beaconz extends JavaPlugin {
-    BeaconPopulator beaconPop;
-    Register register;
-    World beaconzWorld;
+    private Register register;
+    private World beaconzWorld;
     private static Beaconz plugin;
     static BlockPopulator beaconPopulator;
     private Scorecard scorecard;
+    private Messages messages;
 
     @Override
     public void onEnable() {
@@ -63,6 +66,7 @@ public class Beaconz extends JavaPlugin {
 
         // Register command(s)
         getCommand("beaconz").setExecutor(new CmdHandler(this));
+        getCommand("badmin").setExecutor(new AdminCmdHandler(this));
 
         //getServer().getPluginManager().registerEvents(new WorldLoader(this), this);
 
@@ -75,10 +79,7 @@ public class Beaconz extends JavaPlugin {
                 // Load the scorecard - cannot be done until after the server starts
                 scorecard = new Scorecard(plugin);
                 // Add teams
-                MaterialData teamBlock = new MaterialData(Material.STAINED_GLASS,(byte) 11);
-                scorecard.addTeam("Blue", teamBlock);
-                teamBlock = new MaterialData(Material.STAINED_GLASS,(byte) 14);
-                scorecard.addTeam("Red", teamBlock);
+                addTeams();
 
                 // Load the beacon register
                 register = new Register(plugin);
@@ -92,63 +93,105 @@ public class Beaconz extends JavaPlugin {
                     getBp();
                 }
                 // Create the world
-                World world = getBeaconzWorld();
+                getBeaconzWorld();
+
+                // Set the world border
+                beaconzWorld.getWorldBorder().reset();
+                setWorldBorder();
 
                 // Register the listeners - block break etc.
                 BeaconListeners ev = new BeaconListeners(plugin);
                 getServer().getPluginManager().registerEvents(ev, plugin);
+                getServer().getPluginManager().registerEvents(new ChatListener(plugin), plugin);
+                getServer().getPluginManager().registerEvents(new BeaconDefenseListener(plugin), plugin);
+                getServer().getPluginManager().registerEvents(new SkyListeners(plugin), plugin);
 
                 // Create the corner beacons if world boarder is active
                 if (Settings.borderSize > 0) {
-                    // Check corners
-                    Set<Point2D> corners = new HashSet<Point2D>();
-                    int xMin = Settings.xCenter - (Settings.borderSize /2) + 2;
-                    int xMax = Settings.xCenter + (Settings.borderSize /2) - 3;
-                    int zMin = Settings.zCenter - (Settings.borderSize /2) + 2;
-                    int zMax = Settings.zCenter + (Settings.borderSize /2) - 3;
-                    corners.add(new Point2D.Double(xMin,zMin));
-                    corners.add(new Point2D.Double(xMin,zMax));
-                    corners.add(new Point2D.Double(xMax,zMin));
-                    corners.add(new Point2D.Double(xMax,zMax));
-                    for (Point2D point : corners) {
-                        if (!register.isNearBeacon(point, 5)) {
-                            Block b = world.getHighestBlockAt((int)point.getX(), (int)point.getY());
-                            while (b.getType().equals(Material.AIR) || b.getType().equals(Material.LEAVES) || b.getType().equals(Material.LEAVES_2)) {          
-                                if (b.getY() == 0) {
-                                    // Oops, nothing here
-                                    break;
-                                }
-                                b = b.getRelative(BlockFace.DOWN);
-                            }
-                            if (b.getY() > 3) {
-                                // Create a beacon
-                                Bukkit.getLogger().info("DEBUG: made beacon at " + b.getLocation());
-                                b.setType(Material.BEACON);
-                                // Register the beacon
-                                register.addBeacon(null, b.getLocation());
-                                // Add the capstone
-                                b.getRelative(BlockFace.UP).setType(Material.OBSIDIAN);
-                                // Create the pyramid
-                                b = b.getRelative(BlockFace.DOWN);
-
-                                // All diamond blocks for now
-                                b.setType(Material.DIAMOND_BLOCK);
-                                b.getRelative(BlockFace.SOUTH).setType(Material.DIAMOND_BLOCK);
-                                b.getRelative(BlockFace.SOUTH_EAST).setType(Material.DIAMOND_BLOCK);
-                                b.getRelative(BlockFace.SOUTH_WEST).setType(Material.DIAMOND_BLOCK);
-                                b.getRelative(BlockFace.EAST).setType(Material.DIAMOND_BLOCK);
-                                b.getRelative(BlockFace.WEST).setType(Material.DIAMOND_BLOCK);
-                                b.getRelative(BlockFace.NORTH).setType(Material.DIAMOND_BLOCK);
-                                b.getRelative(BlockFace.NORTH_EAST).setType(Material.DIAMOND_BLOCK);
-                                b.getRelative(BlockFace.NORTH_WEST).setType(Material.DIAMOND_BLOCK);
-
-              
-                            }
-                        }
-                    }
+                    createCorners();
                 }
-            }});
+
+                // Load messages for players
+                messages = new Messages(plugin);
+            }
+
+        });
     }
+
+    /**
+     * Adds teams to the game from the config file
+     */
+    protected void addTeams() {
+        scorecard.clear();
+        for (String teamName: getConfig().getConfigurationSection("teams").getValues(false).keySet()) {
+            MaterialData teamBlock = new MaterialData(Material.STAINED_GLASS,(byte) getConfig().getInt("teams." + teamName + ".glasscolor"));
+            Team team = scorecard.addTeam(teamName, teamBlock);
+            team.setDisplayName(ChatColor.translateAlternateColorCodes('&', getConfig().getString("teams." + teamName + ".displayname", teamName)));
+        }
+    }
+
+    /**
+     * Sets the world border if the border exits
+     */
+    public void setWorldBorder() {
+        beaconzWorld.getWorldBorder().setCenter(Settings.xCenter, Settings.zCenter);
+        if (Settings.borderSize > 0) {
+            beaconzWorld.getWorldBorder().setSize(Settings.borderSize);
+        }
+    }
+
+    /**
+     * Creates the corner-most beaconz so that the map can be theoretically be covered entirely (almost)
+     */
+    private void createCorners() {
+
+        // Check corners
+        Set<Point2D> corners = new HashSet<Point2D>();
+        int xMin = Settings.xCenter - (Settings.borderSize /2) + 2;
+        int xMax = Settings.xCenter + (Settings.borderSize /2) - 3;
+        int zMin = Settings.zCenter - (Settings.borderSize /2) + 2;
+        int zMax = Settings.zCenter + (Settings.borderSize /2) - 3;
+        corners.add(new Point2D.Double(xMin,zMin));
+        corners.add(new Point2D.Double(xMin,zMax));
+        corners.add(new Point2D.Double(xMax,zMin));
+        corners.add(new Point2D.Double(xMax,zMax));
+        for (Point2D point : corners) {
+            if (!register.isNearBeacon(point, 5)) {
+                Block b = getBeaconzWorld().getHighestBlockAt((int)point.getX(), (int)point.getY());
+                while (b.getType().equals(Material.AIR) || b.getType().equals(Material.LEAVES) || b.getType().equals(Material.LEAVES_2)) {          
+                    if (b.getY() == 0) {
+                        // Oops, nothing here
+                        break;
+                    }
+                    b = b.getRelative(BlockFace.DOWN);
+                }
+                if (b.getY() > 3) {
+                    // Create a beacon
+                    //Bukkit.getLogger().info("DEBUG: made beacon at " + b.getLocation());
+                    b.setType(Material.BEACON);
+                    // Register the beacon
+                    register.addBeacon(null, b.getLocation());
+                    // Add the capstone
+                    b.getRelative(BlockFace.UP).setType(Material.OBSIDIAN);
+                    // Create the pyramid
+                    b = b.getRelative(BlockFace.DOWN);
+
+                    // All diamond blocks for now
+                    b.setType(Material.DIAMOND_BLOCK);
+                    b.getRelative(BlockFace.SOUTH).setType(Material.DIAMOND_BLOCK);
+                    b.getRelative(BlockFace.SOUTH_EAST).setType(Material.DIAMOND_BLOCK);
+                    b.getRelative(BlockFace.SOUTH_WEST).setType(Material.DIAMOND_BLOCK);
+                    b.getRelative(BlockFace.EAST).setType(Material.DIAMOND_BLOCK);
+                    b.getRelative(BlockFace.WEST).setType(Material.DIAMOND_BLOCK);
+                    b.getRelative(BlockFace.NORTH).setType(Material.DIAMOND_BLOCK);
+                    b.getRelative(BlockFace.NORTH_EAST).setType(Material.DIAMOND_BLOCK);
+                    b.getRelative(BlockFace.NORTH_WEST).setType(Material.DIAMOND_BLOCK);
+                }
+            }
+        }
+    }
+
+
 
     @Override
     public void onDisable()
@@ -158,6 +201,10 @@ public class Beaconz extends JavaPlugin {
         }
         if (scorecard != null) {
             scorecard.saveTeamMembers();
+        }
+        beaconzWorld.getPopulators().clear();
+        if (beaconPopulator != null) {     
+            //beaconzWorld.getPopulators().remove(beaconPopulator);
         }
         //getConfig().set("world.distribution", Settings.distribution);
         //saveConfig();
@@ -189,17 +236,102 @@ public class Beaconz extends JavaPlugin {
 
     /**
      * Loads settings from config.yml
+     * Clears all old settings
      */
-    @SuppressWarnings("deprecation")
     public void loadConfig() {
+        Settings.linkDistance = getConfig().getDouble("world.linkdistance", 0);
+        Settings.expDistance = getConfig().getDouble("world.expdistance", 10);
+        Settings.beaconMineExhaustChance = getConfig().getInt("world.beaconmineexhaustchance", 10);
+        if (Settings.beaconMineExhaustChance < 0) {
+            Settings.beaconMineExhaustChance = 0;
+        } else if (Settings.beaconMineExhaustChance > 100) {
+            Settings.beaconMineExhaustChance = 100;
+        }
+        Settings.beaconMineExpRequired = getConfig().getInt("world.beaconmineexp", 10);
+        if (Settings.beaconMineExpRequired < 0) {
+            Settings.beaconMineExpRequired = 0;
+        }
+        Settings.defenseHeight = getConfig().getInt("world.defenseheight", 8);
+        if (Settings.defenseHeight < 1) {
+            Settings.defenseHeight = 1;
+        }
+        // Load the defense and attack levels
+        // The end result is a list of what levels are required for a player to have to build or attack at that
+        // height above a beacon.
+        // This is a list where the index is the height (minus 1), and the value is the level required.
+        if (getConfig().contains("world.defenselevel")) {
+            Settings.defenseLevels = new ArrayList<Integer>();
+            // Zero the index
+            for (int i = 0; i < Settings.defenseHeight; i++) {
+                Settings.defenseLevels.add(0);
+            }
+            // Load from the config
+            for (String level : getConfig().getConfigurationSection("world.defenselevel").getValues(false).keySet()) {
+                try {
+                    int index = Integer.valueOf(level) - 1;
+                    if (index >= 0) {
+                        int levelReq = getConfig().getInt("world.defenselevel." + level, 0);
+                        Settings.defenseLevels.add(index, levelReq);
+                    } else {
+                        getLogger().severe("Level in world.deferencelevel must be an integer value or 1 or more");
+                    }
+                } catch (Exception e) {
+                    getLogger().warning("Level in world.deferencelevel must be an integer value. This is not valid:" + level);
+                }
+
+            }
+            // Go through zeros and set to the previous value
+            for (int i = 1; i < Settings.defenseHeight; i++) {
+                if (Settings.defenseLevels.get(i) == 0) {
+                    Settings.defenseLevels.set(i, Settings.defenseLevels.get(i-1));
+                }
+            }
+        }
+        if (getConfig().contains("world.attacklevel")) {
+            Settings.attackLevels = new ArrayList<Integer>();
+            // Zero the index
+            for (int i = 0; i < Settings.defenseHeight; i++) {
+                Settings.attackLevels.add(0);
+            }
+            // Load from the config
+            for (String level : getConfig().getConfigurationSection("world.attacklevel").getValues(false).keySet()) {
+                try {
+                    int index = Integer.valueOf(level) - 1;
+                    if (index >= 0) {
+                        int levelReq = getConfig().getInt("world.attacklevel." + level, 0);
+                        Settings.attackLevels.add(index, levelReq);
+                    } else {
+                        getLogger().severe("Level in world.attacklevel must be an integer value or 1 or more");
+                    }
+                } catch (Exception e) {
+                    getLogger().warning("Level in world.attacklevel must be an integer value. This is not valid:" + level);
+                }
+
+            }
+            // Go through zeros and set to the previous value
+            for (int i = 1; i < Settings.defenseHeight; i++) {
+                if (Settings.attackLevels.get(i) == 0) {
+                    Settings.attackLevels.set(i, Settings.attackLevels.get(i-1));
+                }
+            }
+        }
+        Settings.pairLinking = getConfig().getBoolean("world.pairs", true);
+        Settings.teamChat = true;
         Settings.worldName = getConfig().getString("world.name", "beaconz");
         Settings.distribution = getConfig().getDouble("world.distribution", 0.05D);
+        if (Settings.distribution < 0.001D) {
+            Settings.distribution = 0.001D;
+        }
         Settings.borderSize = getConfig().getInt("world.size",0);
+        if (Settings.borderSize < 0) {
+            Settings.borderSize = 0;
+        }
+        Settings.gameDistance = getConfig().getInt("world.distance", Settings.borderSize);
         Settings.xCenter = getConfig().getInt("world.xcenter",0);
         Settings.zCenter = getConfig().getInt("world.zcenter",0);
         Settings.randomSpawn = getConfig().getBoolean("world.randomspawn", true);
         Settings.seedAdjustment = getConfig().getLong("world.seedadjustment", 0);
-        Settings.hackCoolDown = getConfig().getInt("world.hackcooldown", 1) * 60000; // Minutes in millis
+        Settings.mineCoolDown = getConfig().getInt("world.minecooldown", 1) * 60000; // Minutes in millis
         ConfigurationSection enemyFieldSection = getConfig().getConfigurationSection("world.enemyfieldeffects");
         // Step through the numbers
         Settings.enemyFieldEffects = new HashMap<Integer, List<PotionEffect>>();
@@ -214,7 +346,7 @@ public class Beaconz extends JavaPlugin {
                         PotionEffectType type = PotionEffectType.getByName(split[0]);
                         if (type != null) {
                             if (NumberUtils.isNumber(split[1]) && NumberUtils.isNumber(split[2])) {
-                                getLogger().info("DEBUG: adding enemy effect " + type.toString());
+                                //getLogger().info("DEBUG: adding enemy effect " + type.toString());
                                 effects.add(new PotionEffect(type, NumberUtils.toInt(split[1]), NumberUtils.toInt(split[2])));
                             }
                         }
@@ -229,23 +361,23 @@ public class Beaconz extends JavaPlugin {
         ConfigurationSection friendlyFieldSection = getConfig().getConfigurationSection("world.friendlyfieldeffects");
         // Step through the numbers
         for (Entry<String, Object> part : friendlyFieldSection.getValues(false).entrySet()) {
-            getLogger().info("DEBUG: Field: " + part.getKey());
+            //getLogger().info("DEBUG: Field: " + part.getKey());
             if (NumberUtils.isNumber(part.getKey())) {
-                getLogger().info("DEBUG: Field is a number");
+                //getLogger().info("DEBUG: Field is a number");
                 // It is a number, now get the string list
                 List<PotionEffect> effects = new ArrayList<PotionEffect>();
                 List<String> effectsList = getConfig().getStringList("world.friendlyfieldeffects." + part.getKey());
-                getLogger().info("DEBUG: Effects list: " + effectsList);
+                //getLogger().info("DEBUG: Effects list: " + effectsList);
                 for (String effectString : effectsList) {
                     String[] split = effectString.split(":");
                     if (split.length == 3) {
-                        getLogger().info("DEBUG: Potion found " + split[0]);
+                        //getLogger().info("DEBUG: Potion found " + split[0]);
                         PotionEffectType type = PotionEffectType.getByName(split[0]);
                         if (type != null) {
-                            getLogger().info("DEBUG: Potion is known");
+                            //getLogger().info("DEBUG: Potion is known");
                             if (NumberUtils.isNumber(split[1]) && NumberUtils.isNumber(split[2])) {
 
-                                getLogger().info("DEBUG: adding friendly effect " + type.toString());
+                                //getLogger().info("DEBUG: adding friendly effect " + type.toString());
                                 effects.add(new PotionEffect(type, NumberUtils.toInt(split[1]), NumberUtils.toInt(split[2])));
                             }
                         }
@@ -256,7 +388,7 @@ public class Beaconz extends JavaPlugin {
                 Settings.friendlyFieldEffects.put(NumberUtils.toInt(part.getKey()), effects);               
             }
         }
-        Settings.overHackEffects = getConfig().getStringList("world.overhackeffects");
+        Settings.minePenalty = getConfig().getStringList("world.minepenalty");
         List<String> goodies = getConfig().getStringList("world.enemygoodies");
         Settings.enemyGoodies.clear();
         for (String goodie: goodies) {
@@ -280,9 +412,11 @@ public class Beaconz extends JavaPlugin {
         // Add the final element - any number above this value will return a null element
         Settings.enemyGoodies.put(Settings.enemyGoodies.lastKey() + 1, null);
         // Debug
+        /*
         for (Entry<Integer, ItemStack> ent : Settings.enemyGoodies.entrySet()) {
             plugin.getLogger().info("DEBUG: " + ent.getKey() + " " + ent.getValue());
         }
+         */
         // Team goodies
         goodies = getConfig().getStringList("world.teamgoodies");
         Settings.teamGoodies.clear();
@@ -308,10 +442,11 @@ public class Beaconz extends JavaPlugin {
         // Add the final element - any number above this value will return a null element
         Settings.teamGoodies.put(Settings.teamGoodies.lastKey() + 1, null);
         // Own team
+        /*
         for (Entry<Integer, ItemStack> ent : Settings.teamGoodies.entrySet()) {
             plugin.getLogger().info("DEBUG: " + ent.getKey() + " " + ent.getValue());
         }
-        
+         */
         // Add initial inventory
         List<String> newbieKit = getConfig().getStringList("world.newbiekit");
         Settings.newbieKit.clear();
@@ -397,10 +532,84 @@ public class Beaconz extends JavaPlugin {
             beaconzWorld.getPopulators().add(getBp());
         }
         beaconzWorld.setSpawnLocation(Settings.xCenter, beaconzWorld.getHighestBlockYAt(Settings.xCenter, Settings.zCenter), Settings.zCenter);
-        beaconzWorld.getWorldBorder().setCenter(Settings.xCenter, Settings.zCenter);
-        if (Settings.borderSize > 0) {
-            beaconzWorld.getWorldBorder().setSize(Settings.borderSize);
-        }
         return beaconzWorld;
     }
+
+    /**
+     * @return the messages
+     */
+    public Messages getMessages() {
+        return messages;
+    }
+
+    public void newGame() {
+        // Remove the world border
+        beaconzWorld.getWorldBorder().reset();
+        // Remove the old beacons from the register
+        register.clear();
+        // Clear scores, (does not clear teams)
+        scorecard.clear();
+        // Move game to a new location
+        nextGameLocation();
+        // Regenerate the play area - do this before teleporting players to the spot
+        regenerateGame();
+        // Create the corners - TODO needs more work for the minigame
+        //createCorners();
+        // Reset default spawn location - needed to calculate the correct team teleport spawn points
+        getBeaconzWorld();
+        // Move all the players to their team spawn positions
+        for (Player player : beaconzWorld.getPlayers()) {
+            Team team = scorecard.getTeam(player);
+            Location spawn = scorecard.getTeamSpawnPoint(team);
+            player.teleport(spawn);
+            player.sendMessage("You are a member of " + team.getDisplayName() + " team!");
+            getServer().dispatchCommand(getServer().getConsoleSender(),
+                    "title " + player.getName() + " title {text:\"New Game!\", color:gold}");
+            getServer().dispatchCommand(getServer().getConsoleSender(),
+                    "title " + player.getName() + " subtitle {text:\"" + team.getDisplayName() + " team\", color:blue}");
+        }
+        // Put the world border up
+        setWorldBorder();
+    }
+
+    /**
+     * Cleans up the game area so it can be played again
+     */
+    private void regenerateGame() {
+        int xMin = (Settings.xCenter - (Settings.borderSize /2) -15) / 16;
+        int xMax = (Settings.xCenter + (Settings.borderSize /2) + 15) / 16;
+        int zMin = (Settings.zCenter - (Settings.borderSize /2) -15) / 16;
+        int zMax = (Settings.zCenter + (Settings.borderSize /2) + 15) / 16;
+        for (int x = xMin; x <= xMax; x++) {
+            for (int z = zMin; z <= zMax; z++) {
+                beaconzWorld.regenerateChunk(x, z);
+            }
+        }
+
+    }
+
+    public void nextGameLocation() {
+        if (Settings.xCenter < Settings.zCenter) {
+            if (-1 * Settings.xCenter < Settings.zCenter) {
+                Settings.xCenter += Settings.gameDistance;
+                return;
+            }
+            Settings.zCenter += Settings.gameDistance;
+            return;
+        }
+        if (Settings.xCenter > Settings.zCenter) {
+            if (-1 * Settings.xCenter >= Settings.zCenter) {
+                Settings.xCenter -= Settings.gameDistance;
+                return;
+            }
+            Settings.zCenter -= Settings.gameDistance;
+            return;
+        }
+        if (Settings.xCenter <= 0) {
+            Settings.zCenter += Settings.gameDistance;
+            return;
+        }
+        Settings.zCenter -= Settings.gameDistance;
+    }
+
 }

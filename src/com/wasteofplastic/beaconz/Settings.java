@@ -63,13 +63,13 @@ public class Settings {
     /**
      * Time in seconds that players must wait between trying to hack a beacon
      */
-    public static long hackCoolDown;
+    public static long mineCoolDown;
     /**
      * Effect if you hack during the cooldown period. Format is Effect:Amplifier
      * Options are: Blindness, Confusion, Harm, Hunger, Slow, Slow_digging, Weakness, Wither
      * Amplifier is a number, .e.g, 0, 1
      */
-    public static List<String> overHackEffects;
+    public static List<String> minePenalty;
     /**
      *   Rewards from hacking your own team beacon
      *   Format is "Id#/Material:[Durability/Qty]:Qty:%Chance"
@@ -96,4 +96,58 @@ public class Settings {
      * Format is "Id#/Material:[Durability/Qty]:Qty"
      */
     public static List<ItemStack> newbieKit = new ArrayList<ItemStack>();
+    
+    /**
+     * Whether teamchat is on or not
+     */
+    public static boolean teamChat;
+    
+    /**
+     * Determines how links will be created (player pairs or maps)
+     */
+    public static boolean pairLinking;
+    
+    /**
+     * Max height above a beacon that defenses can be built.
+     */
+    public static int defenseHeight;
+    
+    /**
+     * Distance between repeated games. Reuses the same world between games
+     */
+    public static int gameDistance;
+    
+    /**
+     * The experience required to mine a beacon
+     */
+    public static int beaconMineExpRequired;
+    
+    /**
+     * Chance that the beacon becomes exhausted and enters a cool down period
+     */
+    public static int beaconMineExhaustChance;
+    
+    /**
+     * The base distance in blocks that players can link beacons without experience points
+     * If set to -1, beacons can be any distance apart
+     */
+    public static double linkDistance;
+    
+    /**
+     * The distance that each exp point will go when linking a beacon
+     * If zero, there is no exp cost to link beacons
+     */
+    public static double expDistance;
+    
+    /**
+     * List of levels required to build at each level around a beacon
+     */
+    public static List<Integer> defenseLevels;
+    
+    /**
+     * List of levels required to attack at each level around a beacon
+     */
+    public static List<Integer> attackLevels;
+    
+    
 }

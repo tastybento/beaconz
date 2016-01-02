@@ -72,8 +72,10 @@ public class BeaconPopulator extends BlockPopulator {
             int z = gen.nextInt(16);
             // Check if there is already a beacon here, if not, don't make it again
             if (plugin.getRegister().getBeaconAt((source.getX() * 16 + x), (source.getZ()*16 + z)) != null) {
+                plugin.getLogger().info("DEBUG: Beacon already at " + (source.getX() * 16 + x) + "," + (source.getZ()*16 + z));
                 return;
             }
+            plugin.getLogger().info("DEBUG: No beacon at " + (source.getX() * 16 + x) + "," + (source.getZ()*16 + z));
             int y = source.getChunkSnapshot().getHighestBlockYAt(x, z);
             Block b = source.getBlock(x, y, z);
             // Don't make in the ocean or deep ocean because they are too easy to find.
@@ -91,7 +93,7 @@ public class BeaconPopulator extends BlockPopulator {
             }
             // Else make it into a beacon
             //beacons.add(new Vector(x,y,z));
-            Bukkit.getLogger().info("DEBUG: made beacon at " + (source.getX() * 16 + x) + " " + y + " " + (source.getZ()*16 + z) );
+            //Bukkit.getLogger().info("DEBUG: made beacon at " + (source.getX() * 16 + x) + " " + y + " " + (source.getZ()*16 + z) );
             b.setType(Material.BEACON);
             // Add the capstone
             b.getRelative(BlockFace.UP).setType(Material.OBSIDIAN);

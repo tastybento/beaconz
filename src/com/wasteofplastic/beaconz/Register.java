@@ -35,6 +35,8 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.apache.commons.lang.math.NumberUtils;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -59,8 +61,13 @@ public class Register extends BeaconzPluginDependent {
     private HashMap<Short, BeaconObj> beaconMaps = new HashMap<Short, BeaconObj>();
     private HashMap<Point2D, BeaconObj> beaconRegister = new HashMap<Point2D, BeaconObj>();
     private Set<TriangleField> triangleFields = new HashSet<TriangleField>();
-    private HashMap<Team, Integer> score = new HashMap<Team, Integer>();
     private HashMap<Team, Set<Line2D>> links = new HashMap<Team, Set<Line2D>>();
+    /**
+     * Store of the blocks around a beacon. Starts as the initial 8 blocks adjacent to the
+     * beacon. Can expand as players add diamond blocks to the beacon.
+     */
+    private HashMap<Point2D, BeaconObj> defenseBlocks = new HashMap<Point2D, BeaconObj>();
+    private HashMap<BeaconObj, Set<Point2D>> defenseBlocksInverse = new HashMap<BeaconObj, Set<Point2D>>();
 
     public void saveRegister() {
         // Save the beacons
@@ -87,6 +94,12 @@ public class Register extends BeaconzPluginDependent {
             if (beacon.getId() != null) {
                 beaconzYml.set("beacon." + count + ".id", beacon.getId());
             }
+            // Save defense blocks
+            List<String> defenseBlocks = new ArrayList<String>();            
+            for (Point2D point: defenseBlocksInverse.get(beacon)) {
+                defenseBlocks.add((int)point.getX() + ":" + (int)point.getY());
+            }
+            beaconzYml.set("beacon." + count + ".defenseblocks", defenseBlocks);
             count++;
         }
         try {
@@ -102,11 +115,7 @@ public class Register extends BeaconzPluginDependent {
      */
     public void loadRegister() {
         // Clear the data
-        beaconMaps.clear();
-        beaconRegister.clear();
-        triangleFields.clear();
-        score.clear();
-        links.clear();
+        clear();
 
         File beaconzFile = new File(getBeaconzPlugin().getDataFolder(),"beaconz.yml");
         if (!beaconzFile.exists()) {
@@ -133,19 +142,38 @@ public class Register extends BeaconzPluginDependent {
                 String info = configSec.getString(beacon + ".location","");
                 String[] args = info.split(":");
                 if (!info.isEmpty() && args.length == 4) {
-                    int x = Integer.valueOf(args[0]);
-                    int y = Integer.valueOf(args[1]);
-                    int z = Integer.valueOf(args[2]);
-                    BeaconObj newBeacon = new BeaconObj(getBeaconzPlugin(), x,y,z , getScorecard().getTeam(args[3]));
-                    // Check for links
-                    beaconLinks.put(newBeacon, configSec.getStringList(beacon + ".links"));
+                    if (NumberUtils.isNumber(args[0]) && NumberUtils.isNumber(args[1]) && NumberUtils.isNumber(args[2])) {
+                        int x = Integer.valueOf(args[0]);
+                        int y = Integer.valueOf(args[1]);
+                        int z = Integer.valueOf(args[2]);
+                        Team team = null;
+                        if (!args[3].equalsIgnoreCase("unowned")) {
+                            team = getScorecard().getTeam(args[3]);
+                        }
+                        BeaconObj newBeacon = addBeacon(team, x, y, z);
+                        //BeaconObj newBeacon = new BeaconObj(getBeaconzPlugin(), x,y,z , getScorecard().getTeam(args[3]));
+                        // Check for links
+                        beaconLinks.put(newBeacon, configSec.getStringList(beacon + ".links"));
+                        // Load defense blocks
+                        List<String> defenseBlocks = configSec.getStringList(beacon + ".defenseblocks");
+                        for (String defenseBlock : defenseBlocks) {
+                            String[] args2 = defenseBlock.split(":");
+                            if (args2.length == 2) {
+                                if (NumberUtils.isNumber(args2[0]) && NumberUtils.isNumber(args2[1])) {
+                                    int blockX = Integer.valueOf(args2[0]);
+                                    int blockZ = Integer.valueOf(args2[1]);
+                                    addBeaconDefenseBlock(blockX, blockZ, newBeacon);
+                                }
+                            }
+                        }
+                        //beaconRegister.put(new Point2D.Double(x, z), newBeacon);
+                        // Map id
+                        if (configSec.contains(beacon + ".id")) {
+                            addBeaconMap((short)configSec.getInt(beacon + ".id"), newBeacon);
+                        }
+                        //getLogger().info("DEBUG: loaded beacon at " + x + "," + y + "," + z);
 
-                    beaconRegister.put(new Point2D.Double(x, z), newBeacon);
-                    // Map id
-                    if (configSec.contains(beacon + ".id")) {
-                        addBeaconMap((short)configSec.getInt(beacon + ".id"), newBeacon);
                     }
-                    //getLogger().info("DEBUG: loaded beacon at " + x + "," + y + "," + z);
                 }
             }
         }
@@ -163,6 +191,16 @@ public class Register extends BeaconzPluginDependent {
             }
         }
         // Score and control fields should be automatically created
+    }
+
+    /**
+     * Clears all the data in the register
+     */
+    public void clear() {
+        beaconMaps.clear();
+        beaconRegister.clear();
+        triangleFields.clear();
+        links.clear();  
     }
 
     public void addBeaconLink(Team faction, Line2D link) {
@@ -214,17 +252,39 @@ public class Register extends BeaconzPluginDependent {
     }
 
     /**
-     * Registers a beacon at a 2D point
+     * Registers a beacon at a 3D point
      * @param owner
-     * @param location
+     * @param x
+     * @param y
+     * @param z
+     * @return beacon that was created
      */
-    public void addBeacon(Team owner, int x, int y, int z) {
+    public BeaconObj addBeacon(Team owner, int x, int y, int z) {
         // Create a beacon
-        Point2D location = new Point2D.Double(x,z);
-        //getLogger().info("DEBUG: registered beacon at " + location + " status " + owner);
-        BeaconObj p = new BeaconObj(getBeaconzPlugin(), x, y, z, owner);
-        beaconRegister.put(location, p);
-    }
+        BeaconObj beacon = new BeaconObj(getBeaconzPlugin(), x, y, z, owner);
+        getLogger().info("DEBUG: registered beacon at " + x + "," + y + ", " + z + " owner " + owner);
+        for (int xx = x-1; xx <= x + 1; xx++) {
+            for (int zz = z - 1; zz <= z + 1; zz++) {
+                Point2D location = new Point2D.Double(xx,zz);
+                if (xx == x && zz == z) {
+                    // Center square = beacon
+                    beaconRegister.put(location, beacon);
+                    //getLogger().info("DEBUG: registered beacon at " + location + " status " + owner);
+                } else {
+                    // Put the defensive blocks
+                    defenseBlocks.put(location, beacon);
+                    Set<Point2D> points = defenseBlocksInverse.get(beacon);
+                    if (points == null) {
+                        points = new HashSet<Point2D>();
+                    }
+                    points.add(location);
+                    defenseBlocksInverse.put(beacon, points);
+                    //getLogger().info("DEBUG: registered defense block at " + location + " status " + owner);
+                }
+            }
+        }
+        return beacon;
+    } 
 
     /**
      * Creates a triangular field covering the world between three beacons
@@ -279,13 +339,7 @@ public class Register extends BeaconzPluginDependent {
                 if (triangleFields.add(triangle)) {
                     //getLogger().info("DEBUG: Added control field!");
                     // New control field, add to score
-                    if (score.containsKey(owner)) {
-                        int s = score.get(owner);
-                        s += triangle.getArea();
-                        score.put(owner, s);
-                    } else {
-                        score.put(owner, triangle.getArea());
-                    }
+                    getScorecard().addScore(owner, triangle.getArea());
                     //getLogger().info("DEBUG: New score is " + triangle.getArea());
                     return true;
                 } else {
@@ -301,34 +355,6 @@ public class Register extends BeaconzPluginDependent {
         }
         return false;
     }
-
-    /**
-     * @param faction
-     * @return score for faction
-     */
-    public int getScore(Team faction) {
-        if (score.containsKey(faction)) {
-            return score.get(faction);
-        }
-        return 0;
-    }
-
-
-    /**
-     * @return the score
-     */
-    public HashMap<Team, Integer> getScore() {
-        return score;
-    }
-
-    /**
-     * Set the score for a faction
-     * @param faction
-     * @param score
-     */
-    public void setScore(Team faction, int score) {
-        this.score.put(faction, score);
-    }    
 
     /**
      * @return the beaconRegister
@@ -400,25 +426,41 @@ public class Register extends BeaconzPluginDependent {
         }
         return null;
     }
+
     /**
-     * Gets the beacon connected to b
-     * @param b
+     * Gets the beacon connected to block.
+     * @param block
      * @return BeaconObj or null if none
      */
-    public BeaconObj getBeacon(Block b) {
+    public BeaconObj getBeacon(Block block) {
         //getLogger().info("DEBUG: material = " + b.getType());
         // Quick check
-        if (!b.getType().equals(Material.BEACON) && !b.getType().equals(Material.DIAMOND_BLOCK)
-                && !b.getType().equals(Material.OBSIDIAN) && !b.getType().equals(Material.STAINED_GLASS)) {
+        if (!block.getType().equals(Material.BEACON) && !block.getType().equals(Material.DIAMOND_BLOCK)
+                && !block.getType().equals(Material.OBSIDIAN) && !block.getType().equals(Material.STAINED_GLASS)
+                && !block.getType().equals(Material.EMERALD_BLOCK)) {
             return null;
         }
         //getLogger().info("DEBUG: correct material");
-        Point2D point = new Point2D.Double(b.getLocation().getBlockX(),b.getLocation().getBlockZ());
+        Point2D point = new Point2D.Double(block.getLocation().getBlockX(),block.getLocation().getBlockZ());
+
+        // Check defense blocks
+        if (block.getType().equals(Material.EMERALD_BLOCK)) {
+            if (defenseBlocks.containsKey(point)) {
+                // Check height
+                BeaconObj beacon = defenseBlocks.get(point);
+                if (beacon.getY() == block.getY() + 1) {
+                    // Correct height
+                    return beacon;
+                } else {
+                    return null;
+                }
+            }
+        }
         //getLogger().info("DEBUG: checking point " + point);
 
         // Check glass or obsidian
-        if (b.getType().equals(Material.OBSIDIAN) || b.getType().equals(Material.STAINED_GLASS)) {
-            Block below = b.getRelative(BlockFace.DOWN);
+        if (block.getType().equals(Material.OBSIDIAN) || block.getType().equals(Material.STAINED_GLASS)) {
+            Block below = block.getRelative(BlockFace.DOWN);
             if (!below.getType().equals(Material.BEACON)) {
                 //getLogger().info("DEBUG: no beacon below here");
                 return null;
@@ -434,7 +476,7 @@ public class Register extends BeaconzPluginDependent {
             }
         }
         // Check beacons
-        if (b.getType().equals(Material.BEACON)) {
+        if (block.getType().equals(Material.BEACON)) {
             if (beaconRegister.containsKey(point)) {
                 //getLogger().info("DEBUG: found in register");
                 return beaconRegister.get(point);
@@ -451,7 +493,7 @@ public class Register extends BeaconzPluginDependent {
         // Look for a beacon
         for (int modX = -1; modX < 2; modX++) {
             for (int modZ = -1; modZ < 2; modZ++) {
-                Block test = b.getRelative(modX, 1, modZ);
+                Block test = block.getRelative(modX, 1, modZ);
                 if (test.getType().equals(Material.BEACON)) {
                     point = new Point2D.Double(test.getLocation().getBlockX(),test.getLocation().getBlockZ());
                     if (beaconRegister.containsKey(point)) {
@@ -463,7 +505,7 @@ public class Register extends BeaconzPluginDependent {
         return null;
     }
     /**
-     * Removes this block from faction ownership and makes it unowned
+     * Removes this block from team ownership and makes it unowned
      * @param beacon
      */
     public void removeBeaconOwnership(BeaconObj beacon) {
@@ -472,14 +514,24 @@ public class Register extends BeaconzPluginDependent {
         for (BeaconObj linkedBeacon : beacon.getLinks()) {
             linkedBeacon.removeLink(beacon);
         }
-        // Remove links from this register (I'm not happy about the duplication here)
+        // Remove links from this register 
         if (links.get(oldOwner) != null) {
             Iterator<Line2D> linkIterator = links.get(oldOwner).iterator();
+            int linkLossCount = 0;
             while (linkIterator.hasNext()) {
                 Line2D link = linkIterator.next();
                 if (link.getP1().equals(beacon.getLocation()) || link.getP2().equals(beacon.getLocation())) {
+                    linkLossCount++;
                     linkIterator.remove();
                 }
+            }
+            if (linkLossCount == 1) {
+                // Tell folks what's going on
+                getMessages().tellTeam(oldOwner, ChatColor.RED + "Your team lost a link!");
+                getMessages().tellOtherTeams(oldOwner, ChatColor.GREEN + oldOwner.getDisplayName() + ChatColor.GREEN + " lost a link!");
+            } else if (linkLossCount > 1) {
+                getMessages().tellTeam(oldOwner, ChatColor.RED + "Your team lost " + linkLossCount + " links!");
+                getMessages().tellOtherTeams(oldOwner, ChatColor.GREEN + oldOwner.getDisplayName() + ChatColor.GREEN + " lost " + linkLossCount + " links!");  
             }
         }
         beacon.removeLinks();
@@ -490,13 +542,10 @@ public class Register extends BeaconzPluginDependent {
             if (triangle.hasVertex(beacon.getLocation())) {
                 //getLogger().info("DEBUG: this beacon was part of a triangle");
                 // Remove score
-                if (score.containsKey(oldOwner)) {
-                    int sc = triangle.getArea();
-                    //getLogger().info("DEBUG: Removing score " + sc + " from " + oldOwner.getDisplayName()
-                    //        + " team's score of " + score.get(beacon.getOwnership()));
-                    int newScore = score.get(oldOwner) - sc;
-                    score.put(oldOwner,newScore);
-                }
+                getScorecard().removeScore(oldOwner, triangle.getArea());
+                // Tell folks what's going on
+                getMessages().tellTeam(triangle.getOwner(), ChatColor.RED + "Your team lost a triangle worth " + triangle.getArea() + "!");
+                getMessages().tellOtherTeams(triangle.getOwner(), ChatColor.GREEN + triangle.getOwner().getDisplayName() + ChatColor.GREEN + " lost a triangle worth " + triangle.getArea() + "!");
                 // Remove triangle
                 it.remove();
             }
@@ -582,5 +631,49 @@ public class Register extends BeaconzPluginDependent {
             }
         }
         return result;
+    }
+
+    /**
+     * Adds a block to the defense block register. Blocks around a beacon are automatically added.
+     * @param location
+     * @param beacon
+     */
+    public void addBeaconDefenseBlock(Location location, BeaconObj beacon) {
+        addBeaconDefenseBlock(location.getBlockX(), location.getBlockZ(), beacon);
+    }
+
+    /**
+     * Adds a block to the defense block register. Blocks around a beacon are automatically added.
+     * @param x
+     * @param z
+     * @param beacon
+     */
+    public void addBeaconDefenseBlock(int x, int z, BeaconObj beacon) {
+        Point2D point = new Point2D.Double(x,z);
+        defenseBlocks.put(point, beacon);
+        Set<Point2D> points = defenseBlocksInverse.get(beacon);
+        if (points == null) {
+            points = new HashSet<Point2D>();
+        }
+        points.add(point);
+        defenseBlocksInverse.put(beacon, points); 
+    }
+
+    /**
+     * Get the beacon associated with this defensive block
+     * @param point
+     * @return beacon or null if it doesn't exist
+     */
+    public BeaconObj getBeaconDefenseAt(Point2D point) {
+        return defenseBlocks.get(point);
+    }
+
+    /**
+     * Gets all the defense blocks at this beacon
+     * @param beacon
+     * @return Set of points
+     */
+    public Set<Point2D> getDefensesAtBeacon(BeaconObj beacon) {
+        return defenseBlocksInverse.get(beacon);
     }
 }
