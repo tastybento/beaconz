@@ -31,10 +31,12 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.UUID;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.InvalidConfigurationException;
@@ -51,6 +53,7 @@ public class Scorecard extends BeaconzPluginDependent{
     private Scoreboard scoreboard;
     private HashMap<Team, MaterialData> teamBlock;
     private HashMap<Team, Integer> score = new HashMap<Team, Integer>();
+    private HashMap<Team, Location> teamSpawnPoint = new HashMap<Team, Location>();
     //private HashMap<Team, List<UUID>> teamMembers;
     //private HashMap<UUID, String> teamLookup;
 
@@ -188,7 +191,7 @@ public class Scorecard extends BeaconzPluginDependent{
             // TODO Auto-generated catch block
             e.printStackTrace();
         } catch (InvalidConfigurationException e) {
-            getLogger().severe("Problem with beaconz.yml formatting");
+            getLogger().severe("Problem with teams.yml formatting");
             e.printStackTrace();
         }
         for (Team team: scoreboard.getTeams()) {
@@ -204,6 +207,20 @@ public class Scorecard extends BeaconzPluginDependent{
                     getLogger().severe("Error loading team member " + team.toString() + " " + uuid + " - skipping");
                 }
             }
+            // Get spawn point
+            String location = teamsYml.getString("spawnlocations." + team.getName());
+            Location loc = null;
+            if (location == null) {
+                // No team spawn point stored so pick a default location
+                loc = getDefaultTeamSpawnPoint(team);
+            } else {
+                loc = getLocationString(location);
+                if (loc == null) {
+                    loc = getDefaultTeamSpawnPoint(team);
+                } 
+            }
+            getLogger().info("Setting " + team.getName() + "'s spawn point to " + loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ());
+            teamSpawnPoint.put(team, loc);
             //teamMembers.put(team,membersUUID);
         }
     }
@@ -232,6 +249,8 @@ public class Scorecard extends BeaconzPluginDependent{
                 }
             }
             teamsYml.set(team.getName(), teamMembers);
+            // Save the team spawn location
+            teamsYml.set("spawnpoint." + team.getName(), getStringLocation(teamSpawnPoint.get(team)));
         }
         try {
             teamsYml.save(teamsFile);
@@ -325,7 +344,7 @@ public class Scorecard extends BeaconzPluginDependent{
      * @param playerTeam
      * @return Location
      */
-    public Location getTeamSpawnPoint(Team playerTeam) {
+    public Location getDefaultTeamSpawnPoint(Team playerTeam) {
         Location teleportTo = getBeaconzWorld().getSpawnLocation();
         BlockFace blockFace = BlockFace.NORTH;
         // We allow up to 8 teams
@@ -379,6 +398,64 @@ public class Scorecard extends BeaconzPluginDependent{
             return true;
         }
         return false;
+    }
+
+    /**
+     * Sets the team's spawn location
+     * @param team
+     * @param location
+     */
+    public void setTeamSpawnPoint(Team team, Location location) {
+        teamSpawnPoint.put(team, location);
+    }
+
+    /**
+     * @param playerTeam
+     * @return Location of the team's spawn point or null if team is unknown or there is no spawn point
+     */
+    public Location getTeamSpawnPoint(Team playerTeam) {
+        return teamSpawnPoint.get(playerTeam);
+    }
+
+    /**
+     * Converts a serialized location to a Location. Returns null if string is
+     * empty
+     * 
+     * @param s - serialized location in format "world:x:y:z:yaw:pitch"
+     * @return Location
+     */
+    static public Location getLocationString(final String s) {
+        if (s == null || s.trim() == "") {
+            return null;
+        }
+        final String[] parts = s.split(":");
+        if (parts.length == 6) {
+            final World w = Bukkit.getServer().getWorld(parts[0]);
+            if (w == null) {
+                return null;
+            }
+            final int x = Integer.parseInt(parts[1]);
+            final int y = Integer.parseInt(parts[2]);
+            final int z = Integer.parseInt(parts[3]);
+            final float yaw = Float.intBitsToFloat(Integer.parseInt(parts[4]));
+            final float pitch = Float.intBitsToFloat(Integer.parseInt(parts[5]));
+            return new Location(w, x, y, z, yaw, pitch);
+        }
+        return null;
+    }
+
+    /**
+     * Converts a location to a simple string representation
+     * If location is null, returns empty string
+     * 
+     * @param l
+     * @return
+     */
+    static public String getStringLocation(final Location l) {
+        if (l == null || l.getWorld() == null) {
+            return "";
+        }
+        return l.getWorld().getName() + ":" + l.getBlockX() + ":" + l.getBlockY() + ":" + l.getBlockZ() + ":" + Float.floatToIntBits(l.getYaw()) + ":" + Float.floatToIntBits(l.getPitch());
     }
 
 }

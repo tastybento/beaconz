@@ -23,23 +23,12 @@
 package com.wasteofplastic.beaconz;
 
 import java.awt.geom.Point2D;
-import java.util.HashMap;
-import java.util.Random;
 
 import org.bukkit.ChatColor;
-import org.bukkit.ChunkSnapshot;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.material.MaterialData;
-import org.bukkit.material.SimpleAttachableMaterialData;
-import org.bukkit.material.TrapDoor;
 import org.bukkit.scoreboard.Team;
 
 public class AdminCmdHandler extends BeaconzPluginDependent implements CommandExecutor {
@@ -118,8 +107,32 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                 sender.sendMessage(ChatColor.RED + "/" + label + " claim [unowned, " + getScorecard().getTeamListString() + "]");
                 return true;
             }
+            // Admin set team spawn with no team
+            if (args[0].equalsIgnoreCase("setspawn")) {
+                sender.sendMessage(ChatColor.RED + "/" + label + " setspawn [" + getScorecard().getTeamListString() +"] - sets the spawn point for team");
+                if (!(sender instanceof Player)) {
+                    sender.sendMessage(ChatColor.RED + "You cannot execute this command from the console");
+                }
+                return true; 
+            }
             break;
         case 2:
+            // Admin set team spawn
+            if (args[0].equalsIgnoreCase("setspawn")) {
+                if (!(sender instanceof Player)) {
+                    sender.sendMessage(ChatColor.RED + "You cannot execute this command from the console");
+                    return true;
+                }
+                // Check team name given exists
+                Team team = getScorecard().getTeam(args[1]);
+                if (team == null) {
+                    sender.sendMessage(ChatColor.RED + "That team does not exist! Use " + getScorecard().getTeamListString());
+                    return true;
+                }
+                getScorecard().setTeamSpawnPoint(team, ((Player)sender).getLocation());
+                sender.sendMessage(ChatColor.GREEN + "Setting " + team.getDisplayName() + "'s spawn point to your location!");
+                return true;
+            }
             if (args[0].equalsIgnoreCase("distribution")) {
                 try {
                     double dist = Double.valueOf(args[1]);
