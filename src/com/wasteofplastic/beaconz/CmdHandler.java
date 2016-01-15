@@ -65,6 +65,9 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
             player.sendMessage("You are now a member of " + team.getDisplayName() + " team!");
             getBeaconzPlugin().getServer().dispatchCommand(getBeaconzPlugin().getServer().getConsoleSender(),
                     "title " + player.getName() + " title {text:\"" + team.getDisplayName() + " team!\", color:gold}");
+            // Show the scoreboard
+            player.setScoreboard(getScorecard().getScoreboard()); 
+            //player.sendMessage(player.getName() + " scoreboard: " + player.getScoreboard().getEntries().toString());            
             // Teleport teams to different locations
             Location teleportTo = getScorecard().getTeamSpawnPoint(team);
             boolean found = false;
@@ -118,7 +121,11 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
                 // list known beacons
                 sender.sendMessage(ChatColor.AQUA + "Scores:");
                 for (Team t : getScorecard().getScoreboard().getTeams()) {
-                    sender.sendMessage(ChatColor.AQUA + t.getDisplayName() + ChatColor.AQUA + ": " + getScorecard().getScore(t) + " blocks");
+                    sender.sendMessage(ChatColor.AQUA + t.getDisplayName() + ChatColor.AQUA + ": " + getScorecard().getScore(t, "area") + " blocks");
+                    sender.sendMessage(ChatColor.AQUA + t.getDisplayName() + ChatColor.AQUA + ": " + getScorecard().getScore(t, "beacons") + " beacons");
+                    sender.sendMessage(ChatColor.AQUA + t.getDisplayName() + ChatColor.AQUA + ": " + getScorecard().getScore(t, "links") + " links");
+                    sender.sendMessage(ChatColor.AQUA + t.getDisplayName() + ChatColor.AQUA + ": " + getScorecard().getScore(t, "triangles") + " triangles");
+                    sender.sendMessage(ChatColor.AQUA + t.getDisplayName() + ChatColor.AQUA + ": " + getScorecard().getScore(t, "area") + " blocks");
                 }
                 return true;
             }
