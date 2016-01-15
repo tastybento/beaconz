@@ -549,6 +549,7 @@ public class Beaconz extends JavaPlugin {
         register.clear();
         // Clear scores, (does not clear teams)
         scorecard.clear();
+        plugin.getScorecard().refreshScores();
         // Move game to a new location
         nextGameLocation();
         // Regenerate the play area - do this before teleporting players to the spot

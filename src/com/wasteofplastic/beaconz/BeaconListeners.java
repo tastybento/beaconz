@@ -74,7 +74,8 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
     /**
      * A bi-drectional hashmap to track players standing on beaconz
      */
-    private BiMap<UUID, BeaconObj> standingOn = HashBiMap.create();;
+    private BiMap<UUID, BeaconObj> standingOn = HashBiMap.create();
+    private Beaconz plugin;
 
     public BeaconListeners(Beaconz plugin) {
         super(plugin);
@@ -252,7 +253,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             // Assign the player to the scoreboard
             final Player player = event.getPlayer();
             final UUID playerUUID = player.getUniqueId();
-            player.setScoreboard(getScorecard().getScoreboard());
+            player.setScoreboard(getScorecard().getScoreboard()); 
             // If the player is not in a team, assign one
             // TODO
             Team team = getScorecard().getTeam(player);
@@ -283,17 +284,22 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         }
     }
 
-    @EventHandler(priority = EventPriority.LOW)
-    public void onWorldChange(final PlayerChangedWorldEvent event) {
-        // Entering Beaconz world
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onWorldEnter(final PlayerChangedWorldEvent event) {
         if (event.getPlayer().getWorld().equals(getBeaconzWorld())) {
             event.getPlayer().setScoreboard(getScorecard().getScoreboard());
-        } else {
-            // Leaving Beaconz world
-            // Remove player from map
-            standingOn.remove(event.getPlayer().getUniqueId());
         }
     }
+    
+    @EventHandler(priority = EventPriority.LOW)
+    public void onWorldExit(final PlayerChangedWorldEvent event) {
+        // Exiting Beaconz world
+    	if (event.getFrom().equals((getBeaconzWorld()))) {         
+            // Remove player from map and remove his scoreboard
+            standingOn.remove(event.getPlayer().getUniqueId());
+            event.getPlayer().setScoreboard(Bukkit.getServer().getScoreboardManager().getNewScoreboard());	
+    	}
+    }    
 
     /**
      * Prevents liquid flowing over the beacon beam
@@ -699,13 +705,13 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         }
         if (result.getFieldsMade() > 0) {
             if (result.getFieldsMade() == 1) {
-                player.sendMessage(ChatColor.GREEN + "Triangle created! New score = " + getScorecard().getScore(team));
-                getMessages().tellTeam(player.getUniqueId(), player.getDisplayName() + ChatColor.GREEN + " created a triangle! New team score = " + getScorecard().getScore(team));
+                player.sendMessage(ChatColor.GREEN + "Triangle created! New score = " + getScorecard().getScore(team, "area"));
+                getMessages().tellTeam(player.getUniqueId(), player.getDisplayName() + ChatColor.GREEN + " created a triangle! New team score = " + getScorecard().getScore(team, "area"));
                 // Taunt other teams
                 getMessages().tellOtherTeams(team, ChatColor.RED + team.getDisplayName() + " team made a tringle!");
             } else {
-                player.sendMessage(ChatColor.GREEN + String.valueOf(result.getFieldsMade()) + " triangles created! New score = " + getScorecard().getScore(team));
-                getMessages().tellTeam(player.getUniqueId(), player.getDisplayName() + ChatColor.GREEN + " created " + String.valueOf(result.getFieldsMade()) + " triangles! New team score = " + getScorecard().getScore(team));
+                player.sendMessage(ChatColor.GREEN + String.valueOf(result.getFieldsMade()) + " triangles created! New score = " + getScorecard().getScore(team, "area"));
+                getMessages().tellTeam(player.getUniqueId(), player.getDisplayName() + ChatColor.GREEN + " created " + String.valueOf(result.getFieldsMade()) + " triangles! New team score = " + getScorecard().getScore(team, "area"));
                 // Taunt other teams
                 getMessages().tellOtherTeams(team, ChatColor.RED + team.getDisplayName() + " team made " + String.valueOf(result.getFieldsMade()) + " triangles!");
             }

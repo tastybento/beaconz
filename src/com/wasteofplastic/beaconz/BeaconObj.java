@@ -81,7 +81,7 @@ public class BeaconObj extends BeaconzPluginDependent {
     }
 
     /**
-     * Add a link from this beacon to another beacon
+     * Add a link from this beacon to another beacon - and another one back
      * @param destination
      * @param player 
      * @return true if control field made, false if the max outbound limit is reached or the link already exists
@@ -117,6 +117,7 @@ public class BeaconObj extends BeaconzPluginDependent {
         if (!links.add(starter)) {
             return new LinkResult(0, false, 0);
         }
+        
         int fieldsMade = 0;
         int fieldsFailed = 0;
         //getLogger().info("DEBUG: link added");
@@ -151,6 +152,8 @@ public class BeaconObj extends BeaconzPluginDependent {
         }
         // The resulting line
         Line2D line = new Line2D.Double(starter.getLocation(), location);
+        // Make sure line is counted in the Register
+        getRegister().addBeaconLink(ownership, line);
         // Visualize
         new LineVisualizer(this.getBeaconzPlugin(),line, ownership);
         // Return the result
@@ -189,7 +192,7 @@ public class BeaconObj extends BeaconzPluginDependent {
      */
     public int getNumberOfLinks() {
         return links.size();
-    }
+    }    
 
     /**
      * Name for this beacon based on its coordinates
@@ -229,7 +232,10 @@ public class BeaconObj extends BeaconzPluginDependent {
         // TODO: One block is being missed. It's a rounding issue. Need to make the line inclusive of these end points
         getBeaconzWorld().getBlockAt(x, getBeaconzWorld().getMaxHeight()-1, z).setType(Material.AIR);
         getBeaconzWorld().getBlockAt(beacon.getX(), getBeaconzWorld().getMaxHeight()-1, beacon.getZ()).setType(Material.AIR);
+
+        // remove the link
         links.remove(beacon);
+
     }
 
     /**
