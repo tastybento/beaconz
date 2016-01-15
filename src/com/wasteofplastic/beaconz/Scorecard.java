@@ -43,7 +43,9 @@ import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.material.MaterialData;
+import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
+import org.bukkit.scoreboard.Score;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.ScoreboardManager;
 import org.bukkit.scoreboard.Team;
@@ -51,12 +53,30 @@ import org.bukkit.scoreboard.Team;
 public class Scorecard extends BeaconzPluginDependent{
     private ScoreboardManager manager;
     private Scoreboard scoreboard;
+    private Score scorearea;
+    private Score scorebeacons;
+    private Score scorelinks;
+    private Score scoretriangles;
+    //private Score scoretimer;
+    private Objective objective;
+	private Integer timerinterval;
+	private Long starttime;
     private HashMap<Team, MaterialData> teamBlock;
-    private HashMap<Team, Integer> score = new HashMap<Team, Integer>();
     private HashMap<Team, Location> teamSpawnPoint = new HashMap<Team, Location>();
+    private HashMap<Team, HashMap<String,Integer>> score = new HashMap<Team, HashMap<String,Integer>>();
     //private HashMap<Team, List<UUID>> teamMembers;
     //private HashMap<UUID, String> teamLookup;
 
+    /** 
+     * Scorecard controls all aspects of 
+     *    (i) the Scoreboard displayed on screen
+     *    (ii) the Teams associated to the Scoreboards
+     *  Note that a single Scoreboard is shown for all teams
+     *  and that the Scoreboard can show as many different "score types" as we want
+     *  (such as countdown timer, total area, nbr of beacons, nbr. of triangles, total protection strength, nbr of adjacent areas, etc.)
+     *  So far we've implemented total area and nbr of beacons, next is the countdown timer, the others are just ideas.
+     * @param beaconzPlugin
+     */
     public Scorecard(Beaconz beaconzPlugin) {
         super(beaconzPlugin);
         this.manager = beaconzPlugin.getServer().getScoreboardManager();
@@ -65,13 +85,120 @@ public class Scorecard extends BeaconzPluginDependent{
         this.score.clear();
         //this.teamLookup = new HashMap<UUID, String>();
         //this.teamMembers = new HashMap<Team, List<UUID>>();
+        this.starttime = ((System.currentTimeMillis()+500)/1000)*1000;
+        this.timerinterval = 5;
 
-        Objective objective = scoreboard.registerNewObjective("teamscore", "blocks");
-        //objective.setDisplaySlot(DisplaySlot.SIDEBAR);
-        //Setting the display name of the scoreboard/objective
-        objective.setDisplayName(" blocks");
+        objective = scoreboard.registerNewObjective("teamscore", "dummy");
+        objective.setDisplaySlot(DisplaySlot.SIDEBAR);
+        objective.setDisplayName(ChatColor.GREEN + "Beaconz!");
+        //scoretimer = objective.getScore(ChatColor.YELLOW + "Timer ");
+        this.runtimer();
     }
 
+    /**
+     * Updates the Scoreboard values 
+     * 
+     */
+    public void refreshScores() {
+        for (Team team: scoreboard.getTeams()) {
+        	refreshScores(team);
+        }
+    }
+    public void refreshScores(Team team) {
+    	String [] typelist = {"area", "beacons", "links", "triangles"};
+    	Integer defaultvalue = null;
+    	if (score.get(team) == null) defaultvalue = 0;   // if team doesn't have score, create it and set to 0
+    	for (String st : typelist) {
+    		refreshScores(team, st, defaultvalue);
+    	}
+
+    }
+    public void refreshScores(Team team, String st) {
+    	refreshScores(team, st, null);
+    }
+    public void refreshScores(Team team, String st, Integer value) {
+    	if (value == null) {
+    		switch (st) {
+	    		case ("area"): {
+	    			value = getRegister().getTeamArea(team);    
+	    			break;
+	    		}
+	    		case ("beacons"): {
+	    			value = getRegister().getTeamBeacons(team).size();	    	    	
+	    			break;
+	    		}
+	    		case ("links"): {
+	    			value = getRegister().getTeamLinks(team).size()/2;
+	    			break;
+	    		}
+	    		case ("triangles"): {
+	    			value = getRegister().getTeamTriangles(team).size();
+	    			break;
+	    		}
+	    		default:
+	    			break;
+    		}   
+    	}
+    	//getLogger().info("putScore: team " + team.getDisplayName() + " type " + st + " value " + value);
+		putScore(team, st, value);  // putscore will call refreshSBDisplay()
+
+    }
+    
+    /**
+     * Updates the Scoreboard display 
+     * 
+     * typelist can be changed to an argument to specify which "score types" to display
+     */
+    public void refreshSBdisplay() {
+        for (Team team: scoreboard.getTeams()) {
+        	refreshSBdisplay(team, null);
+        }
+    }
+    public void refreshSBdisplay(Team team) {
+    	String [] typelist = {"area", "beacons", "links", "triangles"};    	
+    	if (score.get(team) != null) {
+        	for (String st : typelist) {
+        		refreshSBdisplay(team, st);	
+        	}
+    	}    	    	
+    }
+    public void refreshSBdisplay(Team team, String st) {
+    	
+    	// fist the timer
+    	//scoretimer.setScore(0);
+    	objective.setDisplayName(ChatColor.GREEN + "Beaconz!   " + "00:00:00");
+    	
+    	// then the team scores for the given score type
+    	HashMap<String,Integer> stypes = score.get(team);
+		int sv = stypes.get(st) == null ? 0 : stypes.get(st); 		
+        String teamcolor = team.getDisplayName().toUpperCase();
+        //getLogger().info("updating: " + teamcolor + " type " + st + " value " + sv);
+		switch (st) {
+    		case ("area"): {	
+    			scorearea = objective.getScore(ChatColor.valueOf(teamcolor) + teamcolor + " area:");
+    			scorearea.setScore(sv);
+    			break;
+    		}
+    		case ("beacons"): {
+    			scorebeacons = objective.getScore(ChatColor.valueOf(teamcolor) + teamcolor + " beacons:");
+    			scorebeacons.setScore(sv);
+    			break;
+    		}
+    		case ("links"): {
+    			scorelinks = objective.getScore(ChatColor.valueOf(teamcolor) + teamcolor + " links:");
+    			scorelinks.setScore(sv);
+    			break;
+    		}
+    		case ("triangles"): {
+    			scoretriangles = objective.getScore(ChatColor.valueOf(teamcolor) + teamcolor + " triangles:");
+    			scoretriangles.setScore(sv);
+    			break;
+    		}
+    		default:
+    			break;
+		} 
+    }    
+    
     /**
      * Adds a team to the scoreboard and returns the team that was made
      * @param teamName
@@ -84,6 +211,17 @@ public class Scorecard extends BeaconzPluginDependent{
         team.setPrefix(ChatColor.DARK_PURPLE + "[" + teamName + "] ");
         // Store the block for this team
         this.teamBlock.put(team, teamBlock);
+        // Add lines for the team on the displayed scoreboard
+        String teamcolor = teamName.toUpperCase();
+		scorearea = objective.getScore(ChatColor.valueOf(teamcolor) + teamcolor + " area:");
+		scorebeacons = objective.getScore(ChatColor.valueOf(teamcolor) + teamcolor + " beacons:");	
+		scorelinks = objective.getScore(ChatColor.valueOf(teamcolor) + teamcolor + " links:");
+		scoretriangles = objective.getScore(ChatColor.valueOf(teamcolor) + teamcolor + " triangles:");
+		scorearea.setScore(0);
+		scorebeacons.setScore(0);
+		scorelinks.setScore(0);
+		scoretriangles.setScore(0);
+		refreshScores(team);
         return team;
     }
 
@@ -92,19 +230,18 @@ public class Scorecard extends BeaconzPluginDependent{
      * @param player
      * @return Team
      */
-    @SuppressWarnings("deprecation")
     public Team getTeam(Player player) {
-        Team team = scoreboard.getPlayerTeam(player);
+        Team team = scoreboard.getEntryTeam(player.getName());
         if (team == null) {
             // New player!
             int minSize=Integer.MAX_VALUE;
-            for (Team t: getScorecard().getScoreboard().getTeams()) {
+            for (Team t: scoreboard.getTeams()) {
                 if(t.getSize() < minSize) {
                     minSize=t.getSize();
                     team=t;
                 }
             }
-            team.addPlayer(player);
+            team.addEntry(player.getName());
         }
         return team;
     }
@@ -123,10 +260,19 @@ public class Scorecard extends BeaconzPluginDependent{
      * @param b - block
      * @return Team, or null if it doesn't exist
      */
-    public Team getTeamFromBlock(Block b) {
-        for (Entry<Team, MaterialData> md: teamBlock.entrySet()) {
-            if (md.getValue().getItemType().equals(b.getType()) && md.getValue().getData() == b.getData()) {
-                return md.getKey();
+	public Team getTeamFromBlock(Block b) {
+		
+		// ?? WHY STORE MATERIALDATA IN THE HASHMAP AND NOT SIMPLY THE BLOCK?
+		
+        for (Entry<Team, MaterialData> md: teamBlock.entrySet()) {        	
+            //if (md.getValue().getItemType().equals(b.getType()) && md.getValue().getData() == b.getData()) {
+            //    return md.getKey();
+            //}        
+            if (md.getValue().getItemType().equals(b.getType()) &&
+            	md.getValue().toItemStack().getItemMeta().getDisplayName().equals(b.getState().getData().toItemStack().getItemMeta().getDisplayName()) &&
+            	md.getValue().toItemStack().getItemMeta().getLore().equals(b.getState().getData().toItemStack().getItemMeta().getLore())
+            	) {
+            	return md.getKey();
             }
         }
         return null;
@@ -185,10 +331,10 @@ public class Scorecard extends BeaconzPluginDependent{
         try {
             teamsYml.load(teamFile);
         } catch (FileNotFoundException e) {
-            // TODO Auto-generated catch block
+            // Catch block
             e.printStackTrace();
         } catch (IOException e) {
-            // TODO Auto-generated catch block
+            // Catch block
             e.printStackTrace();
         } catch (InvalidConfigurationException e) {
             getLogger().severe("Problem with teams.yml formatting");
@@ -201,7 +347,7 @@ public class Scorecard extends BeaconzPluginDependent{
                 try {
                     UUID memberUUID = UUID.fromString(uuid);
                     OfflinePlayer player = getBeaconzPlugin().getServer().getOfflinePlayer(memberUUID);
-                    team.addPlayer(player);
+                    team.addEntry(player.getName());
                     //teamLookup.put(memberUUID, team.getName());
                 } catch (Exception e) {
                     getLogger().severe("Error loading team member " + team.toString() + " " + uuid + " - skipping");
@@ -228,7 +374,6 @@ public class Scorecard extends BeaconzPluginDependent{
     /**
      * Saves the teams to the config file
      */
-    @SuppressWarnings("deprecation")
     public void saveTeamMembers() {
         File teamsFile = new File(getBeaconzPlugin().getDataFolder(),"teams.yml");
         YamlConfiguration teamsYml = new YamlConfiguration();
@@ -240,13 +385,16 @@ public class Scorecard extends BeaconzPluginDependent{
 
         for (Team team: scoreboard.getTeams()) {
             List<String> teamMembers = new ArrayList<String>();
-            for (OfflinePlayer player : team.getPlayers()) {
-                try {
-                    teamMembers.add(player.getUniqueId().toString());
-                    //teamLookup.put(memberUUID, team.getName());
-                } catch (Exception e) {
-                    getLogger().severe("Error saving team member " + team.toString() + " " + player.getName() + " - skipping");
-                }
+            for (String entry : team.getEntries()) {
+            	Player player = Bukkit.getServer().getPlayer(entry);
+            	if (player != null) {
+                    try {
+                        teamMembers.add(player.getUniqueId().toString());
+                        //teamLookup.put(memberUUID, team.getName());
+                    } catch (Exception e) {
+                        getLogger().severe("Error saving team member " + team.toString() + " " + player.getName() + " - skipping");
+                    }            		
+            	}
             }
             teamsYml.set(team.getName(), teamMembers);
             // Save the team spawn location
@@ -255,7 +403,7 @@ public class Scorecard extends BeaconzPluginDependent{
         try {
             teamsYml.save(teamsFile);
         } catch (IOException e) {
-            // TODO Auto-generated catch block
+            // Catch block
             e.printStackTrace();
         }
     }
@@ -264,12 +412,11 @@ public class Scorecard extends BeaconzPluginDependent{
      * @param member
      * @return member's team if it exists, null otherwise
      */
-    @SuppressWarnings("deprecation")
     public Team getTeam(OfflinePlayer member) {
         // Run through the teams and find the player
         for (Team team : scoreboard.getTeams()) {
-            for (OfflinePlayer player : team.getPlayers()) {
-                if (player.equals(member)) {
+            for (String playername : team.getEntries()) {
+                if (playername.equals(member.getName())) {
                     return team;
                 }
             }
@@ -278,57 +425,72 @@ public class Scorecard extends BeaconzPluginDependent{
     }
 
     /**
-     * @return the score
+     * Return the scoreboard manager 
      */
-    public HashMap<Team, Integer> getScore() {
-        return score;
+    public ScoreboardManager getManager() {
+    	return manager;
     }
+    
+    /**
+     * @return the scores
+     */
+    public HashMap<Team, HashMap<String,Integer>> getScore() {
+    	return score;   
+    }
+    
 
+    /**
+     * @param team
+     * @return 
+     * @return score for team
+     */
+    public Integer getScore(Team team, String scoretype) {
+        if (score.containsKey(team)) {
+        	HashMap<String,Integer> scores = score.get(team);
+        	if (scores.containsKey(scoretype)) return scores.get(scoretype);
+        }
+        return 0;
+    }    
+    
     /**
      * Set the score for a team
      * @param team
      * @param score
      */
-    public void setScore(Team team, int score) {
-        this.score.put(team, score);
+    public void putScore(Team team, String scoretype, int value) {
+    	if (team != null && scoretype != null) {    		
+        	HashMap<String,Integer> stypes = score.get(team);
+        	if (stypes == null) stypes = new HashMap<String,Integer>(); 
+        	stypes.put(scoretype, value);
+            score.put(team, stypes);  
+            //getLogger().info("saved " + scoretype + " value " + value + " for " + team.getDisplayName());
+    	}
+    	refreshSBdisplay(team, scoretype);
     } 
-
-    /**
-     * @param team
-     * @return score for faction
-     */
-    public int getScore(Team team) {
-        if (score.containsKey(team)) {
-            return score.get(team);
-        }
-        return 0;
-    }
 
     /**
      * Adds score to team
      * @param owner
      * @param area
      */
-    public void addScore(Team owner, int area) {
-        if (score.containsKey(owner)) {
-            int s = score.get(owner);
-            s += area;
-            score.put(owner, s);
-        } else {
-            score.put(owner, area);
-        } 
+    public void addScore(Team team, String scoretype, int value) {
+        if (score.containsKey(team)) {
+        	HashMap<String,Integer> stypes = score.get(team); 
+        	if (stypes != null && stypes.containsKey(scoretype)) {
+        		value  += stypes.get(scoretype);
+                if (value < 0 ) value = 0;
+        	}
+        }        
+        putScore(team, scoretype, value); 
     }  
 
     /**
-     * Removes score from team
+     * Subtracts score from team
      * @param owner
      * @param area
      */
-    public void removeScore(Team owner, int area) {
-        addScore(owner, -area);
-        if (score.get(owner) < 0) {
-            score.put(owner, 0);
-        }
+    public void subtractScore(Team team, String scoretype, int value) {
+        addScore(team, scoretype, -value);
     }
 
     /**
@@ -339,6 +501,7 @@ public class Scorecard extends BeaconzPluginDependent{
         score.clear();     
     }
 
+    
     /**
      * Returns the location where a team should spawn
      * @param playerTeam
@@ -394,13 +557,15 @@ public class Scorecard extends BeaconzPluginDependent{
      * @return true if in team, false if not
      */
     public boolean inTeam(Player player) {
-        if (scoreboard.getPlayerTeam(player) != null) {
+        if (scoreboard.getEntryTeam(player.getName()) != null) {
             return true;
         }
         return false;
     }
 
     /**
+<<<<<<< HEAD
+<<<<<<< Upstream, based on upstream/master
      * Sets the team's spawn location
      * @param team
      * @param location
@@ -458,4 +623,23 @@ public class Scorecard extends BeaconzPluginDependent{
         return l.getWorld().getName() + ":" + l.getBlockX() + ":" + l.getBlockY() + ":" + l.getBlockZ() + ":" + Float.floatToIntBits(l.getYaw()) + ":" + Float.floatToIntBits(l.getPitch());
     }
 
+    /**
+     * Timer
+     * @param interval (in seconds)
+     */
+	public void runtimer () {
+		getBeaconzPlugin().getServer().getScheduler().scheduleSyncRepeatingTask(getBeaconzPlugin(), new Runnable() {
+			@Override
+			public void run() {
+				Long seconds = (System.currentTimeMillis() - starttime) / 1000;
+				Integer t = timerinterval;
+				seconds = ((seconds+t-1)/t)*t;
+				long s = seconds % 60;
+			    long m = (seconds / 60) % 60;
+			    long h = (seconds / (60 * 60)) % 24;
+			    String elapsed = String.format("%d:%02d:%02d", h,m,s);
+				objective.setDisplayName(ChatColor.GREEN + "Beaconz!   " + elapsed);				
+			}			
+		}, 20, timerinterval*20); 
+	}	
 }

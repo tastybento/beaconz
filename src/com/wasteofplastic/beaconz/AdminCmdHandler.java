@@ -159,7 +159,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                     sender.sendMessage(ChatColor.RED + "/" + label + " join [" + getScorecard().getTeamListString() + "]");
                     return true;
                 }
-                team.addPlayer((Player)sender);
+                team.addEntry(((Player)sender).getName());
                 ((Player)sender).setScoreboard(getScorecard().getScoreboard());
                 sender.sendMessage(ChatColor.GREEN + "You joined " + team.getDisplayName());
                 return true;
