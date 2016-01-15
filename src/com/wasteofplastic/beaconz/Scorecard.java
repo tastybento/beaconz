@@ -564,6 +564,7 @@ public class Scorecard extends BeaconzPluginDependent{
     }
 
     /**
+<<<<<<< HEAD
 <<<<<<< Upstream, based on upstream/master
      * Sets the team's spawn location
      * @param team
@@ -641,5 +642,4 @@ public class Scorecard extends BeaconzPluginDependent{
 			}			
 		}, 20, timerinterval*20); 
 	}	
-    
 }
