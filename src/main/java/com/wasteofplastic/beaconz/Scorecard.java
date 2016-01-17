@@ -325,7 +325,7 @@ public class Scorecard extends BeaconzPluginDependent{
     public void loadTeamMembers() {
         File teamFile = new File(getBeaconzPlugin().getDataFolder(),"teams.yml");
         if (!teamFile.exists()) {
-            return;
+            saveTeamMembers();
         }
         YamlConfiguration teamsYml = new YamlConfiguration();
         try {
