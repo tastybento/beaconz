@@ -22,22 +22,10 @@
 
 package com.wasteofplastic.beaconz;
 
-import java.awt.geom.Line2D;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map.Entry;
-import java.util.Random;
-import java.util.UUID;
-
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import org.apache.commons.lang.math.NumberUtils;
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.Material;
-import org.bukkit.Sound;
-import org.bukkit.World;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.EntityType;
@@ -45,29 +33,21 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
-import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockDamageEvent;
-import org.bukkit.event.block.BlockFromToEvent;
-import org.bukkit.event.block.BlockPistonExtendEvent;
-import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.event.block.BlockSpreadEvent;
+import org.bukkit.event.block.*;
 import org.bukkit.event.entity.EntityExplodeEvent;
-import org.bukkit.event.player.PlayerBucketEmptyEvent;
-import org.bukkit.event.player.PlayerChangedWorldEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.*;
 import org.bukkit.event.world.WorldInitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scoreboard.Team;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
+import java.awt.geom.Line2D;
+import java.util.*;
+import java.util.Map.Entry;
 
 public class BeaconListeners extends BeaconzPluginDependent implements Listener {
 
@@ -588,6 +568,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             map.setCenterZ(beacon.getZ());
             map.getRenderers().clear();
             map.addRenderer(new BeaconMap(getBeaconzPlugin()));
+            map.addRenderer(new TerritoryMapRenderer(getBeaconzPlugin()));
             event.getItem().setType(Material.MAP);
             event.getItem().setAmount(1);
             event.getItem().setDurability(map.getId());
@@ -636,6 +617,29 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         }
     }
 
+    /**
+     * Make sure all player held maps have triangle overlays. (todo: make sure all maps on item frames do as well)
+     * There seem to be some bugs around this. It doesn't always take on the first try.
+     */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onMapHold(final PlayerItemHeldEvent event) {
+        Player player = event.getPlayer();
+        ItemStack itemInHand = player.getInventory().getItem(event.getNewSlot());
+        if (itemInHand == null) return;
+        if (!Material.MAP.equals(itemInHand.getType())) {
+            return;
+        }
+        if (!player.getWorld().equals(getBeaconzWorld())) {
+            return;
+        }
+        MapView map = Bukkit.getMap(itemInHand.getDurability());
+        for (MapRenderer renderer : map.getRenderers()) {
+            if (renderer instanceof TerritoryMapRenderer) {
+                return;
+            }
+        }
+        map.addRenderer(new TerritoryMapRenderer(getBeaconzPlugin()));
+    }
 
     /**
      * Tries to link two beacons
