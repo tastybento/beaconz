@@ -49,18 +49,22 @@ public class TerritoryMapRenderer extends MapRenderer {
             } else {
                 beaconRegisterCache = newCache;
                 pixelCache = new Byte[128][];
+                int count = 0;
                 for (int x = 0; x < 128; x++) {
                     for (int z = 0; z < 128; z++) {
-                        int xBlock = pixelCoordToBlockCoord(map, map.getCenterX(), (byte)x);
-                        int zBlock = pixelCoordToBlockCoord(map, map.getCenterZ(), (byte)z);
-                        List<TriangleField> triangles = beaconz.getRegister().getTriangle(xBlock, zBlock);
-                        if (triangles != null && !triangles.isEmpty()) {
-                            TriangleField triangleField = triangles.get(0);
-                            MaterialData materialData = beaconz.getScorecard().getBlockID(triangleField.getOwner());
-                            byte color = getMapPaletteColorForTeam(materialData.getData(), triangles.size());
-                            canvas.setPixel(x, z, color);
-                            if (pixelCache[x] == null) pixelCache[x] = new Byte[128];
-                            pixelCache[x][z] = color;
+                        count ++;
+                        if (count % 3 == 0) {
+                            int xBlock = pixelCoordToBlockCoord(map, map.getCenterX(), (byte)x);
+                            int zBlock = pixelCoordToBlockCoord(map, map.getCenterZ(), (byte)z);
+                            List<TriangleField> triangles = beaconz.getRegister().getTriangle(xBlock, zBlock);
+                            if (triangles != null && !triangles.isEmpty()) {
+                                TriangleField triangleField = triangles.get(0);
+                                MaterialData materialData = beaconz.getScorecard().getBlockID(triangleField.getOwner());
+                                byte color = getMapPaletteColorForTeam(materialData.getData(), triangles.size());                                
+                                canvas.setPixel(x, z, color);
+                                if (pixelCache[x] == null) pixelCache[x] = new Byte[128];
+                                pixelCache[x][z] = color;
+                            }
                         }
                     }
                 }
