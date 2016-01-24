@@ -15,4 +15,7 @@ commands:
         description: Beaconz admin command
         usage:  |
              /badmin help
-    
+permissions:
+  beaconz.map.unclaimed:
+    description: Can see all unclaimed beacons on a map
+    default: op
