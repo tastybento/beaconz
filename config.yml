@@ -1,7 +1,7 @@
 # Config file for Beaconz
 world:
   # Beaconz world
-  name: beaconz
+  name: beaconz   
   
   # Distribution of beacons the large the number, the more beacons are made
   distribution: 0.05
@@ -188,4 +188,20 @@ teams:
   blue:
     displayname: "Blue"
     glasscolor: 11
-    
+# gamemode is strategy or minigame
+gamemode: strategy
+# possible scores to display on sidebar, for either game mode, are area, beacons, links, triangles
+# remember that the sidebar only has 15 lines, if there are many teams there may not be enough room to display all scores
+sidebar:
+  minigame: area:beacons:links:triangles
+  strategy: area:beacons:links:triangles
+# the goal must be one of the scores displayed on the sidebar
+# a goal value > 0 means the game ends when a team reaches that score; the timer is open-ended and counts up
+# a goal value = 0 means the timer counts down and when it reaches 0 the team with the greatest score for that goal wins   
+goals:
+  minigame: links:0
+  strategy: area:10000
+# timer in seconds, for when the goal value is greater than zero
+timer:
+  minigame: 600
+  strategy: 0  

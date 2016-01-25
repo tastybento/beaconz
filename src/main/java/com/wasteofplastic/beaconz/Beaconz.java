@@ -79,14 +79,14 @@ public class Beaconz extends JavaPlugin {
                 // Load the scorecard - cannot be done until after the server starts
                 scorecard = new Scorecard(plugin);
                 // Add teams
-                addTeams();
+                //addTeams();
 
                 // Load the beacon register
                 register = new Register(plugin);
                 register.loadRegister();
 
                 // Load the teams
-                scorecard.loadTeamMembers();
+               // scorecard.loadTeamMembers();
 
                 // Create the block populator
                 if (beaconPopulator == null) {
@@ -118,17 +118,6 @@ public class Beaconz extends JavaPlugin {
         });
     }
 
-    /**
-     * Adds teams to the game from the config file
-     */
-    protected void addTeams() {
-        scorecard.clear();
-        for (String teamName: getConfig().getConfigurationSection("teams").getValues(false).keySet()) {
-            MaterialData teamBlock = new MaterialData(Material.STAINED_GLASS,(byte) getConfig().getInt("teams." + teamName + ".glasscolor"));
-            Team team = scorecard.addTeam(teamName, teamBlock);
-            team.setDisplayName(ChatColor.translateAlternateColorCodes('&', getConfig().getString("teams." + teamName + ".displayname", teamName)));
-        }
-    }
 
     /**
      * Sets the world border if the border exits
@@ -239,7 +228,48 @@ public class Beaconz extends JavaPlugin {
      * Clears all old settings
      */
     public void loadConfig() {
-        Settings.linkDistance = getConfig().getDouble("world.linkdistance", 0);
+    	// Get the default game mode 
+    	Settings.gamemode = getConfig().getString("gamemode", "minigame");
+    	Settings.gamemode = cleanString(Settings.gamemode, "minigame:strategy", "strategy");
+    	
+    	// Get the default score types to show
+    	Settings.minigameScoreTypes = getConfig().getString("sidebar.minigame", "beacons:links:triangles");
+    	Settings.minigameScoreTypes = cleanString(Settings.minigameScoreTypes, "beacons:links:triangles:area", "beacons:links:triangles");
+    	Settings.strategyScoreTypes = getConfig().getString("sidebar.strategy", "area:triangles");
+    	Settings.strategyScoreTypes = cleanString(Settings.strategyScoreTypes, "beacons:links:triangles:area", "beacons:triangles:area");
+    	
+    	// Get the default goals for each game mode
+    	String mgGoal = getConfig().getString("goals.minigame", "triangles:0");
+    	String sgGoal = getConfig().getString("goals.strategy", "area:10000");
+    	Settings.minigameGoal = mgGoal.split(":")[0];
+    	Settings.strategyGoal = sgGoal.split(":")[0];
+    	try{
+        	Settings.minigameGoalValue = Integer.valueOf(mgGoal.split(":")[1]);    		
+    	} catch (Exception e) {
+    		Settings.minigameGoalValue = 10;
+    	}
+    	try{
+    		Settings.strategyGoalValue = Integer.valueOf(sgGoal.split(":")[1]);
+    	} catch (Exception e) {
+    		Settings.strategyGoalValue = 10000;
+    	}   	    	
+    	// Check that the goals are actually among the chosen score types; if not, revert to defaults
+    	if (!Settings.minigameScoreTypes.contains(Settings.minigameGoal)) {
+    		Settings.minigameGoal = "triangles";
+    		Settings.minigameGoalValue = 0;
+    		if (!Settings.minigameScoreTypes.contains(Settings.minigameGoal)) Settings.minigameScoreTypes = Settings.minigameScoreTypes + ":" + Settings.minigameGoal;
+    	}
+    	if (!Settings.strategyScoreTypes.contains(Settings.strategyGoal)) {
+    		Settings.strategyGoal = "area";
+    		Settings.strategyGoalValue = 10000;
+    		if (!Settings.strategyScoreTypes.contains(Settings.strategyGoal)) Settings.strategyScoreTypes = Settings.strategyScoreTypes + ":" + Settings.strategyGoal;
+    	}    	
+        
+    	// Get the default timers for each game mode
+    	Settings.minigameTimer = getConfig().getInt("timer.minigame", 600);
+    	Settings.strategyTimer = getConfig().getInt("timer.strategy", 60000);
+    	
+    	Settings.linkDistance = getConfig().getDouble("world.linkdistance", 0);
         Settings.expDistance = getConfig().getDouble("world.expdistance", 10);
         Settings.beaconMineExhaustChance = getConfig().getInt("world.beaconmineexhaustchance", 10);
         if (Settings.beaconMineExhaustChance < 0) {
@@ -547,9 +577,6 @@ public class Beaconz extends JavaPlugin {
         beaconzWorld.getWorldBorder().reset();
         // Remove the old beacons from the register
         register.clear();
-        // Clear scores, (does not clear teams)
-        scorecard.clear();
-        plugin.getScorecard().refreshScores();
         // Move game to a new location
         nextGameLocation();
         // Regenerate the play area - do this before teleporting players to the spot
@@ -558,19 +585,10 @@ public class Beaconz extends JavaPlugin {
         //createCorners();
         // Reset default spawn location - needed to calculate the correct team teleport spawn points
         getBeaconzWorld();
-        // Move all the players to their team spawn positions
-        for (Player player : beaconzWorld.getPlayers()) {
-            Team team = scorecard.getTeam(player);
-            Location spawn = scorecard.getTeamSpawnPoint(team);
-            player.teleport(spawn);
-            player.sendMessage("You are a member of " + team.getDisplayName() + " team!");
-            getServer().dispatchCommand(getServer().getConsoleSender(),
-                    "title " + player.getName() + " title {text:\"New Game!\", color:gold}");
-            getServer().dispatchCommand(getServer().getConsoleSender(),
-                    "title " + player.getName() + " subtitle {text:\"" + team.getDisplayName() + " team\", color:blue}");
-        }
         // Put the world border up
         setWorldBorder();
+        // Reset scores (and teams, etc.)
+        scorecard.reset();
     }
 
     /**
@@ -613,4 +631,32 @@ public class Beaconz extends JavaPlugin {
         Settings.zCenter -= Settings.gameDistance;
     }
 
+    /**
+     * Cleans a ":"-delimited string of any extraneous elements
+     * Used to ignore user typos on a list of parameters
+     * so that "becons:links:triangles" becomes "links:triangles"
+     * 
+     */
+    public String cleanString(String strToClean, String basevalues, String defaultIfEmpty) {
+    	strToClean = strToClean + ":";
+    	basevalues = basevalues + ":";
+    	Boolean removestr = false;
+    	// Remove extraneous text
+    	for (String str : strToClean.split(":")) {
+    		removestr = true;
+    		for (String bv : basevalues.split(":")) {
+        		if (bv.equals(str)) removestr = false;        			
+    		}
+    		if (removestr) strToClean = strToClean.replace(str, "");
+    	}    		
+        //Reassemble the string
+        String newString = "";
+        for (String str: strToClean.split(":")) {
+        	if (!str.isEmpty()) newString = newString + str + ":";
+        }
+        if (newString.length() > 0) newString = newString.substring(0, newString.length()-1);
+    	if (newString.isEmpty()) newString = defaultIfEmpty;
+    	return newString;
+    }
+    
 }
