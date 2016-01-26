@@ -41,6 +41,29 @@ public class Settings {
      */
     public static Double distribution;
     /**
+     * The default gamemode - "minigame" or "strategy"
+     */
+    public static String gamemode;
+    /**
+     * The default timers for the two game modes
+     * 0 means no limit; any other number is a countdown
+     */
+    public static Integer minigameTimer;
+    public static Integer strategyTimer;
+    /**
+     * The default sidebar options for the two game modes
+     */
+    public static String minigameScoreTypes;
+    public static String strategyScoreTypes;    
+    /**
+     * The default goals for the two game modes
+     */
+    public static String minigameGoal;
+    public static Integer minigameGoalValue;
+    public static String strategyGoal;
+    public static Integer strategyGoalValue;    
+    /**    
+    /**
      * The x central position of the world. Will also be the default (not team) spawn point
      */
     public static int xCenter;

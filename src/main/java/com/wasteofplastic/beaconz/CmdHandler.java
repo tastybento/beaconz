@@ -121,11 +121,10 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
                 // list known beacons
                 sender.sendMessage(ChatColor.AQUA + "Scores:");
                 for (Team t : getScorecard().getScoreboard().getTeams()) {
-                    sender.sendMessage(ChatColor.AQUA + t.getDisplayName() + ChatColor.AQUA + ": " + getScorecard().getScore(t, "area") + " blocks");
                     sender.sendMessage(ChatColor.AQUA + t.getDisplayName() + ChatColor.AQUA + ": " + getScorecard().getScore(t, "beacons") + " beacons");
                     sender.sendMessage(ChatColor.AQUA + t.getDisplayName() + ChatColor.AQUA + ": " + getScorecard().getScore(t, "links") + " links");
                     sender.sendMessage(ChatColor.AQUA + t.getDisplayName() + ChatColor.AQUA + ": " + getScorecard().getScore(t, "triangles") + " triangles");
-                    sender.sendMessage(ChatColor.AQUA + t.getDisplayName() + ChatColor.AQUA + ": " + getScorecard().getScore(t, "area") + " blocks");
+                    sender.sendMessage(ChatColor.AQUA + t.getDisplayName() + ChatColor.AQUA + ": " + getScorecard().getScore(t, "area") + " total area");
                 }
                 return true;
             }
