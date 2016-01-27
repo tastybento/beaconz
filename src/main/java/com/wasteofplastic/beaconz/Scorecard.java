@@ -139,7 +139,7 @@ public class Scorecard extends BeaconzPluginDependent{
         sidebarline = 15;
         
         // Include the timer and the goal
-        scoreobjective.setDisplayName(ChatColor.GREEN + "Beaconz " + gamemode + "! 00:00:00");
+        scoreobjective.setDisplayName(ChatColor.GREEN + "Beaconz " + gamemode + "! 00d 00:00:00");
         goalstr = "";
         if (gamegoalvalue == 0) {
         	goalstr = "<< Get the most " + gamegoal + "!! >>";
@@ -846,9 +846,10 @@ public class Scorecard extends BeaconzPluginDependent{
 				long s = seconds % 60;
 			    long m = (seconds / 60) % 60;
 			    long h = (seconds / (60 * 60)) % 24;
-			    String displaytime = String.format("%d:%02d:%02d", h,m,s);
+			    long d = (seconds / (60 * 60 * 24)) %100;
+			    String displaytime = String.format("%02dd %02d:%02d:%02d", d,h,m,s);
 			    String objName = scoreobjective.getDisplayName();
-			    objName = objName.substring(0, objName.length() - 7) + displaytime;
+			    objName = objName.substring(0, objName.length() - displaytime.length()) + displaytime;
 			    scoreobjective.setDisplayName(objName);	
 			}			
 		}, 20, timerinterval*20); 
