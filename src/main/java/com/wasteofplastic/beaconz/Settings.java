@@ -50,6 +50,7 @@ public class Settings {
      */
     public static Integer minigameTimer;
     public static Integer strategyTimer;
+    public static Boolean showTimer = true;
     /**
      * The default sidebar options for the two game modes
      */

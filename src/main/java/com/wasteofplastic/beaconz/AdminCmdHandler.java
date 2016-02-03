@@ -55,143 +55,141 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
             sender.sendMessage("/" + label + " distribution <fraction> - sets the distribution of beacons temporarily");
             sender.sendMessage("/" + label + " join [" + getScorecard().getTeamListString() +"] - join a team");
             sender.sendMessage("/" + label + " list - lists all the known beacons");
+            sender.sendMessage("/" + label + " timertoggle - toggles the scoreboard timer on and off");
             sender.sendMessage("/" + label + " claim [unowned, " + getScorecard().getTeamListString() +"] - force-claims a beacon");
             sender.sendMessage("/" + label + " link x z - force-links a beacon you are standing on to one at x,z");
             return true;
         case 1:
-            // Reload
-            // TODO: This is probably not complete
-            if (args[0].equalsIgnoreCase("reload")) {
-                sender.sendMessage(ChatColor.GREEN + "Reloaded settings.");
-                getRegister().saveRegister();
-                getScorecard().saveTeamMembers();
-                getBeaconzWorld().getWorldBorder().reset();  
-                // Load config
-                this.getBeaconzPlugin().loadConfig();
-                // Set the world border
-                this.getBeaconzPlugin().setWorldBorder();
-                return true;
-            } 
-            // New game
-            if (args[0].equalsIgnoreCase("newgame")) {
-                sender.sendMessage(ChatColor.GREEN + "Building a new game - it will start shortly...");
-                getBeaconzPlugin().newGame();
-                return true;
-            }            
-            // Join team
-            if (args[0].equalsIgnoreCase("join")) {
-                if (!(sender instanceof Player)) {
-                    sender.sendMessage("Only available to players");
-                    return true;
-                }
-                sender.sendMessage(ChatColor.RED + "/" + label + " join [" + getScorecard().getTeamListString() + "]");
-                return true;                
-            }
-            // List all known beaconz
-            if (args[0].equalsIgnoreCase("list")) {
-                // list known beacons
-                sender.sendMessage("Known beacons:");
-                int count = 0;
-                for (BeaconObj p : getRegister().getBeaconRegister().values()) {
-                    count++;
-                    sender.sendMessage(p.getLocation().toString() + " Owner:" + (p.getOwnership() == null ? "unowned":p.getOwnership().getDisplayName()) + " Links " + p.getLinks().size());
-                }
-                if (count == 0) {
-                    sender.sendMessage("None");
-                }
-                return true;
-            }
-
-            // Claim beacon
-            if (args[0].equalsIgnoreCase("claim")) {
-                sender.sendMessage(ChatColor.RED + "/" + label + " claim [unowned, " + getScorecard().getTeamListString() + "]");
-                return true;
-            }
-            // Admin set team spawn with no team
-            if (args[0].equalsIgnoreCase("setspawn")) {
-                sender.sendMessage(ChatColor.RED + "/" + label + " setspawn [" + getScorecard().getTeamListString() +"] - sets the spawn point for team");
-                if (!(sender instanceof Player)) {
-                    sender.sendMessage(ChatColor.RED + "You cannot execute this command from the console");
-                }
-                return true; 
-            }
+        	switch (args[0].toLowerCase()) {
+	        	case "reload": 
+	                sender.sendMessage(ChatColor.GREEN + "Reloaded settings.");
+	                getRegister().saveRegister();
+	                getBeaconzWorld().getWorldBorder().reset();  
+	                // Load config
+	                this.getBeaconzPlugin().reloadConfig();
+	                this.getBeaconzPlugin().loadConfig();
+	                // Set the world border
+	                this.getBeaconzPlugin().setWorldBorder();
+	                // Reinitialize the scoreboard (saves teams, too)
+	                getScorecard().reload();
+	        		break;
+	        	case "newgame":
+	                sender.sendMessage(ChatColor.GREEN + "Building a new game - it will start shortly...");
+	                getBeaconzPlugin().newGame();
+	        		break;
+	        	case "join":
+	                if (!(sender instanceof Player)) {
+	                    sender.sendMessage("Only available to players");
+	                    return true;
+	                }
+	                sender.sendMessage(ChatColor.RED + "/" + label + " join [" + getScorecard().getTeamListString() + "]");
+	        		break;
+	        	case "list":
+	                // list known beacons
+	                sender.sendMessage("Known beacons:");
+	                int count = 0;
+	                for (BeaconObj p : getRegister().getBeaconRegister().values()) {
+	                    count++;
+	                    sender.sendMessage(p.getLocation().toString() + " Owner:" + (p.getOwnership() == null ? "unowned":p.getOwnership().getDisplayName()) + " Links " + p.getLinks().size());
+	                }
+	                if (count == 0) {
+	                    sender.sendMessage("None");
+	                }
+	        		break;
+	        	case "claim":
+	                // Claim beacon
+	                sender.sendMessage(ChatColor.RED + "/" + label + " claim [unowned, " + getScorecard().getTeamListString() + "]");
+	        		break;
+	        	case "setspawn":
+	        		// Admin set team spawn with no team
+	                sender.sendMessage(ChatColor.RED + "/" + label + " setspawn [" + getScorecard().getTeamListString() +"] - sets the spawn point for team");
+	                if (!(sender instanceof Player)) {
+	                    sender.sendMessage(ChatColor.RED + "You cannot execute this command from the console");
+	                }
+	        		break;
+	        	case "timertoggle":
+	        		// Toggles the scoreboard timer on/off
+	        		Settings.showTimer = ! Settings.showTimer;
+	        		break;
+	        	default:
+	        		break;
+        	}
             break;
         case 2:
-            // Admin set team spawn
-            if (args[0].equalsIgnoreCase("setspawn")) {
-                if (!(sender instanceof Player)) {
-                    sender.sendMessage(ChatColor.RED + "You cannot execute this command from the console");
-                    return true;
-                }
-                // Check team name given exists
-                Team team = getScorecard().getTeam(args[1]);
-                if (team == null) {
-                    sender.sendMessage(ChatColor.RED + "That team does not exist! Use " + getScorecard().getTeamListString());
-                    return true;
-                }
-                getScorecard().setTeamSpawnPoint(team, ((Player)sender).getLocation());
-                sender.sendMessage(ChatColor.GREEN + "Setting " + team.getDisplayName() + "'s spawn point to your location!");
-                return true;
-            }
-            if (args[0].equalsIgnoreCase("distribution")) {
-                try {
-                    double dist = Double.valueOf(args[1]);
-                    if (dist > 0D && dist < 1D) {
-                        Settings.distribution = dist;
-                        sender.sendMessage(ChatColor.GREEN + "Setting beacon distribution to " + dist);
-                        return true;
-                    }
-                } catch (Exception e) {}
+        	Team team = null;
+           	switch (args[0].toLowerCase()) {
+	        	case "setspawn":
+	        		// Admin set team spawn
+	                if (!(sender instanceof Player)) {
+	                    sender.sendMessage(ChatColor.RED + "You cannot execute this command from the console");
+	                    return true;
+	                }
+	                // Check team name given exists
+	                team = getScorecard().getTeam(args[1]);
+	                if (team == null) {
+	                    sender.sendMessage(ChatColor.RED + "That team does not exist! Use " + getScorecard().getTeamListString());
+	                    return true;
+	                }
+	                getScorecard().setTeamSpawnPoint(team, ((Player)sender).getLocation());
+	                sender.sendMessage(ChatColor.GREEN + "Setting " + team.getDisplayName() + "'s spawn point to your location!");
+	        		break;
+	        	case "distribution":
+	                try {
+	                    double dist = Double.valueOf(args[1]);
+	                    if (dist > 0D && dist < 1D) {
+	                        Settings.distribution = dist;
+	                        sender.sendMessage(ChatColor.GREEN + "Setting beacon distribution to " + dist);
+	                        return true;
+	                    }
+	                } catch (Exception e) {}
 
-                sender.sendMessage(ChatColor.RED + label + " distribution <fraction> - must be less than 1");
-                return true;
-            }
-
-            // Join team
-            if (args[0].equalsIgnoreCase("join")) {
-                if (!(sender instanceof Player)) {
-                    sender.sendMessage("Only available to players");
-                    return true;
-                }
-                // Check if this is a known team name
-                Team team = getScorecard().getTeam(args[1]);
-                if (team == null) {
-                    sender.sendMessage(ChatColor.RED + "/" + label + " join [" + getScorecard().getTeamListString() + "]");
-                    return true;
-                }
-                team.addEntry(((Player)sender).getName());
-                ((Player)sender).setScoreboard(getScorecard().getScoreboard());
-                sender.sendMessage(ChatColor.GREEN + "You joined " + team.getDisplayName());
-                return true;
-            }
-
-            // Claim a beacon for a team
-            if (args[0].equalsIgnoreCase("claim")) {
-                // See if the player is on a beacon
-                if (sender instanceof Player) {
-                    Team team = null;
-                    if (!args[1].equalsIgnoreCase("unowned")) {
-                        team = getScorecard().getTeam(args[1]);
-                        if (team == null) {
-                            sender.sendMessage(ChatColor.RED + "/" + label + " claim [unowned, " + getScorecard().getTeamListString() + "]");
-                            return true;
-                        }
-                    }
-                    Player p = (Player)sender;
-                    Point2D newClaim = new Point2D.Double(p.getLocation().getBlockX(),p.getLocation().getBlockZ());
-                    p.sendMessage("Claiming beacon at " + newClaim);
-                    if (getRegister().getBeaconRegister().containsKey(newClaim)) {
-                        // Claim a beacon
-                        getRegister().getBeaconRegister().get(newClaim).setOwnership(team);
-                        p.sendMessage(ChatColor.GREEN + "Set ownership to " + args[1]);
-                    } else {
-                        p.sendMessage(ChatColor.RED + "You are not standing on a beacon");
-                    }
-                } else {
-                    sender.sendMessage("Only players can claim beacons");
-                }
-                return true;
-            }
+	                sender.sendMessage(ChatColor.RED + label + " distribution <fraction> - must be less than 1");
+	        		break;
+	        	case "join":
+	                // Join team
+	                if (!(sender instanceof Player)) {
+	                    sender.sendMessage("Only available to players");
+	                    return true;
+	                }
+	                // Check if this is a known team name
+	                team = getScorecard().getTeam(args[1]);
+	                if (team == null) {
+	                    sender.sendMessage(ChatColor.RED + "/" + label + " join [" + getScorecard().getTeamListString() + "]");
+	                    return true;
+	                }
+	                team.addEntry(((Player)sender).getName());
+	                ((Player)sender).setScoreboard(getScorecard().getScoreboard());
+	                sender.sendMessage(ChatColor.GREEN + "You joined " + team.getDisplayName());
+	        		break;
+	        	case "claim":
+	        		// Claim a beacon for a team
+	                // See if the player is on a beacon
+	                if (sender instanceof Player) {
+	                    team = null;
+	                    if (!args[1].equalsIgnoreCase("unowned")) {
+	                        team = getScorecard().getTeam(args[1]);
+	                        if (team == null) {
+	                            sender.sendMessage(ChatColor.RED + "/" + label + " claim [unowned, " + getScorecard().getTeamListString() + "]");
+	                            return true;
+	                        }
+	                    }
+	                    Player p = (Player)sender;
+	                    Point2D newClaim = new Point2D.Double(p.getLocation().getBlockX(),p.getLocation().getBlockZ());
+	                    p.sendMessage("Claiming beacon at " + newClaim);
+	                    if (getRegister().getBeaconRegister().containsKey(newClaim)) {
+	                        // Claim a beacon
+	                        getRegister().getBeaconRegister().get(newClaim).setOwnership(team);
+	                        p.sendMessage(ChatColor.GREEN + "Set ownership to " + args[1]);
+	                    } else {
+	                        p.sendMessage(ChatColor.RED + "You are not standing on a beacon");
+	                    }
+	                } else {
+	                    sender.sendMessage("Only players can claim beacons");
+	                }
+	        		break;	   	        		
+	        	default:
+	        		break;
+           	}
             break;
         }
         return true;
