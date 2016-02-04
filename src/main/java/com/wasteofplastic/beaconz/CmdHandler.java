@@ -1,5 +1,4 @@
 /*
- * Copyright (c) 2015 tastybento
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +24,7 @@ package com.wasteofplastic.beaconz;
 import java.util.HashMap;
 import java.util.Random;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.ChunkSnapshot;
 import org.bukkit.Location;
@@ -49,15 +49,16 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+    	
+        if (!(sender instanceof Player)) {
+            sender.sendMessage("Only available to players");
+            return true;
+        }
+        Player player = (Player)sender;
+        
         switch (args.length) {
         // Just the beaconz command
         case 0:
-            if (!(sender instanceof Player)) {
-                sender.sendMessage("Only available to players");
-                return true;
-            }
-            Player player = (Player)sender;
-
             player.sendMessage(ChatColor.GREEN + "Teleporting you to the world...");
             boolean newPlayer = !getScorecard().inTeam(player);
             // Set the team
@@ -112,23 +113,35 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
             return true;
         // One argument after the beaconz command
         case 1:
-            // Help command
-            if (args[0].equalsIgnoreCase("help")) {
-                sender.sendMessage("/" + label + " help - this help");
-                sender.sendMessage("/" + label + " - teleport to the beaconz world and join a team");
-                sender.sendMessage("/" + label + " score - show the team scores");
-            } else if (args[0].equalsIgnoreCase("score")) {
-                // list known beacons
-                sender.sendMessage(ChatColor.AQUA + "Scores:");
-                for (Team t : getScorecard().getScoreboard().getTeams()) {
-                    sender.sendMessage(ChatColor.AQUA + t.getDisplayName() + ChatColor.AQUA + ": " + getScorecard().getScore(t, "beacons") + " beacons");
-                    sender.sendMessage(ChatColor.AQUA + t.getDisplayName() + ChatColor.AQUA + ": " + getScorecard().getScore(t, "links") + " links");
-                    sender.sendMessage(ChatColor.AQUA + t.getDisplayName() + ChatColor.AQUA + ": " + getScorecard().getScore(t, "triangles") + " triangles");
-                    sender.sendMessage(ChatColor.AQUA + t.getDisplayName() + ChatColor.AQUA + ": " + getScorecard().getScore(t, "area") + " total area");
-                }
-                return true;
-            }
-            break;
+        	switch (args[0].toLowerCase()) {
+	        	case "help":
+	        		 sender.sendMessage("/" + label + " help - this help");
+	                 sender.sendMessage("/" + label + " - teleport to the beaconz world and join a team");
+	                 sender.sendMessage("/" + label + " score - show the team scores");
+	                 sender.sendMessage("/" + label + " scoreboard - toggles the scoreboard on and off");
+	        		break;
+	        	case "score":
+	            	sender.sendMessage(ChatColor.AQUA + "Game mode: " + getScorecard().getGameMode());
+	            	sender.sendMessage(ChatColor.AQUA + "Game time: " + getScorecard().getTimer("long"));
+	                sender.sendMessage(ChatColor.AQUA + "Scores:");
+	                for (Team t : getScorecard().getScoreboard().getTeams()) {
+	                    sender.sendMessage(ChatColor.AQUA + "  " + t.getDisplayName() + ChatColor.AQUA + ": " + getScorecard().getScore(t, "beacons") + " beacons");
+	                    sender.sendMessage(ChatColor.AQUA + "  " + t.getDisplayName() + ChatColor.AQUA + ": " + getScorecard().getScore(t, "links") + " links");
+	                    sender.sendMessage(ChatColor.AQUA + "  " + t.getDisplayName() + ChatColor.AQUA + ": " + getScorecard().getScore(t, "triangles") + " triangles");
+	                    sender.sendMessage(ChatColor.AQUA + "  " + t.getDisplayName() + ChatColor.AQUA + ": " + getScorecard().getScore(t, "area") + " total area");
+	                }
+	        		break;
+	        	case "scoreboard":
+	        		if (player.getScoreboard().getEntries().isEmpty()) {
+		        		player.setScoreboard(getScorecard().getScoreboard());	        			
+	        		} else {
+		        		player.setScoreboard(getScorecard().getEmptyScoreboard());	
+	        		}
+	        		break;
+	        	default:
+	        		break;
+        	}
+        	return true;        	
             // More than one argument
         default:
             sender.sendMessage(ChatColor.RED + "Error - unknown command. Do /" + label + " help");

@@ -78,15 +78,10 @@ public class Beaconz extends JavaPlugin {
 
                 // Load the scorecard - cannot be done until after the server starts
                 scorecard = new Scorecard(plugin);
-                // Add teams
-                //addTeams();
 
                 // Load the beacon register
                 register = new Register(plugin);
                 register.loadRegister();
-
-                // Load the teams
-               // scorecard.loadTeamMembers();
 
                 // Create the block populator
                 if (beaconPopulator == null) {
@@ -588,7 +583,7 @@ public class Beaconz extends JavaPlugin {
         // Put the world border up
         setWorldBorder();
         // Reset scores (and teams, etc.)
-        scorecard.reset();
+        scorecard.initialize(true);
     }
 
     /**

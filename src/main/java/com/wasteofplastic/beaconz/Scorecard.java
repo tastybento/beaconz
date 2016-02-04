@@ -56,12 +56,14 @@ public class Scorecard extends BeaconzPluginDependent{
 	private Boolean gameON;
     private ScoreboardManager manager;
     private Scoreboard scoreboard;
+    private Scoreboard emptyscoreboard;
     private Score scoreentry;
     private Score scoreline;
     private Objective scoreobjective;
     private Integer timer;
 	private Integer timerinterval;
 	private String timertype;
+	private String displaytime;
 	private Integer sidebarline;
     private String gamemode;
 	private String gamegoal;
@@ -95,14 +97,22 @@ public class Scorecard extends BeaconzPluginDependent{
         super(beaconzPlugin);
         this.plugin = beaconzPlugin;
         this.manager = beaconzPlugin.getServer().getScoreboardManager();
-        initialize();
+        initialize(true);
+    }
+    
+    /**
+     * Handles plugin Reload
+     */
+    public void reload() {
+    	initialize(false);
+    	refreshScores();
     }
     
     /**
      * Initializes the game with the scoreboard
      * 
      */
-    public void initialize() {
+    public void initialize(Boolean newGame) {
         this.teamBlock = new HashMap<Team, MaterialData>();              
         this.starttimemilis = ((System.currentTimeMillis()+500)/1000)*1000;
         this.timerinterval = 5;
@@ -134,6 +144,7 @@ public class Scorecard extends BeaconzPluginDependent{
         } catch (Exception e){ };
         
         scoreboard = manager.getNewScoreboard();
+        emptyscoreboard = manager.getNewScoreboard(); // careful to never add anything to this scoreboard!
         scoreobjective = scoreboard.registerNewObjective("score", "dummy");
         scoreobjective.setDisplaySlot(DisplaySlot.SIDEBAR);
         sidebarline = 15;
@@ -154,20 +165,20 @@ public class Scorecard extends BeaconzPluginDependent{
         gameON = true;    
         
         // Reset the score
-        saveTeamMembers();
         score.clear();
         
-        // Create the teams
+        // Create the teams and enable scoreboards
         addTeamsFromFile();
         loadTeamMembers();
+    	setPlayersScoreboard();
         
-        // Send everyone home and enable their scoreboards
-        sendPlayersHome();
+        // Send everyone home, restart the Game 
+        if (newGame) sendPlayersHome();
         
         // Start the timer
-        this.runtimer();              
+        runtimer();          
     }
-
+    
     /**
      * Adds teams to the game from the config file
      */
@@ -337,10 +348,15 @@ public class Scorecard extends BeaconzPluginDependent{
      * Also make sure they each have a scoreboard
      * NOTE: THIS CURRENTLY TAKES EVERY PLAYER IN THE BEACONZ WORLD; WILL NEED TO BE ADJUSTED TO REGIONS WHEN WE HAVE MULTIPLE INSTANCES OF THE GAME IN THE SAME WORLD    
      */
+    public void setPlayersScoreboard() {
+        for (Player player : plugin.getBeaconzWorld().getPlayers()) { 
+            player.setScoreboard(scoreboard);
+        }    	
+    }
+    
     public void sendPlayersHome() {
         for (Player player : plugin.getBeaconzWorld().getPlayers()) { 
             Team team = getTeam(player);
-            player.setScoreboard(scoreboard);
             Location spawn = getTeamSpawnPoint(team);
             player.teleport(spawn);
             player.sendMessage("You are a member of " + team.getDisplayName() + " team!");
@@ -462,6 +478,14 @@ public class Scorecard extends BeaconzPluginDependent{
     public Scoreboard getScoreboard() {
         return scoreboard;
     }
+    
+    /**
+     * @return the empty scoreboard
+     */
+    public Scoreboard getEmptyScoreboard (){
+    	return emptyscoreboard;
+    }
+    		
 
     /**
      * Loads all the team members in UUID format
@@ -560,11 +584,30 @@ public class Scorecard extends BeaconzPluginDependent{
     }
     
     /**
-     * @return the scores
+     * Return the scores
      */
     public HashMap<Team, HashMap<String,Integer>> getScore() {
     	return score;   
+    }
+    
+    /**
+     * Return the game mode
+     */
+    public String getGameMode() {
+    	return gamemode;   
     }    
+    
+    /**
+     * Return the timer
+     */
+    public String getTimer(String type) {
+    	// type is either "short" or "long"
+    	if (type == "short") {
+    		return displaytime;
+    	} else {
+    		return displaytime + " (" + timertype + ")";
+    	}
+    }        
 
     /**
      * @param team
@@ -618,13 +661,6 @@ public class Scorecard extends BeaconzPluginDependent{
      */
     public void subtractScore(Team team, String scoretype, int value) {
         addScore(team, scoretype, -value);
-    }
-
-    /**
-     * Reinitialize the scorecard
-     */
-    public void reset() {
-        initialize();     
     }
 
     
@@ -790,7 +826,7 @@ public class Scorecard extends BeaconzPluginDependent{
 		        String titleline = "Game over!!";
     			String subtitleline = "There were no winners!";     		
         		if (winner != null) {        		
-        			titleline = winner.getDisplayName() + " TEAM WINS!!!!!";
+        			titleline = winner.getDisplayName().toUpperCase() + " TEAM WINS!!!!!";
         			subtitleline = "Congratulations";
         		}	
 		        for (Team team : scoreboard.getTeams()) {
@@ -847,10 +883,16 @@ public class Scorecard extends BeaconzPluginDependent{
 			    long m = (seconds / 60) % 60;
 			    long h = (seconds / (60 * 60)) % 24;
 			    long d = (seconds / (60 * 60 * 24)) %100;
-			    String displaytime = String.format("%02dd %02d:%02d:%02d", d,h,m,s);
-			    String objName = scoreobjective.getDisplayName();
-			    objName = objName.substring(0, objName.length() - displaytime.length()) + displaytime;
-			    scoreobjective.setDisplayName(objName);	
+			    displaytime = String.format("%02dd %02d:%02d:%02d", d,h,m,s);	
+			    
+				if (Settings.showTimer) {
+					String objName = scoreobjective.getDisplayName();
+					if (!objName.contains(":")) objName = objName + "! 00d 00:00:00";
+				    objName = objName.substring(0, objName.length() - displaytime.length()) + displaytime;
+				    scoreobjective.setDisplayName(objName);			    				        					
+				} else {
+					scoreobjective.setDisplayName(ChatColor.GREEN + "Beaconz " + gamemode);
+				}
 			}			
 		}, 20, timerinterval*20); 
 	}	
