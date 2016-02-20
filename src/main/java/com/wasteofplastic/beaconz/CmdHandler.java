@@ -21,24 +21,12 @@
 
 package com.wasteofplastic.beaconz;
 
-import java.util.HashMap;
-import java.util.Random;
-
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.ChunkSnapshot;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.material.MaterialData;
-import org.bukkit.material.SimpleAttachableMaterialData;
-import org.bukkit.material.TrapDoor;
 import org.bukkit.scoreboard.Team;
 
 public class CmdHandler extends BeaconzPluginDependent implements CommandExecutor {
@@ -58,166 +46,141 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
         
         switch (args.length) {
         // Just the beaconz command
-        case 0:
-            player.sendMessage(ChatColor.GREEN + "Teleporting you to the world...");
-            boolean newPlayer = !getScorecard().inTeam(player);
-            // Set the team
-            Team team = getScorecard().getTeam(player);
-            player.sendMessage("You are now a member of " + team.getDisplayName() + " team!");
-            getBeaconzPlugin().getServer().dispatchCommand(getBeaconzPlugin().getServer().getConsoleSender(),
-                    "title " + player.getName() + " title {text:\"" + team.getDisplayName() + " team!\", color:gold}");
-            // Show the scoreboard
-            player.setScoreboard(getScorecard().getScoreboard()); 
-            //player.sendMessage(player.getName() + " scoreboard: " + player.getScoreboard().getEntries().toString());            
-            // Teleport teams to different locations
-            Location teleportTo = getScorecard().getTeamSpawnPoint(team);
-            boolean found = false;
-            if (Settings.randomSpawn) {
-                Random rand = new Random();
-                int range = Settings.borderSize > 0 ? (Settings.borderSize/2):50000;
-                do {
-                    int x = rand.nextInt(range);
-                    x = rand.nextBoolean() ? x: -x;
-                    x = x + Settings.xCenter;
-                    int z = rand.nextInt(range);
-                    z = rand.nextBoolean() ? z: -z;
-                    z = z + Settings.zCenter;
-                    //teleportTo = getBeaconzWorld().getHighestBlockAt(x, z).getLocation();
-                    //teleportTo.getChunk().load();
-                    // Seach the chunk in this area
-                    ChunkSnapshot searchChunk = getBeaconzWorld().getChunkAt(x/16, z/16).getChunkSnapshot();
-                    for (int xx = 0; xx < 16; xx++) {
-                        for (int zz = 0; zz < 16; zz++) {
-                            teleportTo = getBeaconzWorld().getBlockAt(x + xx, searchChunk.getHighestBlockYAt(xx, zz), z +zz).getLocation();
-                            if (isSafeLocation(teleportTo)) {
-                                found = true;
-                                break;
-                            }
-                        }
-                    }
-                } while (!found);
-            }
-            player.teleport(teleportTo);
-            // Give newbie kit
-            if (newPlayer) {
-                player.getInventory().clear();
-                for (ItemStack item : Settings.newbieKit) {
-                    HashMap<Integer, ItemStack> tooBig = player.getInventory().addItem(item);
-                    if (!tooBig.isEmpty()) {
-                        for (ItemStack items : tooBig.values()) {
-                            player.getWorld().dropItemNaturally(player.getLocation(), items);
-                        }
-                    }
-                }
-            }
-            return true;
-        // One argument after the beaconz command
-        case 1:
-        	switch (args[0].toLowerCase()) {
-	        	case "help":
-	        		 sender.sendMessage("/" + label + " help - this help");
-	                 sender.sendMessage("/" + label + " - teleport to the beaconz world and join a team");
-	                 sender.sendMessage("/" + label + " score - show the team scores");
-	                 sender.sendMessage("/" + label + " scoreboard - toggles the scoreboard on and off");
-	        		break;
-	        	case "score":
-	            	sender.sendMessage(ChatColor.AQUA + "Game mode: " + getScorecard().getGameMode());
-	            	sender.sendMessage(ChatColor.AQUA + "Game time: " + getScorecard().getTimer("long"));
-	                sender.sendMessage(ChatColor.AQUA + "Scores:");
-	                for (Team t : getScorecard().getScoreboard().getTeams()) {
-	                    sender.sendMessage(ChatColor.AQUA + "  " + t.getDisplayName() + ChatColor.AQUA + ": " + getScorecard().getScore(t, "beacons") + " beacons");
-	                    sender.sendMessage(ChatColor.AQUA + "  " + t.getDisplayName() + ChatColor.AQUA + ": " + getScorecard().getScore(t, "links") + " links");
-	                    sender.sendMessage(ChatColor.AQUA + "  " + t.getDisplayName() + ChatColor.AQUA + ": " + getScorecard().getScore(t, "triangles") + " triangles");
-	                    sender.sendMessage(ChatColor.AQUA + "  " + t.getDisplayName() + ChatColor.AQUA + ": " + getScorecard().getScore(t, "area") + " total area");
-	                }
-	        		break;
-	        	case "scoreboard":
-	        		if (player.getScoreboard().getEntries().isEmpty()) {
-		        		player.setScoreboard(getScorecard().getScoreboard());	        			
-	        		} else {
-		        		player.setScoreboard(getScorecard().getEmptyScoreboard());	
-	        		}
-	        		break;
-	        	default:
-	        		break;
-        	}
-        	return true;        	
-            // More than one argument
-        default:
-            sender.sendMessage(ChatColor.RED + "Error - unknown command. Do /" + label + " help");
-        }
+	        case 0:
+		   		 sender.sendMessage("/" + label + " help - this help");
+		         sender.sendMessage("/" + label + " join <game> - join an ongoing game");
+		         sender.sendMessage("/" + label + " leave <game> - leave a game");
+		         sender.sendMessage("/" + label + " lobby - go the lobby area");
+		         sender.sendMessage("/" + label + " location - tells you where you are");
+		         sender.sendMessage("/" + label + " score - show the team scores");
+		         sender.sendMessage("/" + label + " scoreboard - toggles the scoreboard on and off");
+		         break;
+		         
+	        // One argument after the beaconz command
+	        case 1:
+	        	switch (args[0].toLowerCase()) {
+		        	case "help":
+		        		 sender.sendMessage("/" + label + " help - this help");
+		    	         sender.sendMessage("/" + label + " join <game> - join an ongoing game");
+		    	         sender.sendMessage("/" + label + " leave <game> - leave a game");
+		    	         sender.sendMessage("/" + label + " lobby - go the lobby area");
+		    	         sender.sendMessage("/" + label + " location - tells you where you are");
+		                 sender.sendMessage("/" + label + " score - show the team scores");
+		                 sender.sendMessage("/" + label + " scoreboard - toggles the scoreboard on and off");
+		        		break;
+		        	case "lobby":
+		        		player.setScoreboard(Bukkit.getServer().getScoreboardManager().getNewScoreboard());
+		        		getGameMgr().getLobby().tpToRegionSpawn(player);
+		        		break;
+		        	case "location":
+		        		if (getGameMgr().isPlayerInLobby(player)) {
+		        			sender.sendMessage(ChatColor.AQUA + "You're in the Beaconz Lobby at");
+		        			sender.sendMessage(ChatColor.AQUA + getGameMgr().getLobby().displayCoords());
+		        		} else {
+		        			Game game = getGameMgr().getGame(player.getLocation());
+		        			if (game != null) {
+		        				sender.sendMessage(ChatColor.AQUA + "You're playing Beaconz game " + game.getName());
+		        				Scorecard sc = game.getScorecard();
+		        				if (sc != null && sc.getTeam(player) != null) {
+		        					sender.sendMessage(ChatColor.AQUA + "You're in the " + sc.getTeam(player).getDisplayName() + " team.");
+		        				} else {
+		        					sender.sendMessage(ChatColor.AQUA + "You need to join a team to play in this game.");
+		        				}
+		        				sender.sendMessage(ChatColor.AQUA + game.getRegion().displayCoords());
+		        			} else {
+		        				sender.sendMessage(ChatColor.YELLOW + "You're in the Beaconz world, but not participating in a game.");
+		        				sender.sendMessage(ChatColor.YELLOW + "Return to the lobby with /beacons lobby");
+		        			}
+		        		}
+		        		break;
+		        	case "score":
+		        		if (sender.isOp()) {
+		        			int gamecnt = 0;
+		        			for (Game game : getGameMgr().getGames().values()) {	   
+		        		    	sender.sendMessage(ChatColor.GREEN + "Game: " + game.getName());
+		        				showGameScores(sender, game);
+		        				gamecnt++;	        				
+		        			}
+		        			if (gamecnt ==0 ) {
+		        				sender.sendMessage(ChatColor.GREEN + "No games are currently defined.");
+		        			}
+		        		} else {
+		        			Game game = getGameMgr().getGame(player.getLocation());
+		        			if (game == null || game.getScorecard() == null || game.getScorecard().getTeam(player) == null) {
+		        				sender.sendMessage(ChatColor.GREEN + "You need to join a game in order to see the scores");
+		        			} else {
+		        				sender.sendMessage(ChatColor.GREEN + "Game: " + game.getName());
+		        	        	Team team = game.getScorecard().getTeam(player);
+		        	        	if (team != null){
+					        	    sender.sendMessage(ChatColor.GREEN + "You're in the " + team.getDisplayName() + " team");
+		        	        	} else {
+		        	        		sender.sendMessage(ChatColor.GREEN + "You still need to join a team");
+		        	        	}
+				        		showGameScores(sender, game);	        						        	    		
+		        			}
+		        		}
+	
+		        		break;
+		        	case "scoreboard":
+		        		if (player.getScoreboard().getEntries().isEmpty()) {
+		        			Game game = getGameMgr().getGame(player.getLocation());
+		        			if (game != null) {
+				        		player.setScoreboard(game.getScorecard().getScoreboard()); 
+		        			} else {
+		        				player.setScoreboard(Bukkit.getServer().getScoreboardManager().getNewScoreboard());
+		        			}	        			
+		        		} else {
+			        		player.setScoreboard(Bukkit.getServer().getScoreboardManager().getNewScoreboard());	
+		        		}
+		        		break;
+		        	default:
+		        		break;
+	        	}
+	        	break;                	        	
+	        case 2: 
+	    		Game game;
+	        	switch (args[0].toLowerCase()) {
+	        		case "join":
+	        			String gamename = args[1];
+	        			game = getGameMgr().getGame(gamename);
+	        			if (game == null) {
+	        				sender.sendMessage(ChatColor.AQUA + "Could not find a game called " + gamename);
+	        			} else {
+	        				game.join(player);
+	        			}
+	        			break;
+	        		case "leave":
+	        			game = getGameMgr().getGame(player.getLocation());        			
+	        			if (game == null) {
+	        				sender.sendMessage(ChatColor.AQUA + "You are not currently in a game.");
+	        			} else {
+	        				game.leave(player);
+	        			}
+	        			break;        			
+	        		default:
+	        			break;
+	        	}
+	        	break;
+	        default:
+	            sender.sendMessage(ChatColor.RED + "Error - unknown command. Do /" + label + " help");
+	            break;
+	    }
         return true;
     }
 
     /**
-     * Checks if this location is safe for a player to teleport to. Used by
-     * warps and boat exits Unsafe is any liquid or air and also if there's no
-     * space
-     * 
-     * @param location
-     *            - Location to be checked
-     * @return true if safe, otherwise false
+     * Displays the scores for a game
      */
-    public static boolean isSafeLocation(final Location location) {
-        if (location == null) {
-            return false;
+    public void showGameScores(CommandSender sender, Game game) {
+    	sender.sendMessage(ChatColor.AQUA + "Game mode: " + game.getGamemode());
+    	sender.sendMessage(ChatColor.AQUA + "Game time: " + game.getScorecard().getTimer("long"));
+        sender.sendMessage(ChatColor.AQUA + "Scores:");
+        for (Team t : game.getScorecard().getScoreboard().getTeams()) {
+            sender.sendMessage(ChatColor.AQUA + "  " + t.getDisplayName() + ChatColor.AQUA + ": " + game.getScorecard().getScore(t, "beacons") + " beacons");
+            sender.sendMessage(ChatColor.AQUA + "  " + t.getDisplayName() + ChatColor.AQUA + ": " + game.getScorecard().getScore(t, "links") + " links");
+            sender.sendMessage(ChatColor.AQUA + "  " + t.getDisplayName() + ChatColor.AQUA + ": " + game.getScorecard().getScore(t, "triangles") + " triangles");
+            sender.sendMessage(ChatColor.AQUA + "  " + t.getDisplayName() + ChatColor.AQUA + ": " + game.getScorecard().getScore(t, "area") + " total area");
         }
-        // TODO: improve the safe location finding.
-        //Bukkit.getLogger().info("DEBUG: " + l.toString());
-        final Block ground = location.getBlock().getRelative(BlockFace.DOWN);
-        final Block space1 = location.getBlock();
-        final Block space2 = location.getBlock().getRelative(BlockFace.UP);
-        //Bukkit.getLogger().info("DEBUG: ground = " + ground.getType());
-        //Bukkit.getLogger().info("DEBUG: space 1 = " + space1.getType());
-        //Bukkit.getLogger().info("DEBUG: space 2 = " + space2.getType());
-        // Portals are not "safe"
-        if (space1.getType() == Material.PORTAL || ground.getType() == Material.PORTAL || space2.getType() == Material.PORTAL
-                || space1.getType() == Material.ENDER_PORTAL || ground.getType() == Material.ENDER_PORTAL || space2.getType() == Material.ENDER_PORTAL) {
-            return false;
-        }
-        // If ground is AIR, then this is either not good, or they are on slab,
-        // stair, etc.
-        if (ground.getType() == Material.AIR) {
-            //Bukkit.getLogger().info("DEBUG: air");
-            return false;
-        }
-        // Liquid is unsafe
-        if (ground.isLiquid() || space1.isLiquid() || space2.isLiquid()) {
-            return false;
-        }
-        MaterialData materialData = ground.getState().getData();
-        if (materialData instanceof SimpleAttachableMaterialData) {
-            //Bukkit.getLogger().info("DEBUG: trapdoor/button/tripwire hook etc.");
-            if (materialData instanceof TrapDoor) {
-                TrapDoor trapDoor = (TrapDoor)materialData;
-                if (trapDoor.isOpen()) {
-                    //Bukkit.getLogger().info("DEBUG: trapdoor open");
-                    return false;
-                }
-            } else {
-                return false;
-            }
-            //Bukkit.getLogger().info("DEBUG: trapdoor closed");
-        }
-        if (ground.getType().equals(Material.CACTUS) || ground.getType().equals(Material.BOAT) || ground.getType().equals(Material.FENCE)
-                || ground.getType().equals(Material.NETHER_FENCE) || ground.getType().equals(Material.SIGN_POST) || ground.getType().equals(Material.WALL_SIGN)) {
-            // Bukkit.getLogger().info("DEBUG: cactus");
-            return false;
-        }
-        // Check that the space is not solid
-        // The isSolid function is not fully accurate (yet) so we have to
-        // check
-        // a few other items
-        // isSolid thinks that PLATEs and SIGNS are solid, but they are not
-        if (space1.getType().isSolid() && !space1.getType().equals(Material.SIGN_POST) && !space1.getType().equals(Material.WALL_SIGN)) {
-            return false;
-        }
-        if (space2.getType().isSolid()&& !space2.getType().equals(Material.SIGN_POST) && !space2.getType().equals(Material.WALL_SIGN)) {
-            return false;
-        }
-        // Safe
-        //Bukkit.getLogger().info("DEBUG: safe!");
-        return true;
     }
-
+    
 }

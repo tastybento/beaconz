@@ -4,13 +4,21 @@ world:
   name: beaconz   
   
   # Distribution of beacons the large the number, the more beacons are made
-  distribution: 0.05
+  distribution: 0.5
   
   # Size of the world - a barrier will be created using worldborder if size > 0
   size: 0
   
-  # Distance between new games (mini game mode). Must be at least size of the barrier
-  distance: 600
+  # Distance between new game regions. Must be at least size of the barrier
+  # This is the default size for the sides of each new (square) game region
+  distance: 480
+  
+  # 
+  # Coordinates for the lobby area
+  # These coordinates must be divisible by 16, otherwise they will be adjusted
+  lobbyx: 0
+  lobbyz: 0
+  lobbyradius: 32 
   
   # Starting center point
   xcenter: 0
@@ -164,6 +172,7 @@ world:
     - "INVISIBILITY:800:1"
 
 # Team configuration
+default_teams: 2
 # Teams have glass colors that can be picked from these. They must be different.
 # 0: White Stained Glass
 # 1: Orange Stained Glass
@@ -188,6 +197,48 @@ teams:
   blue:
     displayname: "Blue"
     glasscolor: 11
+  white:
+    displayname: "White"
+    glasscolor: 0
+  orange:
+    displayname: "Orange"
+    glasscolor: 1
+  magenta:
+    displayname: "Magenta"
+    glasscolor: 2
+  lightblue:
+    displayname: "Lightblue"
+    glasscolor: 3
+  yellow:
+    displayname: "Yellos"
+    glasscolor: 4
+  lime:
+    displayname: "Lime"
+    glasscolor: 5
+  pink:
+    displayname: "Pink"
+    glasscolor: 6
+  gray:
+    displayname: "Gray"
+    glasscolor: 7
+  lightgray:
+    displayname: "Lightgray"
+    glasscolor: 8
+  cyan:
+    displayname: "Cyan"
+    glasscolor: 9       
+  purple:
+    displayname: "Purple"
+    glasscolor: 10
+  brown:
+    displayname: "Brown"
+    glasscolor: 12
+  green:
+    displayname: "Green"
+    glasscolor: 13
+  black:
+    displayname: "Black"
+    glasscolor: 15       
 # gamemode is strategy or minigame
 gamemode: strategy
 # possible scores to display on sidebar, for either game mode, are area, beacons, links, triangles

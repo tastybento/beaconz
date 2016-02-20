@@ -22,40 +22,33 @@
 
 package com.wasteofplastic.beaconz;
 
-import java.awt.geom.Point2D;
+
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import org.apache.commons.lang.math.NumberUtils;
-import org.bukkit.ChatColor;
-import org.bukkit.Location;
+import org.bukkit.Chunk;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
 import org.bukkit.WorldType;
-import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.entity.Player;
 import org.bukkit.generator.BlockPopulator;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.material.MaterialData;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.scoreboard.Team;
 
 public class Beaconz extends JavaPlugin {
     private Register register;
     private World beaconzWorld;
     private static Beaconz plugin;
     static BlockPopulator beaconPopulator;
-    private Scorecard scorecard;
+    private GameMgr gameMgr;
     private Messages messages;
+
 
     @Override
     public void onEnable() {
@@ -75,24 +68,27 @@ public class Beaconz extends JavaPlugin {
         getServer().getScheduler().runTask(this, new Runnable() {
 
             public void run() {
-
-                // Load the scorecard - cannot be done until after the server starts
-                scorecard = new Scorecard(plugin);
-
+            	
                 // Load the beacon register
                 register = new Register(plugin);
                 register.loadRegister();
+            	
+            	// Start the game manager and create the lobby region
+            	gameMgr = new GameMgr(plugin);
+            	gameMgr.createLobby();
+            	if (gameMgr.getLobby() == null) {
+            		getLogger().info("Error creating the lobby area. Beaconz plugin could not be loaded.");
+            		return;
+            	}
+            	
+                // Load existing games
+                gameMgr.loadAllGames();
 
                 // Create the block populator
-                if (beaconPopulator == null) {
-                    getBp();
-                }
+                getBp();
+                
                 // Create the world
                 getBeaconzWorld();
-
-                // Set the world border
-                beaconzWorld.getWorldBorder().reset();
-                setWorldBorder();
 
                 // Register the listeners - block break etc.
                 BeaconListeners ev = new BeaconListeners(plugin);
@@ -100,11 +96,6 @@ public class Beaconz extends JavaPlugin {
                 getServer().getPluginManager().registerEvents(new ChatListener(plugin), plugin);
                 getServer().getPluginManager().registerEvents(new BeaconDefenseListener(plugin), plugin);
                 getServer().getPluginManager().registerEvents(new SkyListeners(plugin), plugin);
-
-                // Create the corner beacons if world boarder is active
-                if (Settings.borderSize > 0) {
-                    createCorners();
-                }
 
                 // Load messages for players
                 messages = new Messages(plugin);
@@ -114,78 +105,13 @@ public class Beaconz extends JavaPlugin {
     }
 
 
-    /**
-     * Sets the world border if the border exits
-     */
-    public void setWorldBorder() {
-        beaconzWorld.getWorldBorder().setCenter(Settings.xCenter, Settings.zCenter);
-        if (Settings.borderSize > 0) {
-            beaconzWorld.getWorldBorder().setSize(Settings.borderSize);
-        }
-    }
-
-    /**
-     * Creates the corner-most beaconz so that the map can be theoretically be covered entirely (almost)
-     */
-    private void createCorners() {
-
-        // Check corners
-        Set<Point2D> corners = new HashSet<Point2D>();
-        int xMin = Settings.xCenter - (Settings.borderSize /2) + 2;
-        int xMax = Settings.xCenter + (Settings.borderSize /2) - 3;
-        int zMin = Settings.zCenter - (Settings.borderSize /2) + 2;
-        int zMax = Settings.zCenter + (Settings.borderSize /2) - 3;
-        corners.add(new Point2D.Double(xMin,zMin));
-        corners.add(new Point2D.Double(xMin,zMax));
-        corners.add(new Point2D.Double(xMax,zMin));
-        corners.add(new Point2D.Double(xMax,zMax));
-        for (Point2D point : corners) {
-            if (!register.isNearBeacon(point, 5)) {
-                Block b = getBeaconzWorld().getHighestBlockAt((int)point.getX(), (int)point.getY());
-                while (b.getType().equals(Material.AIR) || b.getType().equals(Material.LEAVES) || b.getType().equals(Material.LEAVES_2)) {          
-                    if (b.getY() == 0) {
-                        // Oops, nothing here
-                        break;
-                    }
-                    b = b.getRelative(BlockFace.DOWN);
-                }
-                if (b.getY() > 3) {
-                    // Create a beacon
-                    //Bukkit.getLogger().info("DEBUG: made beacon at " + b.getLocation());
-                    b.setType(Material.BEACON);
-                    // Register the beacon
-                    register.addBeacon(null, b.getLocation());
-                    // Add the capstone
-                    b.getRelative(BlockFace.UP).setType(Material.OBSIDIAN);
-                    // Create the pyramid
-                    b = b.getRelative(BlockFace.DOWN);
-
-                    // All diamond blocks for now
-                    b.setType(Material.DIAMOND_BLOCK);
-                    b.getRelative(BlockFace.SOUTH).setType(Material.DIAMOND_BLOCK);
-                    b.getRelative(BlockFace.SOUTH_EAST).setType(Material.DIAMOND_BLOCK);
-                    b.getRelative(BlockFace.SOUTH_WEST).setType(Material.DIAMOND_BLOCK);
-                    b.getRelative(BlockFace.EAST).setType(Material.DIAMOND_BLOCK);
-                    b.getRelative(BlockFace.WEST).setType(Material.DIAMOND_BLOCK);
-                    b.getRelative(BlockFace.NORTH).setType(Material.DIAMOND_BLOCK);
-                    b.getRelative(BlockFace.NORTH_EAST).setType(Material.DIAMOND_BLOCK);
-                    b.getRelative(BlockFace.NORTH_WEST).setType(Material.DIAMOND_BLOCK);
-                }
-            }
-        }
-    }
-
-
-
     @Override
     public void onDisable()
     {
         if (register != null) {
             register.saveRegister();
         }
-        if (scorecard != null) {
-            scorecard.saveTeamMembers();
-        }
+        getGameMgr().saveAllGames();
         beaconzWorld.getPopulators().clear();
         if (beaconPopulator != null) {     
             //beaconzWorld.getPopulators().remove(beaconPopulator);
@@ -194,6 +120,14 @@ public class Beaconz extends JavaPlugin {
         //saveConfig();
     }
 
+    
+    /** 
+     * @return the gameMgr
+     */
+    public GameMgr getGameMgr() {
+    	return gameMgr;
+    }
+    
     /**
      * @return the register
      */
@@ -210,19 +144,21 @@ public class Beaconz extends JavaPlugin {
         }
         return beaconPopulator;
     }
-
-    /**
-     * @return the scorecard
-     */
-    public Scorecard getScorecard() {
-        return scorecard;
-    }
-
+    
     /**
      * Loads settings from config.yml
      * Clears all old settings
      */
     public void loadConfig() {
+    	// get the lobby coords and size, adjust to match chunk size
+    	Settings.lobbyx = (getConfig().getInt("world.lobbyx", 0) / 16) * 16;
+    	Settings.lobbyz = (getConfig().getInt("world.lobbyz", 0) / 16) * 16;
+    	Settings.lobbyradius = (getConfig().getInt("world.lobbyradius", 32) / 16) * 16;
+    	if (Settings.lobbyradius == 0) Settings.lobbyradius = 32;
+    	
+    	// Get the default number of teams
+    	Settings.default_teams = getConfig().getInt("default_teams", 2);
+    	
     	// Get the default game mode 
     	Settings.gamemode = getConfig().getString("gamemode", "minigame");
     	Settings.gamemode = cleanString(Settings.gamemode, "minigame:strategy", "strategy");
@@ -347,11 +283,7 @@ public class Beaconz extends JavaPlugin {
         if (Settings.distribution < 0.001D) {
             Settings.distribution = 0.001D;
         }
-        Settings.borderSize = getConfig().getInt("world.size",0);
-        if (Settings.borderSize < 0) {
-            Settings.borderSize = 0;
-        }
-        Settings.gameDistance = getConfig().getInt("world.distance", Settings.borderSize);
+        Settings.gameDistance = getConfig().getInt("world.distance", 400);
         Settings.xCenter = getConfig().getInt("world.xcenter",0);
         Settings.zCenter = getConfig().getInt("world.zcenter",0);
         Settings.randomSpawn = getConfig().getBoolean("world.randomspawn", true);
@@ -567,64 +499,6 @@ public class Beaconz extends JavaPlugin {
         return messages;
     }
 
-    public void newGame() {
-        // Remove the world border
-        beaconzWorld.getWorldBorder().reset();
-        // Remove the old beacons from the register
-        register.clear();
-        // Move game to a new location
-        nextGameLocation();
-        // Regenerate the play area - do this before teleporting players to the spot
-        regenerateGame();
-        // Create the corners - TODO needs more work for the minigame
-        //createCorners();
-        // Reset default spawn location - needed to calculate the correct team teleport spawn points
-        getBeaconzWorld();
-        // Put the world border up
-        setWorldBorder();
-        // Reset scores (and teams, etc.)
-        scorecard.initialize(true);
-    }
-
-    /**
-     * Cleans up the game area so it can be played again
-     */
-    private void regenerateGame() {
-        int xMin = (Settings.xCenter - (Settings.borderSize /2) -15) / 16;
-        int xMax = (Settings.xCenter + (Settings.borderSize /2) + 15) / 16;
-        int zMin = (Settings.zCenter - (Settings.borderSize /2) -15) / 16;
-        int zMax = (Settings.zCenter + (Settings.borderSize /2) + 15) / 16;
-        for (int x = xMin; x <= xMax; x++) {
-            for (int z = zMin; z <= zMax; z++) {
-                beaconzWorld.regenerateChunk(x, z);
-            }
-        }
-
-    }
-
-    public void nextGameLocation() {
-        if (Settings.xCenter < Settings.zCenter) {
-            if (-1 * Settings.xCenter < Settings.zCenter) {
-                Settings.xCenter += Settings.gameDistance;
-                return;
-            }
-            Settings.zCenter += Settings.gameDistance;
-            return;
-        }
-        if (Settings.xCenter > Settings.zCenter) {
-            if (-1 * Settings.xCenter >= Settings.zCenter) {
-                Settings.xCenter -= Settings.gameDistance;
-                return;
-            }
-            Settings.zCenter -= Settings.gameDistance;
-            return;
-        }
-        if (Settings.xCenter <= 0) {
-            Settings.zCenter += Settings.gameDistance;
-            return;
-        }
-        Settings.zCenter -= Settings.gameDistance;
-    }
 
     /**
      * Cleans a ":"-delimited string of any extraneous elements

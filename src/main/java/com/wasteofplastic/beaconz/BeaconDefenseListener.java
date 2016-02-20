@@ -106,14 +106,29 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
         }
         //getLogger().info("DEBUG: This is a beacon");
         Player player = event.getPlayer();
+    	// Only Ops can break or place blocks in the lobby
+    	if (getGameMgr().isPlayerInLobby(player)) {
+    		if (player.isOp()) {    			
+    			return;
+    		} else {
+    			event.setCancelled(true);
+    			return;
+    		}
+    	}
         // Get the player's team
-        Team team = getScorecard().getTeam(player);
-        if (team == null) {
-            // TODO: Probably should put the player in a team
-            event.setCancelled(true);
-            player.sendMessage(ChatColor.RED + "You must be in a team to play in this world");
-            return;
-        } 
+        Scorecard sc = getGameMgr().getSC(player);
+        if (sc == null || sc.getTeam(player) == null) {        	
+        	if (!player.isOp()) {
+                event.setCancelled(true);
+                player.sendMessage(ChatColor.RED + "You must join a game to play in this world");            
+                getGameMgr().getLobby().tpToRegionSpawn(player);
+                return;        		
+        	} else {
+        		player.sendMessage(ChatColor.RED + "You are not in a team.");
+        		return;
+        	} 
+        }
+        Team team = sc.getTeam(player);
         // Check if block is a beacon extension block
         Block block = event.getBlock();
         if (block.getType().equals(Material.EMERALD_BLOCK)) {
@@ -477,14 +492,29 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
         }
         //getLogger().info("DEBUG: This is a beacon");
         Player player = event.getPlayer();
+    	// Only Ops can break or place blocks in the lobby
+    	if (getGameMgr().isPlayerInLobby(player)) {
+    		if (player.isOp()) {    			
+    			return;
+    		} else {
+    			event.setCancelled(true);
+    			return;
+    		}
+    	}
         // Get the player's team
-        Team team = getScorecard().getTeam(player);
-        if (team == null) {
-            // TODO: Probably should put the player in a team
-            event.setCancelled(true);
-            player.sendMessage(ChatColor.RED + "You must be in a team to play in this world");
-            return;
+        Scorecard sc = getGameMgr().getSC(player);
+        if (sc == null || sc.getTeam(player) == null) {        	
+        	if (!player.isOp()) {
+                event.setCancelled(true);
+                player.sendMessage(ChatColor.RED + "You must join a game to play in this world");            
+                getGameMgr().getLobby().tpToRegionSpawn(player);
+                return;        		
+        	} else {
+        		player.sendMessage(ChatColor.RED + "You are not in a team.");
+        		return;
+        	} 
         }
+        Team team = sc.getTeam(player);
         // Check if the block is a beacon or the surrounding pyramid
         Block block = event.getBlock();
         BeaconObj beacon = getRegister().getBeaconDefenseAt(new Point2D.Double(block.getX(), block.getZ()));
@@ -538,14 +568,29 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
         }
         //getLogger().info("DEBUG: This is a beacon");
         Player player = event.getPlayer();
+    	// Only Ops can break or place blocks in the lobby
+    	if (getGameMgr().isPlayerInLobby(player)) {
+    		if (player.isOp()) {    			
+    			return;
+    		} else {
+    			event.setCancelled(true);
+    			return;
+    		}
+    	}
         // Get the player's team
-        Team team = getScorecard().getTeam(player);
-        if (team == null) {
-            // TODO: Probably should put the player in a team
-            event.setCancelled(true);
-            player.sendMessage(ChatColor.RED + "You must be in a team to play in this world");
-            return;
+        Scorecard sc = getGameMgr().getSC(player);
+        if (sc == null || sc.getTeam(player) == null) {        	
+        	if (!player.isOp()) {
+                event.setCancelled(true);
+                player.sendMessage(ChatColor.RED + "You must join a game to play in this world");            
+                getGameMgr().getLobby().tpToRegionSpawn(player);
+                return;        		
+        	} else {
+        		player.sendMessage(ChatColor.RED + "You are not in a team.");
+        		return;
+        	} 
         }
+        Team team = sc.getTeam(player);
         // Check if the block is a beacon or the surrounding pyramid
         Block block = event.getBlock();
         BeaconObj beacon = getRegister().getBeaconDefenseAt(new Point2D.Double(block.getX(), block.getZ()));

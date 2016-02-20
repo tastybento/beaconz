@@ -57,7 +57,6 @@ public class TerritoryMapRenderer extends MapRenderer {
 
     private void renderToPixelCache(MapCoordinateConverter coordConverter) {
         // triangles
-        Scorecard scorecard = beaconz.getScorecard();
         int count = 0;
         for (int x = 0; x < 128; x++) {
             for (int z = 0; z < 128; z++) {
@@ -68,7 +67,7 @@ public class TerritoryMapRenderer extends MapRenderer {
                     List<TriangleField> triangles = beaconz.getRegister().getTriangle(xBlock, zBlock);
                     if (triangles != null && !triangles.isEmpty()) {
                         TriangleField triangleField = triangles.get(0);
-                        MaterialData materialData = scorecard.getBlockID(triangleField.getOwner());
+                        MaterialData materialData = beaconz.getGameMgr().getSC(x,z).getBlockID(triangleField.getOwner());
                         byte color = getMapPaletteColorForTeam(materialData.getData(), triangles.size());
                         if (pixelCache[x] == null) pixelCache[x] = new Byte[128];
                         pixelCache[x][z] = color;
@@ -81,7 +80,7 @@ public class TerritoryMapRenderer extends MapRenderer {
             CachedBeacon value = entry.getValue();
             Team owner = value.owner;
             if (owner == null || value.links == null || value.links.isEmpty()) continue;
-            MaterialData blockID = scorecard.getBlockID(owner);
+            MaterialData blockID = beaconz.getGameMgr().getSC(entry.getKey()).getBlockID(owner);
             byte data = blockID.getData();
             byte color = getMapPaletteColorForTeam(data, 1);
             for (BeaconObj link : value.links) {
@@ -90,11 +89,11 @@ public class TerritoryMapRenderer extends MapRenderer {
         }
     }
 
-    private void setCursors(MapCoordinateConverter coordConverter, MapCursorCollection cursors, boolean showUnclaimedBeacons) {
+    @SuppressWarnings("deprecation")
+	private void setCursors(MapCoordinateConverter coordConverter, MapCursorCollection cursors, boolean showUnclaimedBeacons) {
         for (int i = 0; i < cursors.size(); i++) {
             cursors.removeCursor(cursors.getCursor(i));
         }
-        Scorecard scorecard = beaconz.getScorecard();
         for (Map.Entry<Point2D, CachedBeacon> entry : beaconRegisterCache.entrySet()) {
             Team team = entry.getValue().owner;
             if (!showUnclaimedBeacons && team == null) continue;
@@ -107,7 +106,10 @@ public class TerritoryMapRenderer extends MapRenderer {
             if (z < -128 || z >= 128) continue;
             int color = 16;
             if (team != null) {
-                color = scorecard.getBlockID(team).getData();
+            	Scorecard sc = beaconz.getGameMgr().getSC(point);
+            	if (sc != null) {
+                    color = sc.getBlockID(team).getData();	
+            	}
             }
             cursors.addCursor(x, z, (byte)0);
             MapCursor cursor = cursors.getCursor(cursors.size() - 1);

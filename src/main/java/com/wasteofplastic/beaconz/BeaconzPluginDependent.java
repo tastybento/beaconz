@@ -22,7 +22,9 @@
 
 package com.wasteofplastic.beaconz;
 
+import java.awt.geom.Point2D;
 import java.io.File;
+import java.util.HashMap;
 import java.util.logging.Logger;
 
 import org.bukkit.Server;
@@ -53,16 +55,16 @@ public abstract class BeaconzPluginDependent {
         return this.beaconzPlugin.getRegister();
     }
 
+    public final GameMgr getGameMgr() {
+        return this.beaconzPlugin.getGameMgr();
+    }
+    
     public final Logger getLogger() {
         return this.beaconzPlugin.getLogger();
     }
 
     public final BlockPopulator getBlockPopulator() {
         return this.beaconzPlugin.getBp();
-    }
-
-    public final Scorecard getScorecard() {
-        return this.beaconzPlugin.getScorecard();
     }
     
     public final World getBeaconzWorld() {
@@ -79,5 +81,5 @@ public abstract class BeaconzPluginDependent {
     
     public final Messages getMessages() {
         return this.beaconzPlugin.getMessages();
-    }
+    }    
 }
