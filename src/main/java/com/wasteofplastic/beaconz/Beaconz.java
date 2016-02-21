@@ -67,11 +67,7 @@ public class Beaconz extends JavaPlugin {
         // Run commands that need to be run 1 tick after start
         getServer().getScheduler().runTask(this, new Runnable() {
 
-            public void run() {
-            	
-                // Load the beacon register
-                register = new Register(plugin);
-                register.loadRegister();
+            public void run() {            	
             	
             	// Start the game manager and create the lobby region
             	gameMgr = new GameMgr(plugin);
@@ -82,8 +78,12 @@ public class Beaconz extends JavaPlugin {
             	}
             	
                 // Load existing games
-                gameMgr.loadAllGames();
+                gameMgr.loadAllGames(); 
 
+                // Load the beacon register
+                register = new Register(plugin);
+                register.loadRegister();                 
+                
                 // Create the block populator
                 getBp();
                 
