@@ -24,10 +24,12 @@ package com.wasteofplastic.beaconz;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+
 import org.apache.commons.lang.math.NumberUtils;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.block.Sign;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -44,6 +46,7 @@ import org.bukkit.map.MapView;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scoreboard.Team;
+import org.bukkit.util.Vector;
 
 import java.awt.geom.Line2D;
 import java.util.*;
@@ -96,16 +99,28 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         if (!world.equals(getBeaconzWorld())) {
             return;
         }
-        //getLogger().info("DEBUG: This is a beacon");
         Player player = event.getPlayer();
+    	// Only Ops can break or place blocks in the lobby
+    	if (getGameMgr().isPlayerInLobby(player)) {
+    		if (player.isOp()) {    			
+    			return;
+    		} else {
+    			event.setCancelled(true);
+    			return;
+    		}
+    	}
+
         // Get the player's team
-        Team team = getScorecard().getTeam(player);
-        if (team == null) {
-            // TODO: Probably should put the player in a team
-            event.setCancelled(true);
-            player.sendMessage(ChatColor.RED + "You must be in a team to play in this world");
-            return;
-        }
+    	Team team = getGameMgr().getPlayerTeam(player);
+    	if (team == null) {
+    		if (player.isOp()) {
+    			return;
+    		} else {
+    			event.setCancelled(true);
+    			return;
+    		}
+    	}
+
         // Apply triangle effects
         applyEffects(player, getRegister().getTriangle(player.getLocation().getBlockX(), player.getLocation().getBlockZ()), team);
 
@@ -130,7 +145,8 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             }
         } else {
             // Attempt to break another part of the beacon
-        }
+        }        		
+
     }
 
     /**
@@ -224,21 +240,18 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
     }
 
     /**
-     * Puts player into the Beaconz scoreboard if they are in the Beaconz world
+     * Processes players coming directly into the game
      * @param event
      */
-    @EventHandler(priority = EventPriority.LOW)
-    public void onJoin(final PlayerJoinEvent event) {
+    @EventHandler(priority = EventPriority.NORMAL)
+    public void onJoin(final PlayerJoinEvent event) {  
         if (event.getPlayer().getWorld().equals(getBeaconzWorld())) {
-            // Assign the player to the scoreboard
             final Player player = event.getPlayer();
-            final UUID playerUUID = player.getUniqueId();
-            player.setScoreboard(getScorecard().getScoreboard()); 
-            // If the player is not in a team, assign one
-            // TODO
-            Team team = getScorecard().getTeam(player);
-            // Teleport the player to the right spot
-            player.teleport(getScorecard().getTeamSpawnPoint(team));
+            final UUID playerUUID = player.getUniqueId();                   	
+            
+            // Send player to BeaconzWorld lobby area
+            getGameMgr().getLobby().tpToRegionSpawn(player);
+ 
             // Check messages
             // Load any messages for the player
             // plugin.getLogger().info("DEBUG: Checking messages for " +
@@ -264,13 +277,16 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         }
     }
 
+
     @EventHandler(priority = EventPriority.HIGH)
     public void onWorldEnter(final PlayerChangedWorldEvent event) {
-        if (event.getPlayer().getWorld().equals(getBeaconzWorld())) {
-            event.getPlayer().setScoreboard(getScorecard().getScoreboard());
-        }
-    }
-    
+        // Entering Beaconz world
+    	if (event.getPlayer().getWorld().equals((getBeaconzWorld()))) {         
+            // Send player to lobby
+            getGameMgr().getLobby().tpToRegionSpawn(event.getPlayer());	
+    	}
+    }    
+
     @EventHandler(priority = EventPriority.LOW)
     public void onWorldExit(final PlayerChangedWorldEvent event) {
         // Exiting Beaconz world
@@ -316,14 +332,25 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             return;
         }
         Player player = event.getPlayer();
+    	// Only Ops place blocks in the lobby
+    	if (getGameMgr().isPlayerInLobby(player)) {
+    		if (player.isOp()) {    			
+    			return;
+    		} else {
+    			event.setCancelled(true);
+    			return;
+    		}
+    	}    
         // Get the player's team
-        Team team = getScorecard().getTeam(player);
-        if (team == null) {
-            // TODO: Probably should put the player in a team
-            event.setCancelled(true);
-            player.sendMessage(ChatColor.RED + "You must be in a team to play in this world");
-            return;
-        }
+    	Team team = getGameMgr().getPlayerTeam(player);
+    	if (team == null) {
+    		if (player.isOp()) {
+    			return;
+    		} else {
+    			event.setCancelled(true);
+    			return;
+    		}
+    	}
         // Apply triangle effects
         applyEffects(player, getRegister().getTriangle(player.getLocation().getBlockX(), player.getLocation().getBlockZ()), team);
         // Stop placing blocks on a beacon
@@ -351,14 +378,27 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         }
         //getLogger().info("DEBUG: This is a beacon");
         Player player = event.getPlayer();
+
+        // Only Ops can break blocks in the lobby
+    	if (getGameMgr().isPlayerInLobby(player)) {
+    		if (player.isOp()) {    			
+    			return;
+    		} else {
+    			event.setCancelled(true);
+    			return;
+    		}
+    	}        
         // Get the player's team
-        Team team = getScorecard().getTeam(player);
-        if (team == null) {
-            // TODO: Probably should put the player in a team
-            event.setCancelled(true);
-            player.sendMessage(ChatColor.RED + "You must be in a team to play in this world");
-            return;
-        }
+    	Team team = getGameMgr().getPlayerTeam(player);
+    	if (team == null) {
+    		if (player.isOp()) {
+    			return;
+    		} else {
+    			event.setCancelled(true);
+    			return;
+    		}
+    	}
+
         // Apply triangle effects
         applyEffects(player, getRegister().getTriangle(player.getLocation().getBlockX(), player.getLocation().getBlockZ()), team);
 
@@ -387,8 +427,8 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                     }
                     //getLogger().info("DEBUG: obsidian");
                     //Claiming unowned beacon
-                    block.setType(getScorecard().getBlockID(team).getItemType());
-                    block.setData(getScorecard().getBlockID(team).getData());
+                    block.setType(getGameMgr().getSC(player).getBlockID(team).getItemType());
+                    block.setData(getGameMgr().getSC(player).getBlockID(team).getData());
                     // Register the beacon to this team
                     getRegister().setBeaconOwner(beacon,team);
                     player.sendMessage(ChatColor.GREEN + "You captured a beacon!");
@@ -413,7 +453,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                         // Enemy team has lost a beacon!
                         // Taunt other teams
                         getMessages().tellOtherTeams(team, ChatColor.RED + team.getDisplayName() + " team destroyed " + beaconTeam.getDisplayName() + "'s beacon!");
-                        getMessages().tellTeam(player.getUniqueId(), player.getDisplayName() + " destroyed one of " + beaconTeam.getDisplayName() + "'s beacons!");
+                        getMessages().tellTeam(player, player.getDisplayName() + " destroyed one of " + beaconTeam.getDisplayName() + "'s beacons!");
                         player.sendMessage(ChatColor.GREEN + "You destroyed " + beaconTeam.getDisplayName() + " team's beacon!");
 
                         getRegister().removeBeaconOwnership(beacon);
@@ -446,7 +486,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                     }
                     Random rand = new Random();
                     //getLogger().info("DEBUG: random number = " + value);
-                    if (beacon.getOwnership().equals(getScorecard().getTeam(player))) {
+                    if (beacon.getOwnership().equals(team)) {
                         // Own team
                         int value = rand.nextInt(Settings.teamGoodies.lastKey()) + 1;
                         Entry<Integer, ItemStack> en = Settings.teamGoodies.floorEntry(value);
@@ -508,6 +548,34 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
     }   
 
     /**
+     * Handles using signs in the lobby to join games
+     */
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
+    public void onSignClick(final PlayerInteractEvent event) {
+    	if (getGameMgr().getLobby().isPlayerInRegion(event.getPlayer())) {
+        	if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK)) {
+        		if (event.getClickedBlock().getState() instanceof Sign) {
+            		Sign sign = (Sign) event.getClickedBlock().getState();
+            		if (Arrays.toString(sign.getLines()).toLowerCase().contains("beaconz")) {
+            			Boolean foundgame = false;
+            			for (int i = 1; i < 3; i++) {
+            				String gamename = sign.getLine(i);
+                			if (getGameMgr().getGame(gamename) != null) {
+                				getGameMgr().getGame(gamename).join(event.getPlayer());
+                				foundgame = true;
+                				break;
+                			}
+            			}
+            			if (!foundgame) {
+            				event.getPlayer().sendMessage("That sign does not point to an active game");
+            			}
+            		}
+            	}	
+        	}    	    		
+    	}
+    }
+    
+    /**
      * Handles the event of hitting a beacon with paper or a map
      * @param event
      */
@@ -534,14 +602,20 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             return;
         }
         Player player = event.getPlayer();
-        // Get the player's team
-        Team team = getScorecard().getTeam(player);
-        if (team == null) {
-            // TODO: Probably should put the player in a team
-            event.setCancelled(true);
-            player.sendMessage(ChatColor.RED + "You must be in a team to play in this world");
-            return;
+        // Ignore player in lobby
+        if (getGameMgr().isPlayerInLobby(player)) {
+        	return;
         }
+        // Get the player's team
+    	Team team = getGameMgr().getPlayerTeam(player);
+    	if (team == null) {
+    		if (player.isOp()) {
+    			return;
+    		} else {
+    			event.setCancelled(true);
+    			return;
+    		}
+    	}
         // Apply triangle effects
         applyEffects(player, getRegister().getTriangle(player.getLocation().getBlockX(), player.getLocation().getBlockZ()), team);
 
@@ -694,14 +768,14 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                         otherPlayer.getWorld().spawnEntity(otherPlayer.getLocation(), EntityType.EXPERIENCE_ORB);
                     }
                     // Tell the team
-                    getMessages().tellTeam(player.getUniqueId(), player.getDisplayName() + ChatColor.GREEN + " and " + otherPlayer.getDisplayName()
+                    getMessages().tellTeam(player, player.getDisplayName() + ChatColor.GREEN + " and " + otherPlayer.getDisplayName()
                             + ChatColor.GREEN + " created a link!");
                     // Taunt other teams
                     getMessages().tellOtherTeams(team, ChatColor.GOLD + team.getDisplayName() + " team made a link!");
                 }
             } else {
                 // Tell the team
-                getMessages().tellTeam(player.getUniqueId(), player.getDisplayName() + ChatColor.GREEN + " created a link!");
+                getMessages().tellTeam(player, player.getDisplayName() + ChatColor.GREEN + " created a link!");
             }
         } else {
             player.sendMessage(ChatColor.RED + "Link could not be created!");
@@ -709,13 +783,13 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         }
         if (result.getFieldsMade() > 0) {
             if (result.getFieldsMade() == 1) {
-                player.sendMessage(ChatColor.GREEN + "Triangle created! New score = " + getScorecard().getScore(team, "area"));
-                getMessages().tellTeam(player.getUniqueId(), player.getDisplayName() + ChatColor.GREEN + " created a triangle! New team score = " + getScorecard().getScore(team, "area"));
+                player.sendMessage(ChatColor.GREEN + "Triangle created! New score = " + getGameMgr().getSC(player).getScore(team, "area"));
+                getMessages().tellTeam(player, player.getDisplayName() + ChatColor.GREEN + " created a triangle! New team score = " + getGameMgr().getSC(player).getScore(team, "area"));
                 // Taunt other teams
                 getMessages().tellOtherTeams(team, ChatColor.RED + team.getDisplayName() + " team made a tringle!");
             } else {
-                player.sendMessage(ChatColor.GREEN + String.valueOf(result.getFieldsMade()) + " triangles created! New score = " + getScorecard().getScore(team, "area"));
-                getMessages().tellTeam(player.getUniqueId(), player.getDisplayName() + ChatColor.GREEN + " created " + String.valueOf(result.getFieldsMade()) + " triangles! New team score = " + getScorecard().getScore(team, "area"));
+                player.sendMessage(ChatColor.GREEN + String.valueOf(result.getFieldsMade()) + " triangles created! New score = " + getGameMgr().getSC(player).getScore(team, "area"));
+                getMessages().tellTeam(player, player.getDisplayName() + ChatColor.GREEN + " created " + String.valueOf(result.getFieldsMade()) + " triangles! New team score = " + getGameMgr().getSC(player).getScore(team, "area"));
                 // Taunt other teams
                 getMessages().tellOtherTeams(team, ChatColor.RED + team.getDisplayName() + " team made " + String.valueOf(result.getFieldsMade()) + " triangles!");
             }
@@ -735,19 +809,60 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onPlayerMove(PlayerMoveEvent event) {
-        World world = event.getTo().getWorld();
-        if (!world.equals(getBeaconzWorld())) {
-            return;
-        }
+    	
+    	// Remember that teleporting is not detected as player movement.. 
+    	// If we want to catch movement by teleportation, we have to keep track of the players to-from by ourselves 
+    	
         // Only proceed if there's been a change in X or Z coords
         if (event.getFrom().getBlockX() == event.getTo().getBlockX() && event.getFrom().getBlockZ() == event.getTo().getBlockZ()) {
             return;
         }
-        // Get the player's team
-        Team team = getScorecard().getTeam(event.getPlayer());
-        if (team == null) {
+        World world = event.getTo().getWorld();
+        if (!world.equals(getBeaconzWorld())) {
             return;
         }
+        Player player = event.getPlayer();
+        Region regionfrom = getGameMgr().getRegion(event.getFrom());
+        Region regionto = getGameMgr().getRegion(event.getTo());
+        
+        // Check if player is trying to leave a region by moving over a region boundary
+        // And send him back to whence he came
+        if (regionfrom != null && regionfrom != regionto) {
+        	if (event.getFrom().distance(event.getTo()) < 2.5) {
+        		float pitch = player.getLocation().getPitch();
+				float yaw = player.getLocation().getYaw();
+				Vector direction = player.getLocation().getDirection(); 									
+				player.teleport(player.getLocation().add(event.getFrom().toVector().subtract(event.getTo().toVector()).normalize()));
+				player.getLocation().setPitch(pitch);
+				player.getLocation().setPitch(yaw);
+				player.getLocation().setDirection(direction);
+				player.sendMessage(ChatColor.YELLOW + "That's the limit of the game region, you can't go any further that way.");
+				return;
+        	}
+        }
+        
+        // Check if player changed regions and process region exit and enter methods
+        if (regionfrom != null && regionfrom != regionto) {
+        	regionfrom.exit(player);        	
+        }
+        if (regionto != null && regionfrom != regionto) {
+        	regionto.enter(player);
+        }
+        // Nothing from here on applies to Lobby...
+        if (getGameMgr().isPlayerInLobby(player)) {
+        	return;
+        }
+        // Get the player's team
+    	Team team = getGameMgr().getPlayerTeam(player);
+    	if (team == null) {
+    		if (player.isOp()) {
+    			return;
+    		} else {
+    			event.setCancelled(true);
+    			return;
+    		}
+    	}
+
         // Run the following if players can create links by standing on them in pairs (or more)
         if (Settings.pairLinking) {
             // Check if player is standing on a beacon
@@ -756,34 +871,35 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                 // Check if the beacon is captured by this team
                 if (beacon.getOwnership() != null && beacon.getOwnership().equals(team)) {
                     // Check if they are on the same beacon
-                    BeaconObj currentBeacon = standingOn.get(event.getPlayer().getUniqueId());
+                    BeaconObj currentBeacon = standingOn.get(player.getUniqueId());
                     if (currentBeacon == null || !currentBeacon.equals(beacon)) {
-                        standingOn.remove(event.getPlayer().getUniqueId());
+                        standingOn.remove(player.getUniqueId());
                         // Check if any other team players are on beacons and link to them
                         for (UUID others : standingOn.keySet()) {
-                            Player player = getServer().getPlayer(others);
-                            if (player != null) {
+                            Player otherplayer = getServer().getPlayer(others);
+                            if (otherplayer != null) {
                                 // Check team
-                                if (getScorecard().getTeam(player).equals(team)) {
+                            	Team otherteam = getGameMgr().getPlayerTeam(player);
+                    	    	if (otherteam != null && otherteam.equals(team)) {
                                     // Only do if beacons are different locations
-                                    if (player.getLocation().getBlockX() != event.getTo().getBlockX() 
-                                            && player.getLocation().getBlockZ() != event.getTo().getBlockZ()) {
+                                    if (otherplayer.getLocation().getBlockX() != event.getTo().getBlockX() 
+                                            && otherplayer.getLocation().getBlockZ() != event.getTo().getBlockZ()) {
                                         // Check if this link already exists
                                         if (!beacon.getLinks().contains(standingOn.get(others))) {
                                             // Try to link
-                                            linkBeacons(event.getPlayer(),team,beacon,standingOn.get(others));
+                                            linkBeacons(player,team,beacon,standingOn.get(others));
                                         }
                                     }
                                 }
                             }
                         }
                         // Forceput removes any other player's on this beacon
-                        standingOn.forcePut(event.getPlayer().getUniqueId(), beacon); 
+                        standingOn.forcePut(player.getUniqueId(), beacon); 
                     }
                 }
             } else {
                 // Remove player from map
-                standingOn.remove(event.getPlayer().getUniqueId());
+                standingOn.remove(player.getUniqueId());
             }
         }
         // Check the From
@@ -797,19 +913,19 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         // Check if to is not a triangle
         if (to.size() == 0) {
             // Leaving a control triangle
-            event.getPlayer().sendMessage("Leaving " + from.get(0).getOwner().getDisplayName() + "'s control area");
+        	player.sendMessage("Leaving " + from.get(0).getOwner().getDisplayName() + "'s control area");
             return;
         }
         // Apply triangle effects
-        applyEffects(event.getPlayer(), to, team);
+        applyEffects(player, to, team);
 
         // Entering a field, or moving to a stronger field
         if (from.size() < to.size()) {
-            event.getPlayer().sendMessage("Now entering " + to.get(0).getOwner().getDisplayName() + "'s area of control level " + to.size());
+        	player.sendMessage("Now entering " + to.get(0).getOwner().getDisplayName() + "'s area of control level " + to.size());
             return;
         }
         if (to.size() < from.size()) {
-            event.getPlayer().sendMessage(to.get(0).getOwner().getDisplayName() + "'s control level dropping to " + to.size());
+        	player.sendMessage(to.get(0).getOwner().getDisplayName() + "'s control level dropping to " + to.size());
             return;
         }
     }
@@ -871,5 +987,5 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             return true;
         }
         return false;
-    }
+    }    
 }
