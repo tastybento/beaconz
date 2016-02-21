@@ -45,10 +45,11 @@ public class Game extends BeaconzPluginDependent {
 	private String gameName;
     private Scorecard scorecard;
     private String gamemode;
-    private Integer nbr_teams;
+    private int nbr_teams;
 	private String gamegoal;
-	private Integer gamegoalvalue;
-	private Integer timer;
+	private int gamegoalvalue;
+	private int countdowntimer;
+	private Long startTime;
 	private String scoretypes;
 
 
@@ -58,20 +59,37 @@ public class Game extends BeaconzPluginDependent {
      * 
      * @param beaconzPlugin
      */
-    public Game(Beaconz beaconzPlugin, Region region, String gameName, String gamemode, Integer nbr_teams, String gamegoal, Integer gamegoalvalue, Integer timer, String scoretypes) {
+    public Game(Beaconz beaconzPlugin, Region region, String gameName, String gamemode, int nbr_teams, String gamegoal, int gamegoalvalue, int countdowntimer, String scoretypes) {
         super(beaconzPlugin);
         this.plugin = beaconzPlugin;
         this.region = region;
         this.gameName = gameName;
+        this.startTime = ((System.currentTimeMillis()+500)/1000)*1000;
+        setGameParms(gamemode, nbr_teams, gamegoal, gamegoalvalue, countdowntimer, startTime, scoretypes);
+
+        
+        // Now create the scorecard
+        scorecard = new Scorecard(plugin, this);
+    }
+    
+    /** 
+     * Sets the game's parameters
+     * @param gamemode
+     * @param nbr_teams
+     * @param gamegoal
+     * @param gamegoalvalue
+     * @param countdowntimer
+     * @param startTime
+     * @param scoretypes
+     */
+    public void setGameParms(String gamemode, int nbr_teams, String gamegoal, int gamegoalvalue, int countdowntimer, Long startTime, String scoretypes) {
         this.gamemode = gamemode;
         this.nbr_teams = nbr_teams;
         this.gamegoal = gamegoal;
         this.gamegoalvalue = gamegoalvalue;
-        this.timer = timer;
-        this.scoretypes = scoretypes;
-        
-        // Now create the scorecard
-        scorecard = new Scorecard(plugin, this);
+        this.countdowntimer = countdowntimer;
+        this. startTime = startTime;
+        this.scoretypes = scoretypes;    	
     }
     
     /**
@@ -135,7 +153,9 @@ public class Game extends BeaconzPluginDependent {
         gamesYml.set(path + ".nbrteams", nbr_teams);
         gamesYml.set(path + ".gamegoal", gamegoal);
         gamesYml.set(path + ".goalvalue", gamegoalvalue);
-        gamesYml.set(path + ".timer", timer);
+        getLogger().info("Saving game timer: " + startTime);
+        gamesYml.set(path + ".starttime", startTime);
+        gamesYml.set(path + ".countdowntimer", scorecard.getCountdownTimer());
         gamesYml.set(path + ".scoretypes", scoretypes);        
         
         // Now save to file
@@ -245,7 +265,8 @@ public class Game extends BeaconzPluginDependent {
     public Integer getNbrTeams() {return nbr_teams;}
     public String getGamegoal() {return gamegoal;}
     public Integer getGamegoalvalue() {return gamegoalvalue;}
-    public Integer getTimer() {return timer;}
+    public Integer getCountdownTimer() {return countdowntimer;}
+    public Long getStartTime() {return startTime;}
     public String getScoretypes() {return scoretypes;}
     
     

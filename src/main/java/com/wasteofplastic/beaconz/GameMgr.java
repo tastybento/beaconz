@@ -65,7 +65,7 @@ public class GameMgr extends BeaconzPluginDependent {
         this.plugin = beaconzPlugin;
         regions = new LinkedHashMap<Point2D[], Region>();
         games = new LinkedHashMap<String, Game>();
-        setGameParms();        
+        setGameDefaultParms();        
         		
     }
         
@@ -85,7 +85,7 @@ public class GameMgr extends BeaconzPluginDependent {
      */
     public void reload() {
         saveAllGames();
-        setGameParms();
+        setGameDefaultParms();
     	createLobby();   
     	for (Game g : getGames().values()) {
     		g.reload();
@@ -141,21 +141,22 @@ public class GameMgr extends BeaconzPluginDependent {
 	        			Point2D [] corners = strCoordToPts(csec.getString(gname + ".region"));
 	        			Region region = new Region(plugin, corners);		        			
 	        			String gm   = csec.getString(gname + ".gamemode");
-	        			Integer nt  = csec.getInt(gname + ".nbrteams");
+	        			int nt  = csec.getInt(gname + ".nbrteams");
 	        			String gg   = csec.getString(gname + ".gamegoal");
-	        			Integer gv  = csec.getInt(gname + ".goalvalue");
-	        			Integer gt  = csec.getInt(gname + ".timer");
+	        			int gv  = csec.getInt(gname + ".goalvalue");
+	        			Long st  = csec.getLong(gname + ".starttime");
+	        			int gt  = csec.getInt(gname + ".countdowntimer");
 	        			String gs   = csec.getString(gname + ".scoretypes");
 	        			
 	        			Game game = games.get(gameName);
 	        			if (game != null && gameName != null) {
 	        				// We're loading an active game, reset the game parms and reload it
-		        			setGameParms(gm, nt, gg, gv,gt, gs);
+		        			game.setGameParms(gm, nt, gg, gv,gt, st, gs);
 	        				game.reload();
 		        		} else {
-		        			// We're loading an existing game from file
+		        			// We're loading an existing game from file that's not currently active
 		        			regions.put(corners, region);
-		        			game = new Game(plugin, region, gname, gamemode, nbr_teams, gamegoal, gamegoalvalue, timer, scoretypes);	    
+		        			game = new Game(plugin, region, gname, gm, nt, gg, gv, gt, gs);	    
 		        			games.put(gname, game);
 		        		}
 	        		}
@@ -205,11 +206,8 @@ public class GameMgr extends BeaconzPluginDependent {
         	Point2D[] corners = {c1, c2};        	
         	lobby = new Region(plugin, corners);
         	regions.put(corners, lobby); 
-        	lobby.createCorners();
-    	}
-    	    	
-    	//getLogger().info("Lobby area created.");
-    	
+    	}    	    	
+    	//getLogger().info("Lobby area created.");    	    	
     }    
     
     /** 
@@ -399,12 +397,12 @@ public class GameMgr extends BeaconzPluginDependent {
  
         
     /**
-     * Sets the parameters to be used for new games
+     * Sets the default parameters to be used for new games
      */
-    public void setGameParms() {
-    	setGameParms(null, null, null, null, null, null);
+    public void setGameDefaultParms() {
+    	setGameDefaultParms(null, null, null, null, null, null);
     }
-    public void setGameParms(String mode, Integer nteams, String ggoal, Integer gvalue, Integer gtimer, String stypes) {
+    public void setGameDefaultParms(String mode, Integer nteams, String ggoal, Integer gvalue, Integer gtimer, String stypes) {
         gamemode = mode != null ? mode : Settings.gamemode;
         nbr_teams = nteams != null ? nteams : Settings.default_teams;
         String defaultgoal = Settings.minigameGoal;

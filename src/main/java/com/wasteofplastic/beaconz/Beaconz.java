@@ -82,7 +82,7 @@ public class Beaconz extends JavaPlugin {
 
                 // Load the beacon register
                 register = new Register(plugin);
-                register.loadRegister();                 
+                register.loadRegister();                                
                 
                 // Create the block populator
                 getBp();

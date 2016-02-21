@@ -173,7 +173,7 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
      */
     public void showGameScores(CommandSender sender, Game game) {
     	sender.sendMessage(ChatColor.AQUA + "Game mode: " + game.getGamemode());
-    	sender.sendMessage(ChatColor.AQUA + "Game time: " + game.getScorecard().getTimer("long"));
+    	sender.sendMessage(ChatColor.AQUA + "Game time: " + game.getScorecard().getDisplayTime("long"));
         sender.sendMessage(ChatColor.AQUA + "Scores:");
         for (Team t : game.getScorecard().getScoreboard().getTeams()) {
             sender.sendMessage(ChatColor.AQUA + "  " + t.getDisplayName() + ChatColor.AQUA + ": " + game.getScorecard().getScore(t, "beacons") + " beacons");

@@ -62,8 +62,8 @@ public class Scorecard extends BeaconzPluginDependent{
     private Score scoreentry;
     private Score scoreline;
     private Objective scoreobjective;
-    private Integer timer;
-	private Integer timerinterval;
+    private int countdownTimer;
+	private int timerinterval;
 	private Boolean showtimer;
 	private String timertype;
 	private String displaytime;
@@ -98,8 +98,6 @@ public class Scorecard extends BeaconzPluginDependent{
         this.game = game;
         this.gameName = game.getName();        
         this.manager = beaconzPlugin.getServer().getScoreboardManager();
-        this.timer = game.getTimer();
-        // prepare the timer, scoretypes, scores and score values per game mode
         initialize(true);
     }
     
@@ -109,19 +107,23 @@ public class Scorecard extends BeaconzPluginDependent{
     public void reload() {
     	saveTeamMembers();
     	initialize(false);
-    	refreshScores();
+    	refreshScores();   
+    	refreshSBdisplay();
     }
-    
+       
     /**
      * Initializes the scoreboard, starts the game
+     * Prepares the timer, scoretypes, scores and score values per game mode
      * 
      */
-    public void initialize(Boolean newGame) {
-        this.teamBlock = new HashMap<Team, MaterialData>();              
-        this.starttimemilis = ((System.currentTimeMillis()+500)/1000)*1000;
-        this.timerinterval = 5;
-        this.showtimer = Settings.showTimer;
-        this.timertype = timer == 0 ? "openended" : "countdown";     
+    public void initialize(Boolean newGame) {              
+        timerinterval = 5;
+        showtimer = Settings.showTimer;
+        starttimemilis = game.getStartTime();
+        countdownTimer = game.getCountdownTimer();
+        if (timertype == null) {
+        	timertype = game.getCountdownTimer() == 0 ? "openended" : "countdown";     
+        }
 
         // Define the scoreboard
         try {
@@ -136,7 +138,7 @@ public class Scorecard extends BeaconzPluginDependent{
         scoreobjective.setDisplaySlot(DisplaySlot.SIDEBAR);
         sidebarline = 15;
         
-        // Include the timer and the goal
+        // Set up the scoreboard with the goal
         scoreobjective.setDisplayName(ChatColor.GREEN + "Beaconz " + game.getGamemode() + "! 00d 00:00:00");
         goalstr = "";
         if (game.getGamegoalvalue() == 0) {
@@ -155,6 +157,7 @@ public class Scorecard extends BeaconzPluginDependent{
         score.clear();
         
         // Create the teams and enable scoreboards
+        teamBlock = new HashMap<Team, MaterialData>();
         addTeams();
         loadTeamMembers();
         
@@ -260,7 +263,7 @@ public class Scorecard extends BeaconzPluginDependent{
      */
     public void refreshSBdisplay() {
         for (Team team: scoreboard.getTeams()) {
-        	refreshSBdisplay(team, null);
+        	refreshSBdisplay(team);
         }
     }
     public void refreshSBdisplay(Team team) {  	
@@ -619,9 +622,23 @@ public class Scorecard extends BeaconzPluginDependent{
     }
     
     /**
-     * Return the timer
+     * Return the game's start time
      */
-    public String getTimer(String type) {
+    public Long getStartTime() {
+    	return starttimemilis;
+    }
+    
+    /**
+     * Return the current countdown timer
+     */
+    public int getCountdownTimer() {
+    	return countdownTimer;
+    }
+    
+    /**
+     * Return the timer for display
+     */
+    public String getDisplayTime(String type) {
     	// type is either "short" or "long"
     	if (type == "short") {
     		return displaytime;
@@ -912,20 +929,20 @@ public class Scorecard extends BeaconzPluginDependent{
 				
 				if (gameON) {
 					Long seconds = 0L;
-
+					Integer t = timerinterval;
+					
 					if (timertype.equals("openended")) {
 						seconds = (System.currentTimeMillis() - starttimemilis) / 1000;
-						Integer t = timerinterval;
 						seconds = ((seconds+t-1)/t)*t;
 					} else {
-						timer = timer - timerinterval;
-						if (timer < 1) {
+						countdownTimer = countdownTimer - t;
+						if (countdownTimer < 1) {
 							// Beacon timer ran out
-							timer = 0;
+							countdownTimer = 0;
 							timertaskid.cancel();
 							endGame();
 						}
-						seconds = timer + 0L;
+						seconds = countdownTimer + 0L;
 					}
 
 					// display the timer
