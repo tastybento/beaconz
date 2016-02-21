@@ -36,14 +36,24 @@ public class Settings {
      */
     public static String worldName;
     /**
+     * Lobby coordinates and size
+     */
+    public static Integer lobbyx;
+    public static Integer lobbyz;
+    public static Integer lobbyradius;
+    /**
      * The density of the random distribution of beacons in the world
      * Number should be between 0 and 1
-     */
+     */    
     public static Double distribution;
     /**
      * The default gamemode - "minigame" or "strategy"
      */
     public static String gamemode;
+    /** 
+     * The default number of teams for a new game
+     */
+    public static Integer default_teams;
     /**
      * The default timers for the two game modes
      * 0 means no limit; any other number is a countdown
@@ -173,5 +183,9 @@ public class Settings {
      */
     public static List<Integer> attackLevels;
     
+    /**
+     * Coordinates of the chunk we're regenerating via the "reset" command
+     */
+    public static List<String> dontpopulate = new ArrayList<String>();
     
 }

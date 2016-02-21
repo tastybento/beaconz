@@ -48,7 +48,7 @@ import org.bukkit.scoreboard.Team;
  * @author tastybento
  *
  */
-public class ChatListener implements Listener {
+public class ChatListener extends BeaconzPluginDependent implements Listener {
 
     private Beaconz plugin;
     // List of which admins are spying or not on team chat
@@ -59,9 +59,9 @@ public class ChatListener implements Listener {
      * @param teamChatOn
      */
     public ChatListener(Beaconz plugin) {
-	this.plugin = plugin;
-	// Initialize spies
-	spies = new HashSet<UUID>();
+        super(plugin);
+        // Initialize spies
+        spies = new HashSet<UUID>();
     }
 
     
@@ -84,7 +84,7 @@ public class ChatListener implements Listener {
     private void teamChat(final AsyncPlayerChatEvent event, String message) {
 	Player player = event.getPlayer();
 	// Only act if the player is in a team
-	Team team = plugin.getScorecard().getTeam(player);
+	Team team = getGameMgr().getSC(player).getTeam(player);
 	if (team != null) {
 	    @SuppressWarnings("deprecation")
         Set<OfflinePlayer> teamMembers = team.getPlayers();
