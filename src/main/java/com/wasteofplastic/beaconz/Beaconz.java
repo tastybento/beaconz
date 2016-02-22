@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Map.Entry;
 
 import org.apache.commons.lang.math.NumberUtils;
-import org.bukkit.Chunk;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;

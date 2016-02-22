@@ -22,9 +22,7 @@
 
 package com.wasteofplastic.beaconz;
 
-import java.awt.geom.Point2D;
 import java.io.File;
-import java.util.HashMap;
 import java.util.logging.Logger;
 
 import org.bukkit.Server;

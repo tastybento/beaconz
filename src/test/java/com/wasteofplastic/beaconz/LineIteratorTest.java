@@ -1,11 +1,11 @@
 package com.wasteofplastic.beaconz;
 
-import org.testng.annotations.Test;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.awt.geom.Line2D;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import org.testng.annotations.Test;
 
 public class LineIteratorTest {
 

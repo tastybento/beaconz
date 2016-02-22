@@ -1,14 +1,24 @@
 package com.wasteofplastic.beaconz;
 
+import java.awt.geom.Point2D;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.bukkit.Color;
 import org.bukkit.DyeColor;
 import org.bukkit.entity.Player;
-import org.bukkit.map.*;
+import org.bukkit.map.MapCanvas;
+import org.bukkit.map.MapCursor;
+import org.bukkit.map.MapCursorCollection;
+import org.bukkit.map.MapPalette;
+import org.bukkit.map.MapRenderer;
+import org.bukkit.map.MapView;
 import org.bukkit.material.MaterialData;
 import org.bukkit.scoreboard.Team;
-
-import java.awt.geom.Point2D;
-import java.util.*;
 
 /**
  * Overlays all beacons, links, and triangles onto a map. Overlapping triangles make progressively darker colors.
