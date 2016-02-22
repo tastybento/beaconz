@@ -69,26 +69,6 @@ public class Game extends BeaconzPluginDependent {
         scorecard = new Scorecard(plugin, this);
     }
     
-    /** 
-     * Sets the game's parameters
-     * @param gamemode
-     * @param nbr_teams
-     * @param gamegoal
-     * @param gamegoalvalue
-     * @param countdowntimer
-     * @param startTime
-     * @param scoretypes
-     */
-    public void setGameParms(String gamemode, int nbr_teams, String gamegoal, int gamegoalvalue, int countdowntimer, Long startTime, String scoretypes) {
-        this.gamemode = gamemode;
-        this.nbr_teams = nbr_teams;
-        this.gamegoal = gamegoal;
-        this.gamegoalvalue = gamegoalvalue;
-        this.countdowntimer = countdowntimer;
-        this. startTime = startTime;
-        this.scoretypes = scoretypes;    	
-    }
-    
     /**
      * Handles a plugin reload
      * When plugin gets reloaded, on-going games are not changed
@@ -259,13 +239,40 @@ public class Game extends BeaconzPluginDependent {
      * Return the game's parameters 
      */
     public String getGamemode() {return gamemode;}
-    public Integer getNbrTeams() {return nbr_teams;}
+    public int getNbrTeams() {return nbr_teams;}
     public String getGamegoal() {return gamegoal;}
-    public Integer getGamegoalvalue() {return gamegoalvalue;}
-    public Integer getCountdownTimer() {return countdowntimer;}
+    public int getGamegoalvalue() {return gamegoalvalue;}
+    public int getCountdownTimer() {return countdowntimer;}
     public Long getStartTime() {return startTime;}
     public String getScoretypes() {return scoretypes;}
+
     
+    /** 
+     * Sets the game's parameters
+     * @param gamemode
+     * @param nbr_teams
+     * @param gamegoal
+     * @param gamegoalvalue
+     * @param countdowntimer
+     * @param startTime
+     * @param scoretypes
+     */
+    public void setGameParms(String gamemode, int nbr_teams, String gamegoal, int gamegoalvalue, int countdowntimer, Long startTime, String scoretypes) {
+        this.gamemode = gamemode;
+        this.nbr_teams = nbr_teams;
+        this.gamegoal = gamegoal;
+        this.gamegoalvalue = gamegoalvalue;
+        this.countdowntimer = countdowntimer;
+        this. startTime = startTime;
+        this.scoretypes = scoretypes;    	
+    }
+    public void setGamemode(String gm) {gamemode = gm;}
+    public void setNbrTeams(int tn) {nbr_teams = tn;}
+    public void setGamegoal(String gg) {gamegoal = gg;}
+    public void setGamegoalvalue(int gv) {gamegoalvalue = gv;}
+    public void setCountdownTimer(int cd) {countdowntimer = cd;}
+    public void setStartTime(Long stt) {startTime = stt;}
+    public void setScoretypes(String sct) {scoretypes = sct;}
     
     /** 
      * Converts into a Point2D array of 2 points into a string x1:z1:x2:z2 
