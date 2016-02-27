@@ -89,6 +89,7 @@ public class Game extends BeaconzPluginDependent {
     public void reset(CommandSender sender) {
     	sendToLobby();
     	region.regenerate(sender);
+    	startTime = ((System.currentTimeMillis()+500)/1000)*1000;
     	scorecard.reload();
     	save();
     }
@@ -97,6 +98,14 @@ public class Game extends BeaconzPluginDependent {
      * Starts, pauses, resumes, force-ends a game
      */
     public void restart() {
+        // first set all beacons to "unowned"
+        for (BeaconObj beacon : getRegister().getBeaconRegister().values()) {
+            if (this.getRegion().containsBeacon(beacon)) {
+                getRegister().removeBeaconOwnership(beacon);
+            }
+        }
+        // then restart the scoreboard
+        startTime = ((System.currentTimeMillis()+500)/1000)*1000;
     	scorecard.reload();
     }
     public void pause() {
@@ -129,8 +138,7 @@ public class Game extends BeaconzPluginDependent {
         gamesYml.set(path + ".gamemode", gamemode);
         gamesYml.set(path + ".nbrteams", nbr_teams);
         gamesYml.set(path + ".gamegoal", gamegoal);
-        gamesYml.set(path + ".goalvalue", gamegoalvalue);
-        getLogger().info("Saving game timer: " + startTime);
+        gamesYml.set(path + ".goalvalue", gamegoalvalue);        
         gamesYml.set(path + ".starttime", startTime);
         gamesYml.set(path + ".countdowntimer", scorecard.getCountdownTimer());
         gamesYml.set(path + ".scoretypes", scoretypes);        
@@ -263,7 +271,7 @@ public class Game extends BeaconzPluginDependent {
         this.gamegoal = gamegoal;
         this.gamegoalvalue = gamegoalvalue;
         this.countdowntimer = countdowntimer;
-        this. startTime = startTime;
+        this.startTime = startTime;
         this.scoretypes = scoretypes;    	
     }
     public void setGamemode(String gm) {gamemode = gm;}

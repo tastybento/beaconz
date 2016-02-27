@@ -58,24 +58,30 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
         Player player = null;
 
         if (args.length == 0 || (args.length == 1 && args[0].toLowerCase().equals("help"))) {
-            sender.sendMessage(ChatColor.GREEN + "Beaconz Admin Command");
-            sender.sendMessage("/" + label + " claim [unowned | <team>] - force-claims a beacon in a game");
-            sender.sendMessage("/" + label + " distribution <fraction between 0 and 1> - sets the global beacon distribution temporarily");
-            sender.sendMessage("/" + label + " join <gamename> <team> - join a team in an active game");
-            sender.sendMessage("/" + label + " games - list existing games");
-            sender.sendMessage("/" + label + " kick <playername> <gamename>- kicks a player from the game");
-            sender.sendMessage("/" + label + " restart <gamename>- clears scoreboard, restarts timer; teams aren't changed");
-            sender.sendMessage("/" + label + " reset <gamename>- resets a game - score, teams, and beacons!");
-            sender.sendMessage("/" + label + " pause <gamename>- pauses the timer and scoreboard in a game");
-            sender.sendMessage("/" + label + " resume <gamename>- restarts a paused game");
-            sender.sendMessage("/" + label + " force_end <gamename>- forces a game to end immediately");
-            sender.sendMessage("/" + label + " link <x> <z> - force-links a beacon you are standing on to one at x,z");
-            sender.sendMessage("/" + label + " list [all |<gamename>] - lists all known beacons in the game | all games");
-            sender.sendMessage("/" + label + " newgame <gamename>- creates a new game in an empty region");
-            sender.sendMessage("/" + label + " reload - reloads the plugin, preserving existing games");
-            sender.sendMessage("/" + label + " setspawn <team> - sets the spawn point for team");
-            sender.sendMessage("/" + label + " teams [all | <gamename>] - shows teams and team members for a game");   
-            sender.sendMessage("/" + label + " timertoggle [all | <gamename>] - toggles the scoreboard timer on and off");
+            ChatColor cc1 = ChatColor.GREEN;
+            ChatColor cc2 = ChatColor.YELLOW;
+            ChatColor cc3 = ChatColor.AQUA;
+            sender.sendMessage(cc1 + "======================================================");
+            sender.sendMessage(cc2 + "Beaconz Admin Commands");
+            sender.sendMessage(cc1 + "======================================================");
+            sender.sendMessage(cc1 + "/" + label + cc2 + " claim [unowned | <team>]" + cc3 + " - force-claims a beacon in a game");
+            sender.sendMessage(cc1 + "/" + label + cc2 + " distribution <decimal between 0 and 1>" + cc3 + " - sets global beacon distribution temporarily");
+            sender.sendMessage(cc1 + "/" + label + cc2 + " join <gamename> <team>" + cc3 + " - join a team in an active game");
+            sender.sendMessage(cc1 + "/" + label + cc2 + " games" + cc3 + " - list existing games");
+            sender.sendMessage(cc1 + "/" + label + cc2 + " kick <playername> <gamename>" + cc3 + "- kicks a player from the game");
+            sender.sendMessage(cc1 + "/" + label + cc2 + " restart <gamename>" + cc3 + " - restarts the game with currently defined parameters - clears scoreboard, cleans out all beacons, restarts timer; teams aren't changed");
+            sender.sendMessage(cc1 + "/" + label + cc2 + " reset <gamename>" + cc3 + " - resets score, teams, and repopulates the beacons!");
+            sender.sendMessage(cc1 + "/" + label + cc2 + " pause <gamename>" + cc3 + " - pauses the timer and scoreboard in a game");
+            sender.sendMessage(cc1 + "/" + label + cc2 + " resume <gamename>" + cc3 + " - resume a paused game");
+            sender.sendMessage(cc1 + "/" + label + cc2 + " force_end <gamename>" + cc3 + " - forces a game to end immediately");
+            sender.sendMessage(cc1 + "/" + label + cc2 + " link <x> <z>" + cc3 + " - force-links a beacon you are standing on to one at x,z");
+            sender.sendMessage(cc1 + "/" + label + cc2 + " list [all |<gamename>]" + cc3 + " - lists all known beacons in the game | all games");
+            sender.sendMessage(cc1 + "/" + label + cc2 + " newgame <gamename> [<parm1:value> <parm2:value>...]" + cc3 + " - creates a new game in an empty region; parameters are optional - do /" + label + " newgame help for a list of the possible parameters");           
+            sender.sendMessage(cc1 + "/" + label + cc2 + " reload" + cc3 + " - reloads the plugin, preserving existing games");
+            sender.sendMessage(cc1 + "/" + label + cc2 + " setgameparms <gamename> <parm1:value> <parm2:value>... " + cc3 + "- defines a game's parameters - DOES NOT restart the game (use restart for that) - do /" + label + " setgameparms help for a list of the possible parameters");
+            sender.sendMessage(cc1 + "/" + label + cc2 + " setspawn <team>" + cc3 + " - sets the spawn point for team");
+            sender.sendMessage(cc1 + "/" + label + cc2 + " teams [all | <gamename>]" + cc3 + " - shows teams and team members for a game");   
+            sender.sendMessage(cc1 + "/" + label + cc2 + " timertoggle [all | <gamename>]" + cc3 + " - toggles the scoreboard timer on and off");
 
         } else {
             switch (args[0].toLowerCase()) {
@@ -178,7 +184,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
 
             case "kick":
                 if (args.length < 3) {
-                    sender.sendMessage(ChatColor.RED + "/" + label + " kick <playername> <gamename>- kicks a player from the game");
+                    sender.sendMessage(ChatColor.RED + "/" + label + " kick <playername> <gamename> - kicks a player from the game");
                 } else {
                     player = Bukkit.getPlayer(args[1]);
                     if (player == null && args[1] != "all") {
@@ -202,7 +208,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
 
             case "restart":
                 if (args.length < 2) {
-                    sender.sendMessage(ChatColor.RED + "/" + label + " restart <gamename>- clears the scoreboard and restarts the timer; the teams aren't changed");
+                    sender.sendMessage(ChatColor.RED + "/" + label + " restart <gamename> - restarts the game with currently defined parameters - clears scoreboard, cleans out all beacons, restarts the timer; teams aren't changed");
                 } else {
                     game = getGameMgr().getGames().get(args[1]);
                     if (game == null) {
@@ -216,7 +222,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
 
             case "reset":
                 if (args.length < 2) {
-                    sender.sendMessage(ChatColor.RED + "/" + label + " reset <gamename>- resets a game - score, teams, and beacons!");
+                    sender.sendMessage(ChatColor.RED + "/" + label + " reset <gamename> - resets score, teams, and repopulates the beacons!");
                 } else {
                     game = getGameMgr().getGames().get(args[1]);
                     if (game == null) {
@@ -230,7 +236,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
 
             case "pause":
                 if (args.length < 2) {
-                    sender.sendMessage(ChatColor.RED + "/" + label + " pause <gamename>- pauses the timer and scoreboard in a game");
+                    sender.sendMessage(ChatColor.RED + "/" + label + " pause <gamename> - pauses the timer and scoreboard in a game");
                 } else {
                     game = getGameMgr().getGames().get(args[1]);
                     if (game == null) {
@@ -244,7 +250,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
 
             case "resume":
                 if (args.length < 2) {
-                    sender.sendMessage(ChatColor.RED + "/" + label + " resume <gamename>- restarts a paused game");
+                    sender.sendMessage(ChatColor.RED + "/" + label + " resume <gamename> - resumes a paused game");
                 } else {
                     game = getGameMgr().getGames().get(args[1]);
                     if (game == null) {
@@ -258,7 +264,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
 
             case "force_end":
                 if (args.length < 2) {
-                    sender.sendMessage(ChatColor.RED + "/" + label + " force_end <gamename>- forces a game to end immediately");
+                    sender.sendMessage(ChatColor.RED + "/" + label + " force_end <gamename> - forces a game to end immediately");
                 } else {	    				 
                     game = getGameMgr().getGames().get(args[1]);
                     if (game == null) {
@@ -304,15 +310,43 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
 
             case "newgame":
                 if (args.length < 2) {
-                    sender.sendMessage(ChatColor.RED + "/" + label + " newgame <gamename>- creates a new game");
+                    sender.sendMessage("/" + label + " newgame <gamename> [<parm1:value> <parm2:value>...] - parameters are optional");
+                    sender.sendMessage("/" + label + " do /" + label + " newgame help for a list of the possible parameters");
                 } else {
-                    game = getGameMgr().getGames().get(args[1]);
-                    if (game != null) {
-                        sender.sendMessage("Game " + args[1] + " already exists");
-                    } else {		
-                        sender.sendMessage(ChatColor.GREEN + "Building a new game. Please wait for the 'build complete' message.");	
-                        getGameMgr().newGame(args[1], sender);	
-                        sender.sendMessage(ChatColor.GREEN + "Game build complete.");
+                    if (args[1].toLowerCase().equals("help")) {
+                        sender.sendMessage("/" + label + " newgame <gamename> [<parm1:value> <parm2:value>...]");
+                        sender.sendMessage(ChatColor.GREEN  + "The optional parameters and their values are:");
+                        sender.sendMessage(ChatColor.YELLOW  + "gamemode -  " + ChatColor.AQUA + " values can be either 'minigame' or 'strategy' - e.g gamemode:strategy");
+                        sender.sendMessage(ChatColor.YELLOW  + "teams -  " + ChatColor.AQUA + " the number of teams in the game - e.g. teams:3");
+                        sender.sendMessage(ChatColor.YELLOW  + "goal -  " + ChatColor.AQUA + "  one of 'area', 'beacons', 'links', 'triangles' - e.g. goal:links");
+                        sender.sendMessage(ChatColor.YELLOW  + "goalvalue -  " + ChatColor.AQUA + "  the number objective for the goal - e.g goalvalue:100 - if it is 0, the winner is the team with the most of 'goal' when the countdown timer runs out.");
+                        sender.sendMessage(ChatColor.YELLOW  + "countdown -  " + ChatColor.AQUA + "  the game's timer, in seconds. 0 means the timer runs up, open-ended; any other value meands the timer runs a countdown from that time. - e.g. countdown:600");
+                        sender.sendMessage(ChatColor.YELLOW  + "scoretypes -  " + ChatColor.AQUA + "  the scores to be displayed on the sidebar. Can be any combination of goal names separated by '-' e.g scoretypes:area-triangles-beacons-links");
+                    } else {
+                        String [] parmargs = new String [args.length-2];
+                        System.arraycopy(args, 2, parmargs, 0, parmargs.length);
+                        game = getGameMgr().getGame(args[1]);
+                        if (game != null) {
+                            sender.sendMessage("Game " + args[1] + " already exists");
+                        } else {
+                             //Check the parameters first, if any                                                        
+                            if (parmargs.length > 0) {
+                                String errormsg = setDefaultParms(parmargs);  // temporarily set up the given parameters as default
+                                if (!errormsg.isEmpty()) {
+                                    sender.sendMessage(ChatColor.RED + "Error: " + errormsg);                 
+                                    getGameMgr().setGameDefaultParms();      // restore the default parameters (just in case)
+                                } else {
+                                    sender.sendMessage(ChatColor.GREEN + "Building a new game with given parameters. Please wait for the 'build complete' message.");
+                                    getGameMgr().newGame(args[1], sender);   // create the new game
+                                    getGameMgr().setGameDefaultParms();      // restore the default parameters
+                                    sender.sendMessage(ChatColor.GREEN + "Game build complete.");
+                                }                                
+                            } else {
+                                sender.sendMessage(ChatColor.GREEN + "Building a new game with default parameters. Please wait for the 'build complete' message."); 
+                                getGameMgr().newGame(args[1], sender);  
+                                sender.sendMessage(ChatColor.GREEN + "Game build complete.");
+                            }
+                        }
                     }
                 }
                 break;
@@ -327,6 +361,41 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                 sender.sendMessage(ChatColor.RED + "Beaconz plugin reloaded. All existing games were preserved.");
                 break;
 
+            case "setgameparms":
+                if (args.length < 2) {
+                    sender.sendMessage("/" + label + " setgameparms <gamename> <parm1:value> <parm2:value>");
+                    sender.sendMessage("setgameparms defines the game parameters, it DOES NOT restart the game");
+                    sender.sendMessage("use /" + label + " setgameparms help for a list of the possible parameters");
+                    sender.sendMessage("use /" + label + " restart <game> to restart a game using the new parameters");
+                } else {
+                    if (args[1].toLowerCase().equals("help")) {
+                        sender.sendMessage(ChatColor.RED  + "/" + label + " setgameparms <gamename> <parm1:value> <parm2:value>... ");
+                        sender.sendMessage(ChatColor.GREEN  + "The possible parameters and their values are:");
+                        sender.sendMessage(ChatColor.YELLOW  + "gamemode -  " + ChatColor.AQUA + " values can be either 'minigame' or 'strategy' - e.g gamemode:strategy");
+                        sender.sendMessage(ChatColor.YELLOW  + "teams -  " + ChatColor.AQUA + " the number of teams in the game - e.g. teams:3");
+                        sender.sendMessage(ChatColor.YELLOW  + "goal -  " + ChatColor.AQUA + "  one of 'area', 'beacons', 'links', 'triangles' - e.g. goal:links");
+                        sender.sendMessage(ChatColor.YELLOW  + "goalvalue -  " + ChatColor.AQUA + "  the number objective for the goal - e.g goalvalue:100 - if it is 0, the winner is the team with the most of 'goal' when the countdown timer runs out.");
+                        sender.sendMessage(ChatColor.YELLOW  + "countdown -  " + ChatColor.AQUA + "  the game's timer, in seconds. 0 means the timer runs up, open-ended; any other value meands the timer runs a countdown from that time. - e.g. countdown:600");
+                        sender.sendMessage(ChatColor.YELLOW  + "scoretypes -  " + ChatColor.AQUA + "  the scores to be displayed on the sidebar. Can be any combination of goal names separated by '-' e.g scoretypes:area-triangles-beacons-links");
+                    } else {
+                        String [] parmargs = new String [args.length-2];
+                        System.arraycopy(args, 2, parmargs, 0, parmargs.length);
+                        game = getGameMgr().getGame(args[1]);
+                        if (game == null) {
+                            sender.sendMessage("Could not find game " + args[1]);
+                        } else {
+                            String errormsg = this.setGameParms(game, parmargs);
+                            if (!errormsg.isEmpty()) {
+                                sender.sendMessage(ChatColor.RED + "Error: " + errormsg);                                
+                            } else {
+                                sender.sendMessage("Game parameters set.");
+                            }
+                        }
+                    }
+                    
+                }
+                break;                
+                
             case "setspawn":
                 if (args.length < 2) {
                     sender.sendMessage(ChatColor.RED + "/" + label + " setspawn <team> - sets the spawn point for team");
@@ -418,6 +487,11 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
         return true;
     }
 
+    /**
+     * Lists all beacons for a given game or for 'all' games
+     * @param sender
+     * @param name - either 'all' or a valid game name
+     */
     public void listBeacons(CommandSender sender, String name) {
         int count = 0;
         int gamecnt = 0;
@@ -449,71 +523,25 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
      * setGameParms parses a list of colon-delimited arguments and 
      * sets a game's parameters accordingly
      * Used by both newgame and setparms commands
-     * @param game
+     * @param game - if game is null, will set GameMgr's default parms; otherwise, will set the game's parms
      * @param arguments
-     * @return an error message string if a problem was encountered, null otherwise
+     * @return an error message if a problem was encountered, null otherwise
      */
     public String setGameParms(Game game, String[] args) {
-        // String gamemode, int nbr_teams, String gamegoal, int gamegoalvalue, int countdowntimer, Long startTime, String scoretypes
         String errormsg = "";
-
-        // First check that all arguments are valid parms
-        for (int i=0; i < args.length; i++) {
-            String parm = args[i].split(":")[0];
-            String value = args[i].split(":")[1];
-            if (parm == null || value == null) {
-                errormsg = "Arguments must be given in pairs, separated by colons.";
-            } else {
-                switch (parm.toLowerCase()) {
-                    case "gamemode":
-                        if (!value.equals("strategy") && !value.equals("minigame")) {
-                            errormsg = "'gamemode' has to be either 'strategy' or 'minigame'";
-                        }
-                        break;
-                    case "teams":
-                        if (!NumberUtils.isNumber(value)) {
-                            errormsg = "The 'team:' value must be a number";
-                        }
-                        break;
-                    case "goal":
-                        if (!value.equals("area") && !value.equals("beacons") &&
-                                !value.equals("links") && !value.equals("triangles")) {
-                            errormsg = "'goal' has to be one of 'area', 'beacons', 'links' or 'triangles'";
-                        }
-                        break;
-                    case "goalvalue":
-                        if (!NumberUtils.isNumber(value)) {
-                            errormsg = "The 'goalvalue:' value must be a number";
-                        }
-                        break;
-                    case "countdown":
-                        if (!NumberUtils.isNumber(value)) {
-                            errormsg = "The 'countdown:' value must be a number";
-                        }
-                        break;
-                    case "scoretypes":
-                        String stmsg = "scoretypes must be a list of the goals to display on the scoreboard, such as 'area-beacons'. Possible goals are 'area', 'beacons', 'links' and 'triangles'.";
-                        value = value.replace(" ", "");
-                        String[] stypes = value.split("-");
-                        if (stypes.length == 0) {
-                            errormsg = stmsg;
-                        } else {
-                            for (int st = 0; st < stypes.length; st++) {
-                                if (!stypes[st].equals("area") && !stypes[st].equals("beacons") &&
-                                        !stypes[st].equals("links") && !stypes[st].equals("triangles")) {
-                                    errormsg = stmsg;
-                                }
-                            }							
-                        }
-                        break;
-                    default:
-                        break;
-               }				
-            }			
+        // We will be checking gamemode vs timer type ('countdown'), so let's get the current ones for the game
+        String gm = game.getGamemode();
+        Integer tt = game.getCountdownTimer();
+        if (gm == null) gm = Settings.gamemode;
+        if (tt == null) {
+            tt = gm.toLowerCase().equals("strategy") ? Settings.strategyTimer : Settings.minigameTimer;
         }
-
-        // If all arguments are OK, process them
-        if (errormsg == null) {
+        
+        // Check the parameters given
+        errormsg = checkParms(args, gm, tt);
+        
+        // If *ALL* arguments are OK, process them into the game
+        if (errormsg.isEmpty()) {
             for (int i=0; i < args.length; i++) {
                 String parm = args[i].split(":")[0];
                 String value = args[i].split(":")[1];
@@ -535,10 +563,10 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                             game.setGamegoalvalue(Integer.valueOf(value));
                             break;
                         case "countdown":
-                            game.setCountdownTimer(Integer.valueOf(value));
+                            game.setCountdownTimer(tt);
                             break;
                         case "scoretypes":
-                            game.setScoretypes(value);
+                            game.setScoretypes(value.replace("-", ":"));
                             break;
                         default:
                             break;
@@ -546,8 +574,152 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                 }                   
             }
         }
+        
+        // All done.
+        return errormsg;           
+    }
+    
+    /**
+     * Sets the default parameters to be used in all new games
+     * @param args - the array of parameters 
+     * @return an error message if a problem was encountered, null otherwise
+     */
+    public String setDefaultParms(String[] args) {
+        String errormsg = "";
+        
+        // Get default parameters
+        String mode = Settings.gamemode;
+        int nteams = Settings.default_teams;
+        String ggoal = mode.toLowerCase().equals("strategy") ? Settings.strategyGoal: Settings.minigameGoal;
+        int gvalue = mode.toLowerCase().equals("strategy") ? Settings.strategyGoalValue : Settings.minigameGoalValue;
+        int timer = mode.toLowerCase().equals("strategy") ? Settings.strategyTimer : Settings.minigameTimer;
+        String stypes = null; 
 
+        // Check the parameters given
+        errormsg = checkParms(args, mode, timer);        
+        
+        // If all arguments are OK, set them as the new defaults for creating games
+        if (errormsg.isEmpty()) {
+            for (int i=0; i < args.length; i++) {
+                String parm = args[i].split(":")[0];
+                String value = args[i].split(":")[1];
+                if (parm == null || value == null) {
+                    errormsg = "Arguments must be given in pairs, separated by colons.";
+                } else {                    
+                    switch (parm.toLowerCase()) {
+                        case "gamemode":
+                            mode = value;
+                            break;
+                        case "teams":
+                            nteams = Integer.valueOf(value);
+                            break;
+                        case "goal":
+                            ggoal = value;
+                            break;
+                        case "goalvalue":
+                            gvalue = Integer.valueOf(value);
+                            break;
+                        case "countdown":
+                            timer = Integer.valueOf(value);
+                            break;
+                        case "scoretypes":
+                            stypes = value.replace("-", ":");
+                            break;
+                        default:
+                            break;
+                    }                               
+                }                   
+            }
+        }
+        
+        // Any of the arguments to setGameDefaultParms CAN be null
+        getGameMgr().setGameDefaultParms(mode, nteams, ggoal, gvalue, timer, stypes);
+        
+        return errormsg;
+    }
 
+    /**
+     * Checks that an array of arguments contains valid parameters for a game
+     * @param args - the array of parameters
+     * @param gamemode - the game's current gamemode, or the default in Settings
+     * @param timertype - the game's current timer type, or the default in Settings
+     * @return an error message if a problem was encountered, null otherwise
+     */
+    public String checkParms(String[] args, String gamemode, int timer) {
+        String errormsg = "";
+
+        // Check that *ALL* arguments are valid parms
+        for (int i=0; i < args.length; i++) {
+            String parm = null;
+            String value = null;
+            try {
+                parm = args[i].split(":")[0];
+                value = args[i].split(":")[1];                
+            } catch (Exception e) {}   
+            if (parm == null || value == null) {
+                errormsg = "Arguments must be given in param:value pairs.";
+            } else {
+                switch (parm.toLowerCase()) {
+                    case "gamemode":
+                        if (!value.equals("strategy") && !value.equals("minigame")) {
+                            errormsg = errormsg + "<< 'gamemode:' has to be either 'strategy' or 'minigame' >>";
+                        } else {
+                            gamemode = value;
+                        }
+                        break;
+                    case "teams":
+                        if (!NumberUtils.isNumber(value)) {
+                            errormsg = "<< 'team:' value must be a number >>";
+                        }
+                        break;
+                    case "goal":
+                        if (!value.equals("area") && !value.equals("beacons") &&
+                                !value.equals("links") && !value.equals("triangles")) {
+                            errormsg = "<< 'goal:' has to be one of 'area', 'beacons', 'links' or 'triangles' >>";
+                        }
+                        break;
+                    case "goalvalue":
+                        if (!NumberUtils.isNumber(value)) {
+                            errormsg = "<< 'goalvalue:' value must be a number >>";
+                        }
+                        break;
+                    case "countdown":
+                        if (!NumberUtils.isNumber(value)) {
+                            errormsg = "<< 'countdown:' value must be a number >>";
+                        } else {
+                            timer = Integer.valueOf(value);
+                        }
+                        break;
+                    case "scoretypes":
+                        String stmsg = "<< 'scoretypes:' must be a list of the goals to display on the scoreboard, such as 'area-beacons'. Possible goals are 'area', 'beacons', 'links' and 'triangles' >>";
+                        value = value.replace(" ", "");
+                        String[] stypes = value.split("-");
+                        if (stypes.length == 0) {
+                            errormsg = stmsg;
+                        } else {
+                            for (int st = 0; st < stypes.length; st++) {
+                                if (!stypes[st].equals("area") && !stypes[st].equals("beacons") &&
+                                        !stypes[st].equals("links") && !stypes[st].equals("triangles")) {
+                                    errormsg = stmsg;
+                                }
+                            }							
+                        }
+                        break;
+                    default:
+                        errormsg = "Parameter " + parm + " does not exist.";
+                        break;
+               }				
+            }			
+        }
+
+        // Then we check gamemode vs timer type
+        if (gamemode.equals("strategy")) {
+            timer = 0;            
+        } else {
+            if (timer < 1) errormsg = "For a minigame, the countdown timer must by > 0. Please change either the gamemode or the countdown timer.";
+        }
+        
+        // All done
         return errormsg;
     }
 
