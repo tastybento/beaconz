@@ -121,9 +121,7 @@ public class Scorecard extends BeaconzPluginDependent{
         showtimer = Settings.showTimer;
         starttimemilis = game.getStartTime();
         countdownTimer = game.getCountdownTimer();
-        if (timertype == null) {
-        	timertype = game.getCountdownTimer() == 0 ? "openended" : "countdown";     
-        }
+       	timertype = game.getCountdownTimer() == 0 ? "openended" : "countdown";     
 
         // Define the scoreboard
         try {
@@ -139,6 +137,7 @@ public class Scorecard extends BeaconzPluginDependent{
         sidebarline = 15;
         
         // Set up the scoreboard with the goal
+        //getLogger().info("GameMode: " + game.getGamemode());
         scoreobjective.setDisplayName(ChatColor.GREEN + "Beaconz " + game.getGamemode() + "! 00d 00:00:00");
         goalstr = "";
         if (game.getGamegoalvalue() == 0) {
@@ -191,9 +190,10 @@ public class Scorecard extends BeaconzPluginDependent{
 		Integer teamcnt = 0;
     	if (csect != null) {
             for (String teamName: csect.getValues(false).keySet()) {
-                MaterialData teamBlock = new MaterialData(Material.STAINED_GLASS,(byte) getBeaconzPlugin().getConfig().getInt("teams." + teamName + ".glasscolor"));
-                Team team = addTeam(teamName, teamBlock, false);
-                team.setDisplayName(ChatColor.translateAlternateColorCodes('&', getBeaconzPlugin().getConfig().getString("teams." + teamName + ".displayname", teamName)));
+               MaterialData teamBlock = new MaterialData(Material.STAINED_GLASS,(byte) getBeaconzPlugin().getConfig().getInt("teams." + teamName + ".glasscolor"));
+               //IMPORTANT: The a team's display name must ALWAYS be the team's name, PRECEEDED BY the ChatColor
+               String teamDisplayName = ChatColor.translateAlternateColorCodes('&', getBeaconzPlugin().getConfig().getString("teams." + teamName + ".displayname", teamName));
+               Team team = addTeam(teamName, teamDisplayName, teamBlock, false);
                teamcnt ++;
                if (teamcnt == game.getNbrTeams()) {
             	   break;
@@ -279,13 +279,12 @@ public class Scorecard extends BeaconzPluginDependent{
     	
     	// Refresh the team scores for the given score type, if it can be shown
     	if (gameON && game.getScoretypes().contains(scoretype)) {
-            String teamcolor = team.getDisplayName().toUpperCase();
         	HashMap<String,Integer> stypes = score.get(team);
         	int sv = 0;
         	if (stypes != null && stypes.get(scoretype) != null) sv = stypes.get(scoretype);
-            String scorestring = fixScoreString(teamcolor, scoretype, sv, 8);
+            String scorestring = fixScoreString(team, scoretype, sv, 8);
             
-            String oldentry = sbEntry(teamcolor, scoretype);
+            String oldentry = sbEntry(team, scoretype);
             int line = scoreobjective.getScore(oldentry).getScore();
     		scoreboard.resetScores(oldentry);
     		scoreentry = scoreobjective.getScore(scorestring);
@@ -300,15 +299,16 @@ public class Scorecard extends BeaconzPluginDependent{
      * @param save - if true, saves game to file after adding team
      * @return team
      */
-    public Team addTeam(String teamName, MaterialData teamBlock, Boolean save) {
+    public Team addTeam(String teamName, String teamDisplayName, MaterialData teamBlock, Boolean save) {
     	Team team = scoreboard.getTeam(teamName);
     	if (team == null) {
+    	    // Create the team
     		team = scoreboard.registerNewTeam(teamName);
             team.setAllowFriendlyFire(false);
-            team.setPrefix(ChatColor.DARK_PURPLE + "[" + teamName + "] ");
-            // Store the block for this team
-            this.teamBlock.put(team, teamBlock);
-            String teamcolor = teamName.toUpperCase();        
+            team.setPrefix(ChatColor.valueOf(teamChatColor(team)) + "[" + teamDisplayName +"] " + ChatColor.RESET);
+            team.setDisplayName(teamDisplayName);
+            // Store the block for the team
+            this.teamBlock.put(team, teamBlock);   
     		// Get a new spawnpoint for the new team
             Location loc = makeTeamSpawnPoint(team);
    		 	teamSpawnPoint.put(team, loc);
@@ -317,7 +317,7 @@ public class Scorecard extends BeaconzPluginDependent{
     		for (String st : game.getScoretypes().split(":")) {
     			sidebarline -= 1;
     			if (sidebarline > 0 ) {
-    				String scorestring = fixScoreString(teamcolor, st, 0, 8);
+    				String scorestring = fixScoreString(team, st, 0, 8);
     				scoreentry = scoreobjective.getScore(scorestring);
     				scoreentry.setScore(sidebarline);		
     			} else {
@@ -337,25 +337,26 @@ public class Scorecard extends BeaconzPluginDependent{
      * Since the sidebar only shows scores in decreasing order, the only way to sort them
      * the way we want is to use the scores for line numbers and keep our own
      * scores in the score description.
-     * This method takes a team color, a score's name, a score value and a max length
+     * This method takes a team, a score's name, a score value and a max length
      * and returns a string to be displayed in the sidebar.
-     * For instance, fixScoreString ("RED", "beacons", 10, 8) will return "______10 RED beacons"
+     * For instance, fixScoreString (redteam, "beacons", 10, 8) will return "______10 RED beacons"
      */
-    public String fixScoreString (String teamcolor, String scorename, Integer score, Integer maxlen) {
+    public String fixScoreString (Team team, String scorename, Integer score, Integer maxlen) {
+        String teamcolor = teamChatColor(team);
     	String fixedstring = "";
     	String padstring = "____________________".substring(0, maxlen - 1 - score.toString().length());
-		fixedstring = ChatColor.GRAY + padstring + ChatColor.valueOf(teamcolor) + score + " " + teamcolor + " " + scorename;
+		fixedstring = ChatColor.GRAY + padstring + ChatColor.valueOf(teamcolor) + score + " " + team.getDisplayName() + " " + scorename;
 		return fixedstring;
     }
     
     /** 
-     * Returns the first scoreboard Entry for a given team + score type - and *** there can be only ONE *** (yes, that's a reference to Highlander)
+     * Returns the first scoreboard Entry for a given team + score type - and *** there can be only ONE ***
      *  
      */
-    public String sbEntry (String teamcolor, String scorename) {
+    public String sbEntry (Team team, String scorename) {
     	String scoreboardentry = "";
     	for (String entry : scoreboard.getEntries()) {
-    		if (entry.contains(teamcolor.toUpperCase() + " " + scorename)) {
+    		if (entry.contains(team.getDisplayName() + " " + scorename)) {
     			scoreboardentry = entry;
         		break;	
     		}    			
@@ -561,8 +562,7 @@ public class Scorecard extends BeaconzPluginDependent{
         	if (members != null) {
             	teamMembers.put(team, members);
                 for (String uuid : members) {
-                    try {
-                    	
+                    try {                    	
                         OfflinePlayer player = getBeaconzPlugin().getServer().getOfflinePlayer(UUID.fromString(uuid));
                         team.addEntry(player.getName());
                         teamLookup.put(UUID.fromString(uuid), team);
@@ -869,6 +869,32 @@ public class Scorecard extends BeaconzPluginDependent{
             }          	
         }
         return topteam;
+    }
+    
+    public String teamChatColor(Team team) {
+        // IMPORTANT: The a team's display name is ALWAYS the team's name in uppercase, PRECEEDED BY the ChatColor
+        String tn = team.getName().toUpperCase();
+        String cc = "WHITE";
+        switch (tn) {
+            case "RED":       {cc = "RED"; break;}
+            case "BLUE":      {cc = "BLUE"; break;}
+            case "WHITE":     {cc = "WHITE"; break;}
+            case "ORANGE":    {cc = "DARK_RED"; break;}
+            case "MAGENTA":   {cc = "RED"; break;}
+            case "LIGHTBLUE": {cc = "AQUA"; break;}
+            case "YELLOW":    {cc = "YELLOW"; break;}
+            case "LIME":      {cc = "GREEN"; break;}
+            case "PINK":      {cc = "RED"; break;}
+            case "GRAY":      {cc = "DARK_GRAY"; break;}
+            case "LIGHTGRAY": {cc = "GRAY"; break;}
+            case "CYAN":      {cc = "BLUE"; break;}
+            case "PURPLE":    {cc = "DARK_PURPLE"; break;}
+            case "BROWN":     {cc = "GOLD"; break;}
+            case "GREEN":     {cc = "DARK_GREEN"; break;}
+            case "BLACK":     {cc = "BLACK"; break;}
+            default:
+        }        
+        return cc;
     }
 	
 	/** 

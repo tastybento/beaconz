@@ -28,10 +28,11 @@ public class LineVisualizer extends BeaconzPluginDependent {
             @Override
             public void run() {
                 int count = 0;
+                getLogger().info("Ownership: " + ownership.getDisplayName());
+                MaterialData md = getGameMgr().getGame(ownership).getScorecard().getBlockID(ownership);
                 while(it.hasNext() && count++ < BLOCKS_TO_SET) {
                     current = it.next();
                     Block b = getBeaconzWorld().getBlockAt((int)current.getX(), getBeaconzWorld().getMaxHeight()-1, (int)current.getY());
-                    MaterialData md = getGameMgr().getGame(it.next()).getScorecard().getBlockID(ownership);
                     b.setTypeIdAndData(md.getItemTypeId(), md.getData(), false);
                 }
                 if (!it.hasNext()) {

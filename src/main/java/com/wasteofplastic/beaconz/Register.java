@@ -601,6 +601,9 @@ public class Register extends BeaconzPluginDependent {
      * @param beacon
      */
     public void removeBeaconOwnership(BeaconObj beacon) {
+        removeBeaconOwnership(beacon, false);
+    }
+    public void removeBeaconOwnership(BeaconObj beacon, Boolean quiet) {
         Team oldOwner = beacon.getOwnership();
         beacon.setOwnership(null);
         
@@ -621,8 +624,8 @@ public class Register extends BeaconzPluginDependent {
                     linkIterator.remove();
                 }
             }
-            if (linkLossCount == 1) {
-                // Tell folks what's going on
+            // Tell folks what's going on
+            if (linkLossCount == 1 && !quiet) {
                 getMessages().tellTeam(oldOwner, ChatColor.RED + "Your team lost a link!");
                 getMessages().tellOtherTeams(oldOwner, ChatColor.GREEN + oldOwner.getDisplayName() + ChatColor.GREEN + " lost a link!");
             } else if (linkLossCount > 1) {
@@ -640,8 +643,10 @@ public class Register extends BeaconzPluginDependent {
             if (triangle.hasVertex(beacon.getLocation())) {
                 //getLogger().info("DEBUG: this beacon was part of a triangle");
                 // Tell folks what's going on
-                getMessages().tellTeam(triangle.getOwner(), ChatColor.RED + "Your team lost a triangle worth " + triangle.getArea() + "!");
-                getMessages().tellOtherTeams(triangle.getOwner(), ChatColor.GREEN + triangle.getOwner().getDisplayName() + ChatColor.GREEN + " lost a triangle worth " + triangle.getArea() + "!");
+                if (!quiet) {
+                    getMessages().tellTeam(triangle.getOwner(), ChatColor.RED + "Your team lost a triangle worth " + triangle.getArea() + "!");
+                    getMessages().tellOtherTeams(triangle.getOwner(), ChatColor.GREEN + triangle.getOwner().getDisplayName() + ChatColor.GREEN + " lost a triangle worth " + triangle.getArea() + "!");                    
+                }
                 // Remove triangle
                 it.remove();
             }
@@ -651,7 +656,8 @@ public class Register extends BeaconzPluginDependent {
         getBeaconzWorld().getBlockAt(beacon.getX(), beacon.getHeight() + 1, beacon.getZ()).setType(Material.OBSIDIAN);
             
         // Refresh the scores
-        getGameMgr().getSC(beacon.getX(), beacon.getZ()).refreshScores(oldOwner);
+        Scorecard sc = getGameMgr().getSC(beacon.getX(), beacon.getZ());
+        if(sc!=null) sc.refreshScores(oldOwner);
     }
 
     /**

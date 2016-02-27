@@ -200,24 +200,15 @@ teams:
   white:
     displayname: "White"
     glasscolor: 0
-  orange:
-    displayname: "Orange"
-    glasscolor: 1
-  magenta:
-    displayname: "Magenta"
-    glasscolor: 2
   lightblue:
     displayname: "Lightblue"
     glasscolor: 3
   yellow:
-    displayname: "Yellos"
+    displayname: "Yellow"
     glasscolor: 4
   lime:
     displayname: "Lime"
     glasscolor: 5
-  pink:
-    displayname: "Pink"
-    glasscolor: 6
   gray:
     displayname: "Gray"
     glasscolor: 7
@@ -238,7 +229,16 @@ teams:
     glasscolor: 13
   black:
     displayname: "Black"
-    glasscolor: 15       
+    glasscolor: 15
+  orange:
+    displayname: "Orange"
+    glasscolor: 1
+  magenta:
+    displayname: "Magenta"
+    glasscolor: 2
+  pink:
+    displayname: "Pink"
+    glasscolor: 6           
 # gamemode is strategy or minigame
 gamemode: strategy
 # possible scores to display on sidebar, for either game mode, are area, beacons, links, triangles
