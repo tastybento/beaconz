@@ -440,22 +440,29 @@ public class GameMgr extends BeaconzPluginDependent {
     /**
      * Returns a region, based on different criteria:
      * a point in the region, a location in the region, the region's game, a player in the region
-     */   
-    public Region getRegion (int X, int Z) {
-    	return getRegion(X + 0.0, Z + 0.0);
-    }
+     */
+    
+    /**
+     * Get the region based on the location
+     * @param loc
+     * @return Region or null if none found
+     */
     public Region getRegion (Location loc) {
     	return getRegion(loc.getX(), loc.getZ());
-    }    
-    public Region getRegion(Point2D point) {
-    	return getRegion(point.getX(),point.getY());
-    }
-    public Region getRegion (double X, double Z) {
+    }  
+
+    /**
+     * Returns the region for coord x,z
+     * @param x
+     * @param z
+     * @return Region where x,z is inside
+     */
+    public Region getRegion (double x, double z) {
     	// Returns the region that contains a point
     	Region region = null;
     	if (regions != null) {
         	for (Region reg : regions.values()) {
-        		if (reg.containsPoint(X, Z)) {
+        		if (reg.containsPoint(x, z)) {
         			region = reg;
         			break;
         		}    		
@@ -466,6 +473,12 @@ public class GameMgr extends BeaconzPluginDependent {
 
     /**
      * Returns a game, based on different criteria
+     */
+    
+    /**
+     * Return the game from the team
+     * @param team
+     * @return Game or null if none
      */
     public Game getGame (Team team) {
     	Game game = null;
@@ -478,25 +491,68 @@ public class GameMgr extends BeaconzPluginDependent {
         	}	
     	}
     	return game;
-    }    
+    }   
+    
+    /**
+     * Get the game from the game name
+     * @param gamename
+     * @return Game or null if none
+     */
     public Game getGame (String gamename) {
     	return games.get(gamename);
     }
+
+    /**
+     * Get game from a Point in the game area
+     * @param point
+     * @return Game or null if none
+     */
     public Game getGame (Point2D point) {
-    	return getGame(getRegion(point));
+    	return getGame(getRegion(point.getX(), point.getY()));
     }
-    public Game getGame (double X, double Z) {
-    	return getGame(getRegion(X, Z));
+    
+    /**
+     * Get a game from a double precision coord
+     * @param x
+     * @param z
+     * @return Game or null if none
+     */
+    public Game getGame (double x, double z) {
+    	return getGame(getRegion(x, z));
     }
-    public Game getGame (int X, int Z) {
-    	return getGame(getRegion(X, Z));
+    
+    /**
+     * Get game from an integer coord
+     * @param x
+     * @param z
+     * @return Game or null if none
+     */
+    public Game getGame (int x, int z) {
+    	return getGame(getRegion(x, z));
     }
+
+    /** Get game from a Location
+     * @param loc
+     * @return Game or null if none
+     */
     public Game getGame (Location loc) {
-    	return getGame(getRegion(loc));
+    	return getGame(getRegion(loc.getX(), loc.getZ()));
     }
+    
+    /**
+     * Get game from the first point on a link
+     * @param link
+     * @return Game or null if none
+     */
     public Game getGame (Line2D link) {
-    	return getGame(getRegion(link.getP1()));
+    	return getGame(getRegion(link.getX1(), link.getY1()));
     }
+    
+    /** @return Game or null if none or null if none
+     * Get game from a region.
+     * @param region
+     * @return Game or null if none
+     */
     public Game getGame(Region region) {
     	Game game = null;
     	for (Game g : games.values()) {
@@ -510,33 +566,52 @@ public class GameMgr extends BeaconzPluginDependent {
     
     /**
      * Return a game's ScoreCard, based on different criteria
-     */    
+     */ 
+    
+    /**
+     * Get scorecard based on player's position
+     * @param player
+     * @return scorcard or null if none
+     */
     public Scorecard getSC(Player player) {
-    	return getSC(player.getLocation());  	
+    	return getSC(player.getLocation().getX(), player.getLocation().getZ());  	
     }
+    
+    /**
+     * Get scorecard based on a point coord
+     * @param point
+     * @return Scorecard or null if none
+     */
     public Scorecard getSC(Point2D point) {
-    	Scorecard sc = null;
-    	Game game = getGame(point);
-    	if (game != null) sc = game.getScorecard();
-    	return sc;  	  	
+    	return getSC(point.getX(), point.getY());  	  	
     }
+    /**
+     * @param x
+     * @param z
+     * @return Scorecard or null if none
+     */
     public Scorecard getSC(double x, double z) {
     	Scorecard sc = null;
     	Game game = getGame(x, z);
     	if (game != null) sc = game.getScorecard();
     	return sc;  	
     }
+    
+    /**
+     * @param x
+     * @param z
+     * @return Scorecard or null if none
+     */
     public Scorecard getSC(int x, int z) {
-    	Scorecard sc = null;
-    	Game game = getGame(x, z);
-    	if (game != null) sc = game.getScorecard();
-    	return sc;  	
+    	return getSC((double)x, (double)z);  	
     }
+    
+    /**
+     * @param location
+     * @return Scorecard or null if none
+     */
     public Scorecard getSC(Location location) {
-    	Scorecard sc = null;
-    	Game game = getGame(location);
-    	if (game != null) sc = game.getScorecard();
-    	return sc;
+    	return getSC(location.getX(), location.getZ());
     }    
     
     /** 

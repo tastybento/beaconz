@@ -109,7 +109,7 @@ public class BeaconPopulator extends BlockPopulator {
                 return;
             }
             
-            plugin.getLogger().info("DEBUG: No beacon at " + (source.getX() * 16 + x) + "," + (source.getZ()*16 + z));
+            plugin.getLogger().info("DEBUG: Creating beacon at " + (source.getX() * 16 + x) + "," + (source.getZ()*16 + z));
             
             int y = source.getChunkSnapshot().getHighestBlockYAt(x, z);            
             Block b = source.getBlock(x, y, z);

@@ -77,10 +77,15 @@ public class TerritoryMapRenderer extends MapRenderer {
                     List<TriangleField> triangles = beaconz.getRegister().getTriangle(xBlock, zBlock);
                     if (triangles != null && !triangles.isEmpty()) {
                         TriangleField triangleField = triangles.get(0);
-                        MaterialData materialData = beaconz.getGameMgr().getSC(x,z).getBlockID(triangleField.getOwner());
-                        byte color = getMapPaletteColorForTeam(materialData.getData(), triangles.size());
-                        if (pixelCache[x] == null) pixelCache[x] = new Byte[128];
-                        pixelCache[x][z] = color;
+                        Scorecard scoreCard = beaconz.getGameMgr().getSC(x,z);
+                        if (scoreCard != null) {
+                            MaterialData materialData = scoreCard.getBlockID(triangleField.getOwner());
+                            if (materialData != null) {
+                                byte color = getMapPaletteColorForTeam(materialData.getData(), triangles.size());
+                                if (pixelCache[x] == null) pixelCache[x] = new Byte[128];
+                                pixelCache[x][z] = color;
+                            }
+                        }
                     }
                 }
             }
@@ -90,17 +95,22 @@ public class TerritoryMapRenderer extends MapRenderer {
             CachedBeacon value = entry.getValue();
             Team owner = value.owner;
             if (owner == null || value.links == null || value.links.isEmpty()) continue;
-            MaterialData blockID = beaconz.getGameMgr().getSC(entry.getKey()).getBlockID(owner);
-            byte data = blockID.getData();
-            byte color = getMapPaletteColorForTeam(data, 1);
-            for (BeaconObj link : value.links) {
-                renderLineToPixelCache(color, coordConverter, entry.getKey(), link.getLocation());
+            Scorecard scoreCard = beaconz.getGameMgr().getSC(entry.getKey());
+            if (scoreCard != null) {
+                MaterialData blockID = scoreCard.getBlockID(owner);
+                if (blockID != null) {
+                    byte data = blockID.getData();
+                    byte color = getMapPaletteColorForTeam(data, 1);
+                    for (BeaconObj link : value.links) {
+                        renderLineToPixelCache(color, coordConverter, entry.getKey(), link.getLocation());
+                    }
+                }
             }
         }
     }
 
     @SuppressWarnings("deprecation")
-	private void setCursors(MapCoordinateConverter coordConverter, MapCursorCollection cursors, boolean showUnclaimedBeacons) {
+    private void setCursors(MapCoordinateConverter coordConverter, MapCursorCollection cursors, boolean showUnclaimedBeacons) {
         for (int i = 0; i < cursors.size(); i++) {
             cursors.removeCursor(cursors.getCursor(i));
         }
@@ -116,10 +126,10 @@ public class TerritoryMapRenderer extends MapRenderer {
             if (z < -128 || z >= 128) continue;
             int color = 16;
             if (team != null) {
-            	Scorecard sc = beaconz.getGameMgr().getSC(point);
-            	if (sc != null) {
+                Scorecard sc = beaconz.getGameMgr().getSC(point);
+                if (sc != null) {
                     color = sc.getBlockID(team).getData();	
-            	}
+                }
             }
             cursors.addCursor(x, z, (byte)0);
             MapCursor cursor = cursors.getCursor(cursors.size() - 1);
@@ -245,22 +255,22 @@ public class TerritoryMapRenderer extends MapRenderer {
     }
 
     private static final TeamCursor[] TEAM_CURSORS = new TeamCursor[] {
-            new TeamCursor(MapCursor.Type.WHITE_POINTER, 0), // white team = white pointer down
-            new TeamCursor(MapCursor.Type.RED_POINTER, 0), // orange team = red pointer down
-            new TeamCursor(MapCursor.Type.BLUE_POINTER, 0), // magenta team = blue pointer left
-            new TeamCursor(MapCursor.Type.BLUE_POINTER, 4), // light blue team = blue pointer left
-            new TeamCursor(MapCursor.Type.WHITE_POINTER, 4), // yellow team = white pointer left
-            new TeamCursor(MapCursor.Type.GREEN_POINTER, 0), // lime team = green pointer down
-            new TeamCursor(MapCursor.Type.RED_POINTER, 4), // pink team = red pointer left
-            new TeamCursor(MapCursor.Type.WHITE_POINTER, 8), // gray team = white pointer up
-            new TeamCursor(MapCursor.Type.WHITE_POINTER, 12), // light gray team = white pointer right
-            new TeamCursor(MapCursor.Type.BLUE_POINTER, 8), // cyan team = blue pointer up
-            new TeamCursor(MapCursor.Type.RED_POINTER, 8), // purple team = red pointer up
-            new TeamCursor(MapCursor.Type.BLUE_POINTER, 12), // blue team = blue pointer right
-            new TeamCursor(MapCursor.Type.GREEN_POINTER, 4), // brown team = green pointer left
-            new TeamCursor(MapCursor.Type.GREEN_POINTER, 8), // green team = green pointer up
-            new TeamCursor(MapCursor.Type.RED_POINTER, 12), // red team = red pointer right
-            new TeamCursor(MapCursor.Type.GREEN_POINTER, 12), // black team = green pointer right
-            new TeamCursor(MapCursor.Type.WHITE_CROSS, 0) // unclaimed beacons are crosses
+        new TeamCursor(MapCursor.Type.WHITE_POINTER, 0), // white team = white pointer down
+        new TeamCursor(MapCursor.Type.RED_POINTER, 0), // orange team = red pointer down
+        new TeamCursor(MapCursor.Type.BLUE_POINTER, 0), // magenta team = blue pointer left
+        new TeamCursor(MapCursor.Type.BLUE_POINTER, 4), // light blue team = blue pointer left
+        new TeamCursor(MapCursor.Type.WHITE_POINTER, 4), // yellow team = white pointer left
+        new TeamCursor(MapCursor.Type.GREEN_POINTER, 0), // lime team = green pointer down
+        new TeamCursor(MapCursor.Type.RED_POINTER, 4), // pink team = red pointer left
+        new TeamCursor(MapCursor.Type.WHITE_POINTER, 8), // gray team = white pointer up
+        new TeamCursor(MapCursor.Type.WHITE_POINTER, 12), // light gray team = white pointer right
+        new TeamCursor(MapCursor.Type.BLUE_POINTER, 8), // cyan team = blue pointer up
+        new TeamCursor(MapCursor.Type.RED_POINTER, 8), // purple team = red pointer up
+        new TeamCursor(MapCursor.Type.BLUE_POINTER, 12), // blue team = blue pointer right
+        new TeamCursor(MapCursor.Type.GREEN_POINTER, 4), // brown team = green pointer left
+        new TeamCursor(MapCursor.Type.GREEN_POINTER, 8), // green team = green pointer up
+        new TeamCursor(MapCursor.Type.RED_POINTER, 12), // red team = red pointer right
+        new TeamCursor(MapCursor.Type.GREEN_POINTER, 12), // black team = green pointer right
+        new TeamCursor(MapCursor.Type.WHITE_CROSS, 0) // unclaimed beacons are crosses
     };
 }

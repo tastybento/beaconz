@@ -475,7 +475,7 @@ public class Scorecard extends BeaconzPluginDependent{
     /**
      * Returns the type of block for this team, e.g., blue glass
      * @param team
-     * @return block type
+     * @return block type or null if it does not exist
      */
     public MaterialData getBlockID(Team team) {
         return teamBlock.get(team);
