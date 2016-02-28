@@ -121,7 +121,7 @@ public class Scorecard extends BeaconzPluginDependent{
         showtimer = Settings.showTimer;
         starttimemilis = game.getStartTime();
         countdownTimer = game.getCountdownTimer();
-       	timertype = game.getCountdownTimer() == 0 ? "openended" : "countdown";     
+       	timertype = game.getGamegoalvalue() > 0 ? "openended" : "countdown";     
 
         // Define the scoreboard
         try {
@@ -924,7 +924,7 @@ public class Scorecard extends BeaconzPluginDependent{
 		        for (Team team : scoreboard.getTeams()) {
 		        	for (String entry : team.getEntries()) {
 		            	Player player = Bukkit.getServer().getPlayer(entry);
-		            	if (player != null) {	            		
+		            	if (player != null && player.getWorld().equals(getBeaconzWorld())) {  	            		
 		                	getServer().dispatchCommand(getServer().getConsoleSender(),
 		                            "title " + player.getName() + " title {text:\"" + titleline + " \", color:gold}");   
 		                    getServer().dispatchCommand(getServer().getConsoleSender(),

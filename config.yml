@@ -252,7 +252,7 @@ sidebar:
 goals:
   minigame: links:0
   strategy: area:10000
-# timer in seconds, for when the goal value is greater than zero
+# timer in seconds, for when the goal value is greater than zero 
 timer:
   minigame: 600
   strategy: 0  
