@@ -529,16 +529,9 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
      */
     public String setGameParms(Game game, String[] args) {
         String errormsg = "";
-        // We will be checking gamemode vs timer type ('countdown'), so let's get the current ones for the game
-        String gm = game.getGamemode();
-        Integer tt = game.getCountdownTimer();
-        if (gm == null) gm = Settings.gamemode;
-        if (tt == null) {
-            tt = gm.toLowerCase().equals("strategy") ? Settings.strategyTimer : Settings.minigameTimer;
-        }
         
         // Check the parameters given
-        errormsg = checkParms(args, gm, tt);
+        errormsg = checkParms(args);
         
         // If *ALL* arguments are OK, process them into the game
         if (errormsg.isEmpty()) {
@@ -563,7 +556,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                             game.setGamegoalvalue(Integer.valueOf(value));
                             break;
                         case "countdown":
-                            game.setCountdownTimer(tt);
+                            game.setCountdownTimer(Integer.valueOf(value));
                             break;
                         case "scoretypes":
                             game.setScoretypes(value.replace("-", ":"));
@@ -596,7 +589,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
         String stypes = null; 
 
         // Check the parameters given
-        errormsg = checkParms(args, mode, timer);        
+        errormsg = checkParms(args);        
         
         // If all arguments are OK, set them as the new defaults for creating games
         if (errormsg.isEmpty()) {
@@ -645,7 +638,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
      * @param timertype - the game's current timer type, or the default in Settings
      * @return an error message if a problem was encountered, null otherwise
      */
-    public String checkParms(String[] args, String gamemode, int timer) {
+    public String checkParms(String[] args) {
         String errormsg = "";
 
         // Check that *ALL* arguments are valid parms
@@ -663,8 +656,6 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                     case "gamemode":
                         if (!value.equals("strategy") && !value.equals("minigame")) {
                             errormsg = errormsg + "<< 'gamemode:' has to be either 'strategy' or 'minigame' >>";
-                        } else {
-                            gamemode = value;
                         }
                         break;
                     case "teams":
@@ -686,9 +677,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                     case "countdown":
                         if (!NumberUtils.isNumber(value)) {
                             errormsg = "<< 'countdown:' value must be a number >>";
-                        } else {
-                            timer = Integer.valueOf(value);
-                        }
+                        } 
                         break;
                     case "scoretypes":
                         String stmsg = "<< 'scoretypes:' must be a list of the goals to display on the scoreboard, such as 'area-beacons'. Possible goals are 'area', 'beacons', 'links' and 'triangles' >>";
@@ -710,13 +699,6 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                         break;
                }				
             }			
-        }
-
-        // Then we check gamemode vs timer type
-        if (gamemode.equals("strategy")) {
-            timer = 0;            
-        } else {
-            if (timer < 1) errormsg = "For a minigame, the countdown timer must by > 0. Please change either the gamemode or the countdown timer.";
         }
         
         // All done

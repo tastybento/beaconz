@@ -95,12 +95,12 @@ public class Game extends BeaconzPluginDependent {
     }
         
     /**
-     * Starts, pauses, resumes, force-ends a game
+     * Restarts the game
      */
     public void restart() {
         // first set all beacons to "unowned"
-        for (BeaconObj beacon : getRegister().getBeaconRegister().values()) {
-            if (this.getRegion().containsBeacon(beacon)) {
+        for (BeaconObj beacon : getRegister().getBeaconRegister().values()) {            
+            if (this.getRegion().containsBeacon(beacon)) {                
                 getRegister().removeBeaconOwnership(beacon);
             }
         }
@@ -108,12 +108,21 @@ public class Game extends BeaconzPluginDependent {
         startTime = ((System.currentTimeMillis()+500)/1000)*1000;
     	scorecard.reload();
     }
+    /**
+     * Pauses the game
+     */
     public void pause() {
     	scorecard.pause();
     }
+    /**
+     * Resumes the game
+     */
     public void resume() {
     	scorecard.resume();
     }
+    /**
+     * Force-ends the game
+     */
     public void forceEnd() {
     	scorecard.endGame();
     }    
