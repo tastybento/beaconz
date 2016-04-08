@@ -4,25 +4,29 @@ world:
   name: beaconz   
   
   # Distribution of beacons the large the number, the more beacons are made
-  distribution: 0.5
+  distribution: 0.01
   
   # Size of the world - a barrier will be created using worldborder if size > 0
-  size: 0
+  size: 2000
   
   # Distance between new game regions. Must be at least size of the barrier
   # This is the default size for the sides of each new (square) game region
-  distance: 480
+  distance: 2000
   
   # 
   # Coordinates for the lobby area
   # These coordinates must be divisible by 16, otherwise they will be adjusted
   lobbyx: 0
   lobbyz: 0
-  lobbyradius: 32 
+  lobbyradius: 16 
   
   # Starting center point
-  xcenter: 0
-  zcenter: 0
+  xcenter: 1000
+  zcenter: 1000
+  
+  # Team chat
+  # If true, players can only converse with same team players in the beaconz world
+  teamchat: false
   
   # Random spawn - if true, players will spawn randomly (within the world border if set)
   randomspawn: false
@@ -98,7 +102,6 @@ world:
   # Format is "Id#/Material:[Durability/Qty]:Qty=%Chance"
   enemygoodies:
   - "DIAMOND:1=10"
-  - "MOB_SPAWNER:1=2"
   - "GOLD_INGOT:1=15"
   - "DIAMOND_SWORD:1=5"
   - "DISPENSER:1=10"
@@ -106,31 +109,13 @@ world:
   - "OBSIDIAN:1=10"
   - "LAVA_BUCKET:1=10"
   - "WATER_BUCKET:1=10"
-  - "383:50:1=2"
-  - "383:51:1=2"
-  - "383:52:1=2"
-  - "383:53:1=2"
-  - "383:54:1=2"
-  - "383:59:1=2"
-  - "383:60:1=2"
-  - "383:61:1=2"
-  - "383:66:1=2"
   teamgoodies:
+  - "PAPER:3=5"
   - "DIAMOND:1=5"
   - "OBSIDIAN:1=5"
-  - "STONE:1=30"
-  - "IRON_INGOT:1=5"  
+  - "IRON_ORE:1=5"  
   - "LAVA_BUCKET:1=5"
   - "WATER_BUCKET:1=5"
-  - "383:50:1=2"
-  - "383:51:1=2"
-  - "383:52:1=2"
-  - "383:53:1=2"
-  - "383:54:1=2"
-  - "383:59:1=2"
-  - "383:60:1=2"
-  - "383:61:1=2"
-  - "383:66:1=2"
   # Effects from going into enemy triangle fields
   # Effects are cumulative
   enemyfieldeffects:
@@ -251,7 +236,7 @@ sidebar:
 # a goal value = 0 means the timer counts down and when it reaches 0 the team with the greatest score for that goal wins   
 goals:
   minigame: links:0
-  strategy: area:10000
+  strategy: area:100000
 # timer in seconds, for when the goal value is greater than zero 
 timer:
   minigame: 600

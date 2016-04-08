@@ -218,8 +218,8 @@ public class GameMgr extends BeaconzPluginDependent {
     	if (ctr == null) {
     		getLogger().info("Could not find a location to create the next region.");
     	} else {
-        	Point2D c1 = new Point2D.Double(rup16(ctr.getX() - radius), rup16(ctr.getY() - radius));
-        	Point2D c2 = new Point2D.Double(rup16(ctr.getX() + radius), rup16(ctr.getY() + radius));
+        	Point2D c1 = new Point2D.Double(rup16(ctr.getX() - radius + Settings.xCenter), rup16(ctr.getY() - radius + Settings.zCenter));
+        	Point2D c2 = new Point2D.Double(rup16(ctr.getX() + radius + Settings.xCenter), rup16(ctr.getY() + radius + Settings.zCenter));
         	Point2D [] corners = {c1, c2};
         	//getLogger().info("GameMgr.newRegion - about to create new region at " + "[" + c1.getX() + ", " + c1.getY() + "] and [" + c2.getX() + ", " + c2.getY() + "]");
         	Region region = new Region(plugin, corners);

@@ -341,10 +341,9 @@ public class Region extends BeaconzPluginDependent {
 
         // Welcome player on screen        
     	getServer().dispatchCommand(getServer().getConsoleSender(),
-                "title " + player.getName() + " title {text:\"" + titleline + " \", color:gold}");   
+    	        "title " + player.getName() + " title {\"text\":\"" + titleline + "\", \"color\":\"" + "gold" + "\"}");  
         getServer().dispatchCommand(getServer().getConsoleSender(),
-                "title " + player.getName() + " subtitle {text:\"" + subtitleline + " \", color:gold}");
-        
+                "title " + player.getName() + " subtitle {\"text\":\"" + subtitleline + "\", \"color\":\"" + "gold" + "\"}");        
         // Show the lobby scoreboard - wait for title message to disappear
     	if (this.equals(getGameMgr().getLobby())) {
     		
@@ -367,19 +366,19 @@ public class Region extends BeaconzPluginDependent {
         	            sbobj.setDisplayName(ChatColor.GREEN + "Welcome to Beaconz! ");
         	            scoreline = sbobj.getScore("You are in the lobby area.");
         	            scoreline.setScore(15);
-        	            scoreline = sbobj.getScore("We can use this fake scoreboard");
+        	            scoreline = sbobj.getScore("Hit a sign to start a game!");
         	            scoreline.setScore(14);
-        	            scoreline = sbobj.getScore("to welcome players and give ");
+        	            scoreline = sbobj.getScore("Beaconz is a team game where");
         	            scoreline.setScore(13);       
-        	            scoreline = sbobj.getScore("them basic game instructions.");
+        	            scoreline = sbobj.getScore("you try to find, claim and link");
         	            scoreline.setScore(12);       
-        	            scoreline = sbobj.getScore("We can even create a command");
+        	            scoreline = sbobj.getScore("naturally occuring beaconz in");
         	            scoreline.setScore(11);       
-        	            scoreline = sbobj.getScore("that lets admins change this text ");
+        	            scoreline = sbobj.getScore("the world. You can mine beaconz");
         	            scoreline.setScore(10);       
-        	            scoreline = sbobj.getScore("so they can customize their");
+        	            scoreline = sbobj.getScore("for goodies and defend them");
         	            scoreline.setScore(9);       
-        	            scoreline = sbobj.getScore("lobby area greeting!");
+        	            scoreline = sbobj.getScore("with blocks and traps.");
         	            scoreline.setScore(8);  
         	            
         	            player.setScoreboard(sb);
@@ -420,11 +419,10 @@ public class Region extends BeaconzPluginDependent {
             // Welcome player on screen        
             String titleline = "Beaconz game " + game.getName() + "!";
             String subtitleline = "You're playing " + game.getGamemode() + " mode - " + teamname + " team!";
-        	getServer().dispatchCommand(getServer().getConsoleSender(),
-                    "title " + player.getName() + " title {text:\"" + titleline + " \", color:gold}");   
             getServer().dispatchCommand(getServer().getConsoleSender(),
-                    "title " + player.getName() + " subtitle {text:\"" + subtitleline + " \", color:gold}");
-    		
+                    "title " + player.getName() + " title {\"text\":\"" + titleline + "\", \"color\":\"" + "gold" + "\"}");  
+            getServer().dispatchCommand(getServer().getConsoleSender(),
+                    "title " + player.getName() + " subtitle {\"text\":\"" + subtitleline + "\", \"color\":\"" + "gold" + "\"}");    		
     	}
     }
     

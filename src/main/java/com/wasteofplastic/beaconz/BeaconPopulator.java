@@ -78,6 +78,10 @@ public class BeaconPopulator extends BlockPopulator {
         }
         // Make sure we're within the boundaries of a game
         if (plugin.getGameMgr() != null) {
+            if (plugin.getGameMgr().getLobby() == null) {
+                // No lobby yet
+                return;
+            }
         	// Don't do anything in the lobby
         	if (plugin.getGameMgr().getLobby().containsPoint(source.getX() * 16.0, source.getZ() * 16.0)) {
         		return;

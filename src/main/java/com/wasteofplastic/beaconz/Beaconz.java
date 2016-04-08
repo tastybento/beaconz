@@ -276,7 +276,7 @@ public class Beaconz extends JavaPlugin {
             }
         }
         Settings.pairLinking = getConfig().getBoolean("world.pairs", true);
-        Settings.teamChat = true;
+        Settings.teamChat = getConfig().getBoolean("world.teamchat", false);
         Settings.worldName = getConfig().getString("world.name", "beaconz");
         Settings.distribution = getConfig().getDouble("world.distribution", 0.05D);
         if (Settings.distribution < 0.001D) {

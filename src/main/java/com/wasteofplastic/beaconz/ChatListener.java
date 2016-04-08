@@ -64,69 +64,83 @@ public class ChatListener extends BeaconzPluginDependent implements Listener {
         spies = new HashSet<UUID>();
     }
 
-    
+
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onChat(final AsyncPlayerChatEvent event) {
-	// Team chat
-	if (Settings.teamChat && event.getPlayer().getWorld().equals(plugin.getBeaconzWorld())) {
-	    // Cancel the event
-	    event.setCancelled(true);
-	    // Queue the sync task because you cannot use HashMaps asynchronously. Delaying to the next tick
-	    // won't be a major issue for synch events either.
-	    Bukkit.getScheduler().runTask(plugin, new Runnable() {
-		@Override
-		public void run() {
-		    teamChat(event,event.getMessage());
-		}});
-	}
+        // Team chat
+        if (getBeaconzWorld() == null || event.getPlayer() == null) {
+            return;
+        }
+        if (Settings.teamChat && event.getPlayer().getWorld().equals(getBeaconzWorld())) {
+            // Cancel the event
+            event.setCancelled(true);
+            // Queue the sync task because you cannot use HashMaps asynchronously. Delaying to the next tick
+            // won't be a major issue for synch events either.
+            Bukkit.getScheduler().runTask(plugin, new Runnable() {
+                @Override
+                public void run() {
+                    teamChat(event,event.getMessage());
+                }});
+        }
     }
 
     private void teamChat(final AsyncPlayerChatEvent event, String message) {
-	Player player = event.getPlayer();
-	// Only act if the player is in a team
-	Team team = getGameMgr().getSC(player).getTeam(player);
-	if (team != null) {
-	    @SuppressWarnings("deprecation")
-        Set<OfflinePlayer> teamMembers = team.getPlayers();
-	    // Tell only the team members if they are online
-	    boolean onLine = false;
-	    for (OfflinePlayer teamPlayer : teamMembers) {
-		if (teamPlayer != null && teamPlayer.isOnline()) {
-		    ((Player)teamPlayer).sendMessage(ChatColor.LIGHT_PURPLE + "[" + team.getDisplayName() + "]<" 
-		+ player.getDisplayName() + "> " + message);
-		    if (!teamPlayer.getUniqueId().equals(player.getUniqueId())) {
-			onLine = true;
-		    }
-		}
-	    }
-	    // Spy function
-	    if (onLine) {
-		for (Player onlinePlayer: plugin.getServer().getOnlinePlayers()) {
-		    if (spies.contains(onlinePlayer.getUniqueId())) {
-			onlinePlayer.sendMessage(ChatColor.RED + "[TCSpy] " + ChatColor.WHITE + message);
-		    }
-		}
-	    }
-	    if (!onLine) {
-		player.sendMessage(ChatColor.RED + "You are all alone...");
-	    }
-	} else {
-	    player.sendMessage(ChatColor.RED + "You are all alone...");
-	}
+        Player player = event.getPlayer();
+        // Only act if the player is in a team
+        Team team = getGameMgr().getSC(player).getTeam(player);
+        if (team != null) {
+            @SuppressWarnings("deprecation")
+            Set<OfflinePlayer> teamMembers = team.getPlayers();
+            // Tell only the team members if they are online
+            boolean onLine = false;
+            for (OfflinePlayer teamPlayer : teamMembers) {
+                if (teamPlayer != null && teamPlayer.isOnline()) {
+                    ((Player)teamPlayer).sendMessage(ChatColor.LIGHT_PURPLE + "[" + team.getDisplayName() + "]<" 
+                            + player.getDisplayName() + "> " + message);
+                    if (!teamPlayer.getUniqueId().equals(player.getUniqueId())) {
+                        onLine = true;
+                    }
+                }
+            }
+            // Spy function
+            if (onLine) {
+                for (Player onlinePlayer: plugin.getServer().getOnlinePlayers()) {
+                    if (spies.contains(onlinePlayer.getUniqueId())) {
+                        onlinePlayer.sendMessage(ChatColor.RED + "[TCSpy] " + ChatColor.WHITE + message);
+                    }
+                }
+            }
+            if (!onLine) {
+                // Tell everyone
+                for (Player onlinePlayer: getServer().getOnlinePlayers()) {
+                    if (!onlinePlayer.equals(player)) {
+                        onlinePlayer.sendMessage(ChatColor.LIGHT_PURPLE + "[" + team.getDisplayName() + "]<" 
+                            + player.getDisplayName() + "> " + message);
+                    }
+                }
+            }
+        } else {
+         // Tell everyone
+            for (Player onlinePlayer: getServer().getOnlinePlayers()) {
+                if (!onlinePlayer.equals(player)) {
+                    onlinePlayer.sendMessage(event.getFormat() + ": " + message);
+                }
+            }
+        }
     }
-    
+
     /**
      * Toggles team chat spy. Spy must also have the spy permission to see chats
      * @param playerUUID
      * @return true if toggled on, false if toggled off
      */
     public boolean toggleSpy(UUID playerUUID) {
-	if (spies.contains(playerUUID)) {
-	    spies.remove(playerUUID);
-	    return false;
-	} else {
-	    spies.add(playerUUID);
-	    return true;
-	}
+        if (spies.contains(playerUUID)) {
+            spies.remove(playerUUID);
+            return false;
+        } else {
+            spies.add(playerUUID);
+            return true;
+        }
     }
 }
