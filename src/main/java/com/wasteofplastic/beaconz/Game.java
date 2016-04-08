@@ -179,7 +179,7 @@ public class Game extends BeaconzPluginDependent {
      */
     public void join(Player player, boolean goHome) {
         // Player is either joining for the first time or returning to the game
-        getLogger().info("DEBUG: player join home = " + goHome);
+        //getLogger().info("DEBUG: player join home = " + goHome);
         boolean newPlayer = !scorecard.inTeam(player);
         if (newPlayer) {
             player.sendMessage(ChatColor.GREEN + "Welcome to Beaconz game " + ChatColor.YELLOW + gameName);	

@@ -36,12 +36,14 @@ import java.util.UUID;
 import org.apache.commons.lang.math.NumberUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -55,12 +57,20 @@ import org.bukkit.event.block.BlockPistonExtendEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.BlockSpreadEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.entity.PlayerLeashEntityEvent;
+import org.bukkit.event.hanging.HangingPlaceEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerShearEntityEvent;
+import org.bukkit.event.vehicle.VehicleDamageEvent;
+import org.bukkit.event.vehicle.VehicleExitEvent;
+import org.bukkit.event.vehicle.VehicleMoveEvent;
 import org.bukkit.event.world.WorldInitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -342,6 +352,13 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             BeaconObj beacon = getRegister().getBeaconAt(event.getToBlock().getX(),event.getToBlock().getZ());
             if (beacon != null && beacon.getY() < event.getToBlock().getY()) {
                 event.setCancelled(true);
+                return;
+            }
+            // Stop flows outside of the game area
+            Game game = getGameMgr().getGame(event.getBlock().getLocation());
+            if (game == null) {
+                event.setCancelled(true);
+                return;
             }
         }
     }
@@ -367,7 +384,16 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                 event.setCancelled(true);
                 return;
             }
-        }    
+        }
+        // Check for placing blocks outside the play area
+        // TODO: This assumes that adjacent games will always be greater than 5 blocks away
+        Game game = getGameMgr().getGame(event.getBlock().getLocation());
+        if (game == null) {
+            event.setCancelled(true);
+            player.sendMessage(ChatColor.RED + "You cannot do that!");
+            return;
+        }
+
         // Get the player's team
         Team team = getGameMgr().getPlayerTeam(player);
         if (team == null) {
@@ -414,7 +440,15 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                 event.setCancelled(true);
                 return;
             }
-        }        
+        } 
+        // Prevent breakage of blocks outside the game area
+        Game game = getGameMgr().getGame(event.getBlock().getLocation());
+        //getLogger().info("DEBUG: game = " + game);
+        if (game == null) {
+            event.setCancelled(true);
+            player.sendMessage(ChatColor.RED + "You cannot do that!");
+            return;
+        }
         // Get the player's team
         Team team = getGameMgr().getPlayerTeam(player);
         if (team == null) {
@@ -607,9 +641,118 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                     }
                 }	
             }    	    		
+        } else if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK) && event.getClickedBlock().getWorld().equals(getBeaconzWorld()) 
+                && getGameMgr().getGame(event.getClickedBlock().getLocation()) == null) {
+            event.setCancelled(true);
+            event.getPlayer().sendMessage(ChatColor.RED + "You cannot do that!");
+        }
+
+    }
+
+
+    /**
+     * @param event
+     */
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
+    public void onInventoryClick(final InventoryClickEvent event) {
+        if (event.getInventory().getLocation().getWorld().equals(getBeaconzWorld())) {
+            if (getGameMgr().getGame(event.getInventory().getLocation()) == null) {
+                event.setCancelled(true);
+                event.getWhoClicked().sendMessage(ChatColor.RED + "You cannot do that!");
+            }
+        }
+    }  
+
+    /**
+     * @param event
+     */
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
+    public void onLeashUse(final PlayerLeashEntityEvent event) {
+        if (event.getEntity().getWorld().equals(getBeaconzWorld())) {
+            if (getGameMgr().getGame(event.getEntity().getLocation()) == null) {
+                event.setCancelled(true);
+                event.getPlayer().sendMessage(ChatColor.RED + "You cannot do that!");
+            }
+        }
+    }  
+
+    /**
+     * @param event
+     */
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
+    public void onPlayerHitEntity(final PlayerInteractEntityEvent event) {
+        if (event.getRightClicked().getWorld().equals(getBeaconzWorld())) {
+            if (getGameMgr().getGame(event.getRightClicked().getLocation()) == null) {
+                event.setCancelled(true);
+                event.getPlayer().sendMessage(ChatColor.RED + "You cannot do that!");
+            }
         }
     }
 
+    /**
+     * @param event
+     */
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
+    public void onHangingPlace(final HangingPlaceEvent event) {
+        if (event.getEntity().getWorld().equals(getBeaconzWorld())) {
+            if (getGameMgr().getGame(event.getEntity().getLocation()) == null) {
+                event.setCancelled(true);
+                event.getPlayer().sendMessage(ChatColor.RED + "You cannot do that!");
+            }
+        }
+    } 
+
+
+    /**
+     * @param event
+     */
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
+    public void onShear(final PlayerShearEntityEvent event) {
+        if (event.getEntity().getWorld().equals(getBeaconzWorld())) {
+            if (getGameMgr().getGame(event.getEntity().getLocation()) == null) {
+                event.setCancelled(true);
+                event.getPlayer().sendMessage(ChatColor.RED + "You cannot do that!");
+            }
+        }
+    } 
+
+    /**
+     * @param event
+     */
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
+    public void onVehicleDamage(final VehicleDamageEvent event) {
+        if (!(event.getAttacker() instanceof Player)) {
+            return;
+        }
+        Player player = (Player)event.getAttacker();
+        if (player.getWorld().equals(getBeaconzWorld())) {
+            if (getGameMgr().getGame(event.getVehicle().getLocation()) == null) {
+                event.setCancelled(true);
+                player.sendMessage(ChatColor.RED + "You cannot do that!");
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
+    public void onVehicleMove(final VehicleMoveEvent event) {
+        if (!event.getVehicle().getWorld().equals(getBeaconzWorld())) {
+            return;
+        }
+        // Check if a player is in it
+        Entity passenger = event.getVehicle().getPassenger();
+        if (passenger != null && passenger instanceof Player) {
+            Player player = (Player)passenger;
+            if (getGameMgr().getGame(event.getTo()) == null) {                
+                Vector direction = event.getVehicle().getLocation().getDirection();                                     
+                event.getVehicle().teleport(event.getVehicle().getLocation().add(event.getFrom().toVector().subtract(event.getTo().toVector()).normalize()));
+                event.getVehicle().getLocation().setDirection(direction);
+                event.getVehicle().setVelocity(new Vector(0,0,0));         
+                event.getVehicle().setPassenger(player);
+                player.sendMessage(ChatColor.YELLOW + "That's the limit of the game region, you can't go any further that way.");
+                return;
+            }
+        }
+    }  
     /**
      * Handles the event of hitting a beacon with paper or a map
      * @param event
@@ -863,14 +1006,15 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         // Check if player is trying to leave a region by moving over a region boundary
         // And send him back to whence he came
         if (regionfrom != null && regionfrom != regionto) {
-            if (event.getFrom().distance(event.getTo()) < 2.5) {
-                float pitch = player.getLocation().getPitch();
-                float yaw = player.getLocation().getYaw();
+            if (event.getFrom().distanceSquared(event.getTo()) < 6.25) {
+                //float pitch = player.getLocation().getPitch();
+                //float yaw = player.getLocation().getYaw();
                 Vector direction = player.getLocation().getDirection(); 									
                 player.teleport(player.getLocation().add(event.getFrom().toVector().subtract(event.getTo().toVector()).normalize()));
-                player.getLocation().setPitch(pitch);
-                player.getLocation().setPitch(yaw);
+                //player.getLocation().setPitch(pitch);
+                //player.getLocation().setPitch(yaw);
                 player.getLocation().setDirection(direction);
+                player.setVelocity(new Vector(0,0,0));
                 player.sendMessage(ChatColor.YELLOW + "That's the limit of the game region, you can't go any further that way.");
                 return;
             }
@@ -883,6 +1027,15 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         if (regionto != null && regionfrom != regionto) {
             regionto.enter(player);
         }
+        // Outside play area
+        if (regionto == null && regionfrom == null) {
+            if (!player.isOp()) {
+                player.teleport(getGameMgr().getLobby().getSpawnPoint());
+                getLogger().warning(player.getName() + " managed to get outside of the game area and was teleported to the lobby.");
+                return;
+            }
+        }
+
         // Nothing from here on applies to Lobby...
         if (getGameMgr().isPlayerInLobby(player)) {
             return;
