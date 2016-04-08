@@ -276,7 +276,8 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                 // Send player to BeaconzWorld lobby area
                 getGameMgr().getLobby().tpToRegionSpawn(player);
             } else {
-                game.join(player);
+                // Join the game but stay at the last location
+                game.join(player, false);
             }
             // Check messages
             // Load any messages for the player
@@ -493,7 +494,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                         getRegister().removeBeaconOwnership(beacon);
                         block.setType(Material.OBSIDIAN);
                         event.setCancelled(true);
-                        getLogger().info("DEBUG: unknown team block");
+                        //getLogger().info("DEBUG: unknown team block");
                     }
                 }
             }

@@ -409,8 +409,15 @@ public class Scorecard extends BeaconzPluginDependent{
                 }
             }    		
         }
-    }    
+    }
+    
+    /**
+     * Sends a player to their team spawn point
+     * @param player
+     * @param ingameOnly
+     */
     public void sendPlayersHome(Player player, boolean ingameOnly) {
+        //getLogger().info("Send player home method called");
         Team team = getTeam(player);
         if (!ingameOnly || game.getRegion().isPlayerInRegion(player)) {
             Location loc = teamSpawnPoint.get(team);       

@@ -80,6 +80,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
             sender.sendMessage(cc1 + "/" + label + cc2 + " reload" + cc3 + " - reloads the plugin, preserving existing games");
             sender.sendMessage(cc1 + "/" + label + cc2 + " setgameparms <gamename> <parm1:value> <parm2:value>... " + cc3 + "- defines a game's parameters - DOES NOT restart the game (use restart for that) - do /" + label + " setgameparms help for a list of the possible parameters");
             sender.sendMessage(cc1 + "/" + label + cc2 + " setspawn <team>" + cc3 + " - sets the spawn point for team");
+            sender.sendMessage(cc1 + "/" + label + cc2 + " setspawn - sets the lobby spawn point when in the lobby area");
             sender.sendMessage(cc1 + "/" + label + cc2 + " teams [all | <gamename>]" + cc3 + " - shows teams and team members for a game");   
             sender.sendMessage(cc1 + "/" + label + cc2 + " timertoggle [all | <gamename>]" + cc3 + " - toggles the scoreboard timer on and off");
 
@@ -397,16 +398,25 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                 break;                
                 
             case "setspawn":
-                if (args.length < 2) {
+                if (args.length > 2) {
                     sender.sendMessage(ChatColor.RED + "/" + label + " setspawn <team> - sets the spawn point for team");
+                    sender.sendMessage(ChatColor.RED + "/" + label + " setspawn - sets the lobby spawn point when in the lobby area");
                 } else {
                     // Admin set team spawn
                     if (!(sender instanceof Player)) {
                         sender.sendMessage(ChatColor.RED + "You cannot execute this command from the console");
                         return true;
                     }
-                    // Check team name given exists
+                    // Check if the player is in the lobby
                     player = (Player) sender;
+                    if (args.length == 1 && getGameMgr().getLobby().isPlayerInRegion(player)) {
+                        getGameMgr().getLobby().setSpawnPoint(player.getLocation(), 10);
+                        sender.sendMessage(ChatColor.GREEN + "Lobby spawn set to " + getGameMgr().getLobby().getSpawnPoint().getBlockX() + ","
+                                + getGameMgr().getLobby().getSpawnPoint().getBlockY() + ","
+                                + getGameMgr().getLobby().getSpawnPoint().getBlockZ());
+                        return true;
+                    }
+                    // Check team name given exists
                     game = getGameMgr().getGame(player.getLocation());
                     if (game == null) {
                         sender.sendMessage("You need to be in the region of an active game");

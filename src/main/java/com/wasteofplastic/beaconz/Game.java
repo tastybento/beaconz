@@ -36,21 +36,21 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 public class Game extends BeaconzPluginDependent {
-	
-	private Beaconz plugin;
-	private Region region;
-	private String gameName;
+
+    private Beaconz plugin;
+    private Region region;
+    private String gameName;
     private Scorecard scorecard;
     private String gamemode;
     private int nbr_teams;
-	private String gamegoal;
-	private int gamegoalvalue;
-	private int countdowntimer;
-	private Long startTime;
-	private String scoretypes;
+    private String gamegoal;
+    private int gamegoalvalue;
+    private int countdowntimer;
+    private Long startTime;
+    private String scoretypes;
 
 
-	/** 
+    /** 
      * Each game belongs to only one Region; a game cannot exist without a region
      * A game has: name, region, scorecard (with teams)
      * 
@@ -64,36 +64,36 @@ public class Game extends BeaconzPluginDependent {
         this.startTime = ((System.currentTimeMillis()+500)/1000)*1000;
         setGameParms(gamemode, nbr_teams, gamegoal, gamegoalvalue, countdowntimer, startTime, scoretypes);
 
-        
+
         // Now create the scorecard
         scorecard = new Scorecard(plugin, this);
     }
-    
+
     /**
      * Handles a plugin reload
      * When plugin gets reloaded, on-going games are not changed
      * ...except for the scorecard
      */
     public void reload() {
-    	scorecard.reload();
+        scorecard.reload();
     }
-    
+
     /** 
      * Resets an existing game
      * The idea is that all current beacons will be removed
      * and the region will regenerate "fresh"
      */
     public void reset() {
-    	reset(null);
+        reset(null);
     }
     public void reset(CommandSender sender) {
-    	sendToLobby();
-    	region.regenerate(sender);
-    	startTime = ((System.currentTimeMillis()+500)/1000)*1000;
-    	scorecard.reload();
-    	save();
+        sendToLobby();
+        region.regenerate(sender);
+        startTime = ((System.currentTimeMillis()+500)/1000)*1000;
+        scorecard.reload();
+        save();
     }
-        
+
     /**
      * Restarts the game
      */
@@ -106,27 +106,27 @@ public class Game extends BeaconzPluginDependent {
         }
         // then restart the scoreboard
         startTime = ((System.currentTimeMillis()+500)/1000)*1000;
-    	scorecard.reload();
+        scorecard.reload();
     }
     /**
      * Pauses the game
      */
     public void pause() {
-    	scorecard.pause();
+        scorecard.pause();
     }
     /**
      * Resumes the game
      */
     public void resume() {
-    	scorecard.resume();
+        scorecard.resume();
     }
     /**
      * Force-ends the game
      */
     public void forceEnd() {
-    	scorecard.endGame();
+        scorecard.endGame();
     }    
-    
+
     /** 
      * Saves the game to file
      * Game loading is handled by the GameMgr
@@ -140,8 +140,8 @@ public class Game extends BeaconzPluginDependent {
             File backup = new File(getBeaconzPlugin().getDataFolder(),"games.old");
             gamesFile.renameTo(backup);
         }   
-        
-       	// Save game name, region and all parameters
+
+        // Save game name, region and all parameters
         String path = "game." + gameName;
         gamesYml.set(path + ".region", ptsToStrCoord(region.corners()));
         gamesYml.set(path + ".gamemode", gamemode);
@@ -151,32 +151,42 @@ public class Game extends BeaconzPluginDependent {
         gamesYml.set(path + ".starttime", startTime);
         gamesYml.set(path + ".countdowntimer", scorecard.getCountdownTimer());
         gamesYml.set(path + ".scoretypes", scoretypes);        
-        
+
         // Now save to file
         try {
-        	gamesYml.save(gamesFile);
+            gamesYml.save(gamesFile);
         } catch (IOException e) {
             getLogger().severe("Problem saving games file!");
             e.printStackTrace();
         }
-        
+
         // Save the teams
         scorecard.saveTeamMembers();
     }
 
     /**
      * Handles players joining and leaving the game
+     * @param player
      */
     public void join(Player player) {
-    	// Player is either joining for the first time or returning to the game
-    	
-    	boolean newPlayer = !scorecard.inTeam(player);
-    	if (newPlayer) {
-    		player.sendMessage(ChatColor.GREEN + "Welcome to Beaconz game " + ChatColor.YELLOW + gameName);	
-    	} else {
-    		player.sendMessage(ChatColor.GREEN + "Welcome back to Beaconz game " + ChatColor.YELLOW + gameName);
-    	}
-    		
+        join(player, true);
+    }
+
+    /**
+     * Handles players joining and leaving the game
+     * @param player
+     * @param goHome - if true, player will be teleported to the team home position
+     */
+    public void join(Player player, boolean goHome) {
+        // Player is either joining for the first time or returning to the game
+        getLogger().info("DEBUG: player join home = " + goHome);
+        boolean newPlayer = !scorecard.inTeam(player);
+        if (newPlayer) {
+            player.sendMessage(ChatColor.GREEN + "Welcome to Beaconz game " + ChatColor.YELLOW + gameName);	
+        } else {
+            player.sendMessage(ChatColor.GREEN + "Welcome back to Beaconz game " + ChatColor.YELLOW + gameName);
+        }
+
         // Give newbie kit
         if (newPlayer) {
             player.getInventory().clear();
@@ -189,68 +199,71 @@ public class Game extends BeaconzPluginDependent {
                 }
             }
         }
-    	
-    	// Assign a team if player doesn't have one
-    	scorecard.assignTeam(player);
-    	
-    	// Take him to his team's home in the game
-    	scorecard.sendPlayersHome(player, false);
-    	       
+
+        // Assign a team if player doesn't have one
+        scorecard.assignTeam(player);
+
+        // Take him to his team's home in the game
+        if (goHome) {
+            //getLogger().info("DEBUG: go home");
+            scorecard.sendPlayersHome(player, false);
+        }
+
         // Process region enter
-    	region.enter(player);
-                
+        region.enter(player);
+
     }
-    
+
     /** 
      * Kicks a player from a game
      */
     public void kick() {
-    	for (Player player : Bukkit.getOnlinePlayers()) {
-    		kick(player);
-    	}
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            kick(player);
+        }
     }
     public void kick(Player player) {
-    	scorecard.removeTeamPlayer(player);
-    	player.setScoreboard(scorecard.getManager().getNewScoreboard());
-    	sendToLobby(player);
+        scorecard.removeTeamPlayer(player);
+        player.setScoreboard(scorecard.getManager().getNewScoreboard());
+        sendToLobby(player);
     }    
-    
+
     public void leave(Player player) {
-    	// Player will no longer be a part of the game (not just exiting the region)
-    	scorecard.removeTeamPlayer(player);
-    	player.setScoreboard(scorecard.getManager().getNewScoreboard());
-    	sendToLobby(player);
+        // Player will no longer be a part of the game (not just exiting the region)
+        scorecard.removeTeamPlayer(player);
+        player.setScoreboard(scorecard.getManager().getNewScoreboard());
+        sendToLobby(player);
     }    
-    
+
     /**
      * Sends player back to lobby
      */
     public void sendToLobby() {
-    	for (Player player : Bukkit.getOnlinePlayers()) {
-    		sendToLobby(player);
-    	}
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            sendToLobby(player);
+        }
     }
     public void sendToLobby(Player player) {
-    	getGameMgr().getLobby().tpToRegionSpawn(player); 
+        getGameMgr().getLobby().tpToRegionSpawn(player); 
     }
-    
+
     /** 
      * Returns the game's name
      */
     public String getName() {
-    	return gameName;
+        return gameName;
     }
     /** 
      * Returns the game's region
      */
     public Region getRegion() {
-    	return region;
+        return region;
     }
     /** 
      * Returns the game's scorecard
      */
     public Scorecard getScorecard() {
-    	return scorecard;
+        return scorecard;
     }
     /**
      * Return the game's parameters 
@@ -263,7 +276,7 @@ public class Game extends BeaconzPluginDependent {
     public Long getStartTime() {return startTime;}
     public String getScoretypes() {return scoretypes;}
 
-    
+
     /** 
      * Sets the game's parameters
      * @param gamemode
@@ -290,13 +303,13 @@ public class Game extends BeaconzPluginDependent {
     public void setCountdownTimer(int cd) {countdowntimer = cd;}
     public void setStartTime(Long stt) {startTime = stt;}
     public void setScoretypes(String sct) {scoretypes = sct;}
-    
+
     /** 
      * Converts into a Point2D array of 2 points into a string x1:z1:x2:z2 
      * ... preserves the points order in the array 
      */
     private String ptsToStrCoord(Point2D [] c) {
-    	return c[0].getX() + ":" + c[0].getY() + ":" + c[1].getX() + ":" + c[1].getY();   	
+        return c[0].getX() + ":" + c[0].getY() + ":" + c[1].getX() + ":" + c[1].getY();   	
     }
 
     /**
