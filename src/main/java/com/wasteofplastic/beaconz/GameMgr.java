@@ -30,6 +30,7 @@ import java.util.LinkedHashMap;
 import java.util.Random;
 
 import org.bukkit.ChatColor;
+import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.command.CommandSender;
@@ -237,6 +238,15 @@ public class GameMgr extends BeaconzPluginDependent {
         		// Create the corner beacons
                 if (region != lobby) { 
                     region.createCorners();
+                }
+                // Pre-load the team spawn points
+                for (Team team: game.getScorecard().getScoreboard().getTeams()) {                    
+                    Chunk chunk = game.getScorecard().getTeamSpawnPoint(team).getChunk();
+                    for (int x = chunk.getX() - 1; x < chunk.getX() + 2; x++) {
+                        for (int z = chunk.getZ() - 1; z < chunk.getZ() + 2; z++) {
+                            getBeaconzWorld().getChunkAt(x, z).load();
+                        }
+                    }
                 }
         	}
     	}
