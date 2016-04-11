@@ -487,7 +487,8 @@ public class Beaconz extends JavaPlugin {
             }
             beaconzWorld.getPopulators().add(getBp());
         }
-        beaconzWorld.setSpawnLocation(Settings.xCenter, beaconzWorld.getHighestBlockYAt(Settings.xCenter, Settings.zCenter), Settings.zCenter);
+        // This is not allowed in this function as it can be called async
+        //beaconzWorld.setSpawnLocation(Settings.xCenter, beaconzWorld.getHighestBlockYAt(Settings.xCenter, Settings.zCenter), Settings.zCenter);
         return beaconzWorld;
     }
 

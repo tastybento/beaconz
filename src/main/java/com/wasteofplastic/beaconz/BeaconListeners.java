@@ -36,7 +36,6 @@ import java.util.UUID;
 import org.apache.commons.lang.math.NumberUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.World;
@@ -59,7 +58,6 @@ import org.bukkit.event.block.BlockSpreadEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.PlayerLeashEntityEvent;
 import org.bukkit.event.hanging.HangingPlaceEvent;
-import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
@@ -69,7 +67,6 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerShearEntityEvent;
 import org.bukkit.event.vehicle.VehicleDamageEvent;
-import org.bukkit.event.vehicle.VehicleExitEvent;
 import org.bukkit.event.vehicle.VehicleMoveEvent;
 import org.bukkit.event.world.WorldInitEvent;
 import org.bukkit.inventory.ItemStack;
@@ -653,6 +650,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
     /**
      * @param event
      */
+    /*
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onInventoryClick(final InventoryClickEvent event) {
         if (event.getInventory().getLocation().getWorld().equals(getBeaconzWorld())) {
@@ -662,7 +660,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             }
         }
     }  
-
+*/
     /**
      * @param event
      */
@@ -934,7 +932,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             player.sendMessage(ChatColor.GREEN + "Link created!");
             player.sendMessage(ChatColor.GREEN + "This beacon now has " + beacon.getNumberOfLinks() + " links");
             player.getWorld().playSound(player.getLocation(), Sound.ENTITY_FIREWORK_LARGE_BLAST, 1F, 1F);
-            player.getWorld().spawnEntity(player.getLocation(), EntityType.EXPERIENCE_ORB);
+            //player.getWorld().spawnEntity(player.getLocation(), EntityType.EXPERIENCE_ORB);
             if (Settings.pairLinking) {
                 // Tell the other player if it was done via a pairing
                 if (standingOn.containsValue(otherBeacon)) {
@@ -943,7 +941,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                         otherPlayer.sendMessage(ChatColor.GREEN + "Link created!");
 
                         otherPlayer.getWorld().playSound(otherPlayer.getLocation(), Sound.ENTITY_FIREWORK_LARGE_BLAST, 1F, 1F);
-                        otherPlayer.getWorld().spawnEntity(otherPlayer.getLocation(), EntityType.EXPERIENCE_ORB);
+                        //otherPlayer.getWorld().spawnEntity(otherPlayer.getLocation(), EntityType.EXPERIENCE_ORB);
                     }
                     // Tell the team
                     getMessages().tellTeam(player, player.getDisplayName() + ChatColor.GREEN + " and " + otherPlayer.getDisplayName()
@@ -971,9 +969,10 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                 // Taunt other teams
                 getMessages().tellOtherTeams(team, ChatColor.RED + team.getDisplayName() + " team made " + String.valueOf(result.getFieldsMade()) + " triangles!");
             }
+            /*
             for (int i = 0; i < result.getFieldsMade(); i++) {
                 player.getWorld().spawnEntity(player.getLocation(), EntityType.EXPERIENCE_ORB);
-            }
+            }*/
         }
         if (result.getFieldsFailedToMake() > 0) {
             if (result.getFieldsFailedToMake() == 1) {
