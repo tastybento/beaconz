@@ -1,4 +1,4 @@
-package com.wasteofplastic.beaconz;
+package com.wasteofplastic.beaconz.map;
 
 import org.bukkit.map.MapView;
 

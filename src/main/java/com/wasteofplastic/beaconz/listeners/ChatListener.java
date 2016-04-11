@@ -20,7 +20,7 @@
  * THE SOFTWARE.
  */
 
-package com.wasteofplastic.beaconz;
+package com.wasteofplastic.beaconz.listeners;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -35,6 +35,10 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.scoreboard.Team;
+
+import com.wasteofplastic.beaconz.Beaconz;
+import com.wasteofplastic.beaconz.BeaconzPluginDependent;
+import com.wasteofplastic.beaconz.Settings;
 
 
 /**

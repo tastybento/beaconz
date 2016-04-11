@@ -20,7 +20,7 @@
  * THE SOFTWARE.
  */
 
-package com.wasteofplastic.beaconz;
+package com.wasteofplastic.beaconz.listeners;
 
 import java.util.Iterator;
 
@@ -39,6 +39,9 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.BlockSpreadEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
+
+import com.wasteofplastic.beaconz.Beaconz;
+import com.wasteofplastic.beaconz.BeaconzPluginDependent;
 
 /**
  * Class to protect the top layer of blocks in the sky (the glass lines) so that they can't be broken or

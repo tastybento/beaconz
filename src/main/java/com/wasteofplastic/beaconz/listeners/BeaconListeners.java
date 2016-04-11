@@ -20,7 +20,7 @@
  * THE SOFTWARE.
  */
 
-package com.wasteofplastic.beaconz;
+package com.wasteofplastic.beaconz.listeners;
 
 import java.awt.geom.Line2D;
 import java.util.ArrayList;
@@ -80,6 +80,16 @@ import org.bukkit.util.Vector;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import com.wasteofplastic.beaconz.BeaconObj;
+import com.wasteofplastic.beaconz.Beaconz;
+import com.wasteofplastic.beaconz.BeaconzPluginDependent;
+import com.wasteofplastic.beaconz.Game;
+import com.wasteofplastic.beaconz.LinkResult;
+import com.wasteofplastic.beaconz.Region;
+import com.wasteofplastic.beaconz.Settings;
+import com.wasteofplastic.beaconz.TriangleField;
+import com.wasteofplastic.beaconz.map.BeaconMap;
+import com.wasteofplastic.beaconz.map.TerritoryMapRenderer;
 
 public class BeaconListeners extends BeaconzPluginDependent implements Listener {
 

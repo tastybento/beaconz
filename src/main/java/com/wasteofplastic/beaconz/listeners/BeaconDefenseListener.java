@@ -20,7 +20,7 @@
  * THE SOFTWARE.
  */
 
-package com.wasteofplastic.beaconz;
+package com.wasteofplastic.beaconz.listeners;
 
 import java.awt.geom.Point2D;
 
@@ -39,6 +39,12 @@ import org.bukkit.event.block.BlockPistonExtendEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.scoreboard.Team;
+
+import com.wasteofplastic.beaconz.BeaconObj;
+import com.wasteofplastic.beaconz.Beaconz;
+import com.wasteofplastic.beaconz.BeaconzPluginDependent;
+import com.wasteofplastic.beaconz.Scorecard;
+import com.wasteofplastic.beaconz.Settings;
 
 /**
  * Handles beacon defenses

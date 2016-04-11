@@ -19,7 +19,7 @@
  * THE SOFTWARE.
  */
 
-package com.wasteofplastic.beaconz;
+package com.wasteofplastic.beaconz.commands;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -28,6 +28,11 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Team;
+
+import com.wasteofplastic.beaconz.Beaconz;
+import com.wasteofplastic.beaconz.BeaconzPluginDependent;
+import com.wasteofplastic.beaconz.Game;
+import com.wasteofplastic.beaconz.Scorecard;
 
 public class CmdHandler extends BeaconzPluginDependent implements CommandExecutor {
 

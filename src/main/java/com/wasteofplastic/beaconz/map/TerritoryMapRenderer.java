@@ -1,4 +1,4 @@
-package com.wasteofplastic.beaconz;
+package com.wasteofplastic.beaconz.map;
 
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
@@ -19,6 +19,11 @@ import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
 import org.bukkit.material.MaterialData;
 import org.bukkit.scoreboard.Team;
+
+import com.wasteofplastic.beaconz.BeaconObj;
+import com.wasteofplastic.beaconz.Beaconz;
+import com.wasteofplastic.beaconz.Scorecard;
+import com.wasteofplastic.beaconz.TriangleField;
 
 /**
  * Overlays all beacons, links, and triangles onto a map. Overlapping triangles make progressively darker colors.

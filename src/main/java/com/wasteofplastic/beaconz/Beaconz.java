@@ -40,6 +40,13 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
+import com.wasteofplastic.beaconz.commands.AdminCmdHandler;
+import com.wasteofplastic.beaconz.commands.CmdHandler;
+import com.wasteofplastic.beaconz.listeners.BeaconDefenseListener;
+import com.wasteofplastic.beaconz.listeners.BeaconListeners;
+import com.wasteofplastic.beaconz.listeners.ChatListener;
+import com.wasteofplastic.beaconz.listeners.SkyListeners;
+
 public class Beaconz extends JavaPlugin {
     private Register register;
     private World beaconzWorld;

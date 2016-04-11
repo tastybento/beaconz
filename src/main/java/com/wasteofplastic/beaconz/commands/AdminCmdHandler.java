@@ -20,7 +20,7 @@
  * THE SOFTWARE.
  */
 
-package com.wasteofplastic.beaconz;
+package com.wasteofplastic.beaconz.commands;
 
 import java.awt.geom.Point2D;
 import java.util.HashMap;
@@ -38,6 +38,12 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
+
+import com.wasteofplastic.beaconz.BeaconObj;
+import com.wasteofplastic.beaconz.Beaconz;
+import com.wasteofplastic.beaconz.BeaconzPluginDependent;
+import com.wasteofplastic.beaconz.Game;
+import com.wasteofplastic.beaconz.Settings;
 
 public class AdminCmdHandler extends BeaconzPluginDependent implements CommandExecutor {
 

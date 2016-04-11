@@ -20,13 +20,16 @@
  * THE SOFTWARE.
  */
 
-package com.wasteofplastic.beaconz;
+package com.wasteofplastic.beaconz.map;
 
 import org.bukkit.entity.Player;
 import org.bukkit.map.MapCanvas;
 import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
 import org.bukkit.map.MinecraftFont;
+
+import com.wasteofplastic.beaconz.BeaconObj;
+import com.wasteofplastic.beaconz.Beaconz;
 
 
 public class BeaconMap extends MapRenderer {
