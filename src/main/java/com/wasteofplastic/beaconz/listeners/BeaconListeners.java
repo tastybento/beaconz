@@ -66,6 +66,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerShearEntityEvent;
 import org.bukkit.event.vehicle.VehicleDamageEvent;
 import org.bukkit.event.vehicle.VehicleMoveEvent;
@@ -295,6 +296,18 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
     }
 
     /**
+     * Removes any residual beaconz effects when player logs out
+     * @param event
+     */
+    @EventHandler(priority = EventPriority.NORMAL)
+    public void onLeave(final PlayerQuitEvent event) {  
+        if (event.getPlayer().getWorld().equals(getBeaconzWorld())) {
+            for (PotionEffect effect : event.getPlayer().getActivePotionEffects())
+                event.getPlayer().removePotionEffect(effect.getType());
+        }
+    }
+    
+    /**
      * Processes players coming directly into the game
      * @param event
      */
@@ -343,7 +356,9 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         // Entering Beaconz world
         if (event.getPlayer().getWorld().equals((getBeaconzWorld()))) {         
             // Send player to lobby
-            getGameMgr().getLobby().tpToRegionSpawn(event.getPlayer());	
+            getGameMgr().getLobby().tpToRegionSpawn(event.getPlayer());
+            for (PotionEffect effect : event.getPlayer().getActivePotionEffects())
+                event.getPlayer().removePotionEffect(effect.getType());
         }
     }    
 
@@ -354,6 +369,9 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             // Remove player from map and remove his scoreboard
             standingOn.remove(event.getPlayer().getUniqueId());
             event.getPlayer().setScoreboard(Bukkit.getServer().getScoreboardManager().getNewScoreboard());	
+            // Remove any potion effects
+            for (PotionEffect effect : event.getPlayer().getActivePotionEffects())
+                event.getPlayer().removePotionEffect(effect.getType());
         }
     }    
 
@@ -880,7 +898,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                 if (distance > 0) {
                     if (!testForExp(player, (int)(distance/Settings.expDistance))) {
                         player.sendMessage(ChatColor.RED + "You do not have enough experience to link to this beacon!");
-                        player.sendMessage(ChatColor.RED + "You can link up to " + (int)(Settings.expDistance * player.getTotalExperience()) + " blocks away.");
+                        player.sendMessage(ChatColor.RED + "You can link up to " + (int)(Settings.expDistance * getTotalExperience(player)) + " blocks away.");
                         player.sendMessage(ChatColor.RED + "This beacon is " + (int)distance + " blocks away.");
                         return;
                     }
@@ -1145,21 +1163,24 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         if (toTriangle.size() == 0) {
             // Leaving a control triangle
             player.sendMessage("Leaving " + fromTriangle.get(0).getOwner().getDisplayName() + "'s control area");
+            for (PotionEffect effect : player.getActivePotionEffects())
+                player.removePotionEffect(effect.getType());
             triangleEffects.remove(player.getUniqueId());
             return false;
         }
-        // Apply triangle effects
-        applyEffects(player, toTriangle, team);
-
         // Entering a field, or moving to a stronger field
         if (fromTriangle.size() < toTriangle.size()) {
             player.sendMessage("Now entering " + toTriangle.get(0).getOwner().getDisplayName() + "'s area of control level " + toTriangle.size());
-            return false;
-        }
-        if (toTriangle.size() < fromTriangle.size()) {
+        } else if (toTriangle.size() < fromTriangle.size()) {
+            // Remove all current effects - the lower set will be applied below
+            for (PotionEffect effect : player.getActivePotionEffects())
+                player.removePotionEffect(effect.getType());
             player.sendMessage(toTriangle.get(0).getOwner().getDisplayName() + "'s control level dropping to " + toTriangle.size());
-            return false;
         }
+
+        // Apply triangle effects
+        applyEffects(player, toTriangle, team);
+
         return false;
     }
 
@@ -1170,8 +1191,10 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
      * @param team
      */
     private void applyEffects(final Player player, final List<TriangleField> to, final Team team) {
-        if (to == null || to.isEmpty() || team == null) {            
-            triangleEffects.remove(player.getUniqueId());
+        if (to == null || to.isEmpty() || team == null) { 
+            for (PotionEffect effect : player.getActivePotionEffects())
+                player.removePotionEffect(effect.getType());
+            triangleEffects.remove(player.getUniqueId());            
             return;
         }
         // Update the active effects on the player
@@ -1206,9 +1229,9 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
      * @return true if sufficient experience points otherwise false
      */
     public boolean testForExp(Player player , int xpRequired){
-        int xp = player.getTotalExperience();
+        int xp = getTotalExperience(player);
         if (xp >= xpRequired) {
-            int total = player.getTotalExperience() - xpRequired;
+            int total = getTotalExperience(player) - xpRequired;
             player.setTotalExperience(total);
             player.setLevel(0);
             player.setExp(0);
@@ -1221,5 +1244,42 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             return true;
         }
         return false;
-    }    
+    }
+    
+    // These next 3 methods are taken from Essentials code
+    
+    public static int getTotalExperience(final Player player)
+    {
+        int exp = (int)Math.round(getExpAtLevel(player) * player.getExp());
+        int currentLevel = player.getLevel();
+
+        while (currentLevel > 0)
+        {
+            currentLevel--;
+            exp += getExpAtLevel(currentLevel);
+        }
+        if (exp < 0)
+        {
+            exp = Integer.MAX_VALUE;
+        }
+        return exp;
+    }
+    
+    public static int getExpAtLevel(final int level)
+    {
+        if (level > 29)
+        {
+            return 62 + (level - 30) * 7;
+        }
+        if (level > 15)
+        {
+            return 17 + (level - 15) * 3;
+        }
+        return 17;
+    }
+    
+    private static int getExpAtLevel(final Player player)
+    {
+        return getExpAtLevel(player.getLevel());
+    }
 }

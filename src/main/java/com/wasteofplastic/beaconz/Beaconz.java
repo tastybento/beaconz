@@ -305,12 +305,20 @@ public class Beaconz extends JavaPlugin {
                 List<String> effectsList = getConfig().getStringList("world.enemyfieldeffects." + part.getKey());
                 for (String effectString : effectsList) {
                     String[] split = effectString.split(":");
-                    if (split.length == 3) {
+                    if (split.length == 1 || split.length > 2) {
                         PotionEffectType type = PotionEffectType.getByName(split[0]);
                         if (type != null) {
-                            if (NumberUtils.isNumber(split[1]) && NumberUtils.isNumber(split[2])) {
+                            effects.add(new PotionEffect(type, Integer.MAX_VALUE, 1));  
+                        }
+                    }
+                    if (split.length == 2) {
+                        PotionEffectType type = PotionEffectType.getByName(split[0]);
+                        if (type != null) {
+                            if (NumberUtils.isNumber(split[1])) {
                                 //getLogger().info("DEBUG: adding enemy effect " + type.toString());
-                                effects.add(new PotionEffect(type, NumberUtils.toInt(split[1]), NumberUtils.toInt(split[2])));
+                                effects.add(new PotionEffect(type, Integer.MAX_VALUE, NumberUtils.toInt(split[1])));
+                            } else {
+                                effects.add(new PotionEffect(type, Integer.MAX_VALUE, 1));
                             }
                         }
 
@@ -333,15 +341,20 @@ public class Beaconz extends JavaPlugin {
                 //getLogger().info("DEBUG: Effects list: " + effectsList);
                 for (String effectString : effectsList) {
                     String[] split = effectString.split(":");
-                    if (split.length == 3) {
-                        //getLogger().info("DEBUG: Potion found " + split[0]);
+                    if (split.length == 1 || split.length > 2) {
                         PotionEffectType type = PotionEffectType.getByName(split[0]);
                         if (type != null) {
-                            //getLogger().info("DEBUG: Potion is known");
-                            if (NumberUtils.isNumber(split[1]) && NumberUtils.isNumber(split[2])) {
-
-                                //getLogger().info("DEBUG: adding friendly effect " + type.toString());
-                                effects.add(new PotionEffect(type, NumberUtils.toInt(split[1]), NumberUtils.toInt(split[2])));
+                            effects.add(new PotionEffect(type, Integer.MAX_VALUE, 1));  
+                        }
+                    }
+                    if (split.length == 2) {
+                        PotionEffectType type = PotionEffectType.getByName(split[0]);
+                        if (type != null) {
+                            if (NumberUtils.isNumber(split[1])) {
+                                //getLogger().info("DEBUG: adding enemy effect " + type.toString());
+                                effects.add(new PotionEffect(type, Integer.MAX_VALUE, NumberUtils.toInt(split[1])));
+                            } else {
+                                effects.add(new PotionEffect(type, Integer.MAX_VALUE, 1));
                             }
                         }
 
