@@ -24,8 +24,11 @@ package com.wasteofplastic.beaconz;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 import org.bukkit.Material;
@@ -43,6 +46,8 @@ public class BeaconObj extends BeaconzPluginDependent {
     private Set<BeaconObj> links;
     private Integer id = null;
     private boolean newBeacon = true;
+    private static final List<BlockFace> FACES = new ArrayList<BlockFace>(Arrays.asList(BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST, BlockFace.NORTH_EAST, BlockFace.NORTH_WEST, BlockFace.SOUTH_EAST, BlockFace.SOUTH_WEST));
+
 
     public BeaconObj(Beaconz plugin, int x, int y, int z, Team owner) {
         super(plugin);
@@ -117,7 +122,7 @@ public class BeaconObj extends BeaconzPluginDependent {
         if (!links.add(starter)) {
             return new LinkResult(0, false, 0);
         }
-        
+
         int fieldsMade = 0;
         int fieldsFailed = 0;
         //getLogger().info("DEBUG: link added");
@@ -260,31 +265,27 @@ public class BeaconObj extends BeaconzPluginDependent {
     }
 
     /**
-     * Checks if a beacon base is clear of blocks
+     * Checks if a beacon base is clear of blocks and above the blocks all the way to the sky
      * @return true if clear, false if not
      */
     public boolean isClear() {
         Block beacon = getBeaconzWorld().getBlockAt((int)location.getX(), height, (int)location.getY());
-        //getLogger().info("DEBUG: block type is " + beacon.getType());
-        //getLogger().info("DEBUG: location is " + (int)location.getX() + " " + height + " " + (int)location.getY());
-        if (beacon.getRelative(BlockFace.NORTH).getType().equals(Material.AIR)
-                && beacon.getRelative(BlockFace.SOUTH).getType().equals(Material.AIR)
-                && beacon.getRelative(BlockFace.EAST).getType().equals(Material.AIR)
-                && beacon.getRelative(BlockFace.WEST).getType().equals(Material.AIR)
-                && beacon.getRelative(BlockFace.NORTH_WEST).getType().equals(Material.AIR)
-                && beacon.getRelative(BlockFace.NORTH_EAST).getType().equals(Material.AIR)
-                && beacon.getRelative(BlockFace.SOUTH_WEST).getType().equals(Material.AIR)
-                && beacon.getRelative(BlockFace.SOUTH_EAST).getType().equals(Material.AIR)) {
-            // Check all the defense blocks too
-            for (Point2D point: getRegister().getDefensesAtBeacon(this)) {
-                beacon = getBeaconzWorld().getBlockAt((int)point.getX(), height, (int)point.getY());
-                if (!beacon.getType().equals(Material.AIR)) {
-                    return false;
-                }
+        //getLogger().info("DEBUG: block y = " + beacon.getY() + " " + beacon.getLocation());
+        for (BlockFace face: FACES) {
+            Block block = beacon.getRelative(face);
+            //getLogger().info("DEBUG: highest block at " + block.getX() + "," + block.getZ() + " y = " + getHighestBlockYAt(block.getX(), block.getZ()));
+            if (block.getY() != getHighestBlockYAt(block.getX(), block.getZ())) {
+                return false;
             }
-            return true;
-        }		
-        return false;
+        }
+        // Check all the defense blocks too
+        for (Point2D point: getRegister().getDefensesAtBeacon(this)) {
+            beacon = getBeaconzWorld().getBlockAt((int)point.getX(), height, (int)point.getY());
+            if (beacon.getY() != getHighestBlockYAt((int)point.getX(), (int)point.getY())) {
+                return false;
+            }
+        }
+        return true;
     }
 
 }

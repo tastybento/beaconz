@@ -177,9 +177,6 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             }
         }
 
-        // Apply triangle effects
-        applyEffects(player, getRegister().getTriangle(player.getLocation().getBlockX(), player.getLocation().getBlockZ()), team);
-
         // Check if the block is a beacon or the surrounding pyramid
         Block block = event.getBlock();
         BeaconObj beacon = getRegister().getBeacon(block);

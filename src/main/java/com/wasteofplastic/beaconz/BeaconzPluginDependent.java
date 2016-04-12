@@ -79,5 +79,15 @@ public abstract class BeaconzPluginDependent {
     
     public final Messages getMessages() {
         return this.beaconzPlugin.getMessages();
-    }    
+    }
+    
+    /**
+     * Gets the highest block in the world at x,z starting at the max height block can be
+     * @param x
+     * @param z
+     * @return height of first non-air block
+     */
+    public final int getHighestBlockYAt(int x, int z) {
+        return this.beaconzPlugin.getHighestBlockYAt(x, z);
+    }
 }

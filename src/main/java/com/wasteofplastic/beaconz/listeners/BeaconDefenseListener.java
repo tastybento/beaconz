@@ -163,10 +163,10 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
                         return;
                     }
                     // Check what blocks are above the emerald block
-                    int highestBlock = getHighestDefenseBlockYAt(block, this.getBeaconzWorld().getMaxHeight()-1) + 1;
+                    int highestBlock = getHighestBlockYAt(block.getX(), block.getZ());
                     //getLogger().info("DEBUG: highest block y = " + highestBlock + " difference = " + (highestBlock - adjacentBeacon.getY()));
-                    if (highestBlock - adjacentBeacon.getY() > Settings.defenseHeight) {
-                        event.getPlayer().sendMessage(ChatColor.RED + "Too many blocks above this block!");
+                    if (highestBlock > adjacentBeacon.getY()) {
+                        event.getPlayer().sendMessage(ChatColor.RED + "Clear blocks above before placing this block!");
                         event.setCancelled(true);
                         return;
                     }

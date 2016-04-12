@@ -33,6 +33,7 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
 import org.bukkit.WorldType;
+import org.bukkit.block.Block;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.generator.BlockPopulator;
 import org.bukkit.inventory.ItemStack;
@@ -548,4 +549,18 @@ public class Beaconz extends JavaPlugin {
     	return newString;
     }
     
+    /**
+     * Gets the highest block in the world at x,z starting at the max height block can be
+     * @param x
+     * @param z
+     * @return height of first non-air block
+     */
+    public int getHighestBlockYAt(int x, int z) {
+        for (int y = 254; y > 0; y--) {
+            if (!getBeaconzWorld().getBlockAt(x, y, z).getType().equals(Material.AIR)) {
+                return y+1;
+            }
+        }
+        return 0;
+    }
 }
