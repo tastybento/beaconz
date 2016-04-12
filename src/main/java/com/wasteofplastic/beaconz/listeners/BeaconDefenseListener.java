@@ -204,7 +204,7 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
         // Check if the player has the experience level required to place the block
         int level = block.getY() - beacon.getY();
         int levelRequired = 0;
-        getLogger().info("DEBUG: level = " + level);
+        //getLogger().info("DEBUG: level = " + level);
         try {
             levelRequired = Settings.defenseLevels.get(level);
             if (player.getLevel() < levelRequired) {
@@ -545,7 +545,7 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
         // Check if the player has the experience level required to break the block
         int level = block.getY() - beacon.getY();
         int levelRequired = 0;
-        getLogger().info("DEBUG: level = " + level);
+        //getLogger().info("DEBUG: level = " + level);
         try {
             levelRequired = Settings.attackLevels.get(level);
             if (player.getLevel() < levelRequired) {
@@ -621,7 +621,7 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
         // Check if the player has the experience level required to break the block
         int level = block.getY() - beacon.getY();
         int levelRequired = 0;
-        getLogger().info("DEBUG: level = " + level);
+        //getLogger().info("DEBUG: level = " + level);
         try {
             levelRequired = Settings.attackLevels.get(level);
             if (player.getLevel() < levelRequired) {

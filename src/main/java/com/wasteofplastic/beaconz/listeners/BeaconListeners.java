@@ -36,6 +36,7 @@ import java.util.UUID;
 import org.apache.commons.lang.math.NumberUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.World;
@@ -75,6 +76,7 @@ import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scoreboard.Team;
 import org.bukkit.util.Vector;
 
@@ -97,7 +99,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
      * A bi-drectional hashmap to track players standing on beaconz
      */
     private BiMap<UUID, BeaconObj> standingOn = HashBiMap.create();
-    private Beaconz plugin;
+    private HashMap<UUID, Collection<PotionEffect>> triangleEffects = new HashMap<UUID, Collection<PotionEffect>>();
 
     public BeaconListeners(Beaconz plugin) {
         super(plugin);
@@ -112,6 +114,20 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                 } 
             }
         }
+        // Run a repeating task to apply effects
+        // Run a task to continuously apply effects if they exist
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                for (Player player: getServer().getOnlinePlayers()) {
+                    // Only apply if in the world, not in the lobby and if there's an affect to apply
+                    if (player.getWorld().equals(getBeaconzWorld()) && triangleEffects.containsKey(player.getUniqueId())
+                            && !getGameMgr().isPlayerInLobby(player)) {                     
+                        player.addPotionEffects(triangleEffects.get(player.getUniqueId()));
+                    }
+                }
+            }
+        }.runTaskTimer(getBeaconzPlugin(), 0L, 20L);
     }
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
@@ -670,7 +686,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             }
         }
     }  
-*/
+     */
     /**
      * @param event
      */
@@ -750,14 +766,14 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         Entity passenger = event.getVehicle().getPassenger();
         if (passenger != null && passenger instanceof Player) {
             Player player = (Player)passenger;
-            if (getGameMgr().getGame(event.getTo()) == null) {                
+            Location from = event.getFrom();
+            Location to = event.getTo();
+            if (checkMove(player, event.getVehicle().getWorld(), from, to)) {
+                // Vehicle should stop moving
                 Vector direction = event.getVehicle().getLocation().getDirection();                                     
-                event.getVehicle().teleport(event.getVehicle().getLocation().add(event.getFrom().toVector().subtract(event.getTo().toVector()).normalize()));
+                event.getVehicle().teleport(event.getVehicle().getLocation().add(from.toVector().subtract(to.toVector()).normalize()));
                 event.getVehicle().getLocation().setDirection(direction);
-                event.getVehicle().setVelocity(new Vector(0,0,0));         
-                event.getVehicle().setPassenger(player);
-                player.sendMessage(ChatColor.YELLOW + "That's the limit of the game region, you can't go any further that way.");
-                return;
+                event.getVehicle().setVelocity(new Vector(0,0,0));
             }
         }
     }  
@@ -972,7 +988,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                 player.sendMessage(ChatColor.GREEN + "Triangle created! New score = " + getGameMgr().getSC(player).getScore(team, "area"));
                 getMessages().tellTeam(player, player.getDisplayName() + ChatColor.GREEN + " created a triangle! New team score = " + getGameMgr().getSC(player).getScore(team, "area"));
                 // Taunt other teams
-                getMessages().tellOtherTeams(team, ChatColor.RED + team.getDisplayName() + " team made a tringle!");
+                getMessages().tellOtherTeams(team, ChatColor.RED + team.getDisplayName() + " team made a triangle!");
             } else {
                 player.sendMessage(ChatColor.GREEN + String.valueOf(result.getFieldsMade()) + " triangles created! New score = " + getGameMgr().getSC(player).getScore(team, "area"));
                 getMessages().tellTeam(player, player.getDisplayName() + ChatColor.GREEN + " created " + String.valueOf(result.getFieldsMade()) + " triangles! New team score = " + getGameMgr().getSC(player).getScore(team, "area"));
@@ -994,12 +1010,15 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         return true;
     }
 
+
+    /**
+     * Handle player movement
+     * @param event
+     */
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onPlayerMove(PlayerMoveEvent event) {
-
         // Remember that teleporting is not detected as player movement.. 
         // If we want to catch movement by teleportation, we have to keep track of the players to-from by ourselves 
-
         // Only proceed if there's been a change in X or Z coords
         if (event.getFrom().getBlockX() == event.getTo().getBlockX() && event.getFrom().getBlockZ() == event.getTo().getBlockZ()) {
             return;
@@ -1009,29 +1028,44 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             return;
         }
         Player player = event.getPlayer();
-        Region regionfrom = getGameMgr().getRegion(event.getFrom());
-        Region regionto = getGameMgr().getRegion(event.getTo());
+        Location from = event.getFrom();
+        Location to = event.getTo();
+        event.setCancelled(checkMove(player, world, from, to));
+    }
+
+    /**
+     * Handles checking of player movement.
+     * @param player
+     * @param world
+     * @param from
+     * @param to
+     * @return true if the event should be canceled
+     */
+    private boolean checkMove(Player player, World world, Location from,
+            Location to) {
+        Region regionfrom = getGameMgr().getRegion(from);
+        Region regionto = getGameMgr().getRegion(to);
 
         // Check if player is trying to leave a region by moving over a region boundary
         // And send him back to whence he came
         if (regionfrom != null && regionfrom != regionto) {
-            if (event.getFrom().distanceSquared(event.getTo()) < 6.25) {
+            if (from.distanceSquared(to) < 6.25) {
                 //float pitch = player.getLocation().getPitch();
                 //float yaw = player.getLocation().getYaw();
-                Vector direction = player.getLocation().getDirection(); 									
-                player.teleport(player.getLocation().add(event.getFrom().toVector().subtract(event.getTo().toVector()).normalize()));
+                Vector direction = player.getLocation().getDirection();                                     
+                player.teleport(player.getLocation().add(from.toVector().subtract(to.toVector()).normalize()));
                 //player.getLocation().setPitch(pitch);
                 //player.getLocation().setPitch(yaw);
                 player.getLocation().setDirection(direction);
                 player.setVelocity(new Vector(0,0,0));
                 player.sendMessage(ChatColor.YELLOW + "That's the limit of the game region, you can't go any further that way.");
-                return;
+                return true;
             }
         }
 
         // Check if player changed regions and process region exit and enter methods
         if (regionfrom != null && regionfrom != regionto) {
-            regionfrom.exit(player);        	
+            regionfrom.exit(player);            
         }
         if (regionto != null && regionfrom != regionto) {
             regionto.enter(player);
@@ -1041,29 +1075,29 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             if (!player.isOp()) {
                 player.teleport(getGameMgr().getLobby().getSpawnPoint());
                 getLogger().warning(player.getName() + " managed to get outside of the game area and was teleported to the lobby.");
-                return;
+                return true;
             }
         }
 
         // Nothing from here on applies to Lobby...
         if (getGameMgr().isPlayerInLobby(player)) {
-            return;
+            triangleEffects.remove(player.getUniqueId());
+            return false;
         }
         // Get the player's team
         Team team = getGameMgr().getPlayerTeam(player);
         if (team == null) {
             if (player.isOp()) {
-                return;
+                return false;
             } else {
-                event.setCancelled(true);
-                return;
+                return true;
             }
         }
 
         // Run the following if players can create links by standing on them in pairs (or more)
         if (Settings.pairLinking) {
             // Check if player is standing on a beacon
-            BeaconObj beacon = getRegister().getBeaconAt(event.getTo().getBlockX(), event.getTo().getBlockZ());
+            BeaconObj beacon = getRegister().getBeaconAt(to.getBlockX(), to.getBlockZ());
             if (beacon != null) {
                 // Check if the beacon is captured by this team
                 if (beacon.getOwnership() != null && beacon.getOwnership().equals(team)) {
@@ -1079,8 +1113,8 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                                 Team otherteam = getGameMgr().getPlayerTeam(player);
                                 if (otherteam != null && otherteam.equals(team)) {
                                     // Only do if beacons are different locations
-                                    if (otherplayer.getLocation().getBlockX() != event.getTo().getBlockX() 
-                                            && otherplayer.getLocation().getBlockZ() != event.getTo().getBlockZ()) {
+                                    if (otherplayer.getLocation().getBlockX() != to.getBlockX() 
+                                            && otherplayer.getLocation().getBlockZ() != to.getBlockZ()) {
                                         // Check if this link already exists
                                         if (!beacon.getLinks().contains(standingOn.get(others))) {
                                             // Try to link
@@ -1100,31 +1134,33 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             }
         }
         // Check the From
-        List<TriangleField> from = getRegister().getTriangle(event.getFrom().getBlockX(), event.getFrom().getBlockZ());
+        List<TriangleField> fromTriangle = getRegister().getTriangle(from.getBlockX(), from.getBlockZ());
         // Check the To
-        List<TriangleField> to = getRegister().getTriangle(event.getTo().getBlockX(), event.getTo().getBlockZ());
+        List<TriangleField> toTriangle = getRegister().getTriangle(to.getBlockX(), to.getBlockZ());
         // Outside any field
-        if (from.isEmpty() && to.isEmpty()) {
-            return;
+        if (fromTriangle.isEmpty() && toTriangle.isEmpty()) {
+            return false;
         }
         // Check if to is not a triangle
-        if (to.size() == 0) {
+        if (toTriangle.size() == 0) {
             // Leaving a control triangle
-            player.sendMessage("Leaving " + from.get(0).getOwner().getDisplayName() + "'s control area");
-            return;
+            player.sendMessage("Leaving " + fromTriangle.get(0).getOwner().getDisplayName() + "'s control area");
+            triangleEffects.remove(player.getUniqueId());
+            return false;
         }
         // Apply triangle effects
-        applyEffects(player, to, team);
+        applyEffects(player, toTriangle, team);
 
         // Entering a field, or moving to a stronger field
-        if (from.size() < to.size()) {
-            player.sendMessage("Now entering " + to.get(0).getOwner().getDisplayName() + "'s area of control level " + to.size());
-            return;
+        if (fromTriangle.size() < toTriangle.size()) {
+            player.sendMessage("Now entering " + toTriangle.get(0).getOwner().getDisplayName() + "'s area of control level " + toTriangle.size());
+            return false;
         }
-        if (to.size() < from.size()) {
-            player.sendMessage(to.get(0).getOwner().getDisplayName() + "'s control level dropping to " + to.size());
-            return;
+        if (toTriangle.size() < fromTriangle.size()) {
+            player.sendMessage(toTriangle.get(0).getOwner().getDisplayName() + "'s control level dropping to " + toTriangle.size());
+            return false;
         }
+        return false;
     }
 
     /**
@@ -1133,11 +1169,13 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
      * @param to
      * @param team
      */
-    private void applyEffects(Player player, List<TriangleField> to, Team team) {
-        if (to.isEmpty() || team == null) {
+    private void applyEffects(final Player player, final List<TriangleField> to, final Team team) {
+        if (to == null || to.isEmpty() || team == null) {            
+            triangleEffects.remove(player.getUniqueId());
             return;
         }
-        // Apply bad stuff
+        // Update the active effects on the player
+        // Add bad stuff
         // Enemy team
         Team triangleOwner = to.get(0).getOwner();
         Collection<PotionEffect> effects = new ArrayList<PotionEffect>();
@@ -1147,9 +1185,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                     effects.addAll(Settings.enemyFieldEffects.get(i));
                 }
             }
-            player.addPotionEffects(effects);
         }
-        effects.clear();
         // Friendly triangle
         if (triangleOwner != null && triangleOwner.equals(team)) {
             for (int i = 0; i <= to.size(); i++) {
@@ -1158,7 +1194,8 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                 }
             }
             player.addPotionEffects(effects);
-        }         
+        }       
+        triangleEffects.put(player.getUniqueId(), effects);
     }
 
     /**

@@ -381,7 +381,7 @@ public class Register extends BeaconzPluginDependent {
      * @param point2d
      * @param point2d2
      * @param point2d3
-     * @return 
+     * @return false if the triangle is valid, otherwise true
      */
     public Boolean addTriangle(Point2D point2d, Point2D point2d2, Point2D point2d3, Team owner)  throws IllegalArgumentException {
         //getLogger().info("DEBUG: Adding triangle at " + point2d + " " + point2d2 + " " + point2d3);
@@ -411,6 +411,11 @@ public class Register extends BeaconzPluginDependent {
                     // Check if triangle is inside any of the known triangles
                     if (!triangle.getOwner().equals(triangleField.getOwner()) && (triangleField.contains(triangle) || triangle.contains(triangleField))) {
                         //getLogger().info("DEBUG: Enemy triangle found inside triangle!");
+                        return false;
+                    }
+                    // Check if triangle already exists
+                    if (triangle.equals(triangleField)) {
+                        getLogger().info("DEBUG: duplicate triangle found");
                         return false;
                     }
                 }
@@ -694,8 +699,14 @@ public class Register extends BeaconzPluginDependent {
     public List<TriangleField> getTriangle(int x, int y) {
         // TODO: Brute force check - in the future, will need to be indexed better
         List<TriangleField> result = new ArrayList<TriangleField>();
+        //int index = 1;
         for (TriangleField tri: triangleFields) {
             if (tri.contains(x, y) != null) {
+                /*
+                getLogger().info("DEBUG: triangle " + index++);
+                for (Line2D line : tri.getSides()) {                    
+                    getLogger().info("DEBUG: " + line.getP1().toString() + " to " + line.getP2().toString());
+                } */               
                 result.add(tri);
             }
         }
