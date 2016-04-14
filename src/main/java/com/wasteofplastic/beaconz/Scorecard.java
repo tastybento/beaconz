@@ -121,8 +121,8 @@ public class Scorecard extends BeaconzPluginDependent{
         showtimer = Settings.showTimer;
         starttimemilis = game.getStartTime();
         countdownTimer = game.getCountdownTimer();
-        timertype = game.getGamegoalvalue() > 0 ? "openended" : "countdown";     
-
+        timertype = countdownTimer == 0 ? "openended" : "countdown";     
+        getLogger().info("DEBUG: countdownTimer = " + countdownTimer + " timertype = " + timertype);
         // Define the scoreboard
         try {
             scoreboard.clearSlot(DisplaySlot.SIDEBAR);                    
@@ -251,7 +251,9 @@ public class Scorecard extends BeaconzPluginDependent{
             putScore(team, scoretype, value);
 
             // See if we have a winner
-            if (timertype.equals("openended") && scoretype.equals(game.getGamegoal()) && value >= game.getGamegoalvalue()) {
+            // If the gamegoal value is zero, then the game is never ending
+            if (game.getGamegoalvalue() > 0 && timertype.equals("openended") && scoretype.equals(game.getGamegoal()) && value >= game.getGamegoalvalue()) {
+                getLogger().info("DEBUG: ending game goal = " + game.getGamegoal() + " required value = " + game.getGamegoalvalue() + " actual value = " + value);
                 endGame();
             }
         }    	
@@ -907,7 +909,8 @@ public class Scorecard extends BeaconzPluginDependent{
     /** 
      * Ends the game     
      */
-    public void endGame () {    	
+    public void endGame() {
+        getLogger().info("DEBUG: end game called");
         // Stop timer
         if (timertaskid != null) timertaskid.cancel();
         // Stop keeping score
@@ -973,6 +976,7 @@ public class Scorecard extends BeaconzPluginDependent{
                             // Beacon timer ran out
                             countdownTimer = 0;
                             timertaskid.cancel();
+                            getLogger().info("DEBUG: countdown timer expired - ending game");
                             endGame();
                         }
                         seconds = countdownTimer + 0L;

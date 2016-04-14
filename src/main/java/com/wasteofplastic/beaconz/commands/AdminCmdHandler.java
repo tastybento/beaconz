@@ -82,6 +82,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
             sender.sendMessage(cc1 + "/" + label + cc2 + " force_end <gamename>" + cc3 + " - forces a game to end immediately");
             sender.sendMessage(cc1 + "/" + label + cc2 + " link <x> <z>" + cc3 + " - force-links a beacon you are standing on to one at x,z");
             sender.sendMessage(cc1 + "/" + label + cc2 + " list [all |<gamename>]" + cc3 + " - lists all known beacons in the game | all games");
+            sender.sendMessage(cc1 + "/" + label + cc2 + " listparms <gamename>" + cc3 + " - lists game parameters");
             sender.sendMessage(cc1 + "/" + label + cc2 + " newgame <gamename> [<parm1:value> <parm2:value>...]" + cc3 + " - creates a new game in an empty region; parameters are optional - do /" + label + " newgame help for a list of the possible parameters");           
             sender.sendMessage(cc1 + "/" + label + cc2 + " reload" + cc3 + " - reloads the plugin, preserving existing games");
             sender.sendMessage(cc1 + "/" + label + cc2 + " setgameparms <gamename> <parm1:value> <parm2:value>... " + cc3 + "- defines a game's parameters - DOES NOT restart the game (use restart for that) - do /" + label + " setgameparms help for a list of the possible parameters");
@@ -368,6 +369,25 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                 sender.sendMessage(ChatColor.RED + "Beaconz plugin reloaded. All existing games were preserved.");
                 break;
 
+            case "listparms":
+                if (args.length < 2) {
+                    sender.sendMessage("/" + label + " listparms <gamename>");
+                    sender.sendMessage("listparms shows the game parameters");
+                } else {
+                    game = getGameMgr().getGame(args[1]);
+                    if (game == null) {
+                        sender.sendMessage("Could not find game " + args[1]);
+                    } else {
+                        sender.sendMessage(ChatColor.YELLOW + "Mode: " + ChatColor.AQUA + game.getGamemode());
+                        sender.sendMessage(ChatColor.YELLOW + "# of teams: " + ChatColor.AQUA + game.getNbrTeams());
+                        sender.sendMessage(ChatColor.YELLOW + "Goal: " + ChatColor.AQUA  + game.getGamegoal());
+                        sender.sendMessage(ChatColor.YELLOW + "Goal value: " + ChatColor.AQUA + (game.getGamegoalvalue() == 0 ? "Unlimited" : game.getGamegoalvalue()));
+                        sender.sendMessage(ChatColor.YELLOW + "Countdown: " + ChatColor.AQUA + (game.getCountdownTimer() == 0 ? "Unlimited" : game.getCountdownTimer()));
+                        sender.sendMessage(ChatColor.YELLOW + "Score types: " + ChatColor.AQUA + game.getScoretypes());                      
+                    }
+                }
+                return true;
+                
             case "setgameparms":
                 if (args.length < 2) {
                     sender.sendMessage("/" + label + " setgameparms <gamename> <parm1:value> <parm2:value>");

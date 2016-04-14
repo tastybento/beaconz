@@ -42,6 +42,7 @@ public class BeaconMap extends MapRenderer {
         this.plugin = plugin;
     }
 
+    @SuppressWarnings("deprecation")
     public void render(MapView map, MapCanvas canvas, Player player) {
         // here's where you do your drawing - see the Javadocs for the MapCanvas class for
         // the methods you can use

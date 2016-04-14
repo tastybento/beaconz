@@ -124,6 +124,7 @@ public class Game extends BeaconzPluginDependent {
      * Force-ends the game
      */
     public void forceEnd() {
+        getLogger().info("DEBUG: force End called");
         scorecard.endGame();
     }    
 
