@@ -55,6 +55,7 @@ public class Region extends BeaconzPluginDependent {
     private int chZ;
     private BukkitTask task = null;
     private int totalregen;
+    private long progress;
 
     /** 
      * Region instantiates the various regions in the world     
@@ -113,25 +114,36 @@ public class Region extends BeaconzPluginDependent {
             chX = xMin;
             chZ = zMin;
             final int step = 25;
-            Settings.dontpopulate.clear();
+            final double chunksToDo = ((double)((xMax - xMin)/16) * (double)((xMax - xMin)/16));
+            Settings.populate.clear();
 
             // Regenerate the chunks in spurts of 25 
             // Can't do this asynchronously, as it relies on API calls
             task = getServer().getScheduler().runTaskTimer(plugin, new Runnable() {
-                public void run() {
+                public void run() {                  
                     loopcount = 0;
-                    Settings.dontpopulate.clear();
+                    Settings.populate.clear();
                     outerloop:
                         while (chX <= xMax) {
                             while (chZ <= zMax) {
                                 // Settings.dontpopulate is used to abort the populator - there's no need to repopulate the chunks, they'll get populated when loaded in-game              	
-                                Settings.dontpopulate.add((chX/16) + ":" + (chZ/16));
-                                getLogger().info("Regenerating chunk: " + (chX/16) + ":" + (chZ/16));
-                                getBeaconzWorld().regenerateChunk(chX/16, chZ/16); 
-                                loopcount++;
+                                // Only regen if the chunk has been populated so far
+                                if (getBeaconzWorld().loadChunk(chX/16, chZ/16, false) == true) {                    
+                                    //Settings.populate.add(new Pair((chX/16),(chZ/16)));
+                                    getBeaconzWorld().regenerateChunk(chX/16, chZ/16);
+                                    getBeaconzWorld().unloadChunkRequest(chX/16, chZ/16);
+                                    //getLogger().info("Regenerating chunk: " + (chX/16) + ":" + (chZ/16) + " regen = " + getBeaconzWorld().regenerateChunk(chX/16, chZ/16));
+                                    //getLogger().info("Unload queued: " + getBeaconzWorld().unloadChunkRequest(chX/16, chZ/16));
+                                    loopcount++;                               
+                                }                                
                                 totalregen++;
                                 if (loopcount >= step) {
-                                    getLogger().info("Region.regenerate() -- loop break at chunks: " + (chX/16) + ":" + (chZ/16) + "----- or blocks: " + chX + ":" + chZ);
+                                    //getLogger().info("Region.regenerate() -- loop break at chunks: " + (chX/16) + ":" + (chZ/16) + "----- or blocks: " + chX + ":" + chZ);                                    
+                                    long temp = Math.round(((double)totalregen/chunksToDo) * 100);
+                                    if (progress != temp) {
+                                        progress = temp;
+                                        getLogger().info(progress + "% complete");
+                                    }
                                     break outerloop;
                                 }
                                 chZ = chZ + 16;
@@ -144,7 +156,7 @@ public class Region extends BeaconzPluginDependent {
                         finishRegenerating(sender);
                     }
                 }
-            }, 5L, 0L);        	
+            }, 5L, 1L);        	
         }        
     }
 

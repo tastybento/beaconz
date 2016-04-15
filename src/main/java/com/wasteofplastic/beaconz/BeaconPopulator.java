@@ -60,11 +60,13 @@ public class BeaconPopulator extends BlockPopulator {
         //Bukkit.getLogger().info("DEBUG: populator called. ");
 
     	// If we're regenerating this chunk from within the game (e.g. a "reset" command), don't do anything
-    	if (Settings.dontpopulate.contains(source.getX() + ":" + source.getZ())) {  
-            //plugin.getLogger().info("DEBUG: SKIPPING chunk: " + source.getX() + ":" + source.getZ());     
-    		return;
-    	}    	
-    	
+        /*
+        boolean regen = false;
+    	if (Settings.populate.contains(new Pair(source.getX(),source.getZ()))) {  
+    	    plugin.getLogger().info("DEBUG: POPULATING chunk: " + source.getX() + ":" + source.getZ()); 
+    	    regen = true;
+    	}
+    	regen = true;*/
         // Don't bother to make anything if it is outside the border. Make it just a bit smaller than the border
     	// THERE IS NO BORDER ANYMORE, THIS MAY BE REMOVED
         if (Settings.borderSize > 0) {
@@ -108,11 +110,12 @@ public class BeaconPopulator extends BlockPopulator {
             int x = gen.nextInt(16);
             int z = gen.nextInt(16);
             // Check if there is already a beacon here, if so, don't make it again
-            if (plugin.getRegister().getBeaconAt((source.getX() * 16 + x), (source.getZ()*16 + z)) != null) {
+            /*
+            if (!regen && plugin.getRegister().getBeaconAt((source.getX() * 16 + x), (source.getZ()*16 + z)) != null) {
                 plugin.getLogger().info("DEBUG: Beacon already at " + (source.getX() * 16 + x) + "," + (source.getZ()*16 + z));
                 return;
             }
-            
+            */
             plugin.getLogger().info("DEBUG: Creating beacon at " + (source.getX() * 16 + x) + "," + (source.getZ()*16 + z));
             
             int y = source.getChunkSnapshot().getHighestBlockYAt(x, z);            

@@ -24,7 +24,9 @@ package com.wasteofplastic.beaconz;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.TreeMap;
 
 import org.bukkit.inventory.ItemStack;
@@ -186,6 +188,6 @@ public class Settings {
     /**
      * Coordinates of the chunk we're regenerating via the "reset" command
      */
-    public static List<String> dontpopulate = new ArrayList<String>();
+    public static Set<Pair> populate = new HashSet<Pair>();
     
 }

@@ -381,7 +381,7 @@ public class GameMgr extends BeaconzPluginDependent {
          	
              	for (Integer x = minx; x <= maxx; x++) {
              		for (Integer z = minz; z <= maxz; z++) {
-             			Settings.dontpopulate.add(((x/16)-1) + ":" + ((z/16)-1));
+             			//Settings.populate.add(new Pair(((x/16)-1) , ((z/16)-1)));
              			int y = getBeaconzWorld().getHighestBlockYAt(x, z);
              			Block block = getBeaconzWorld().getBlockAt(x, y, z);
          				Block bottomblock = getBeaconzWorld().getBlockAt(x, y-1, z);
@@ -393,7 +393,7 @@ public class GameMgr extends BeaconzPluginDependent {
              		}
              	}
     	
-    	Settings.dontpopulate.clear();;  
+    	Settings.populate.clear();;  
     	//getLogger().info("GameMgr.isAreaSafe - totalblocks: " + totalblocks + " unsafe blocks: " + unsafeblocks + " (" + (unsafeblocks * 1.0) / (totalblocks * 1.0) + ")");             	
     	return ((unsafeblocks * 1.0) / (totalblocks * 1.0)) < percentage;
     	
