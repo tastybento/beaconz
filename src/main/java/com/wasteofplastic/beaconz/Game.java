@@ -164,6 +164,35 @@ public class Game extends BeaconzPluginDependent {
         // Save the teams
         scorecard.saveTeamMembers();
     }
+    
+    /**
+     * Deletes the game
+     */
+    public void delete() {
+        File gamesFile = new File(getBeaconzPlugin().getDataFolder(),"games.yml");
+        YamlConfiguration gamesYml = YamlConfiguration.loadConfiguration(gamesFile);
+
+        // Backup the games file just in case
+        if (gamesFile.exists()) {
+            File backup = new File(getBeaconzPlugin().getDataFolder(),"games.old");
+            gamesFile.renameTo(backup);
+        }   
+        
+        // Save game name, region and all parameters
+        String path = "game." + gameName;
+        gamesYml.set(path, null);
+
+        // Now save to file
+        try {
+            gamesYml.save(gamesFile);
+        } catch (IOException e) {
+            getLogger().severe("Problem saving games file!");
+            e.printStackTrace();
+        }
+
+        // Save the teams
+        scorecard.deleteTeamMembers();
+    }
 
     /**
      * Handles players joining and leaving the game
@@ -187,18 +216,6 @@ public class Game extends BeaconzPluginDependent {
         } else {
             player.sendMessage(ChatColor.GREEN + "Welcome back to Beaconz game " + ChatColor.YELLOW + gameName);
         }
-        // Give newbie kit
-        if (newPlayer) {
-            player.getInventory().clear();
-            for (ItemStack item : Settings.newbieKit) {
-                HashMap<Integer, ItemStack> tooBig = player.getInventory().addItem(item);
-                if (!tooBig.isEmpty()) {
-                    for (ItemStack items : tooBig.values()) {
-                        player.getWorld().dropItemNaturally(player.getLocation(), items);
-                    }
-                }
-            }
-        }
 
         // Assign a team if player doesn't have one
         scorecard.assignTeam(player);
@@ -212,6 +229,18 @@ public class Game extends BeaconzPluginDependent {
         // Process region enter
         region.enter(player);
 
+        // Give newbie kit
+        if (newPlayer) {
+            player.getInventory().clear();
+            for (ItemStack item : Settings.newbieKit) {
+                HashMap<Integer, ItemStack> tooBig = player.getInventory().addItem(item);
+                if (!tooBig.isEmpty()) {
+                    for (ItemStack items : tooBig.values()) {
+                        player.getWorld().dropItemNaturally(player.getLocation(), items);
+                    }
+                }
+            }
+        }
     }
 
     /** 

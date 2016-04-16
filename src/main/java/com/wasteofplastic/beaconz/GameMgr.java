@@ -737,10 +737,11 @@ public class GameMgr extends BeaconzPluginDependent {
         game.getRegion().regenerate(sender);
         // Remove region
         regions.remove(game.getRegion().getCorners());
+        // Remove chests
+        getBeaconzStore().removeGame(game.getName()); 
         // Remove game
         games.remove(game.getName());
-        // Remove chests
-        getBeaconzStore().removeGame(game.getName());  
+        game.delete();
     }    
     
 }

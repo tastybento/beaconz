@@ -1008,5 +1008,32 @@ public class Scorecard extends BeaconzPluginDependent{
                 }
             }			
         }, 20, timerinterval*20); 
+    }
+
+    /**
+     * Deletes the team members
+     */
+    public void deleteTeamMembers() {
+        File teamsFile = new File(getBeaconzPlugin().getDataFolder(),"teams.yml");
+        YamlConfiguration teamsYml = YamlConfiguration.loadConfiguration(teamsFile);
+        // Backup the teams file just in case
+        if (teamsFile.exists()) {
+            File backup = new File(getBeaconzPlugin().getDataFolder(),"teams.old");
+            teamsFile.renameTo(backup);
+        }  
+        teamsYml.set(gameName, null);        
+        for (Team team: scoreboard.getTeams()) {
+            // Remove the team members
+            for (String name : teamMembers.get(team)) {
+                team.removeEntry(name);
+            }
+        }
+        try {
+            teamsYml.save(teamsFile);
+        } catch (IOException e) {
+            // Catch block
+            e.printStackTrace();
+        }
+        
     }	
 }

@@ -1,3 +1,25 @@
+/*
+ * Copyright (c) 2015 tastybento
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
 package com.wasteofplastic.beaconz;
 
 import java.io.File;
@@ -28,6 +50,25 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 import com.wasteofplastic.beaconz.listeners.BeaconListeners;
 
+/**
+ * This class provides inventory, health, xp and food level swapping between games and between worlds.
+ * Players who enter the beaconz world go to the lobby and then onto the games. Their external inventory
+ * is all stored under the lobby tag. When the player exits the beaconz world, they receive their lobby
+ * items again.
+ * As writing a plugin similar to MultiInv looked especially difficult and would require clever serialization
+ * of every item in the game, I decided to create another flat world where player's items are stored in
+ * chests. The first item in the chest is a piece of paper with lore on it that records whose chest it is
+ * and the player's stats. This can be used as a fall back to find stuff if required and is used when
+ * rebuilding the index.
+ * The index is a double hashmap of player/gamename/location that is stored in a YML for quick access. If
+ * it is lost, or deleted, it is recovered by a systematic scan of the chests.
+ * Chests are currently stored at 0,0 going vertically until they get to the top of the sky. Then they move
+ * in the positive X direction. TODO: write a better packing algorithm to make them go in a spiral or something.
+ * If a game is deleted, then the chest is marked as empty and can be reused.
+ * 
+ * @author tastybento
+ *
+ */
 public class BeaconzStore extends BeaconzPluginDependent {
     private World beaconzStoreWorld;
     private HashMap<UUID,HashMap<String,Location>> index = new HashMap<UUID, HashMap<String,Location>>();
@@ -37,6 +78,7 @@ public class BeaconzStore extends BeaconzPluginDependent {
     private int lastZ;
     private YamlConfiguration ymlIndex;
     private File indexFile;
+    private static final boolean DEBUG = false;
 
     public BeaconzStore(Beaconz beaconzPlugin) {
         super(beaconzPlugin);
@@ -121,7 +163,9 @@ public class BeaconzStore extends BeaconzPluginDependent {
      * Rebuilds the index by going through chests in the world
      */
     public void rebuildIndex() {
-        getLogger().info("DEBUG: Rebuilding index");
+        if (DEBUG) {
+            getLogger().info("DEBUG: Rebuilding index");
+        }
         index.clear();
         emptyChests.clear();
         // Load the store
@@ -162,7 +206,9 @@ public class BeaconzStore extends BeaconzPluginDependent {
             chestBlock = beaconzStoreWorld.getBlockAt(lastX, lastY, lastZ);
         }
         // After this, lastX, Y, Z should point to the next free spot
-        getLogger().info("DEBUG: last = " + lastX + "," + lastY + "," + lastZ);
+        if (DEBUG) {
+            getLogger().info("DEBUG: last = " + lastX + "," + lastY + "," + lastZ);
+        }
     }
 
     /**
@@ -170,14 +216,20 @@ public class BeaconzStore extends BeaconzPluginDependent {
      * @param player
      */
     public void getInventory(Player player, String gameName) {
-        getLogger().info("DEBUG: getInventory for " + player.getName() + " going to " + gameName);
-        // Clear the inventory
-        getLogger().info("DEBUG: clearing player's inventory - I hope it's saved somewhere!");
+        if (DEBUG) {
+            getLogger().info("DEBUG: getInventory for " + player.getName() + " going to " + gameName);
+            // Clear the inventory
+            getLogger().info("DEBUG: clearing player's inventory - I hope it's saved somewhere!");
+        }
         player.getInventory().clear();
         if (index.containsKey(player.getUniqueId())) {
-            getLogger().info("DEBUG: player has chest(s)");
+            if (DEBUG) {
+                getLogger().info("DEBUG: player has chest(s)");
+            }
             if (index.get(player.getUniqueId()).containsKey(gameName)) {
-                getLogger().info("DEBUG: chest is for this game " + gameName);
+                if (DEBUG) {
+                    getLogger().info("DEBUG: chest is for this game " + gameName);
+                }
                 // They have a chest for this game, so give them the contents
                 Block chestBlock = beaconzStoreWorld.getBlockAt(index.get(player.getUniqueId()).get(gameName));
                 Chest chest = (Chest)chestBlock.getState();
@@ -187,15 +239,36 @@ public class BeaconzStore extends BeaconzPluginDependent {
                     // Get the experience
                     ItemStack paper = chestInv.getItem(0);
                     if (paper != null) {
-                        getLogger().info("DEBUG: index item found");
+                        if (DEBUG) {
+                            getLogger().info("DEBUG: index item found");
+                        }
                         ItemMeta itemMeta = paper.getItemMeta();
                         List<String> lore = itemMeta.getLore();
-                        if (lore.size()>3) {
+                        if (lore.size() == 6) {
+                            // Exp
                             String[] split = lore.get(3).split(":");
                             if (split.length == 2 && NumberUtils.isNumber(split[1])) {
                                 int xp = Integer.valueOf(split[1]);
-                                getLogger().info("DEBUG: Setting player's xp to " + xp);
+                                if (DEBUG) {
+                                    getLogger().info("DEBUG: Setting player's xp to " + xp);
+                                }
                                 BeaconListeners.setTotalExperience(player, xp);
+                            }
+                            // Health
+                            split = lore.get(4).split(":");
+                            if (split.length == 2 && NumberUtils.isNumber(split[1])) {
+                                double health = Double.valueOf(split[1]);
+                                if (DEBUG)
+                                    getLogger().info("DEBUG: Setting player's health to " + health);
+                                player.setHealth(health);
+                            }
+                            // Food
+                            split = lore.get(5).split(":");
+                            if (split.length == 2 && NumberUtils.isNumber(split[1])) {
+                                int food = Integer.valueOf(split[1]);
+                                if (DEBUG)
+                                    getLogger().info("DEBUG: Setting player's food to " + food);
+                                player.setFoodLevel(food);
                             }
                         }
                     }
@@ -207,10 +280,12 @@ public class BeaconzStore extends BeaconzPluginDependent {
                     }                    
                 }
             } else {
-                getLogger().info("DEBUG: chest is not for game " + gameName);
+                if (DEBUG)
+                    getLogger().info("DEBUG: chest is not for game " + gameName);
             }
         } else {
-            getLogger().info("DEBUG: player does not have any chests");
+            if (DEBUG)
+                getLogger().info("DEBUG: player does not have any chests");
         }
     }
 
@@ -219,20 +294,24 @@ public class BeaconzStore extends BeaconzPluginDependent {
      * @param player
      */
     public void storeInventory(Player player, String gameName) {
-        getLogger().info("DEBUG: storeInventory for " + player.getName() + " going to " + gameName);
+        if (DEBUG)
+            getLogger().info("DEBUG: storeInventory for " + player.getName() + " going to " + gameName);
         Block chestBlock = beaconzStoreWorld.getBlockAt(lastX, lastY, lastZ);
         // Find out if they have a chest already
         if (!index.containsKey(player.getUniqueId())) {
-            getLogger().info("DEBUG: player has no chest");
+            if (DEBUG)
+                getLogger().info("DEBUG: player has no chest");
             // Make a chest            
             // Check if there are any free chests
             if (!emptyChests.isEmpty()) {
-                getLogger().info("DEBUG: there is an empty chest available");
+                if (DEBUG)
+                    getLogger().info("DEBUG: there is an empty chest available");
                 chestBlock = emptyChests.get(0).getBlock();
                 emptyChests.remove(0);
             } else {
                 // There is no chest, so make one 
-                getLogger().info("DEBUG: Making chest");
+                if (DEBUG)
+                    getLogger().info("DEBUG: Making chest");
                 chestBlock.setType(Material.CHEST);
                 chestBlock.getRelative(0, 0, 1).setType(Material.CHEST);
                 lastY++;
@@ -240,31 +319,37 @@ public class BeaconzStore extends BeaconzPluginDependent {
                     lastY = 4;
                     lastX++;
                 }
-                getLogger().info("DEBUG: last = " + lastX + "," + lastY + "," + lastZ);
+                if (DEBUG)
+                    getLogger().info("DEBUG: last = " + lastX + "," + lastY + "," + lastZ);
             }
             // Store in index
             HashMap<String,Location> placeHolder = new HashMap<String,Location>();
             placeHolder.put(gameName,chestBlock.getLocation());
             index.put(player.getUniqueId(), placeHolder);
         } else {
-            getLogger().info("DEBUG: player has chest");
+            if (DEBUG)
+                getLogger().info("DEBUG: player has chest");
             if (index.get(player.getUniqueId()).containsKey(gameName)) {
-                getLogger().info("DEBUG: player has chest for " + gameName);
+                if (DEBUG)
+                    getLogger().info("DEBUG: player has chest for " + gameName);
                 // There is a chest already! So use it
                 chestBlock = index.get(player.getUniqueId()).get(gameName).getBlock();
                 if (!chestBlock.getType().equals(Material.CHEST)) {
                     getLogger().severe("Chest at " + index.get(player.getUniqueId()).get(gameName) + " is not there anymore!");
                 }
             } else {
-                getLogger().info("DEBUG: Player does not have chest for " + gameName);
+                if (DEBUG)
+                    getLogger().info("DEBUG: Player does not have chest for " + gameName);
                 // Check if there are any free chests
                 if (!emptyChests.isEmpty()) {
-                    getLogger().info("DEBUG: there is an empty chest available");
+                    if (DEBUG)
+                        getLogger().info("DEBUG: there is an empty chest available");
                     chestBlock = emptyChests.get(0).getBlock();
                     emptyChests.remove(0);
                 } else {
                     // There is no chest, so make one 
-                    getLogger().info("DEBUG: Making chest");
+                    if (DEBUG)
+                        getLogger().info("DEBUG: Making chest");
                     chestBlock.setType(Material.CHEST);
                     chestBlock.getRelative(0, 0, 1).setType(Material.CHEST);
                     lastY++;
@@ -272,7 +357,8 @@ public class BeaconzStore extends BeaconzPluginDependent {
                         lastY = 0;
                         lastX++;
                     }
-                    getLogger().info("DEBUG: last = " + lastX + "," + lastY + "," + lastZ);
+                    if (DEBUG)
+                        getLogger().info("DEBUG: last = " + lastX + "," + lastY + "," + lastZ);
                 }
                 HashMap<String,Location> placeHolder = index.get(player.getUniqueId());
                 placeHolder.put(gameName,chestBlock.getLocation());
@@ -287,19 +373,23 @@ public class BeaconzStore extends BeaconzPluginDependent {
             // Clear any current inventory
             chestInv.clear();
             // Create the index item
-            getLogger().info("DEBUG: creating index item");
+            if (DEBUG)
+                getLogger().info("DEBUG: creating index item");
             ItemStack indexItem = new ItemStack(Material.PAPER);
             List<String> lore = new ArrayList<String>();
             lore.add(player.getUniqueId().toString());
             lore.add(gameName);
             lore.add(player.getName());
             lore.add("xp:" + BeaconListeners.getTotalExperience(player));
+            lore.add("health:" + player.getHealth());
+            lore.add("food:" + player.getFoodLevel());
             ItemMeta meta = indexItem.getItemMeta();
             meta.setLore(lore);
             indexItem.setItemMeta(meta);
             int itemIndex = 0;
             chestInv.setItem(itemIndex++, indexItem);
-            getLogger().info("DEBUG: copying player's inventory to chest");
+            if (DEBUG)
+                getLogger().info("DEBUG: copying player's inventory to chest");
             // Copy the player's items to the chest
             for (ItemStack item: player.getInventory()) {
                 chestInv.setItem(itemIndex++, item);
@@ -309,7 +399,8 @@ public class BeaconzStore extends BeaconzPluginDependent {
             BeaconListeners.setTotalExperience(player, 0);
 
             // Done!
-            getLogger().info("DEBUG: Done!");
+            if (DEBUG)
+                getLogger().info("DEBUG: Done!");
         }
     }
 
