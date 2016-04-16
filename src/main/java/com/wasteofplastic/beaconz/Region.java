@@ -34,6 +34,8 @@ import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
 import org.bukkit.material.MaterialData;
 import org.bukkit.material.SimpleAttachableMaterialData;
@@ -318,7 +320,7 @@ public class Region extends BeaconzPluginDependent {
         Double y = getBeaconzWorld().getHighestBlockYAt((int) point.getX(), (int) point.getY()) * 1.0;
         setSpawnPoint(new Location(getBeaconzWorld(), point.getX(), y, point.getY()), radius);
     }
-    
+
     /**
      * Sets a safe spawn point in a region
      * @param loc
@@ -343,6 +345,12 @@ public class Region extends BeaconzPluginDependent {
         player.teleport(spawnpoint);
         if (this.equals(getGameMgr().getLobby())) {
             enterLobby(player);
+        }
+        // Remove any Mobs around the area
+        for (Entity entity : player.getNearbyEntities(10, 10, 10)) {
+            if (entity instanceof Monster) {
+                entity.remove();
+            }
         }
     }
 
@@ -429,10 +437,14 @@ public class Region extends BeaconzPluginDependent {
             //game.getScorecard().sendPlayersHome(player, true);        	        
 
             // Welcome player in chat
-            player.sendMessage(ChatColor.GREEN + "Welcome to Beaconz! ");
+            player.sendMessage(ChatColor.GREEN + "Welcome to Beaconz!");
             player.sendMessage(ChatColor.AQUA + "You're playing game " + game.getName() + " in " + game.getGamemode() + " mode!");
             player.sendMessage(ChatColor.AQUA + "You're a member of " + teamname + " team!");
-            player.sendMessage(ChatColor.AQUA + "Your team's objective is to capture " + game.getGamegoalvalue() + " " + game.getGamegoal() + "!");
+            if (game.getGamegoalvalue() > 0) {
+                player.sendMessage(ChatColor.AQUA + "Your team's objective is to capture " + game.getGamegoalvalue() + " " + game.getGamegoal() + "!");
+            } else {
+                player.sendMessage(ChatColor.AQUA + "Your team's objective is to capture the most " + game.getGamegoal() + "!");
+            }
 
             // Welcome player on screen        
             String titleline = "Beaconz game " + game.getName() + "!";
