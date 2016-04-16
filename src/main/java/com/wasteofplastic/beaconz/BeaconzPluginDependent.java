@@ -90,4 +90,8 @@ public abstract class BeaconzPluginDependent {
     public final int getHighestBlockYAt(int x, int z) {
         return this.beaconzPlugin.getHighestBlockYAt(x, z);
     }
+    
+    public final BeaconzStore getBeaconzStore() {
+        return this.beaconzPlugin.getBeaconzStore();
+    }
 }

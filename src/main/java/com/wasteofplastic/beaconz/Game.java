@@ -187,7 +187,6 @@ public class Game extends BeaconzPluginDependent {
         } else {
             player.sendMessage(ChatColor.GREEN + "Welcome back to Beaconz game " + ChatColor.YELLOW + gameName);
         }
-
         // Give newbie kit
         if (newPlayer) {
             player.getInventory().clear();
@@ -322,6 +321,15 @@ public class Game extends BeaconzPluginDependent {
             return "";
         }
         return l.getWorld().getName() + ":" + l.getBlockX() + ":" + l.getBlockY() + ":" + l.getBlockZ() + ":" + Float.floatToIntBits(l.getYaw()) + ":" + Float.floatToIntBits(l.getPitch());
+    }
+
+    /**
+     * Checks if this game has this player in it or note
+     * @param player
+     * @return true if player is a part of the game
+     */
+    public boolean hasPlayer(Player player) {
+        return scorecard.inTeam(player);
     }
 
 }

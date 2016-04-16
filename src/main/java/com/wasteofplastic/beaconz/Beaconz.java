@@ -33,7 +33,6 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
 import org.bukkit.WorldType;
-import org.bukkit.block.Block;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.generator.BlockPopulator;
 import org.bukkit.inventory.ItemStack;
@@ -55,6 +54,7 @@ public class Beaconz extends JavaPlugin {
     static BlockPopulator beaconPopulator;
     private GameMgr gameMgr;
     private Messages messages;
+    private BeaconzStore beaconzStore;
 
 
     @Override
@@ -72,7 +72,7 @@ public class Beaconz extends JavaPlugin {
 
 
         // Run commands that need to be run 1 tick after start
-        getServer().getScheduler().runTask(this, new Runnable() {
+        getServer().getScheduler().runTask(this, new Runnable() {            
 
             public void run() {            	
             	
@@ -97,6 +97,8 @@ public class Beaconz extends JavaPlugin {
                 // Create the world
                 getBeaconzWorld();
 
+                // Create the store world
+                beaconzStore = new BeaconzStore(plugin);
                 // Register the listeners - block break etc.
                 BeaconListeners ev = new BeaconListeners(plugin);
                 getServer().getPluginManager().registerEvents(ev, plugin);
@@ -117,6 +119,9 @@ public class Beaconz extends JavaPlugin {
     {
         if (register != null) {
             register.saveRegister();
+        }
+        if (beaconzStore != null) {
+            beaconzStore.saveIndex();
         }
         getGameMgr().saveAllGames();
         beaconzWorld.getPopulators().clear();
@@ -501,7 +506,7 @@ public class Beaconz extends JavaPlugin {
             // World doesn't exist, so make it
             getLogger().info("World is '" + Settings.worldName + "'");
             try {
-                beaconzWorld = WorldCreator.name(Settings.worldName).type(WorldType.NORMAL).environment(World.Environment.NORMAL).createWorld();
+                beaconzWorld = WorldCreator.name(Settings.worldName).type(WorldType.NORMAL).environment(World.Environment.NORMAL).createWorld();            
             } catch (Exception e) {
                 getLogger().info("Could not make world yet..");
                 return null;
@@ -512,6 +517,14 @@ public class Beaconz extends JavaPlugin {
         //beaconzWorld.setSpawnLocation(Settings.xCenter, beaconzWorld.getHighestBlockYAt(Settings.xCenter, Settings.zCenter), Settings.zCenter);
         return beaconzWorld;
     }
+
+    /**
+     * @return the beaconzStore
+     */
+    public BeaconzStore getBeaconzStore() {
+        return beaconzStore;
+    }
+
 
     /**
      * @return the messages
@@ -563,4 +576,5 @@ public class Beaconz extends JavaPlugin {
         }
         return 0;
     }
+
 }

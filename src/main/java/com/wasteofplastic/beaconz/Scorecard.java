@@ -42,6 +42,8 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
 import org.bukkit.material.MaterialData;
 import org.bukkit.scheduler.BukkitTask;
@@ -426,6 +428,12 @@ public class Scorecard extends BeaconzPluginDependent{
             loc = game.getRegion().findSafeSpot(loc, Settings.gameDistance / 10);  // in case other players have boobytrapped the spawnpoint
             player.teleport(loc); 
             player.setScoreboard(scoreboard);
+            // Remove any hostile mobs
+            for (Entity entity: player.getNearbyEntities(10, 10, 10)) {
+                if (entity instanceof Monster) {
+                    entity.remove();
+                }
+            }
         }
     }
 

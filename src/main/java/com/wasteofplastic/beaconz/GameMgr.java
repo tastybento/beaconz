@@ -651,6 +651,14 @@ public class GameMgr extends BeaconzPluginDependent {
     public Boolean isPlayerInLobby(Player player) {
     	return lobby.isPlayerInRegion(player);
     }
+    
+    /**
+     * @param location
+     * @return true if in lobby
+     */
+    public Boolean isLocationInLobby(Location location) {
+        return lobby.containsPoint(location.getX(), location.getZ());
+    }
  
     /**
      * Check if an area is free
@@ -718,6 +726,21 @@ public class GameMgr extends BeaconzPluginDependent {
     	Double a2 = x1 < x2 ? x2 : x1;
     	Double b2 = x1 < x2 ? z2 : z1;   		
     	return new Point2D [] {new Point2D.Double(a1,b1), new Point2D.Double(a2,b2)};    	
-    }     
+    }
+
+    /**
+     * Deletes the game
+     * @param sender 
+     * @param game
+     */
+    public void delete(CommandSender sender, Game game) {
+        game.getRegion().regenerate(sender);
+        // Remove region
+        regions.remove(game.getRegion().getCorners());
+        // Remove game
+        games.remove(game.getName());
+        // Remove chests
+        getBeaconzStore().removeGame(game.getName());  
+    }    
     
 }

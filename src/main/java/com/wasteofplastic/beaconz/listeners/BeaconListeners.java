@@ -68,6 +68,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerShearEntityEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.vehicle.VehicleDamageEvent;
 import org.bukkit.event.vehicle.VehicleMoveEvent;
 import org.bukkit.event.world.WorldInitEvent;
@@ -1058,12 +1059,12 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
      */
     private boolean checkMove(Player player, World world, Location from,
             Location to) {
-        Region regionfrom = getGameMgr().getRegion(from);
-        Region regionto = getGameMgr().getRegion(to);
+        Region regionFrom = getGameMgr().getRegion(from);
+        Region regionTo = getGameMgr().getRegion(to);
 
         // Check if player is trying to leave a region by moving over a region boundary
         // And send him back to whence he came
-        if (regionfrom != null && regionfrom != regionto) {
+        if (regionFrom != null && regionFrom != regionTo) {
             if (from.distanceSquared(to) < 6.25) {
                 //float pitch = player.getLocation().getPitch();
                 //float yaw = player.getLocation().getYaw();
@@ -1079,14 +1080,17 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         }
 
         // Check if player changed regions and process region exit and enter methods
-        if (regionfrom != null && regionfrom != regionto) {
-            regionfrom.exit(player);            
+
+        // Leaving
+        if (regionFrom != null && regionFrom != regionTo) {
+            regionFrom.exit(player);            
         }
-        if (regionto != null && regionfrom != regionto) {
-            regionto.enter(player);
+        // Entering
+        if (regionTo != null && regionFrom != regionTo) {
+            regionTo.enter(player);
         }
         // Outside play area
-        if (regionto == null && regionfrom == null) {
+        if (regionTo == null && regionFrom == null) {
             if (!player.isOp()) {
                 player.teleport(getGameMgr().getLobby().getSpawnPoint());
                 getLogger().warning(player.getName() + " managed to get outside of the game area and was teleported to the lobby.");
@@ -1230,7 +1234,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         int xp = getTotalExperience(player);
         //getLogger().info("DEBUG: " + player.getName() + " total before exp = " + xp);   
         //getLogger().info("DEBUG: " + player.getName() + " total before exp = " + player.getTotalExperience());   
-        
+
         if (xp >= xpRequired) {                
             setTotalExperience(player, xp - xpRequired);
             //getLogger().info("DEBUG: " + player.getName() + " total after exp = " + getTotalExperience(player));  
@@ -1336,5 +1340,112 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         int exp = (int)Math.round(getExpAtLevel(player) * player.getExp());     
         int nextLevel = player.getLevel();
         return getExpAtLevel(nextLevel) - exp;
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onTeleport(final PlayerTeleportEvent event) {
+        getLogger().info("DEBUG: Teleporting event");
+        if (event.getFrom().getWorld() == null || event.getTo().getWorld() == null) {
+            getLogger().info("DEBUG: from or to world is null");
+            return;
+        }
+        // Get the games associated with these locations
+        final Game fromGame = getGameMgr().getGame(event.getFrom());
+        final Game toGame = getGameMgr().getGame(event.getTo());
+
+        // Check if the teleport is to or from the lobby
+        final boolean fromLobby = getGameMgr().isLocationInLobby(event.getFrom());
+        final boolean toLobby = getGameMgr().isLocationInLobby(event.getTo());
+        // Teleporting out of Beaconz World
+        if (!event.getTo().getWorld().equals(getBeaconzWorld()) && fromGame != null) {
+            getLogger().info("DEBUG: Teleporting out of world");
+            // Store 
+            getBeaconzStore().storeInventory(event.getPlayer(), fromGame.getName());
+            // Load lobby inv
+            getBeaconzStore().getInventory(event.getPlayer(), "Lobby");
+            return;
+        }
+        /*
+        // Teleporting into Beaconz World
+        if (event.getTo().getWorld().equals(getBeaconzWorld()) && event.getFrom().getWorld().equals(getBeaconzWorld())) {
+            getLogger().info("DEBUG: Teleporting into world");
+            // Get from store 
+            getBeaconzPlugin().getServer().getScheduler().runTaskLater(getBeaconzPlugin(), new Runnable() {
+
+                @Override
+                public void run() {
+                    getBeaconzStore().getInventory(event.getPlayer(), event.getTo());                    
+                }}, 5L);
+
+            return;
+        }*/
+        // Teleporting to different game
+        if (event.getTo().getWorld().equals(getBeaconzWorld()) && event.getFrom().getWorld().equals(getBeaconzWorld())) {
+            getLogger().info("DEBUG: Teleporting within world");
+
+            if (toLobby && fromLobby) {
+                getLogger().info("DEBUG: Teleporting within lobby");
+                return;
+            }
+
+            if (toLobby && fromGame != null) {
+                getLogger().info("DEBUG: Teleporting to lobby from game " + fromGame.getName());
+                // Store 
+                getBeaconzStore().storeInventory(event.getPlayer(), fromGame.getName());
+                // Get from store 
+                getBeaconzPlugin().getServer().getScheduler().runTaskLater(getBeaconzPlugin(), new Runnable() {
+
+                    @Override
+                    public void run() {
+                        getBeaconzStore().getInventory(event.getPlayer(), "Lobby");                    
+                    }}, 5L);
+                return;
+            }
+
+            if (fromLobby && toGame != null) {
+                getLogger().info("DEBUG: Teleporting from lobby to a game " + toGame.getName());
+                // Store in lobby
+                getBeaconzStore().storeInventory(event.getPlayer(), "Lobby");
+                // Get from store 
+                getBeaconzPlugin().getServer().getScheduler().runTaskLater(getBeaconzPlugin(), new Runnable() {
+
+                    @Override
+                    public void run() {
+                        getBeaconzStore().getInventory(event.getPlayer(), toGame.getName());                    
+                    }}, 5L);
+                return;
+            }
+            getLogger().info("DEBUG: Not a lobby teleport");
+            // Not a lobby
+            if (fromGame != null && toGame != null && fromGame.equals(toGame)) {
+                getLogger().info("DEBUG: Teleporting within game");
+                return;
+            }
+
+            if (fromGame != null) {
+                getLogger().info("DEBUG: Teleporting from game " + fromGame.getName());
+                // Store 
+                getBeaconzStore().storeInventory(event.getPlayer(), fromGame.getName());
+            }
+            if (toGame != null) {
+                getLogger().info("DEBUG: Teleporting to game " + toGame.getName());
+                // Check if player is in this game
+                if (toGame.hasPlayer(event.getPlayer())) {
+                    // Get from store 
+                    getBeaconzPlugin().getServer().getScheduler().runTaskLater(getBeaconzPlugin(), new Runnable() {
+
+                        @Override
+                        public void run() {
+                            getBeaconzStore().getInventory(event.getPlayer(), toGame.getName());                    
+                        }}, 5L);
+                } else {
+                    getLogger().info("DEBUG: Player is not in this game");
+                    // Send them to the lobby
+                    event.getPlayer().sendMessage(ChatColor.RED + "You are not in the game '" + toGame.getName() + "'! Going to the lobby...");
+                    event.setTo(getGameMgr().getLobby().getSpawnPoint());
+                }
+            }
+            return;
+        }
     }
 }

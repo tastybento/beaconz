@@ -71,6 +71,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
             sender.sendMessage(cc2 + "Beaconz Admin Commands");
             sender.sendMessage(cc1 + "======================================================");
             sender.sendMessage(cc1 + "/" + label + cc2 + " claim [unowned | <team>]" + cc3 + " - force-claims a beacon in a game");
+            sender.sendMessage(cc1 + "/" + label + cc2 + " delete <gamename>" + cc3 + " - deletes the game");
             sender.sendMessage(cc1 + "/" + label + cc2 + " distribution <decimal between 0 and 1>" + cc3 + " - sets global beacon distribution temporarily");
             sender.sendMessage(cc1 + "/" + label + cc2 + " join <gamename> <team>" + cc3 + " - join a team in an active game");
             sender.sendMessage(cc1 + "/" + label + cc2 + " games" + cc3 + " - list existing games");
@@ -228,6 +229,21 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                 }
                 break;
 
+            case "delete":
+                if (args.length < 2) {
+                    sender.sendMessage(ChatColor.RED + "/" + label + " delete <gamename> - deletes the game");
+                } else {
+                    game = getGameMgr().getGames().get(args[1]);
+                    if (game == null) {
+                        sender.sendMessage("Could not find game " + args[1]);
+                    } else {
+                        sender.sendMessage(ChatColor.GREEN + "Deleting game " + args[1] + "... (This may take some time)");
+                        getGameMgr().delete(sender, game);
+                        sender.sendMessage(ChatColor.GREEN + "Deleted game " + args[1] + ".");
+                    }
+                }
+                break;
+                
             case "reset":
                 if (args.length < 2) {
                     sender.sendMessage(ChatColor.RED + "/" + label + " reset <gamename> - resets score, teams, and repopulates the beacons!");

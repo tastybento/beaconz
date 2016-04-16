@@ -47,6 +47,12 @@ import org.bukkit.scoreboard.Score;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
+/** 
+ * Region instantiates the various regions in the world     
+ * A region belongs to a game - except for the lobby, which is a region with no game
+ * A region is defined by two sets of X:Z coordinates and encompasses all Ys
+ * A region can be created and recreated freely; region.populate is not in the constructor and must be called explicitly
+ */
 public class Region extends BeaconzPluginDependent {
 
     private Beaconz plugin;
@@ -59,12 +65,7 @@ public class Region extends BeaconzPluginDependent {
     private int totalregen;
     private long progress;
 
-    /** 
-     * Region instantiates the various regions in the world     
-     * A region belongs to a game - except for the lobby, which is a region with no game
-     * A region is defined by two sets of X:Z coordinates and encompasses all Ys
-     * A region can be created and recreated freely; region.populate is not in the constructor and must be called explicitly
-     */
+
     public Region(Beaconz beaconzPlugin, Point2D[] corners) {
         super(beaconzPlugin);
         this.plugin = beaconzPlugin;
@@ -220,6 +221,13 @@ public class Region extends BeaconzPluginDependent {
         }
     }
 
+
+    /**
+     * @return the corners
+     */
+    public Point2D[] getCorners() {
+        return corners;
+    }
 
     /** 
      * Sets the region's corners, and in the right order
