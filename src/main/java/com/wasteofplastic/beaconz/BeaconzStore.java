@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.UUID;
 
 import org.apache.commons.lang.math.NumberUtils;
-import org.bukkit.Bukkit;
 import org.bukkit.Difficulty;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -107,13 +106,13 @@ public class BeaconzStore extends BeaconzPluginDependent {
             for (UUID uuid: index.keySet()) {
                 locations = index.get(uuid);
                 for (String gameName: locations.keySet()) {
-                    ymlIndex.set("index." + uuid.toString() + "." + gameName, getStringLocation(locations.get(gameName)));
+                    ymlIndex.set("index." + uuid.toString() + "." + gameName, Beaconz.getStringLocation(locations.get(gameName)));
                 }
             }
             // Save the empty chest locations
             List<String> tempList = new ArrayList<String>();
             for (Location loc : emptyChests) {
-                tempList.add(getStringLocation(loc));
+                tempList.add(Beaconz.getStringLocation(loc));
             }
             ymlIndex.set("emptyChests", tempList);
             // Save file
@@ -142,14 +141,14 @@ public class BeaconzStore extends BeaconzPluginDependent {
                 locations.clear();
                 ConfigurationSection chestLocations = players.getConfigurationSection(uuid);
                 for (String gameName : chestLocations.getValues(false).keySet()) {
-                    locations.put(gameName, getLocationString(chestLocations.getString(gameName)));
+                    locations.put(gameName, Beaconz.getLocationString(chestLocations.getString(gameName)));
                 }
                 index.put(playerUUID, locations);
             }
             // Get empty chests
             List<String> tempList = ymlIndex.getStringList("emptyChests");
             for (String loc : tempList) {
-                emptyChests.add(getLocationString(loc)); 
+                emptyChests.add(Beaconz.getLocationString(loc)); 
             }
         } catch (Exception e) {
             // Something went wrong
@@ -420,57 +419,6 @@ public class BeaconzStore extends BeaconzPluginDependent {
                 }
             }
         }
-    }
-
-    /**
-     * Converts a serialized location to a Location. Returns null if string is
-     * empty
-     * 
-     * @param s
-     *            - serialized location in format "world:x:y:z"
-     * @return Location
-     */
-    static public Location getLocationString(final String s) {
-        if (s == null || s.trim() == "") {
-            return null;
-        }
-        final String[] parts = s.split(":");
-        if (parts.length == 4) {
-            final World w = Bukkit.getServer().getWorld(parts[0]);
-            if (w == null) {
-                return null;
-            }
-            final int x = Integer.parseInt(parts[1]);
-            final int y = Integer.parseInt(parts[2]);
-            final int z = Integer.parseInt(parts[3]);
-            return new Location(w, x, y, z);
-        } else if (parts.length == 6) {
-            final World w = Bukkit.getServer().getWorld(parts[0]);
-            if (w == null) {
-                return null;
-            }
-            final int x = Integer.parseInt(parts[1]);
-            final int y = Integer.parseInt(parts[2]);
-            final int z = Integer.parseInt(parts[3]);
-            final float yaw = Float.intBitsToFloat(Integer.parseInt(parts[4]));
-            final float pitch = Float.intBitsToFloat(Integer.parseInt(parts[5]));
-            return new Location(w, x, y, z, yaw, pitch);
-        }
-        return null;
-    }
-
-    /**
-     * Converts a location to a simple string representation
-     * If location is null, returns empty string
-     * 
-     * @param l
-     * @return String of location
-     */
-    static public String getStringLocation(final Location location) {
-        if (location == null || location.getWorld() == null) {
-            return "";
-        }
-        return location.getWorld().getName() + ":" + location.getBlockX() + ":" + location.getBlockY() + ":" + location.getBlockZ() + ":" + Float.floatToIntBits(location.getYaw()) + ":" + Float.floatToIntBits(location.getPitch());
     }
 
 }

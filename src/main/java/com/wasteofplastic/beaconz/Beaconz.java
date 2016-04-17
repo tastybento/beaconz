@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.Map.Entry;
 
 import org.apache.commons.lang.math.NumberUtils;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
@@ -78,6 +80,8 @@ public class Beaconz extends JavaPlugin {
             	
             	// Start the game manager and create the lobby region
             	gameMgr = new GameMgr(plugin);
+            	/*
+            	 * Do this in the GameMgr constructor
             	gameMgr.createLobby();
             	if (gameMgr.getLobby() == null) {
             		getLogger().info("Error creating the lobby area. Beaconz plugin could not be loaded.");
@@ -85,7 +89,8 @@ public class Beaconz extends JavaPlugin {
             	}
             	
                 // Load existing games
-                gameMgr.loadAllGames(); 
+                gameMgr.loadAllGames();
+                */ 
 
                 // Load the beacon register
                 register = new Register(plugin);
@@ -575,6 +580,59 @@ public class Beaconz extends JavaPlugin {
             }
         }
         return 0;
+    }
+
+
+    /**
+     * Converts a location to a simple string representation
+     * If location is null, returns empty string
+     * 
+     * @param l
+     * @return String of location
+     */
+    static public String getStringLocation(final Location location) {
+        if (location == null || location.getWorld() == null) {
+            return "";
+        }
+        return location.getWorld().getName() + ":" + location.getBlockX() + ":" + location.getBlockY() + ":" + location.getBlockZ() + ":" + Float.floatToIntBits(location.getYaw()) + ":" + Float.floatToIntBits(location.getPitch());
+    }
+
+
+    /**
+     * Converts a serialized location to a Location. Returns null if string is
+     * empty
+     * 
+     * @param s
+     *            - serialized location in format "world:x:y:z"
+     * @return Location
+     */
+    static public Location getLocationString(final String s) {
+        if (s == null || s.trim() == "") {
+            return null;
+        }
+        final String[] parts = s.split(":");
+        if (parts.length == 4) {
+            final World w = Bukkit.getServer().getWorld(parts[0]);
+            if (w == null) {
+                return null;
+            }
+            final int x = Integer.parseInt(parts[1]);
+            final int y = Integer.parseInt(parts[2]);
+            final int z = Integer.parseInt(parts[3]);
+            return new Location(w, x, y, z);
+        } else if (parts.length == 6) {
+            final World w = Bukkit.getServer().getWorld(parts[0]);
+            if (w == null) {
+                return null;
+            }
+            final int x = Integer.parseInt(parts[1]);
+            final int y = Integer.parseInt(parts[2]);
+            final int z = Integer.parseInt(parts[3]);
+            final float yaw = Float.intBitsToFloat(Integer.parseInt(parts[4]));
+            final float pitch = Float.intBitsToFloat(Integer.parseInt(parts[5]));
+            return new Location(w, x, y, z, yaw, pitch);
+        }
+        return null;
     }
 
 }

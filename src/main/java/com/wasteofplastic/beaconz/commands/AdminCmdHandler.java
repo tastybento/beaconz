@@ -452,10 +452,9 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                     // Check if the player is in the lobby
                     player = (Player) sender;
                     if (args.length == 1 && getGameMgr().getLobby().isPlayerInRegion(player)) {
-                        getGameMgr().getLobby().setSpawnPoint(player.getLocation(), 10);
-                        sender.sendMessage(ChatColor.GREEN + "Lobby spawn set to " + getGameMgr().getLobby().getSpawnPoint().getBlockX() + ","
-                                + getGameMgr().getLobby().getSpawnPoint().getBlockY() + ","
-                                + getGameMgr().getLobby().getSpawnPoint().getBlockZ());
+                        getGameMgr().getLobby().setSpawnPoint(player.getLocation());
+                        sender.sendMessage(ChatColor.GREEN + "Lobby spawn set to " + player.getLocation().getBlockX() + ","
+                                + player.getLocation().getBlockY() + "," + player.getLocation().getBlockZ());
                         return true;
                     }
                     // Check team name given exists

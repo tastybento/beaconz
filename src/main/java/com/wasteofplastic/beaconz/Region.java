@@ -339,6 +339,14 @@ public class Region extends BeaconzPluginDependent {
     }
 
     /**
+     * Sets the spawn point without finding a safe spot
+     * @param loc
+     */
+    public void setSpawnPoint(Location loc) {
+        spawnpoint = loc;
+    }
+    
+    /**
      * Returns the region's spawn point
      */
     public Location getSpawnPoint() {

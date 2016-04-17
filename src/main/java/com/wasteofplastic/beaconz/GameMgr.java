@@ -41,19 +41,19 @@ import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Team;
 
 public class GameMgr extends BeaconzPluginDependent {
-	
-	private Beaconz plugin;
-	private Region lobby;
+
+    private Beaconz plugin;
+    private Region lobby;
     private LinkedHashMap<Point2D[], Region> regions;
     private LinkedHashMap<String, Game> games;
     private String gamemode;
     private Integer nbr_teams;
-	private String gamegoal;
-	private Integer gamegoalvalue;
-	private Integer timer;
-	private String scoretypes;
+    private String gamegoal;
+    private Integer gamegoalvalue;
+    private Integer timer;
+    private String scoretypes;
 
-	/** 
+    /** 
      * GameMgr handles the creation and destruction of games and regions
      */
     public GameMgr(Beaconz beaconzPlugin) {
@@ -62,18 +62,19 @@ public class GameMgr extends BeaconzPluginDependent {
         regions = new LinkedHashMap<Point2D[], Region>();
         games = new LinkedHashMap<String, Game>();
         setGameDefaultParms();        
-        		
+        loadAllGames();
     }
-        
+
     /** 
      * Initializes the class without (re)constructing it
      * THIS ISN'T CURRENTLY USED, THE TWO METHODS ARE CALLED SEPARATELY IN Beaconz
      */
+    /*
     public void initialize() {
-    	createLobby();
-    	loadAllGames();
+        createLobby();
+        loadAllGames();
     }
-    
+*/
     /**
      * Handles plugin Reload
      * When plugin gets reloaded, on-going games are not changed
@@ -82,86 +83,142 @@ public class GameMgr extends BeaconzPluginDependent {
     public void reload() {
         saveAllGames();
         setGameDefaultParms();
-    	createLobby();   
-    	for (Game g : getGames().values()) {
-    		g.reload();
-    	}
+        loadAllGames();
+        /*
+        createLobby();   
+        for (Game g : getGames().values()) {
+            g.reload();
+        }
+        */
     }
-    
+
     /** 
      * Saves games to file
      */
     public void saveAllGames() {
-        for (Game game: games.values()) {
-        	game.save();;        	
+        File gamesFile = new File(getBeaconzPlugin().getDataFolder(),"games.yml");
+        YamlConfiguration gamesYml = YamlConfiguration.loadConfiguration(gamesFile);
+        // Backup the games file just in case
+        if (gamesFile.exists()) {
+            File backup = new File(getBeaconzPlugin().getDataFolder(),"games.old");
+            gamesFile.renameTo(backup);
         }
+        // Save the lobby
+        gamesYml.set("lobby.region", ptsToStrCoord(lobby.corners()));
+        gamesYml.set("lobby.spawn", Beaconz.getStringLocation(lobby.getSpawnPoint()));;
+        // Save the games
+        for (Game game: games.values()) {
+            // Save game name, region and all parameters
+            String path = "game." + game.getName();
+            gamesYml.set(path + ".region", ptsToStrCoord(game.getRegion().getCorners()));
+            gamesYml.set(path + ".gamemode", game.getGamemode());
+            gamesYml.set(path + ".nbrteams", game.getNbrTeams());
+            gamesYml.set(path + ".gamegoal", game.getGamegoal());
+            gamesYml.set(path + ".goalvalue", game.getGamegoalvalue());        
+            gamesYml.set(path + ".starttime", game.getStartTime());
+            gamesYml.set(path + ".countdowntimer", game.getScorecard().getCountdownTimer());
+            gamesYml.set(path + ".scoretypes", game.getScoretypes());        
+
+            // Now save to file
+            try {
+                gamesYml.save(gamesFile);
+            } catch (IOException e) {
+                getLogger().severe("Problem saving games file!");
+                e.printStackTrace();
+            }     	
+        }
+    }
+
+    /** 
+     * Converts into a Point2D array of 2 points into a string x1:z1:x2:z2 
+     * ... preserves the points order in the array 
+     */
+    private String ptsToStrCoord(Point2D [] c) {
+        return c[0].getX() + ":" + c[0].getY() + ":" + c[1].getX() + ":" + c[1].getY();     
     }
     
     public void saveGame(String name) {
-    	Game game = games.get("name");
-    	if (game!= null) game.save();        	
+        Game game = games.get("name");
+        if (game!= null) game.save();        	
     }    
-    
+
     /**
      * Loads games from file
      */
     public void loadAllGames() {
-    	games.clear();
-    	loadGames(null);
+        games.clear();
+        loadGames(null);
     }
     public void loadGameByName(String gameName) {
-    	loadGames(gameName);
+        loadGames(gameName);
     }
     public void loadGames(String gameName) {
-    	// if gameName is null, loads all games, if not, just gameName
-    	
+        // if gameName is null, loads all games, if not, just gameName
+
         File gamesFile = new File(getBeaconzPlugin().getDataFolder(),"games.yml");
         if (gamesFile.exists()) {
-        	YamlConfiguration gamesYml = new YamlConfiguration();
-	        try {
-	        	gamesYml.load(gamesFile);
-	        } catch (FileNotFoundException e) {
-	            e.printStackTrace();
-	        } catch (IOException e) {
-	            e.printStackTrace();
-	        } catch (InvalidConfigurationException e) {
-	            getLogger().severe("Problem with games.yml formatting");
-	            e.printStackTrace();
-	        }
-	        // got the file, get the data	        
-	        ConfigurationSection csec = gamesYml.getConfigurationSection("game");
-	        if (csec != null) {
-	        	for (String gname : csec.getKeys(false)) {
-	        		if (gameName == null || gname.equals(gameName)) {
-        				// Load the game info from games.yml	    
-	        			Point2D [] corners = strCoordToPts(csec.getString(gname + ".region"));
-	        			Region region = new Region(plugin, corners);		        			
-	        			String gm   = csec.getString(gname + ".gamemode");
-	        			int nt  = csec.getInt(gname + ".nbrteams");
-	        			String gg   = csec.getString(gname + ".gamegoal");
-	        			int gv  = csec.getInt(gname + ".goalvalue");
-	        			Long st  = csec.getLong(gname + ".starttime");
-	        			int gt  = csec.getInt(gname + ".countdowntimer");
-	        			String gs   = csec.getString(gname + ".scoretypes");
-	        			
-	        			Game game = games.get(gameName);
-	        			if (game != null && gameName != null) {
-	        				// We're loading an active game, reset the game parms and reload it
-		        			game.setGameParms(gm, nt, gg, gv,gt, st, gs);
-	        				game.reload();
-		        		} else {
-		        			// We're loading an existing game from file that's not currently active
-		        			regions.put(corners, region);
-		        			game = new Game(plugin, region, gname, gm, nt, gg, gv, gt, gs);	    
-		        			games.put(gname, game);
-		        		}
-	        		}
-	        	}
-	        }
+            YamlConfiguration gamesYml = new YamlConfiguration();
+            try {
+                gamesYml.load(gamesFile);
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (InvalidConfigurationException e) {
+                getLogger().severe("Problem with games.yml formatting");
+                e.printStackTrace();
+            }
+
+            ConfigurationSection csec = gamesYml.getConfigurationSection("lobby");
+            // Load the lobby when it is started
+            if (gameName == null) {
+                if (csec != null) {
+                    Point2D [] corners = strCoordToPts(csec.getString("region"));
+                    lobby = new Region(plugin, corners);
+                    String spawn = csec.getString("spawn", "");                    
+                    if (!spawn.isEmpty()) {
+                        lobby.setSpawnPoint(Beaconz.getLocationString(spawn));
+                    }
+                    regions.put(corners, lobby);
+                } else {
+                    // No lobby in the file, create it
+                    createLobby();
+                }
+            }
+            // got the file, get the data	        
+            csec = gamesYml.getConfigurationSection("game");
+            if (csec != null) {
+                for (String gname : csec.getKeys(false)) {	        	    
+                    if (gameName == null || gname.equals(gameName)) {
+                        // Load the game info from games.yml	    
+                        Point2D [] corners = strCoordToPts(csec.getString(gname + ".region"));
+                        Region region = new Region(plugin, corners);		        			
+                        String gm   = csec.getString(gname + ".gamemode");
+                        int nt  = csec.getInt(gname + ".nbrteams");
+                        String gg   = csec.getString(gname + ".gamegoal");
+                        int gv  = csec.getInt(gname + ".goalvalue");
+                        Long st  = csec.getLong(gname + ".starttime");
+                        int gt  = csec.getInt(gname + ".countdowntimer");
+                        String gs   = csec.getString(gname + ".scoretypes");
+
+                        Game game = games.get(gameName);
+                        if (game != null && gameName != null) {
+                            // We're loading an active game, reset the game parms and reload it
+                            game.setGameParms(gm, nt, gg, gv,gt, st, gs);
+                            game.reload();
+                        } else {
+                            // We're loading an existing game from file that's not currently active
+                            regions.put(corners, region);
+                            game = new Game(plugin, region, gname, gm, nt, gg, gv, gt, gs);	    
+                            games.put(gname, game);
+                        }
+                    }
+                }
+            }
         }
     }
-          
-    
+
+
     /** 
      * Create the lobby area, with Settings.lobbyx, lobbyz and lobbyradius
      * NOTE: the server admins must ensure that the lobby area is safe
@@ -169,73 +226,73 @@ public class GameMgr extends BeaconzPluginDependent {
      * OR we need to have the option of loading different schematics
      */
     public void createLobby() {
-    	Integer rad = Settings.lobbyradius;
-    	Point2D ctr = new Point2D.Double(Settings.lobbyx, Settings.lobbyz);
-    	    
-    	// The admin is responsible for ensuring that the lobby area is safe
-    	// If the user increased the radius of the lobby in config.yml, it might invade existing game regions
-    	// Just to be safe, let's check that and try smaller areas
-    	// Check that lobby area is FREE. Admin is responsible for making sure it is safe
-    	if (!checkAreaFree(ctr, rad + 0.0)) {
-    		getLogger().info("Lobby area wasn't free. Trying smaller area.");
-    		for (int i = rad-16; i > 0; i =- 16) {
-   				rad = i;
-    			if (checkAreaFree(ctr, i + 0.0)) {
-    				getLogger().info("Found smaller area that is free. Radius = " + i);
-    				break;
-    			}
-    		}
-    	}
+        Integer rad = Settings.lobbyradius;
+        Point2D ctr = new Point2D.Double(Settings.lobbyx, Settings.lobbyz);
 
-    	if (rad >= 16) {
-        	getLogger().info("Creating lobby at Ctr:Rad [" + ctr.getX() + ", " + ctr.getY() + "] : " + rad);
-    		Point2D c1 = new Point2D.Double(Settings.lobbyx + rad, Settings.lobbyz + rad);
-        	Point2D c2 = new Point2D.Double(Settings.lobbyx - rad, Settings.lobbyz - rad);
-        	Point2D[] corners = {c1, c2};        	
-        	lobby = new Region(plugin, corners);
-        	regions.put(corners, lobby);    		
-    	} else {
-    		getLogger().info("Could not find a free area of at least 4 chunks for the lobby.");
-    		getLogger().info("Creating a default lobby of 1 chunk at 0,0.");
-    		Point2D c1 = new Point2D.Double(8,8);
-        	Point2D c2 = new Point2D.Double(-8,-8);
-        	Point2D[] corners = {c1, c2};        	
-        	lobby = new Region(plugin, corners);
-        	regions.put(corners, lobby); 
-    	}    	    	
-    	//getLogger().info("Lobby area created.");    	    	
+        // The admin is responsible for ensuring that the lobby area is safe
+        // If the user increased the radius of the lobby in config.yml, it might invade existing game regions
+        // Just to be safe, let's check that and try smaller areas
+        // Check that lobby area is FREE. Admin is responsible for making sure it is safe
+        if (!checkAreaFree(ctr, rad + 0.0)) {
+            getLogger().info("Lobby area wasn't free. Trying smaller area.");
+            for (int i = rad-16; i > 0; i =- 16) {
+                rad = i;
+                if (checkAreaFree(ctr, i + 0.0)) {
+                    getLogger().info("Found smaller area that is free. Radius = " + i);
+                    break;
+                }
+            }
+        }
+
+        if (rad >= 16) {
+            getLogger().info("Creating lobby at Ctr:Rad [" + ctr.getX() + ", " + ctr.getY() + "] : " + rad);
+            Point2D c1 = new Point2D.Double(Settings.lobbyx + rad, Settings.lobbyz + rad);
+            Point2D c2 = new Point2D.Double(Settings.lobbyx - rad, Settings.lobbyz - rad);
+            Point2D[] corners = {c1, c2};        	
+            lobby = new Region(plugin, corners);
+            regions.put(corners, lobby);    		
+        } else {
+            getLogger().info("Could not find a free area of at least 4 chunks for the lobby.");
+            getLogger().info("Creating a default lobby of 1 chunk at 0,0.");
+            Point2D c1 = new Point2D.Double(8,8);
+            Point2D c2 = new Point2D.Double(-8,-8);
+            Point2D[] corners = {c1, c2};        	
+            lobby = new Region(plugin, corners);
+            regions.put(corners, lobby); 
+        }    	    	
+        //getLogger().info("Lobby area created.");    	    	
     }    
-    
+
     /** 
      * Create a new game, in a new region
      */
     public void newGame(String gameName, CommandSender sender) {
-    	// Fire off *async* task to look for next game location
-    	// Upon completion, it will call newGame(gameName, location) to complete creating the new game
+        // Fire off *async* task to look for next game location
+        // Upon completion, it will call newGame(gameName, location) to complete creating the new game
 
-    	Point2D ctr = nextRegionLocation();  		
+        Point2D ctr = nextRegionLocation();  		
 
-    	Double radius = rup16(Settings.gameDistance / 2.0);
-    	if (ctr == null) {
-    		getLogger().info("Could not find a location to create the next region.");
-    	} else {
-        	Point2D c1 = new Point2D.Double(rup16(ctr.getX() - radius + Settings.xCenter), rup16(ctr.getY() - radius + Settings.zCenter));
-        	Point2D c2 = new Point2D.Double(rup16(ctr.getX() + radius + Settings.xCenter), rup16(ctr.getY() + radius + Settings.zCenter));
-        	Point2D [] corners = {c1, c2};
-        	//getLogger().info("GameMgr.newRegion - about to create new region at " + "[" + c1.getX() + ", " + c1.getY() + "] and [" + c2.getX() + ", " + c2.getY() + "]");
-        	Region region = new Region(plugin, corners);
-        	//getLogger().info("GameMgr.newRegion - region created");
-        	
-        	// Have the region, create the game
-        	Game game = null;
-        	Boolean nametaken = (getGames().get(gameName) != null);
-        	if (region == null || nametaken || gameName == null) {
-        		getLogger().info("Could not create new game.");
-        	} else {    		
-            	game = new Game(plugin, region, gameName, gamemode, nbr_teams, gamegoal, gamegoalvalue, timer, scoretypes);  
-            	games.put(gameName, game);
-            	regions.put(region.corners(), region);    
-        		// Create the corner beacons
+        Double radius = rup16(Settings.gameDistance / 2.0);
+        if (ctr == null) {
+            getLogger().info("Could not find a location to create the next region.");
+        } else {
+            Point2D c1 = new Point2D.Double(rup16(ctr.getX() - radius + Settings.xCenter), rup16(ctr.getY() - radius + Settings.zCenter));
+            Point2D c2 = new Point2D.Double(rup16(ctr.getX() + radius + Settings.xCenter), rup16(ctr.getY() + radius + Settings.zCenter));
+            Point2D [] corners = {c1, c2};
+            //getLogger().info("GameMgr.newRegion - about to create new region at " + "[" + c1.getX() + ", " + c1.getY() + "] and [" + c2.getX() + ", " + c2.getY() + "]");
+            Region region = new Region(plugin, corners);
+            //getLogger().info("GameMgr.newRegion - region created");
+
+            // Have the region, create the game
+            Game game = null;
+            Boolean nametaken = (getGames().get(gameName) != null);
+            if (region == null || nametaken || gameName == null) {
+                getLogger().info("Could not create new game.");
+            } else {    		
+                game = new Game(plugin, region, gameName, gamemode, nbr_teams, gamegoal, gamegoalvalue, timer, scoretypes);  
+                games.put(gameName, game);
+                regions.put(region.corners(), region);    
+                // Create the corner beacons
                 if (region != lobby) { 
                     region.createCorners();
                 }
@@ -248,10 +305,10 @@ public class GameMgr extends BeaconzPluginDependent {
                         }
                     }
                 }
-        	}
-    	}
+            }
+        }
     }
-        
+
     /**
      * nextRegionLocation will find a free spot to create a new region
      * The region size is given by Settings.gameDistance
@@ -259,36 +316,36 @@ public class GameMgr extends BeaconzPluginDependent {
      * When a good region candidate is found, reject it if its surface is more than 40% water or lava
      */
     public Point2D nextRegionLocation() {    	    	
-    	Point2D newregionctr = null;
-    	Double gradius = rup16(Settings.gameDistance / 2.0);    	
+        Point2D newregionctr = null;
+        Double gradius = rup16(Settings.gameDistance / 2.0);    	
 
-    	// For each region already defined, try to find an empty area at "distance" blocks from its center
-    	// Leave a 16-block wide "safety zone" between regions
-    	// at this point the regions map should never be null, because the lobby region should always exist
-    	if (regions != null) {
-    		for (Point2D[] key : regions.keySet()) {
-    			Region region = regions.get(key);
-    			//getLogger().info("GameMgr.nextRegionLocation - processing region at " + region.getCenter());
-    			newregionctr = goodNeighbor(region.getCenter(), region.getRadius() + 16.0 + gradius);
-    			if (newregionctr != null) {
-    				break;
-    			}
-    		}    		
-    	}
+        // For each region already defined, try to find an empty area at "distance" blocks from its center
+        // Leave a 16-block wide "safety zone" between regions
+        // at this point the regions map should never be null, because the lobby region should always exist
+        if (regions != null) {
+            for (Point2D[] key : regions.keySet()) {
+                Region region = regions.get(key);
+                //getLogger().info("GameMgr.nextRegionLocation - processing region at " + region.getCenter());
+                newregionctr = goodNeighbor(region.getCenter(), region.getRadius() + 16.0 + gradius);
+                if (newregionctr != null) {
+                    break;
+                }
+            }    		
+        }
 
-    	// If the regions around the existing regions are not OK, try 10 other locations at random
-    	if (newregionctr == null) {
-    		for (int i = 0; i <10; i++) {
-    			Random rand = new Random();
-    			Integer r = rand.nextInt(Settings.gameDistance * 100);
-    			Point2D rctr = new Point2D.Double(r, r);
-    			newregionctr = goodNeighbor(rctr, gradius);
-    			if (newregionctr != null) {
-    				break;
-    			}    			
-    		}
-    	}
-    	return newregionctr;
+        // If the regions around the existing regions are not OK, try 10 other locations at random
+        if (newregionctr == null) {
+            for (int i = 0; i <10; i++) {
+                Random rand = new Random();
+                Integer r = rand.nextInt(Settings.gameDistance * 100);
+                Point2D rctr = new Point2D.Double(r, r);
+                newregionctr = goodNeighbor(rctr, gradius);
+                if (newregionctr != null) {
+                    break;
+                }    			
+            }
+        }
+        return newregionctr;
     }
 
     /**
@@ -299,34 +356,34 @@ public class GameMgr extends BeaconzPluginDependent {
      * @returns the center of the first safe region it finds
      */
     public Point2D goodNeighbor(Point2D rctr, Double distance) {
-    	//getLogger().info("GameMgr.goodNeighbor =================== from origin [" + rctr.getX() + ", " + rctr.getY() + "]" + " and distance = " + distance);
-    	Point2D location = null;
-		// now try all four sides    	
-		Point2D upctr  = new Point2D.Double(rup16(rctr.getX()), rup16(rctr.getY()) + distance);
-		Point2D downctr  = new Point2D.Double(rup16(rctr.getX()), rup16(rctr.getY()) - distance);
-		Point2D rightctr   = new Point2D.Double(rup16(rctr.getX() + distance), rup16(rctr.getY()));
-		Point2D leftctr   = new Point2D.Double(rup16(rctr.getX() - distance), rup16(rctr.getY()));
-				
-		Double radius = rup16(Settings.gameDistance / 2.0);    			
-		if (isAreaFree(upctr, radius) && isAreaSafe(upctr, radius, 0.4)) {
-			location = upctr;
-		} else {
-    		if (isAreaFree(rightctr, radius) && isAreaSafe(rightctr, radius, 0.4)) {
-    			location = rightctr;
-    		} else {
-        		if (isAreaFree(downctr, radius) && isAreaSafe(downctr, radius, 0.4)) {        			
-        			location = downctr;
-        		} else {
-        			if (isAreaFree(leftctr, radius) && isAreaSafe(leftctr, radius, 0.4)) {        				
-        				location = leftctr;	
-        			}
-        		}            			
-    		}    			
-		}
-		
-		return location;
-	}
-    
+        //getLogger().info("GameMgr.goodNeighbor =================== from origin [" + rctr.getX() + ", " + rctr.getY() + "]" + " and distance = " + distance);
+        Point2D location = null;
+        // now try all four sides    	
+        Point2D upctr  = new Point2D.Double(rup16(rctr.getX()), rup16(rctr.getY()) + distance);
+        Point2D downctr  = new Point2D.Double(rup16(rctr.getX()), rup16(rctr.getY()) - distance);
+        Point2D rightctr   = new Point2D.Double(rup16(rctr.getX() + distance), rup16(rctr.getY()));
+        Point2D leftctr   = new Point2D.Double(rup16(rctr.getX() - distance), rup16(rctr.getY()));
+
+        Double radius = rup16(Settings.gameDistance / 2.0);    			
+        if (isAreaFree(upctr, radius) && isAreaSafe(upctr, radius, 0.4)) {
+            location = upctr;
+        } else {
+            if (isAreaFree(rightctr, radius) && isAreaSafe(rightctr, radius, 0.4)) {
+                location = rightctr;
+            } else {
+                if (isAreaFree(downctr, radius) && isAreaSafe(downctr, radius, 0.4)) {        			
+                    location = downctr;
+                } else {
+                    if (isAreaFree(leftctr, radius) && isAreaSafe(leftctr, radius, 0.4)) {        				
+                        location = leftctr;	
+                    }
+                }            			
+            }    			
+        }
+
+        return location;
+    }
+
     /** 
      * isAreaFree
      * Determines whether an area around a point overlaps with any existing regions
@@ -335,32 +392,32 @@ public class GameMgr extends BeaconzPluginDependent {
      * ..... so negative coordinates for the 
      */
     public Boolean isAreaFree(Point2D ctr, Double radius) {
-    	// pt1 **must be** the upper left corner and pt2 **must be** the lower right corner
-    	Point2D pt1 = new Point2D.Double(ctr.getX() - radius, ctr.getY() - radius);
-    	Point2D pt2 = new Point2D.Double(ctr.getX() + radius, ctr.getY() + radius);
-    	return isAreaFree(pt1, pt2);
+        // pt1 **must be** the upper left corner and pt2 **must be** the lower right corner
+        Point2D pt1 = new Point2D.Double(ctr.getX() - radius, ctr.getY() - radius);
+        Point2D pt2 = new Point2D.Double(ctr.getX() + radius, ctr.getY() + radius);
+        return isAreaFree(pt1, pt2);
     }
-    		 
+
     public Boolean isAreaFree(Point2D pt1, Point2D pt2) {
-    	// pt1 **must be** the upper left corner and pt2 **must be** the lower right corner
-    	Boolean safe = true;
-    	Point2D lowerleft = pt1;
-    	Point2D upperleft = new Point2D.Double(pt1.getX(), pt2.getY());
-    	Point2D upperright = pt2;
-    	Point2D lowerright = new Point2D.Double(pt2.getX(), pt1.getY());
-    	//getLogger().info("IsAreaFree - checking: [" + lowerleft.getX() + ":" + lowerleft.getY() + "] to [" + upperright.getX() + ":" + upperright.getY() + "]");
-		for (Point2D[] key : regions.keySet()) {
-			Region reg = regions.get(key);
-			//getLogger().info("against region " + reg.displayCoords());
-    		if (reg.containsPoint(lowerleft) || reg.containsPoint(upperleft) || reg.containsPoint(lowerright) || reg.containsPoint(upperright)) {
-    			safe = false;
-    			break;
-    		}
-    		//getLogger().info("safe: " + safe);
-    	}
-    	return safe;
+        // pt1 **must be** the upper left corner and pt2 **must be** the lower right corner
+        Boolean safe = true;
+        Point2D lowerleft = pt1;
+        Point2D upperleft = new Point2D.Double(pt1.getX(), pt2.getY());
+        Point2D upperright = pt2;
+        Point2D lowerright = new Point2D.Double(pt2.getX(), pt1.getY());
+        //getLogger().info("IsAreaFree - checking: [" + lowerleft.getX() + ":" + lowerleft.getY() + "] to [" + upperright.getX() + ":" + upperright.getY() + "]");
+        for (Point2D[] key : regions.keySet()) {
+            Region reg = regions.get(key);
+            //getLogger().info("against region " + reg.displayCoords());
+            if (reg.containsPoint(lowerleft) || reg.containsPoint(upperleft) || reg.containsPoint(lowerright) || reg.containsPoint(upperright)) {
+                safe = false;
+                break;
+            }
+            //getLogger().info("safe: " + safe);
+        }
+        return safe;
     }
-    
+
     /** 
      * isAreaSafe
      * Determines whether an area consists of less than a certain percentage of water or lava
@@ -368,44 +425,44 @@ public class GameMgr extends BeaconzPluginDependent {
      * so the radius is capped at 128 blocks. This way we can ensure there is at least
      * a 256x256 region that's safe 
      */
-	public Boolean isAreaSafe (Point2D ctr, Double radius, Double percentage) {          
-		if (radius > 128.0) radius = 128.0;
-    	Integer totalblocks = 1;
-    	Integer unsafeblocks = 0;
-    	Integer minx = (int) (rup16(ctr.getX() - radius)/1);
-    	Integer minz = (int) (rup16(ctr.getY() - radius)/1);
-    	Integer maxx = (int) (rup16(ctr.getX() + radius)/1);
-    	Integer maxz = (int) (rup16(ctr.getY() + radius)/1);
-    	
-    	//getLogger().info("GameMgr.isAreaSafe - at Ctr:Rad [" + ctr.getX() + ", " + ctr.getY() + "] : " + radius);
-         	
-             	for (Integer x = minx; x <= maxx; x++) {
-             		for (Integer z = minz; z <= maxz; z++) {
-             			//Settings.populate.add(new Pair(((x/16)-1) , ((z/16)-1)));
-             			int y = getBeaconzWorld().getHighestBlockYAt(x, z);
-             			Block block = getBeaconzWorld().getBlockAt(x, y, z);
-         				Block bottomblock = getBeaconzWorld().getBlockAt(x, y-1, z);
-             			//getLogger().info("GameMgr.isAreaSafe - checking blocks at " + cX + ":" + cY + ":" + cZ + " -- Type: " + block.getType() + " and " + bottomblock.getType());
-             			totalblocks++;
-             			if (block.isLiquid() || bottomblock.isLiquid()) {                 			
-             				unsafeblocks++;
-             			}	
-             		}
-             	}
-    	
-    	Settings.populate.clear();;  
-    	//getLogger().info("GameMgr.isAreaSafe - totalblocks: " + totalblocks + " unsafe blocks: " + unsafeblocks + " (" + (unsafeblocks * 1.0) / (totalblocks * 1.0) + ")");             	
-    	return ((unsafeblocks * 1.0) / (totalblocks * 1.0)) < percentage;
-    	
+    public Boolean isAreaSafe (Point2D ctr, Double radius, Double percentage) {          
+        if (radius > 128.0) radius = 128.0;
+        Integer totalblocks = 1;
+        Integer unsafeblocks = 0;
+        Integer minx = (int) (rup16(ctr.getX() - radius)/1);
+        Integer minz = (int) (rup16(ctr.getY() - radius)/1);
+        Integer maxx = (int) (rup16(ctr.getX() + radius)/1);
+        Integer maxz = (int) (rup16(ctr.getY() + radius)/1);
+
+        //getLogger().info("GameMgr.isAreaSafe - at Ctr:Rad [" + ctr.getX() + ", " + ctr.getY() + "] : " + radius);
+
+        for (Integer x = minx; x <= maxx; x++) {
+            for (Integer z = minz; z <= maxz; z++) {
+                //Settings.populate.add(new Pair(((x/16)-1) , ((z/16)-1)));
+                int y = getBeaconzWorld().getHighestBlockYAt(x, z);
+                Block block = getBeaconzWorld().getBlockAt(x, y, z);
+                Block bottomblock = getBeaconzWorld().getBlockAt(x, y-1, z);
+                //getLogger().info("GameMgr.isAreaSafe - checking blocks at " + cX + ":" + cY + ":" + cZ + " -- Type: " + block.getType() + " and " + bottomblock.getType());
+                totalblocks++;
+                if (block.isLiquid() || bottomblock.isLiquid()) {                 			
+                    unsafeblocks++;
+                }	
+            }
+        }
+
+        Settings.populate.clear();;  
+        //getLogger().info("GameMgr.isAreaSafe - totalblocks: " + totalblocks + " unsafe blocks: " + unsafeblocks + " (" + (unsafeblocks * 1.0) / (totalblocks * 1.0) + ")");             	
+        return ((unsafeblocks * 1.0) / (totalblocks * 1.0)) < percentage;
+
     }
-    
- 
-        
+
+
+
     /**
      * Sets the default parameters to be used for new games
      */
     public void setGameDefaultParms() {
-    	setGameDefaultParms(null, null, null, null, null, null);
+        setGameDefaultParms(null, null, null, null, null, null);
     }
     public void setGameDefaultParms(String mode, Integer nteams, String ggoal, Integer gvalue, Integer gtimer, String stypes) {
         gamemode = mode != null ? mode : Settings.gamemode;
@@ -430,35 +487,35 @@ public class GameMgr extends BeaconzPluginDependent {
      * Warns player if not in team or if null scoreboard and sends player (not op) to lobby
      */
     public Team getPlayerTeam(Player player) {
-    	Team team = null;
+        Team team = null;
         Scorecard sc = getSC(player);       
         if (sc != null && sc.getTeam(player) != null) {
             team = sc.getTeam(player);
         }
         if (team == null) {
-        	if (player.isOp()) {
-        		// player.sendMessage(ChatColor.RED + "You are not in a team!");
-        	} else {
+            if (player.isOp()) {
+                // player.sendMessage(ChatColor.RED + "You are not in a team!");
+            } else {
                 player.sendMessage(ChatColor.RED + "Player " + player.getName() + " must join a team to play in this world");
                 getLobby().tpToRegionSpawn(player);     		
-        	}
+            }
         }
         return team;
     }    
-    
-    
+
+
     /**
      * Returns a region, based on different criteria:
      * a point in the region, a location in the region, the region's game, a player in the region
      */
-    
+
     /**
      * Get the region based on the location
      * @param loc
      * @return Region or null if none found
      */
     public Region getRegion (Location loc) {
-    	return getRegion(loc.getX(), loc.getZ());
+        return getRegion(loc.getX(), loc.getZ());
     }  
 
     /**
@@ -468,48 +525,48 @@ public class GameMgr extends BeaconzPluginDependent {
      * @return Region where x,z is inside
      */
     public Region getRegion (double x, double z) {
-    	// Returns the region that contains a point
-    	Region region = null;
-    	if (regions != null) {
-        	for (Region reg : regions.values()) {
-        		if (reg.containsPoint(x, z)) {
-        			region = reg;
-        			break;
-        		}    		
-        	}	
-    	}
-    	return region;
+        // Returns the region that contains a point
+        Region region = null;
+        if (regions != null) {
+            for (Region reg : regions.values()) {
+                if (reg.containsPoint(x, z)) {
+                    region = reg;
+                    break;
+                }    		
+            }	
+        }
+        return region;
     }
 
     /**
      * Returns a game, based on different criteria
      */
-    
+
     /**
      * Return the game from the team
      * @param team
      * @return Game or null if none
      */
     public Game getGame (Team team) {
-    	Game game = null;
-    	if (games != null) {
-        	for (Game g : games.values()) {
-        		if (g.getScorecard().getTeamMembers().keySet().contains(team)) {
-        			game = g;
-        			break;
-        		}
-        	}	
-    	}
-    	return game;
+        Game game = null;
+        if (games != null) {
+            for (Game g : games.values()) {
+                if (g.getScorecard().getTeamMembers().keySet().contains(team)) {
+                    game = g;
+                    break;
+                }
+            }	
+        }
+        return game;
     }   
-    
+
     /**
      * Get the game from the game name
      * @param gamename
      * @return Game or null if none
      */
     public Game getGame (String gamename) {
-    	return games.get(gamename);
+        return games.get(gamename);
     }
 
     /**
@@ -518,9 +575,9 @@ public class GameMgr extends BeaconzPluginDependent {
      * @return Game or null if none
      */
     public Game getGame (Point2D point) {
-    	return getGame(getRegion(point.getX(), point.getY()));
+        return getGame(getRegion(point.getX(), point.getY()));
     }
-    
+
     /**
      * Get a game from a double precision coord
      * @param x
@@ -528,9 +585,9 @@ public class GameMgr extends BeaconzPluginDependent {
      * @return Game or null if none
      */
     public Game getGame (double x, double z) {
-    	return getGame(getRegion(x, z));
+        return getGame(getRegion(x, z));
     }
-    
+
     /**
      * Get game from an integer coord
      * @param x
@@ -538,7 +595,7 @@ public class GameMgr extends BeaconzPluginDependent {
      * @return Game or null if none
      */
     public Game getGame (int x, int z) {
-    	return getGame(getRegion(x, z));
+        return getGame(getRegion(x, z));
     }
 
     /** Get game from a Location
@@ -546,54 +603,54 @@ public class GameMgr extends BeaconzPluginDependent {
      * @return Game or null if none
      */
     public Game getGame (Location loc) {
-    	return getGame(getRegion(loc.getX(), loc.getZ()));
+        return getGame(getRegion(loc.getX(), loc.getZ()));
     }
-    
+
     /**
      * Get game from the first point on a link
      * @param link
      * @return Game or null if none
      */
     public Game getGame (Line2D link) {
-    	return getGame(getRegion(link.getX1(), link.getY1()));
+        return getGame(getRegion(link.getX1(), link.getY1()));
     }
-    
+
     /** @return Game or null if none or null if none
      * Get game from a region.
      * @param region
      * @return Game or null if none
      */
     public Game getGame(Region region) {
-    	Game game = null;
-    	for (Game g : games.values()) {
-    		if (g.getRegion().equals(region)) {
-    			game = g;
-    			break;
-    		}
-    	}
-    	return game;
+        Game game = null;
+        for (Game g : games.values()) {
+            if (g.getRegion().equals(region)) {
+                game = g;
+                break;
+            }
+        }
+        return game;
     }
-    
+
     /**
      * Return a game's ScoreCard, based on different criteria
      */ 
-    
+
     /**
      * Get scorecard based on player's position
      * @param player
      * @return scorcard or null if none
      */
     public Scorecard getSC(Player player) {
-    	return getSC(player.getLocation().getX(), player.getLocation().getZ());  	
+        return getSC(player.getLocation().getX(), player.getLocation().getZ());  	
     }
-    
+
     /**
      * Get scorecard based on a point coord
      * @param point
      * @return Scorecard or null if none
      */
     public Scorecard getSC(Point2D point) {
-    	return getSC(point.getX(), point.getY());  	  	
+        return getSC(point.getX(), point.getY());  	  	
     }
     /**
      * @param x
@@ -601,57 +658,57 @@ public class GameMgr extends BeaconzPluginDependent {
      * @return Scorecard or null if none
      */
     public Scorecard getSC(double x, double z) {
-    	Scorecard sc = null;
-    	Game game = getGame(x, z);
-    	if (game != null) sc = game.getScorecard();
-    	return sc;  	
+        Scorecard sc = null;
+        Game game = getGame(x, z);
+        if (game != null) sc = game.getScorecard();
+        return sc;  	
     }
-    
+
     /**
      * @param x
      * @param z
      * @return Scorecard or null if none
      */
     public Scorecard getSC(int x, int z) {
-    	return getSC((double)x, (double)z);  	
+        return getSC((double)x, (double)z);  	
     }
-    
+
     /**
      * @param location
      * @return Scorecard or null if none
      */
     public Scorecard getSC(Location location) {
-    	return getSC(location.getX(), location.getZ());
+        return getSC(location.getX(), location.getZ());
     }    
-    
+
     /** 
      * Return the lobby
      */
     public Region getLobby() {
-    	return lobby;
+        return lobby;
     }
-    
+
     /** 
      * @return the regions map
      */
     public LinkedHashMap<Point2D[], Region> getRegions() {
-    	return regions;
+        return regions;
     }
-    
+
     /** 
      * @return the games map
      */
     public LinkedHashMap<String, Game> getGames() {
-    	return games;
+        return games;
     }  
 
     /**
      * Determines whether a player is in the lobby
      */
     public Boolean isPlayerInLobby(Player player) {
-    	return lobby.isPlayerInRegion(player);
+        return lobby.isPlayerInRegion(player);
     }
-    
+
     /**
      * @param location
      * @return true if in lobby
@@ -659,41 +716,41 @@ public class GameMgr extends BeaconzPluginDependent {
     public Boolean isLocationInLobby(Location location) {
         return lobby.containsPoint(location.getX(), location.getZ());
     }
- 
+
     /**
      * Check if an area is free
      * (not invading other areas)
      */
     public Boolean checkAreaFree (Point2D center, Double radius) {    	
-    	Boolean free = true;
-     	Point2D lowerleft = new Point2D.Double(center.getX() - radius, center.getY() - radius);;
-     	Point2D upperleft = new Point2D.Double(center.getX()  - radius, center.getY() + radius);
-     	Point2D upperright = new Point2D.Double(center.getX()  + radius, center.getY() + radius);
-     	Point2D lowerright = new Point2D.Double(center.getX()  + radius, center.getY() - radius);
+        Boolean free = true;
+        Point2D lowerleft = new Point2D.Double(center.getX() - radius, center.getY() - radius);;
+        Point2D upperleft = new Point2D.Double(center.getX()  - radius, center.getY() + radius);
+        Point2D upperright = new Point2D.Double(center.getX()  + radius, center.getY() + radius);
+        Point2D lowerright = new Point2D.Double(center.getX()  + radius, center.getY() - radius);
 
- 		for (Point2D[] key : regions.keySet()) {
- 			Region reg = regions.get(key);
-     		if (reg.containsPoint(lowerleft) || reg.containsPoint(upperleft) || reg.containsPoint(lowerright) || reg.containsPoint(upperright)) {
-     			free = false;
-     			break;
-     		}
-     	}
-    	return free;
+        for (Point2D[] key : regions.keySet()) {
+            Region reg = regions.get(key);
+            if (reg.containsPoint(lowerleft) || reg.containsPoint(upperleft) || reg.containsPoint(lowerright) || reg.containsPoint(upperright)) {
+                free = false;
+                break;
+            }
+        }
+        return free;
     }
-    
+
     /**
      * Rounds a number up (or down, if negative) to an even chunk (16) boundary
      */
     public Double rup16 (double x) {
-    	Double rnd;
-    	if (x < 0) {
-    		rnd = (((int) x - 8) / 16) * 16.0;
-    	} else {
-    		rnd = (((int) x + 8) / 16) * 16.0;
-    	}
-    	return rnd;
+        Double rnd;
+        if (x < 0) {
+            rnd = (((int) x - 8) / 16) * 16.0;
+        } else {
+            rnd = (((int) x + 8) / 16) * 16.0;
+        }
+        return rnd;
     }
-    
+
     /**
      * Returns an array of two points 
      * given two sets of X,Z coordinates in either format:
@@ -701,14 +758,14 @@ public class GameMgr extends BeaconzPluginDependent {
      * Currently not used
      */
     public Point2D [] regionCorners(String c) {
-    	return regionCorners(Integer.valueOf(c.split(":")[0]), 
-    			             Integer.valueOf(c.split(":")[1]), 
-    			             Integer.valueOf(c.split(":")[2]), 
-    			             Integer.valueOf(c.split(":")[3]));
+        return regionCorners(Integer.valueOf(c.split(":")[0]), 
+                Integer.valueOf(c.split(":")[1]), 
+                Integer.valueOf(c.split(":")[2]), 
+                Integer.valueOf(c.split(":")[3]));
     }
     public Point2D [] regionCorners(int x1, int z1, int x2, int z2) {
-    	Point2D [] corners = {new Point2D.Double(x1,z1), new Point2D.Double(x2,z2)};
-    	return corners;
+        Point2D [] corners = {new Point2D.Double(x1,z1), new Point2D.Double(x2,z2)};
+        return corners;
     }
 
     /** 
@@ -717,15 +774,15 @@ public class GameMgr extends BeaconzPluginDependent {
      * Currently not used
      */
     private Point2D [] strCoordToPts(String c) {
-    	Double x1 = Double.valueOf(c.split(":")[0]); 
-    	Double z1 = Double.valueOf(c.split(":")[1]);
-    	Double x2 = Double.valueOf(c.split(":")[2]); 
-    	Double z2 = Double.valueOf(c.split(":")[3]);
-    	Double a1 = x1 < x2 ? x1 : x2;
-    	Double b1 = x1 < x2 ? z1 : z2;
-    	Double a2 = x1 < x2 ? x2 : x1;
-    	Double b2 = x1 < x2 ? z2 : z1;   		
-    	return new Point2D [] {new Point2D.Double(a1,b1), new Point2D.Double(a2,b2)};    	
+        Double x1 = Double.valueOf(c.split(":")[0]); 
+        Double z1 = Double.valueOf(c.split(":")[1]);
+        Double x2 = Double.valueOf(c.split(":")[2]); 
+        Double z2 = Double.valueOf(c.split(":")[3]);
+        Double a1 = x1 < x2 ? x1 : x2;
+        Double b1 = x1 < x2 ? z1 : z2;
+        Double a2 = x1 < x2 ? x2 : x1;
+        Double b2 = x1 < x2 ? z2 : z1;   		
+        return new Point2D [] {new Point2D.Double(a1,b1), new Point2D.Double(a2,b2)};    	
     }
 
     /**
@@ -743,5 +800,5 @@ public class GameMgr extends BeaconzPluginDependent {
         games.remove(game.getName());
         game.delete();
     }    
-    
+
 }
