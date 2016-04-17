@@ -35,6 +35,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.commons.lang.math.NumberUtils;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -43,7 +44,11 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.map.MapView;
 import org.bukkit.scoreboard.Team;
+
+import com.wasteofplastic.beaconz.map.BeaconMap;
+import com.wasteofplastic.beaconz.map.TerritoryMapRenderer;
 
 /**
  * Enables quick finding of beacons
@@ -99,6 +104,14 @@ public class Register extends BeaconzPluginDependent {
                 defenseBlocks.add((int)point.getX() + ":" + (int)point.getY());
             }
             beaconzYml.set("beacon." + count + ".defenseblocks", defenseBlocks);
+            // Save maps
+            List<String> maps = new ArrayList<String>();
+            for (Short id : beaconMaps.keySet()) {                
+                if (beacon.equals(beaconMaps.get(id))) {
+                    maps.add(String.valueOf(id));                    
+                }      
+            }
+            beaconzYml.set("beacon." + count + ".maps", maps);
             count++;
         }
         try {
@@ -171,8 +184,20 @@ public class Register extends BeaconzPluginDependent {
                         }
                         //beaconRegister.put(new Point2D.Double(x, z), newBeacon);
                         // Map id
+                        /*
                         if (configSec.contains(beacon + ".id")) {
                             addBeaconMap((short)configSec.getInt(beacon + ".id"), newBeacon);
+                        }*/
+                        
+                        // Load map id's
+                        List<String> maps = configSec.getStringList(beacon + ".maps");
+                        for (String mapNumber: maps) {
+                            short id = Short.valueOf(mapNumber);
+                            beaconMaps.put(id, newBeacon);
+                            @SuppressWarnings("deprecation")
+                            MapView map = Bukkit.getMap(id);
+                            map.addRenderer(new BeaconMap(getBeaconzPlugin()));
+                            map.addRenderer(new TerritoryMapRenderer(getBeaconzPlugin()));
                         }
                         //getLogger().info("DEBUG: loaded beacon at " + x + "," + y + "," + z);
                     }
@@ -675,7 +700,7 @@ public class Register extends BeaconzPluginDependent {
     }
 
     /**
-     * @return the beaconMaps
+     * @return the beaconMaps or null if not found
      */
     public BeaconObj getBeaconMap(Short index) {
         return beaconMaps.get(index);

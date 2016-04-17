@@ -792,7 +792,8 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                 event.getVehicle().setVelocity(new Vector(0,0,0));
             }
         }
-    }  
+    } 
+  
     /**
      * Handles the event of hitting a beacon with paper or a map
      * @param event
