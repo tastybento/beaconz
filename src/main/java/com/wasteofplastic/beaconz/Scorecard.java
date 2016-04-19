@@ -162,8 +162,9 @@ public class Scorecard extends BeaconzPluginDependent{
         addTeams();
         loadTeamMembers();
 
-        // Send everyone home, restart the Game  
-        sendPlayersHome(true);        
+        // Send everyone home, restart the Game
+        // TAKING THIS OUT BECAUSE IT SHIFTS PLAYERS IF THE PLUGIN IS RELOADED.
+        //sendPlayersHome(true);        
 
         // Start the timer
         runtimer();          
@@ -421,11 +422,12 @@ public class Scorecard extends BeaconzPluginDependent{
      * @param ingameOnly
      */
     public void sendPlayersHome(Player player, boolean ingameOnly) {
-        //getLogger().info("Send player home method called");
+        getLogger().info("Send player home method called");
         Team team = getTeam(player);
         if (!ingameOnly || game.getRegion().isPlayerInRegion(player)) {
             Location loc = teamSpawnPoint.get(team);       
             loc = game.getRegion().findSafeSpot(loc, Settings.gameDistance / 10);  // in case other players have boobytrapped the spawnpoint
+            loc.getChunk().load();
             player.teleport(loc); 
             player.setScoreboard(scoreboard);
             // Remove any hostile mobs

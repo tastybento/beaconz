@@ -31,6 +31,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -74,8 +75,15 @@ public class BeaconObj extends BeaconzPluginDependent {
     /**
      * @return the location of this beacon
      */
-    public Point2D getLocation() {
+    public Point2D getPoint() {
         return location;
+    }
+    
+    /**
+     * @return the Bukkit location of this beacon
+     */
+    public Location getLocation() {
+        return new Location(getBeaconzWorld(),location.getX(),height,location.getY());
     }
 
     /**
@@ -98,7 +106,7 @@ public class BeaconObj extends BeaconzPluginDependent {
             //getLogger().info("DEBUG: outbound link limit reached");
             return new LinkResult(0,false,0);
         }
-        Line2D newLink = new Line2D.Double(this.location, destination.getLocation());
+        Line2D newLink = new Line2D.Double(this.location, destination.getPoint());
         // Add link to this beacon
         if (links.add(destination)) {
             //getLogger().info("DEBUG: Adding link from " + this.location + " to " + destination.getLocation());
@@ -140,8 +148,8 @@ public class BeaconObj extends BeaconzPluginDependent {
                         // We have a winner
                         try {
                             // Result is true if the triangle is made okay, otherwise, don't make the link and return false
-                            if (getRegister().addTriangle(starter.getLocation(), this.getLocation(),
-                                    directlyLinkedBeacon.getLocation(), ownership)) {
+                            if (getRegister().addTriangle(starter.getPoint(), this.getPoint(),
+                                    directlyLinkedBeacon.getPoint(), ownership)) {
                                 fieldsMade++;                             
                             } else {
                                 fieldsFailed++;
@@ -156,7 +164,7 @@ public class BeaconObj extends BeaconzPluginDependent {
             }
         }
         // The resulting line
-        Line2D line = new Line2D.Double(starter.getLocation(), location);
+        Line2D line = new Line2D.Double(starter.getPoint(), location);
         // Make sure line is counted in the Register
         getRegister().addBeaconLink(ownership, line);
         // Visualize
@@ -225,7 +233,7 @@ public class BeaconObj extends BeaconzPluginDependent {
     public void removeLink(BeaconObj beacon) {
         // Devisualize the link
         //List<Point2D> points = new ArrayList<Point2D>();
-        Line2D line = new Line2D.Double(beacon.getLocation(), location);
+        Line2D line = new Line2D.Double(beacon.getPoint(), location);
         Point2D current;
         for (Iterator<Point2D> it = new LineIterator(line); it.hasNext();) {
             current = it.next();

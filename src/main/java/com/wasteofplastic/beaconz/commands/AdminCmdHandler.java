@@ -555,7 +555,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                 for (BeaconObj b : getRegister().getBeaconRegister().values()) {
                     if (game.getRegion().containsBeacon(b)) {
                         count++;
-                        sender.sendMessage(b.getLocation().getX() + ":" + b.getLocation().getY() + " >> Owner: " + (b.getOwnership() == null ? "unowned" :b.getOwnership().getDisplayName()) + " >> Links: " + b.getLinks().size());                		
+                        sender.sendMessage(b.getPoint().getX() + ":" + b.getPoint().getY() + " >> Owner: " + (b.getOwnership() == null ? "unowned" :b.getOwnership().getDisplayName()) + " >> Links: " + b.getLinks().size());                		
                     }
                 }
                 if (count == 0) sender.sendMessage("None");

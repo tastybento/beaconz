@@ -107,7 +107,7 @@ public class TerritoryMapRenderer extends MapRenderer {
                     byte data = blockID.getData();
                     byte color = getMapPaletteColorForTeam(data, 1);
                     for (BeaconObj link : value.links) {
-                        renderLineToPixelCache(color, coordConverter, entry.getKey(), link.getLocation());
+                        renderLineToPixelCache(color, coordConverter, entry.getKey(), link.getPoint());
                     }
                 }
             }

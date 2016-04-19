@@ -46,6 +46,7 @@ import com.wasteofplastic.beaconz.commands.AdminCmdHandler;
 import com.wasteofplastic.beaconz.commands.CmdHandler;
 import com.wasteofplastic.beaconz.listeners.BeaconDefenseListener;
 import com.wasteofplastic.beaconz.listeners.BeaconListeners;
+import com.wasteofplastic.beaconz.listeners.BeaconProjectileDefenseListener;
 import com.wasteofplastic.beaconz.listeners.ChatListener;
 import com.wasteofplastic.beaconz.listeners.SkyListeners;
 
@@ -79,18 +80,7 @@ public class Beaconz extends JavaPlugin {
             public void run() {            	
             	
             	// Start the game manager and create the lobby region
-            	gameMgr = new GameMgr(plugin);
-            	/*
-            	 * Do this in the GameMgr constructor
-            	gameMgr.createLobby();
-            	if (gameMgr.getLobby() == null) {
-            		getLogger().info("Error creating the lobby area. Beaconz plugin could not be loaded.");
-            		return;
-            	}
-            	
-                // Load existing games
-                gameMgr.loadAllGames();
-                */ 
+            	gameMgr = new GameMgr(plugin); 
 
                 // Load the beacon register
                 register = new Register(plugin);
@@ -109,6 +99,7 @@ public class Beaconz extends JavaPlugin {
                 getServer().getPluginManager().registerEvents(ev, plugin);
                 getServer().getPluginManager().registerEvents(new ChatListener(plugin), plugin);
                 getServer().getPluginManager().registerEvents(new BeaconDefenseListener(plugin), plugin);
+                getServer().getPluginManager().registerEvents(new BeaconProjectileDefenseListener(plugin), plugin);
                 getServer().getPluginManager().registerEvents(new SkyListeners(plugin), plugin);
 
                 // Load messages for players

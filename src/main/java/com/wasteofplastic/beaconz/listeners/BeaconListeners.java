@@ -52,8 +52,10 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDamageEvent;
+import org.bukkit.event.block.BlockDispenseEvent;
 import org.bukkit.event.block.BlockFromToEvent;
 import org.bukkit.event.block.BlockPistonExtendEvent;
+import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.BlockSpreadEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
@@ -76,6 +78,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
+import org.bukkit.material.Dispenser;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -273,6 +276,26 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             }
         }
     }
+    
+    /**
+     * Prevents blocks from being pulled off beacons by sticky pistons
+     * @param event
+     */
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
+    public void onPistonPull(BlockPistonRetractEvent event) {
+        World world = event.getBlock().getWorld();
+        if (!world.equals(getBeaconzWorld())) {
+            //getLogger().info("DEBUG: not right world");
+            return;
+        }
+        for (Block b : event.getBlocks()) {
+            // If any block is part of a beacon cancel it
+            if (getRegister().isBeacon(b)) {
+                event.setCancelled(true);
+                return;
+            }
+        }
+    }
 
     /**
      * Prevents the tipping of liquids over the beacon
@@ -280,16 +303,50 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
      */
     @EventHandler(priority = EventPriority.LOW)
     public void onBucketEmpty(final PlayerBucketEmptyEvent event) {
-        //getLogger().info("DEBUG: " + event.getEventName());
+        getLogger().info("DEBUG: " + event.getEventName());
         World world = event.getBlockClicked().getWorld();
         if (!world.equals(getBeaconzWorld())) {
             //getLogger().info("DEBUG: not right world");
             return;
         }
-        BeaconObj beacon = getRegister().getBeaconAt(event.getBlockClicked().getX(),event.getBlockClicked().getZ());
+        Block b = event.getBlockClicked().getRelative(event.getBlockFace());
+        BeaconObj beacon = getRegister().getBeaconAt(b.getX(),b.getZ());
         if (beacon != null && beacon.getY() <= event.getBlockClicked().getY()) {
             event.setCancelled(true);
             event.getPlayer().sendMessage(ChatColor.RED + "You cannot place liquids above a beacon!");
+        }
+        if (getRegister().isAboveBeacon(b.getLocation())) {
+            event.setCancelled(true);
+            event.getPlayer().sendMessage(ChatColor.RED + "You cannot place liquids above a beacon!");
+        }
+    }
+    
+    /**
+     * Prevents the tipping of liquids over the beacon
+     * @param event
+     */
+    @EventHandler(priority = EventPriority.LOW)
+    public void onDispense(final BlockDispenseEvent event) {
+        //getLogger().info("DEBUG: " + event.getEventName());
+        World world = event.getBlock().getWorld();
+        if (!world.equals(getBeaconzWorld())) {
+            //getLogger().info("DEBUG: not right world");
+            return;
+        }
+        //getLogger().info("DEBUG: " + event.getItem().getType());
+        if (!event.getItem().getType().equals(Material.WATER_BUCKET) && !event.getItem().getType().equals(Material.LAVA_BUCKET)) {
+            return;
+        }
+        //getLogger().info("DEBUG: " + event.getBlock().getType());
+        if (!event.getBlock().getType().equals(Material.DISPENSER)) {
+            return;
+        }
+        Dispenser dispenser = (Dispenser)event.getBlock().getState().getData();        
+        Block b = event.getBlock().getRelative(dispenser.getFacing());
+        //getLogger().info("DEBUG: " + b.getLocation());
+        if (getRegister().isAboveBeacon(b.getLocation())) {
+            world.playSound(b.getLocation(), Sound.BLOCK_STONE_BREAK, 1F, 2F);
+            event.setCancelled(true);            
         }
     }
 
@@ -892,7 +949,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             event.setCancelled(true);
             if (Settings.linkDistance >= 0 && Settings.expDistance > 0) {
                 // Check if the player has sufficient experience to link the beacons
-                double distance = beacon.getLocation().distance(mappedBeacon.getLocation());
+                double distance = beacon.getPoint().distance(mappedBeacon.getPoint());
                 distance -= Settings.linkDistance;
                 if (distance > 0) {
                     if (!testForExp(player, (int)(distance/Settings.expDistance))) {
@@ -958,7 +1015,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             return false;
         }
         // Proposed link
-        Line2D proposedLink = new Line2D.Double(beacon.getLocation(), otherBeacon.getLocation());
+        Line2D proposedLink = new Line2D.Double(beacon.getPoint(), otherBeacon.getPoint());
         // Check if the link crosses opposition team's links
         //getLogger().info("DEBUG: Check if the link crosses opposition team's links");
         for (Line2D line : getRegister().getEnemyLinks(team)) {

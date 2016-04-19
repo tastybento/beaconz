@@ -184,5 +184,28 @@ public class TriangleField {
         return false;
     }
 
+    /**
+     * @return the triangle
+     */
+    public Polygon getTriangle() {
+        return triangle;
+    }
+
+    /**
+     * Checks if a triangle intersects with this triangle
+     * @param triangle2
+     * @return
+     */
+    public boolean intersects(TriangleField triangle2) {
+        // Check if the sides of the triangles intersect
+        for (Line2D side: sides) {
+            for (Line2D checkSide: triangle2.getSides()) {
+                if (side.intersectsLine(checkSide)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 
 }

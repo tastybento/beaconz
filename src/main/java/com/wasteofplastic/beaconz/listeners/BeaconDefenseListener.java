@@ -23,6 +23,7 @@
 package com.wasteofplastic.beaconz.listeners;
 
 import java.awt.geom.Point2D;
+import java.util.Iterator;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -35,9 +36,13 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDamageEvent;
+import org.bukkit.event.block.BlockFromToEvent;
 import org.bukkit.event.block.BlockPistonExtendEvent;
+import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.block.BlockSpreadEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.scoreboard.Team;
 
 import com.wasteofplastic.beaconz.BeaconObj;
@@ -61,7 +66,7 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
     }
 
     /**
-     * Protects the underlying beacon from any damage
+     * Protects the beacon defenses from any damage
      * @param event
      */
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
@@ -71,7 +76,15 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
         if (!world.equals(getBeaconzWorld())) {
             return;
         }
-        // Only allow blocks at the top of defenses to be removed by explosions
+        // Remove any blocks that are defensive
+        Iterator<Block> it = event.blockList().iterator();
+        while(it.hasNext()) {
+            Block b = it.next();
+            if (getRegister().isAboveBeacon(b.getLocation())) {
+                // TODO: Check if it is the highest block
+                it.remove();
+            }
+        }
     }
 
     /**
@@ -86,17 +99,33 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
             return;
         }
         for (Block b : event.getBlocks()) {
-            // Only allow blocks at the top be removed by pistons.
-            /*
-            Block testBlock = b.getRelative(event.getDirection());
-            BeaconObj beacon = getRegister().getBeaconAt(testBlock.getX(),testBlock.getZ());
-            if (beacon != null && beacon.getY() < testBlock.getY()) {
+            Block whereItWillBe = b.getRelative(event.getDirection());
+            if (getRegister().isAboveBeacon(whereItWillBe.getLocation())) {
                 event.setCancelled(true);
+                return;
             }
-             */
         }
     }
 
+    
+    /**
+     * Prevents sticky piston damage
+     * @param event
+     */
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
+    public void onPistonPull(BlockPistonRetractEvent event) {
+        World world = event.getBlock().getWorld();
+        if (!world.equals(getBeaconzWorld())) {
+            //getLogger().info("DEBUG: not right world");
+            return;
+        }
+        for (Block b : event.getBlocks()) {
+            if (getRegister().isAboveBeacon(b.getLocation())) {
+                event.setCancelled(true);
+                return;
+            }
+        }
+    }
 
     /**
      * Handles placing of blocks around a beacon
@@ -647,4 +676,38 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
         //getLogger().info("DEBUG: highest block is at " + y);
         return y;
     }
+
+    /**
+     * Prevents the tipping of liquids over beacons
+     * @param event
+     */
+    /*
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
+    public void onBucketEmpty(final PlayerBucketEmptyEvent event) {
+        //getLogger().info("DEBUG: " + event.getEventName());
+        World world = event.getBlockClicked().getWorld();
+        if (!world.equals(getBeaconzWorld())) {
+            //getLogger().info("DEBUG: not right world");
+            return;
+        }
+        if (event.getBlockClicked().getY() == BLOCK_HEIGHT) {
+            event.setCancelled(true);
+            event.getPlayer().sendMessage(ChatColor.RED + "You cannot do that here!");
+        }
+    }
+    */
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
+    public void onBlockFlow(final BlockFromToEvent event) {
+        //getLogger().info("DEBUG: " + event.getEventName());
+        World world = event.getBlock().getWorld();
+        if (!event.getBlock().isLiquid() || !world.equals(getBeaconzWorld())) {
+            //getLogger().info("DEBUG: not right world");
+            return;
+        }
+        if (getRegister().isAboveBeacon(event.getToBlock().getLocation())) {
+            event.setCancelled(true);
+            getLogger().info("DEBUG: stopping flow");
+        }       
+    }
+
 }
