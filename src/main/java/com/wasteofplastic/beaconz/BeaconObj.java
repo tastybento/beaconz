@@ -26,6 +26,7 @@ import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -37,6 +38,11 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.scoreboard.Team;
 
+/**
+ * Represents a beacon
+ * @author tastybento
+ *
+ */
 public class BeaconObj extends BeaconzPluginDependent {
     private Point2D location;
     private int x;
@@ -48,8 +54,16 @@ public class BeaconObj extends BeaconzPluginDependent {
     private Integer id = null;
     private boolean newBeacon = true;
     private static final List<BlockFace> FACES = new ArrayList<BlockFace>(Arrays.asList(BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST, BlockFace.NORTH_EAST, BlockFace.NORTH_WEST, BlockFace.SOUTH_EAST, BlockFace.SOUTH_WEST));
+    private HashMap<Block, Integer> defenseBlocks = new HashMap<Block, Integer>();
 
-
+    /**
+     * Represents a beacon
+     * @param plugin
+     * @param x
+     * @param y
+     * @param z
+     * @param owner
+     */
     public BeaconObj(Beaconz plugin, int x, int y, int z, Team owner) {
         super(plugin);
         this.location = new Point2D.Double(x,z);
@@ -294,6 +308,37 @@ public class BeaconObj extends BeaconzPluginDependent {
             }
         }
         return true;
+    }
+
+    /**
+     * Tracks important defense blocks
+     * @param block
+     * @param levelRequired
+     */
+    public void addDefenseBlock(Block block, int levelRequired) {
+          defenseBlocks.put(block, levelRequired);
+    }
+    
+    /**
+     * Removes the defense block
+     * @param block
+     */
+    public void removeDefenseBlock(Block block) {
+        defenseBlocks.remove(block);
+    }  
+
+    /**
+     * @return the defenseBlocks
+     */
+    public HashMap<Block, Integer> getDefenseBlocks() {
+        return defenseBlocks;
+    }
+
+    /**
+     * @param defenseBlocks the defenseBlocks to set
+     */
+    public void setDefenseBlocks(HashMap<Block, Integer> defenseBlocks) {
+        this.defenseBlocks = defenseBlocks;
     }
 
 }

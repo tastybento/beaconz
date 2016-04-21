@@ -40,9 +40,7 @@ import org.bukkit.event.block.BlockFromToEvent;
 import org.bukkit.event.block.BlockPistonExtendEvent;
 import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.event.block.BlockSpreadEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
-import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.scoreboard.Team;
 
 import com.wasteofplastic.beaconz.BeaconObj;
@@ -306,7 +304,8 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
             player.sendMessage(ChatColor.GREEN + "Fortune will smile upon you!" + levelPlaced);
             break;
         case DISPENSER:
-            player.sendMessage(ChatColor.GREEN + "Load it up!" + levelPlaced);
+            player.sendMessage(ChatColor.GREEN + "Load it up with arrows to make an auto turret!" + levelPlaced);
+            beacon.addDefenseBlock(event.getBlock(), levelRequired);
             break;
         case DRAGON_EGG:
             player.sendMessage(ChatColor.GREEN + "The end is nigh!" + levelPlaced);
@@ -556,8 +555,9 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
         if (beacon == null || beacon.getOwnership() == null) {
             return;
         }
-        // If same team, then do nothing
+        // If same team, then remove any defense blocks
         if (team.equals(beacon.getOwnership())) {
+            beacon.removeDefenseBlock(block);
             return;
         }
         // Check height
@@ -585,6 +585,8 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
         } catch (Exception e) {
             getLogger().severe("Attack level for height " + level + " does not exist!");
         }
+        // The block is broken
+        beacon.removeDefenseBlock(block);
         // TODO : give exp? Rewards?
     }
 

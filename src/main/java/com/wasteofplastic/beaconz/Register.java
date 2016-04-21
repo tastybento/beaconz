@@ -102,12 +102,18 @@ public class Register extends BeaconzPluginDependent {
             if (beacon.getId() != null) {
                 beaconzYml.set("beacon." + count + ".id", beacon.getId());
             }
-            // Save defense blocks
+            // Save additional blocks added to beacon
             List<String> defenseBlocks = new ArrayList<String>();            
             for (Point2D point: defenseBlocksInverse.get(beacon)) {
                 defenseBlocks.add((int)point.getX() + ":" + (int)point.getY());
             }
             beaconzYml.set("beacon." + count + ".defenseblocks", defenseBlocks);
+            // Save the defenses
+            defenseBlocks.clear();
+            for (Entry<Block, Integer> defensiveBlock : beacon.getDefenseBlocks().entrySet()) {
+                beaconzYml.set("beacon." + count + ".defensiveblocks." 
+                        + Beaconz.getStringLocation(defensiveBlock.getKey().getLocation()), defensiveBlock.getValue());
+            }
             // Save maps
             List<String> maps = new ArrayList<String>();
             for (Short id : beaconMaps.keySet()) {                
@@ -186,13 +192,13 @@ public class Register extends BeaconzPluginDependent {
                                 }
                             }
                         }
-                        //beaconRegister.put(new Point2D.Double(x, z), newBeacon);
-                        // Map id
-                        /*
-                        if (configSec.contains(beacon + ".id")) {
-                            addBeaconMap((short)configSec.getInt(beacon + ".id"), newBeacon);
-                        }*/
-
+                        // Load the defensive blocks
+                        ConfigurationSection defBlocks = configSec.getConfigurationSection(beacon + ".defensiveblocks");
+                        if (defBlocks != null) {
+                            for (String defenseBlock : defBlocks.getKeys(false)) {
+                                newBeacon.addDefenseBlock(Beaconz.getLocationString(defenseBlock).getBlock(), defBlocks.getInt(defenseBlock));
+                            }
+                        }
                         // Load map id's
                         List<String> maps = configSec.getStringList(beacon + ".maps");
                         for (String mapNumber: maps) {
@@ -356,7 +362,7 @@ public class Register extends BeaconzPluginDependent {
      */
     public Integer getTeamArea(Team team) {
         double area = 0; 
-        
+
         for (TriangleField triangle : triangleFields) {
             if (triangle.getOwner() != null && triangle.getOwner().equals(team)) {         
                 area += triangle.getArea();
@@ -429,7 +435,7 @@ public class Register extends BeaconzPluginDependent {
             while (!pathIterator.isDone()) {
                 pathIterator.currentSegment(floats);
                 Point2D point = new Point2D.Float(floats[0], floats[1]);
-                
+
                     getLogger().info("Adding point " + point);
                     poly.add(point); 
                 pathIterator.next();
@@ -438,9 +444,9 @@ public class Register extends BeaconzPluginDependent {
             getLogger().info("area = " + area);
         }
         return (int)area; 
-        */
+         */
     }
-    
+
     /**
      * Function to calculate the area of a polygon, according to the algorithm
      * defined at http://local.wasp.uwa.edu.au/~pbourke/geometry/polyarea/
@@ -927,7 +933,7 @@ public class Register extends BeaconzPluginDependent {
     public Set<Point2D> getDefensesAtBeacon(BeaconObj beacon) {
         return defenseBlocksInverse.get(beacon);
     }
-    
+
     /**
      * Check if this block is above an owned beacon or above a defense
      * @param loc
