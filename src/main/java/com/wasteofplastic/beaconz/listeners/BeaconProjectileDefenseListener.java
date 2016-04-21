@@ -141,7 +141,12 @@ public class BeaconProjectileDefenseListener extends BeaconzPluginDependent impl
         if (!world.equals(getBeaconzWorld())) {
             return;
         }
+        
         Player player = event.getPlayer();
+        // Nothing from here on applies to Lobby...
+        if (getGameMgr().isPlayerInLobby(player)) {            
+            return;
+        }
         // Check if player is in a team
         Team team = getGameMgr().getPlayerTeam(player);
         if (team == null) {

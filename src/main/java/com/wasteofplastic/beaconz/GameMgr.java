@@ -74,7 +74,7 @@ public class GameMgr extends BeaconzPluginDependent {
         createLobby();
         loadAllGames();
     }
-*/
+     */
     /**
      * Handles plugin Reload
      * When plugin gets reloaded, on-going games are not changed
@@ -89,7 +89,7 @@ public class GameMgr extends BeaconzPluginDependent {
         for (Game g : getGames().values()) {
             g.reload();
         }
-        */
+         */
     }
 
     /** 
@@ -136,7 +136,7 @@ public class GameMgr extends BeaconzPluginDependent {
     private String ptsToStrCoord(Point2D [] c) {
         return c[0].getX() + ":" + c[0].getY() + ":" + c[1].getX() + ":" + c[1].getY();     
     }
-    
+
     public void saveGame(String name) {
         Game game = games.get("name");
         if (game!= null) game.save();        	
@@ -496,8 +496,10 @@ public class GameMgr extends BeaconzPluginDependent {
             if (player.isOp()) {
                 // player.sendMessage(ChatColor.RED + "You are not in a team!");
             } else {
-                player.sendMessage(ChatColor.RED + "Player " + player.getName() + " must join a team to play in this world");
-                getLobby().tpToRegionSpawn(player);     		
+                if (!isPlayerInLobby(player)) {
+                    player.sendMessage(ChatColor.RED + "Player " + player.getName() + " must join a team to play in this world");
+                    getLobby().tpToRegionSpawn(player); 
+                }
             }
         }
         return team;
