@@ -21,20 +21,16 @@
 
 package com.wasteofplastic.beaconz;
 
-import java.awt.geom.Area;
 import java.awt.geom.Line2D;
-import java.awt.geom.PathIterator;
 import java.awt.geom.Point2D;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map.Entry;
 import java.util.Set;
 
@@ -330,8 +326,8 @@ public class Register extends BeaconzPluginDependent {
      * @param team
      * @return set of beacons or empty set if none
      */
-    public Set<BeaconObj> getTeamBeacons(Team team) {
-        Set<BeaconObj> teambeacons = new HashSet<BeaconObj>(); 
+    public List<BeaconObj> getTeamBeacons(Team team) {
+        List<BeaconObj> teambeacons = new ArrayList<BeaconObj>(); 
         for (BeaconObj beacon : beaconRegister.values()) {
             if (beacon.getOwnership() != null && beacon.getOwnership().equals(team)) {
                 teambeacons.add(beacon);

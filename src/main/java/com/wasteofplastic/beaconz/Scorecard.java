@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Random;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
@@ -53,6 +54,7 @@ import org.bukkit.scoreboard.Score;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.ScoreboardManager;
 import org.bukkit.scoreboard.Team;
+import org.bukkit.util.Vector;
 
 public class Scorecard extends BeaconzPluginDependent{
     private Beaconz plugin;
@@ -422,12 +424,23 @@ public class Scorecard extends BeaconzPluginDependent{
      * @param ingameOnly
      */
     public void sendPlayersHome(Player player, boolean ingameOnly) {
-        getLogger().info("Send player home method called");
+        getLogger().info("DEBUG: Send player home method called");        
         Team team = getTeam(player);
         if (!ingameOnly || game.getRegion().isPlayerInRegion(player)) {
-            Location loc = teamSpawnPoint.get(team);       
-            loc = game.getRegion().findSafeSpot(loc, Settings.gameDistance / 10);  // in case other players have boobytrapped the spawnpoint
-            loc.getChunk().load();
+            Location loc = teamSpawnPoint.get(team); 
+            // Teleport player to a captured beacon
+            List<BeaconObj> beaconz = getRegister().getTeamBeacons(team);
+            if (beaconz.size() > 0) {
+               Random rand = new Random();
+               loc = beaconz.get(rand.nextInt(beaconz.size() -1)).getLocation().add(new Vector(0,1,0));
+            }
+            loc = game.getRegion().findSafeSpot(loc, 20);  // in case other players have boobytrapped the spawnpoint
+            final int RADIUS = 2;
+            for (int x = -RADIUS; x <= RADIUS; x++) {
+                for (int z = -RADIUS; z <= RADIUS; z++) {
+                    loc.getWorld().getChunkAt(loc.getChunk().getX() + x, loc.getChunk().getZ() + z).load();
+                }
+            }            
             player.teleport(loc); 
             player.setScoreboard(scoreboard);
             // Remove any hostile mobs
