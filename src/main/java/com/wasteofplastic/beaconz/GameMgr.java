@@ -63,6 +63,9 @@ public class GameMgr extends BeaconzPluginDependent {
         games = new LinkedHashMap<String, Game>();
         setGameDefaultParms();        
         loadAllGames();
+        if (lobby == null) {
+            createLobby();
+        }
     }
 
     /** 
@@ -104,8 +107,10 @@ public class GameMgr extends BeaconzPluginDependent {
             gamesFile.renameTo(backup);
         }
         // Save the lobby
-        gamesYml.set("lobby.region", ptsToStrCoord(lobby.corners()));
-        gamesYml.set("lobby.spawn", Beaconz.getStringLocation(lobby.getSpawnPoint()));;
+        if (lobby != null) {
+            gamesYml.set("lobby.region", ptsToStrCoord(lobby.corners()));
+            gamesYml.set("lobby.spawn", Beaconz.getStringLocation(lobby.getSpawnPoint()));
+        }
         // Save the games
         for (Game game: games.values()) {
             // Save game name, region and all parameters
@@ -117,16 +122,15 @@ public class GameMgr extends BeaconzPluginDependent {
             gamesYml.set(path + ".goalvalue", game.getGamegoalvalue());        
             gamesYml.set(path + ".starttime", game.getStartTime());
             gamesYml.set(path + ".countdowntimer", game.getScorecard().getCountdownTimer());
-            gamesYml.set(path + ".scoretypes", game.getScoretypes());        
-
-            // Now save to file
-            try {
-                gamesYml.save(gamesFile);
-            } catch (IOException e) {
-                getLogger().severe("Problem saving games file!");
-                e.printStackTrace();
-            }     	
+            gamesYml.set(path + ".scoretypes", game.getScoretypes());                       	
         }
+        // Now save to file
+        try {
+            gamesYml.save(gamesFile);
+        } catch (IOException e) {
+            getLogger().severe("Problem saving games file!");
+            e.printStackTrace();
+        }  
     }
 
     /** 
@@ -146,12 +150,15 @@ public class GameMgr extends BeaconzPluginDependent {
      * Loads games from file
      */
     public void loadAllGames() {
+        getLogger().info("DEBUG: loading all games");
         games.clear();
         loadGames(null);
     }
-    public void loadGameByName(String gameName) {
-        loadGames(gameName);
-    }
+
+    /**
+     * Loads the game from file by name, or if name is null, then all games will be loaded.
+     * @param gameName
+     */
     public void loadGames(String gameName) {
         // if gameName is null, loads all games, if not, just gameName
 
@@ -170,9 +177,10 @@ public class GameMgr extends BeaconzPluginDependent {
             }
 
             ConfigurationSection csec = gamesYml.getConfigurationSection("lobby");
-            // Load the lobby when it is started
+            // Load the lobby when it is started if it exists
             if (gameName == null) {
                 if (csec != null) {
+                    getLogger().info("DEBUG: Loading lobby from file");
                     Point2D [] corners = strCoordToPts(csec.getString("region"));
                     lobby = new Region(plugin, corners);
                     String spawn = csec.getString("spawn", "");                    
@@ -180,10 +188,7 @@ public class GameMgr extends BeaconzPluginDependent {
                         lobby.setSpawnPoint(Beaconz.getLocationString(spawn));
                     }
                     regions.put(corners, lobby);
-                } else {
-                    // No lobby in the file, create it
-                    createLobby();
-                }
+                } 
             }
             // got the file, get the data	        
             csec = gamesYml.getConfigurationSection("game");
@@ -226,6 +231,7 @@ public class GameMgr extends BeaconzPluginDependent {
      * OR we need to have the option of loading different schematics
      */
     public void createLobby() {
+        getLogger().info("DEBUG: creating lobby");
         Integer rad = Settings.lobbyradius;
         Point2D ctr = new Point2D.Double(Settings.lobbyx, Settings.lobbyz);
 
@@ -260,7 +266,7 @@ public class GameMgr extends BeaconzPluginDependent {
             lobby = new Region(plugin, corners);
             regions.put(corners, lobby); 
         }    	    	
-        //getLogger().info("Lobby area created.");    	    	
+        getLogger().info("Lobby area created.");    	    	
     }    
 
     /** 

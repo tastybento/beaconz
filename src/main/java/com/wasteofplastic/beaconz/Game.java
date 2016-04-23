@@ -86,11 +86,19 @@ public class Game extends BeaconzPluginDependent {
     public void reset() {
         reset(null);
     }
+    
+    /**
+     * Resets an existing game
+     * The idea is that all current beacons will be removed
+     * and the region will regenerate "fresh"
+     * @param sender
+     */
     public void reset(CommandSender sender) {
         sendToLobby();
         region.regenerate(sender);
         startTime = ((System.currentTimeMillis()+500)/1000)*1000;
         scorecard.reload();
+        getBeaconzStore().removeGame(gameName);
         save();
     }
 
