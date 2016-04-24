@@ -86,6 +86,7 @@ public class TerritoryMapRenderer extends MapRenderer {
                         if (scoreCard != null) {
                             MaterialData materialData = scoreCard.getBlockID(triangleField.getOwner());
                             if (materialData != null) {
+                                @SuppressWarnings("deprecation")
                                 byte color = getMapPaletteColorForTeam(materialData.getData(), triangles.size());
                                 if (pixelCache[x] == null) pixelCache[x] = new Byte[128];
                                 pixelCache[x][z] = color;
@@ -104,6 +105,7 @@ public class TerritoryMapRenderer extends MapRenderer {
             if (scoreCard != null) {
                 MaterialData blockID = scoreCard.getBlockID(owner);
                 if (blockID != null) {
+                    @SuppressWarnings("deprecation")
                     byte data = blockID.getData();
                     byte color = getMapPaletteColorForTeam(data, 1);
                     for (BeaconObj link : value.links) {
@@ -199,6 +201,7 @@ public class TerritoryMapRenderer extends MapRenderer {
      *                          a slightly darker red, etc. all the way to black.
      * @return color of pixel (as an index of MapPalette.colors)
      */
+    @SuppressWarnings("deprecation")
     private static byte getMapPaletteColorForTeam(byte glassColor, int numberOfTriangles) {
         numberOfTriangles--;
         if (mapPaletteColors[glassColor] == null) {

@@ -105,7 +105,7 @@ public class XorShift {
         0x8a1cf61baf444412L
     };
 
-    private static final long serialVersionUID = 1L;
+    //private static final long serialVersionUID = 1L;
 
     /** 2<sup>-53</sup>. */
     private static final double NORM_53 = 1. / ( 1L << 53 );

@@ -132,7 +132,7 @@ public class Register extends BeaconzPluginDependent {
      * Loads register info
      */
     public void loadRegister() {
-        int count = 0;
+        //int count = 0;
         // Clear the data
         clear();
 
@@ -172,7 +172,7 @@ public class Register extends BeaconzPluginDependent {
                             team = game.getScorecard().getTeam(args[3]);
                         }
                         BeaconObj newBeacon = addBeacon(team, x, y, z);
-                        count++;
+                        //count++;
                         //BeaconObj newBeacon = new BeaconObj(getBeaconzPlugin(), x,y,z , team));
                         // Check for links
                         beaconLinks.put(newBeacon, configSec.getStringList(beacon + ".links"));

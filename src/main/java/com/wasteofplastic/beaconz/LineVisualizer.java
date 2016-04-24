@@ -25,6 +25,7 @@ public class LineVisualizer extends BeaconzPluginDependent {
         // Run a repeating task to set a number of blocks on this line. When the line is done, stop
         new BukkitRunnable() {
 
+            @SuppressWarnings("deprecation")
             @Override
             public void run() {
                 int count = 0;

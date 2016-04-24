@@ -438,6 +438,7 @@ public class Beaconz extends JavaPlugin {
      * @param item
      * @return
      */
+    @SuppressWarnings("deprecation")
     private ItemStack getItemFromString(String goodie) {
         String[] split = goodie.split(":");
         // No durability option - Material/#:Qty

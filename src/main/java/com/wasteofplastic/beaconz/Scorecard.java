@@ -34,6 +34,7 @@ import java.util.UUID;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
@@ -57,7 +58,6 @@ import org.bukkit.scoreboard.Team;
 import org.bukkit.util.Vector;
 
 public class Scorecard extends BeaconzPluginDependent{
-    private Beaconz plugin;
     private Boolean gameON;
     private Game game;
     private String gameName;
@@ -98,7 +98,6 @@ public class Scorecard extends BeaconzPluginDependent{
      */
     public Scorecard(Beaconz beaconzPlugin, Game game) {
         super(beaconzPlugin);
-        this.plugin = beaconzPlugin;
         this.game = game;
         this.gameName = game.getName();        
         this.manager = beaconzPlugin.getServer().getScoreboardManager();
@@ -198,7 +197,7 @@ public class Scorecard extends BeaconzPluginDependent{
                 MaterialData teamBlock = new MaterialData(Material.STAINED_GLASS,(byte) getBeaconzPlugin().getConfig().getInt("teams." + teamName + ".glasscolor"));
                 //IMPORTANT: The a team's display name must ALWAYS be the team's name, PRECEEDED BY the ChatColor
                 String teamDisplayName = ChatColor.translateAlternateColorCodes('&', getBeaconzPlugin().getConfig().getString("teams." + teamName + ".displayname", teamName));
-                Team team = addTeam(teamName, teamDisplayName, teamBlock, false);
+                addTeam(teamName, teamDisplayName, teamBlock, false);
                 teamcnt ++;
                 if (teamcnt == game.getNbrTeams()) {
                     break;
@@ -438,17 +437,18 @@ public class Scorecard extends BeaconzPluginDependent{
             final int RADIUS = 2;
             for (int x = -RADIUS; x <= RADIUS; x++) {
                 for (int z = -RADIUS; z <= RADIUS; z++) {
-                    loc.getWorld().getChunkAt(loc.getChunk().getX() + x, loc.getChunk().getZ() + z).load();
+                    Chunk chunk = loc.getWorld().getChunkAt(loc.getChunk().getX() + x, loc.getChunk().getZ() + z);
+                    chunk.load();
+                    // Remove any hostile mobs
+                    for (Entity entity: chunk.getEntities()) {
+                        if (entity instanceof Monster) {
+                            entity.remove();
+                        }
+                    }
                 }
             }            
             player.teleport(loc); 
-            player.setScoreboard(scoreboard);
-            // Remove any hostile mobs
-            for (Entity entity: player.getNearbyEntities(10, 10, 10)) {
-                if (entity instanceof Monster) {
-                    entity.remove();
-                }
-            }
+            player.setScoreboard(scoreboard);   
         }
     }
 
@@ -810,7 +810,7 @@ public class Scorecard extends BeaconzPluginDependent{
 
         // This will result in bedrock blocks being created up and up if the bedrock is covered...
         // TODO these spawn points need special protection, or something. An enemy team could place a lot of blocks
-        teamSP.getBlock().getRelative(BlockFace.DOWN).setType(Material.BEDROCK);
+        //teamSP.getBlock().getRelative(BlockFace.DOWN).setType(Material.BEDROCK);
         return teamSP;
     }
 

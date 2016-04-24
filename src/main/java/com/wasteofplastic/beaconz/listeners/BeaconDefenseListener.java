@@ -129,6 +129,7 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
      * Handles placing of blocks around a beacon
      * @param event
      */
+    @SuppressWarnings("deprecation")
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onBlockPlace(BlockPlaceEvent event) {
         //getLogger().info("DEBUG: " + event.getEventName());

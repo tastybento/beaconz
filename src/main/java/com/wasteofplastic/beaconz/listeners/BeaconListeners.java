@@ -992,6 +992,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         if (!player.getWorld().equals(getBeaconzWorld())) {
             return;
         }
+        @SuppressWarnings("deprecation")
         MapView map = Bukkit.getMap(itemInHand.getDurability());
         for (MapRenderer renderer : map.getRenderers()) {
             if (renderer instanceof TerritoryMapRenderer) {
