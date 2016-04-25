@@ -108,7 +108,7 @@ public class Register extends BeaconzPluginDependent {
             defenseBlocks.clear();
             for (Entry<Block, Integer> defensiveBlock : beacon.getDefenseBlocks().entrySet()) {
                 beaconzYml.set("beacon." + count + ".defensiveblocks." 
-                        + Beaconz.getStringLocation(defensiveBlock.getKey().getLocation()), defensiveBlock.getValue());
+                        + Beaconz.getStringLocation(defensiveBlock.getKey().getLocation()).replace('.', '_'), defensiveBlock.getValue());
             }
             // Save maps
             List<String> maps = new ArrayList<String>();
@@ -192,7 +192,7 @@ public class Register extends BeaconzPluginDependent {
                         ConfigurationSection defBlocks = configSec.getConfigurationSection(beacon + ".defensiveblocks");
                         if (defBlocks != null) {
                             for (String defenseBlock : defBlocks.getKeys(false)) {
-                                newBeacon.addDefenseBlock(Beaconz.getLocationString(defenseBlock).getBlock(), defBlocks.getInt(defenseBlock));
+                                newBeacon.addDefenseBlock(Beaconz.getLocationString(defenseBlock.replace('_', '.')).getBlock(), defBlocks.getInt(defenseBlock));
                             }
                         }
                         // Load map id's

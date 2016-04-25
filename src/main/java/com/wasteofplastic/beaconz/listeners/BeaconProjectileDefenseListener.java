@@ -33,8 +33,12 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Fireball;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
+import org.bukkit.entity.SpectralArrow;
+import org.bukkit.entity.TippedArrow;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -42,7 +46,11 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.InventoryHolder;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.material.Dispenser;
+import org.bukkit.potion.PotionData;
+import org.bukkit.potion.PotionType;
 import org.bukkit.scoreboard.Team;
 import org.bukkit.util.BlockIterator;
 import org.bukkit.util.Vector;
@@ -91,7 +99,7 @@ public class BeaconProjectileDefenseListener extends BeaconzPluginDependent impl
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled=true)
     public void onAttackDamage(EntityDamageByEntityEvent event) {
         //getLogger().info("DEBUG: entity damage by entity event");
-       // getLogger().info("DEBUG: entity = " + event.getEntityType());
+        // getLogger().info("DEBUG: entity = " + event.getEntityType());
         Entity entity = event.getEntity();
         Entity damager = event.getDamager();
         if (damager != null && (damager instanceof Projectile) && projectiles.containsKey(damager.getUniqueId())) {
@@ -106,7 +114,7 @@ public class BeaconProjectileDefenseListener extends BeaconzPluginDependent impl
                 return;
             }
             Player player = (Player)entity;
-            
+
             // Only damage opposing team members
             Team playersTeam = getGameMgr().getPlayerTeam(player);
             if (team == null) {
@@ -141,7 +149,7 @@ public class BeaconProjectileDefenseListener extends BeaconzPluginDependent impl
         if (!world.equals(getBeaconzWorld())) {
             return;
         }
-        
+
         Player player = event.getPlayer();
         // Nothing from here on applies to Lobby...
         if (getGameMgr().isPlayerInLobby(player)) {            
@@ -171,7 +179,8 @@ public class BeaconProjectileDefenseListener extends BeaconzPluginDependent impl
                         break;
                     case DISPENSER:
                         InventoryHolder ih = (InventoryHolder)block.getState();
-                        if (ih.getInventory().contains(Material.ARROW)) {
+                        if (ih.getInventory().contains(Material.ARROW) || ih.getInventory().contains(Material.TIPPED_ARROW) 
+                                || ih.getInventory().contains(Material.SPECTRAL_ARROW) || ih.getInventory().contains(Material.FIREBALL)) {
                             //getLogger().info("DEBUG: contains arrow");
                             Vector adjust = (event.getTo().toVector().subtract(event.getFrom().toVector()));
                             fireProjectile(block, defense.getValue(), event.getTo(), adjust, beacon.getOwnership());                          
@@ -198,7 +207,7 @@ public class BeaconProjectileDefenseListener extends BeaconzPluginDependent impl
         // Get the direction the dispenser is facing
         BlockFace blockFace = BlockFace.UP;
         if (block.getType().equals(Material.DISPENSER)) {
-            blockFace = ((Dispenser)block.getState().getData()).getFacing();     
+            blockFace = ((Dispenser)block.getState().getData()).getFacing(); 
         }
         //getLogger().info("DEBUG: dispenser is facing " + blockFace);
         Block inFront = block.getRelative(blockFace);
@@ -269,7 +278,7 @@ public class BeaconProjectileDefenseListener extends BeaconzPluginDependent impl
         while (iterator.hasNext()) {
             Block item = iterator.next();
             if (item.getX() == target.getBlockX() && item.getY() == target.getBlockY() && item.getZ() == target.getBlockZ()) {
-            //if (item.getLocation().toVector().equals(player.getLocation().toVector())) {
+                //if (item.getLocation().toVector().equals(player.getLocation().toVector())) {
                 //getLogger().info("DEBUG: Saw you directly!");
                 break; 
             }
@@ -290,14 +299,33 @@ public class BeaconProjectileDefenseListener extends BeaconzPluginDependent impl
         //Projectile projectile = (Projectile)world.spawnEntity(beacon.getLocation().add(direction).add(new Vector(0,2,0)), EntityType.ARROW);
         Location from = block.getLocation().add(face);
         // Change direction to fire where the player is moving to, not where they are
-        
-        Arrow projectile = block.getWorld().spawnArrow(from, direction.add(adjust), 1F, 10F);
-        //getLogger().info("DEBUG: Arrow flying from " + from);
-        projectile.setKnockbackStrength(1);        
-        //projectile.setVelocity(direction);
-        projectiles.put(projectile.getUniqueId(), team);
-
+        // Get all the projectiles in the dispenser
+        if (block.getType().equals(Material.DISPENSER)) {
+            //getLogger().info("DEBUG: Checking dispenser for arrows");
+            Projectile projectile = null;
+            org.bukkit.block.Dispenser ih = (org.bukkit.block.Dispenser)block.getState();
+            if (ih.getInventory().contains(Material.ARROW)) {
+                //getLogger().info("DEBUG: regular arrow");
+                projectile = block.getWorld().spawnArrow(from, direction.add(adjust), 1F, 10F);
+                ((Arrow)projectile).setKnockbackStrength(1); 
+            } else if (ih.getInventory().contains(Material.TIPPED_ARROW)) {
+                //getLogger().info("DEBUG: tipped arrow");
+                projectile = block.getWorld().spawnArrow(from, direction.add(adjust), 1F, 10F, TippedArrow.class);
+                ItemStack item = ih.getInventory().getItem(ih.getInventory().first(Material.TIPPED_ARROW));
+                PotionMeta meta = (PotionMeta) item.getItemMeta();
+                ((TippedArrow)projectile).setBasePotionData(meta.getBasePotionData()); 
+            } else if (ih.getInventory().contains(Material.SPECTRAL_ARROW)) {
+                //getLogger().info("DEBUG: spectral arrow");
+                projectile = block.getWorld().spawnArrow(from, direction.add(adjust), 1F, 10F, SpectralArrow.class);
+                ((SpectralArrow)projectile).setKnockbackStrength(1);
+            } else if (ih.getInventory().contains(Material.FIREBALL)) {
+                //getLogger().info("DEBUG: fireball");
+                projectile = (Projectile)block.getWorld().spawnEntity(from, EntityType.FIREBALL);
+                ((Fireball)projectile).setDirection(direction.add(adjust));
+            } else {
+                return;
+            }
+            projectiles.put(projectile.getUniqueId(), team);
+        }
     }
-
-
 }

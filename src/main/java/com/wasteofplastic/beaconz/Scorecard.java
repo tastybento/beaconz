@@ -428,10 +428,12 @@ public class Scorecard extends BeaconzPluginDependent{
         if (!ingameOnly || game.getRegion().isPlayerInRegion(player)) {
             Location loc = teamSpawnPoint.get(team); 
             // Teleport player to a captured beacon
+            getLogger().info("DEBUG: Team is " + team.getName());
             List<BeaconObj> beaconz = getRegister().getTeamBeacons(team);
+            getLogger().info("DEBUG: # of beaconz = " + beaconz.size());
             if (beaconz.size() > 0) {
                Random rand = new Random();
-               loc = beaconz.get(rand.nextInt(beaconz.size() -1)).getLocation().add(new Vector(0,1,0));
+               loc = beaconz.get(rand.nextInt(beaconz.size())).getLocation().add(new Vector(0,1,0));
             }
             loc = game.getRegion().findSafeSpot(loc, 20);  // in case other players have boobytrapped the spawnpoint
             final int RADIUS = 2;
