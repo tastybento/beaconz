@@ -27,9 +27,11 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
@@ -371,10 +373,11 @@ public class Scorecard extends BeaconzPluginDependent{
     }
 
     /** 
-     * Adds a player to a team
+     * Adds a player to a team. If the player was on another team in this game, they will be removed from the other team
      */
     public void addTeamPlayer(Team team, Player player) {
         // first add to the actual team
+        // This automatically removes the player from any other Teams
         team.addEntry(player.getName());
         // then update the team lists
         removeTeamPlayer(player);
@@ -392,12 +395,13 @@ public class Scorecard extends BeaconzPluginDependent{
      */
     public void removeTeamPlayer(Player player) {
         String uuid = player.getUniqueId().toString();
-        teamLookup.remove(uuid);  
-        for (Team team : teamMembers.keySet()) {
-            List<String> members = teamMembers.get(team);
-            if (members != null) {
-                members.remove(uuid);
-                teamMembers.put(team, members);        		
+        // Remove player from the teamLookup index
+        teamLookup.remove(uuid);
+        // Go through all the team and remove the player if he exists
+        for (Entry<Team, List<String>> team : teamMembers.entrySet()) {
+            if (team.getValue() != null) {
+                team.getValue().remove(uuid);
+                teamMembers.put(team.getKey(), team.getValue());        		
             }
         }
         game.save();
@@ -1052,5 +1056,13 @@ public class Scorecard extends BeaconzPluginDependent{
             e.printStackTrace();
         }
         
+    }
+
+    /**
+     * Returns all the teams in this game
+     * @return Set of teams
+     */
+    public Set<Team> getTeams() {
+        return scoreboard.getTeams();
     }	
 }

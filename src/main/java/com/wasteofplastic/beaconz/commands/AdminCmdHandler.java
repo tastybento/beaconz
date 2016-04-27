@@ -89,6 +89,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
             sender.sendMessage(cc1 + "/" + label + cc2 + " setgameparms <gamename> <parm1:value> <parm2:value>... " + cc3 + "- defines a game's parameters - DOES NOT restart the game (use restart for that) - do /" + label + " setgameparms help for a list of the possible parameters");
             sender.sendMessage(cc1 + "/" + label + cc2 + " setspawn <team>" + cc3 + " - sets the spawn point for team");
             sender.sendMessage(cc1 + "/" + label + cc2 + " setspawn - sets the lobby spawn point when in the lobby area");
+            sender.sendMessage(cc1 + "/" + label + cc2 + " switch - switches your team when in a game");
             sender.sendMessage(cc1 + "/" + label + cc2 + " teams [all | <gamename>]" + cc3 + " - shows teams and team members for a game");   
             sender.sendMessage(cc1 + "/" + label + cc2 + " timertoggle [all | <gamename>]" + cc3 + " - toggles the scoreboard timer on and off");
 
@@ -152,7 +153,36 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                     }	    				 
                 }
                 break;
-
+            case "switch":
+                // Switch teams within a game
+                if (!(sender instanceof Player)) {
+                    sender.sendMessage("Only available to players");
+                    return true;
+                } else {
+                    player = (Player) sender;
+                    team = getGameMgr().getPlayerTeam(player);
+                    if (team == null) {
+                        sender.sendMessage(ChatColor.RED + "You must be in a team to switch teams!");
+                        return true;
+                    }
+                    game = getGameMgr().getGame(team);
+                    if (game == null) {
+                        sender.sendMessage(ChatColor.RED + "You must be in a game to switch teams!");
+                        return true;
+                    }
+                    // Get the next team in this game
+                    for (Team newTeam : game.getScorecard().getTeams()) {
+                        if (!newTeam.equals(team)) {
+                            // Found an alternative
+                            game.getScorecard().addTeamPlayer(newTeam, player);
+                            sender.sendMessage(ChatColor.GREEN + "Switched to " + newTeam.getDisplayName() + "!");
+                            return true;
+                        }
+                    }
+                    sender.sendMessage(ChatColor.RED + "Could not find a team to change to!");
+                    return true;
+                }
+                
             case "join":
                 if (args.length < 3) {
                     sender.sendMessage(ChatColor.RED + "/" + label + " join <gamename> <team> - join a team in an active game");

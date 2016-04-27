@@ -166,46 +166,51 @@ public class Register extends BeaconzPluginDependent {
                         int y = Integer.valueOf(args[1]);
                         int z = Integer.valueOf(args[2]);
 
-                        Game game = getGameMgr().getGame(x, z);                        
-                        Team team = null;
-                        if (!args[3].equalsIgnoreCase("unowned")) {
-                            team = game.getScorecard().getTeam(args[3]);
-                        }
-                        BeaconObj newBeacon = addBeacon(team, x, y, z);
-                        //count++;
-                        //BeaconObj newBeacon = new BeaconObj(getBeaconzPlugin(), x,y,z , team));
-                        // Check for links
-                        beaconLinks.put(newBeacon, configSec.getStringList(beacon + ".links"));
-                        // Load defense blocks
-                        List<String> defenseBlocks = configSec.getStringList(beacon + ".defenseblocks");
-                        for (String defenseBlock : defenseBlocks) {
-                            String[] args2 = defenseBlock.split(":");
-                            if (args2.length == 2) {
-                                if (NumberUtils.isNumber(args2[0]) && NumberUtils.isNumber(args2[1])) {
-                                    int blockX = Integer.valueOf(args2[0]);
-                                    int blockZ = Integer.valueOf(args2[1]);
-                                    addBeaconDefenseBlock(blockX, blockZ, newBeacon);
+                        Game game = getGameMgr().getGame(x, z); 
+                        if (game != null) {
+                            Team team = null;
+                            if (!args[3].equalsIgnoreCase("unowned")) {
+                                team = game.getScorecard().getTeam(args[3]);
+                            }
+                            BeaconObj newBeacon = addBeacon(team, x, y, z);
+                            //count++;
+                            //BeaconObj newBeacon = new BeaconObj(getBeaconzPlugin(), x,y,z , team));
+                            // Check for links
+                            beaconLinks.put(newBeacon, configSec.getStringList(beacon + ".links"));
+                            // Load defense blocks
+                            List<String> defenseBlocks = configSec.getStringList(beacon + ".defenseblocks");
+                            for (String defenseBlock : defenseBlocks) {
+                                String[] args2 = defenseBlock.split(":");
+                                if (args2.length == 2) {
+                                    if (NumberUtils.isNumber(args2[0]) && NumberUtils.isNumber(args2[1])) {
+                                        int blockX = Integer.valueOf(args2[0]);
+                                        int blockZ = Integer.valueOf(args2[1]);
+                                        addBeaconDefenseBlock(blockX, blockZ, newBeacon);
+                                    }
                                 }
                             }
-                        }
-                        // Load the defensive blocks
-                        ConfigurationSection defBlocks = configSec.getConfigurationSection(beacon + ".defensiveblocks");
-                        if (defBlocks != null) {
-                            for (String defenseBlock : defBlocks.getKeys(false)) {
-                                newBeacon.addDefenseBlock(Beaconz.getLocationString(defenseBlock.replace('_', '.')).getBlock(), defBlocks.getInt(defenseBlock));
+
+                            // Load the defensive blocks
+                            ConfigurationSection defBlocks = configSec.getConfigurationSection(beacon + ".defensiveblocks");
+                            if (defBlocks != null) {
+                                for (String defenseBlock : defBlocks.getKeys(false)) {
+                                    newBeacon.addDefenseBlock(Beaconz.getLocationString(defenseBlock.replace('_', '.')).getBlock(), defBlocks.getInt(defenseBlock));
+                                }
                             }
+                            // Load map id's
+                            List<String> maps = configSec.getStringList(beacon + ".maps");
+                            for (String mapNumber: maps) {
+                                short id = Short.valueOf(mapNumber);
+                                beaconMaps.put(id, newBeacon);
+                                @SuppressWarnings("deprecation")
+                                MapView map = Bukkit.getMap(id);
+                                map.addRenderer(new BeaconMap(getBeaconzPlugin()));
+                                map.addRenderer(new TerritoryMapRenderer(getBeaconzPlugin()));
+                            }
+                            //getLogger().info("DEBUG: loaded beacon at " + x + "," + y + "," + z);
+                        } else {
+                            getLogger().warning("Tried to load beacon at " + x + "," + y + "," + z + " but there is no active game there. Skipping...");
                         }
-                        // Load map id's
-                        List<String> maps = configSec.getStringList(beacon + ".maps");
-                        for (String mapNumber: maps) {
-                            short id = Short.valueOf(mapNumber);
-                            beaconMaps.put(id, newBeacon);
-                            @SuppressWarnings("deprecation")
-                            MapView map = Bukkit.getMap(id);
-                            map.addRenderer(new BeaconMap(getBeaconzPlugin()));
-                            map.addRenderer(new TerritoryMapRenderer(getBeaconzPlugin()));
-                        }
-                        //getLogger().info("DEBUG: loaded beacon at " + x + "," + y + "," + z);
                     }
                 }	
             }
