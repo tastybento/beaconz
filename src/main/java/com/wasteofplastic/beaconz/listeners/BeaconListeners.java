@@ -27,10 +27,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 
 import org.apache.commons.lang.math.NumberUtils;
@@ -59,6 +61,7 @@ import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.BlockSpreadEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.entity.PlayerLeashEntityEvent;
 import org.bukkit.event.hanging.HangingPlaceEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
@@ -69,6 +72,7 @@ import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerShearEntityEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.vehicle.VehicleDamageEvent;
@@ -105,6 +109,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
      */
     private BiMap<UUID, BeaconObj> standingOn = HashBiMap.create();
     private HashMap<UUID, Collection<PotionEffect>> triangleEffects = new HashMap<UUID, Collection<PotionEffect>>();
+    private HashMap<UUID, Location> deadPlayers = new HashMap<UUID,Location>();
     private final static boolean DEBUG = false;
 
     public BeaconListeners(Beaconz plugin) {
@@ -666,10 +671,10 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                                 player.sendMessage(ChatColor.GREEN + "Success!");
                                 player.getWorld().playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 1F, 1F);
                             }
+                            // Remove exp
+                            removeExp(player, Settings.beaconMineExpRequired);
                         } else {
-                            player.getWorld().spawnEntity(player.getLocation(),EntityType.ENDERMITE);
-                            player.getWorld().playSound(player.getLocation(), Sound.ENTITY_ENDERMITE_AMBIENT, 1F, 1F);
-                            player.sendMessage(ChatColor.RED + "Failure! Watch out!");
+                            player.sendMessage(ChatColor.RED + "Failure!");
                         }
                     } else {
                         // Enemy
@@ -968,12 +973,20 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                         player.sendMessage(ChatColor.RED + "This beacon is " + (int)distance + " blocks away.");
                         return;
                     }
-                }    
+                } 
+                if (linkBeacons(player, team, beacon, mappedBeacon)) {
+                    player.sendMessage(ChatColor.GREEN + "The map disintegrates!");
+                    player.setItemInHand(null);
+                    removeExp(player, (int)(distance/Settings.expDistance));
+                }
+            } else {
+                // No exp required
+                if (linkBeacons(player, team, beacon, mappedBeacon)) {
+                    player.sendMessage(ChatColor.GREEN + "The map disintegrates!");
+                    player.setItemInHand(null);                   
+                }
             }
-            if (linkBeacons(player, team, beacon, mappedBeacon)) {
-                player.sendMessage(ChatColor.GREEN + "The map disintegrates!");
-                player.setItemInHand(null);
-            }
+            
         }
     }
 
@@ -1003,7 +1016,12 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
     }
 
     /**
-     * Tries to link two beacons
+     * Tries to link two beacons. Failure reasons could be:
+     * 1. trying to link a beacon to itself
+     * 2. beacon having 8 links already
+     * 3. link already exists
+     * 4.link crosses opposition team's links
+     * 
      * @param player
      * @param team
      * @param beacon
@@ -1301,21 +1319,20 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
      * @return true if sufficient experience points otherwise false
      */
     public boolean testForExp(Player player , int xpRequired){
-        if (DEBUG)
-            getLogger().info("DEBUG: " + player.getName() + " Exp required " + xpRequired);
+        return getTotalExperience(player) >= xpRequired ? true : false;
+    }
+    
+    /**
+     * Removes the experience from the player
+     * @param player
+     * @param xpRequired
+     * @return
+     */
+    public void removeExp(Player player , int xpRequired){
         int xp = getTotalExperience(player);
-        if (DEBUG)
-            getLogger().info("DEBUG: " + player.getName() + " total before exp = " + xp);   
-        if (DEBUG)
-            getLogger().info("DEBUG: " + player.getName() + " total before exp = " + player.getTotalExperience());   
-
         if (xp >= xpRequired) {                
             setTotalExperience(player, xp - xpRequired);
-            if (DEBUG)
-                getLogger().info("DEBUG: " + player.getName() + " total after exp = " + getTotalExperience(player));  
-            return true;
         }
-        return false;
     }
 
     // These next methods are taken from Essentials code
@@ -1486,6 +1503,8 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                 // Get from store and move to last known position
                 Location newTo = getBeaconzStore().getInventory(event.getPlayer(), toGame.getName());
                 if (newTo != null) {
+                    // Get a safe location
+                    newTo = toGame.getRegion().findSafeSpot(newTo, 10);
                     event.setTo(newTo);
                 }
                 return;
@@ -1514,6 +1533,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                     if (newTo != null) {
                         if (DEBUG)
                             getLogger().info("DEBUG: Teleporting player to last location" + newTo);
+                        newTo = toGame.getRegion().findSafeSpot(newTo, 10);
                         event.setTo(newTo);
                     }                    
                     /*
@@ -1535,4 +1555,57 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             return;
         }
     }
+    
+    /**
+     * Saves the player's death and resets their spawn point to the team spawn
+     * @param event
+     */
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onDeath(final PlayerDeathEvent event) {
+        getLogger().info("DEBUG: death");
+        Player player = event.getEntity();
+        // Check if player died in-game
+        if (!player.getWorld().equals(getBeaconzWorld())) {
+            getLogger().info("DEBUG: not in world");
+            return;
+        }
+        // If in the lobby, ignore
+        if (getGameMgr().isLocationInLobby(player.getLocation())) {
+            getLogger().info("DEBUG: died in lobby");
+            return;
+        }
+        // Get game
+        Game game = getGameMgr().getGame(player.getLocation());
+        if (game != null) {
+            Team team = game.getScorecard().getTeam(player);
+            getLogger().info("DEBUG: team is " + team.getDisplayName());
+            // Store new spawn point
+            Location spawnPoint = game.getScorecard().getTeamSpawnPoint(team);
+            getLogger().info("DEBUG: new spawn point is " + spawnPoint);
+            getBeaconzStore().storeInventory(player, game.getName(), spawnPoint);
+            deadPlayers.put(player.getUniqueId(), spawnPoint);
+        } else {
+            getLogger().info("DEBUG: game is null");
+        }
+    }
+
+    /**
+     * Respawns the player back at the beaconz lobby
+     * @param event
+     */
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onRespawn(final PlayerRespawnEvent event) {
+        getLogger().info("DEBUG: Respawn");
+        if (!deadPlayers.containsKey(event.getPlayer().getUniqueId())) {
+            getLogger().info("DEBUG: Not a known player");
+            return;
+        }
+        
+        // Set respawn location to Beaconz lobby
+        event.setRespawnLocation(deadPlayers.get(event.getPlayer().getUniqueId()));
+        deadPlayers.remove(event.getPlayer().getUniqueId());
+        // Get from store 
+        //getBeaconzStore().getInventory(event.getPlayer(), "Lobby");
+    }
+
 }

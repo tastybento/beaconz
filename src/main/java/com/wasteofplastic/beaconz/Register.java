@@ -204,8 +204,12 @@ public class Register extends BeaconzPluginDependent {
                                 beaconMaps.put(id, newBeacon);
                                 @SuppressWarnings("deprecation")
                                 MapView map = Bukkit.getMap(id);
-                                map.addRenderer(new BeaconMap(getBeaconzPlugin()));
-                                map.addRenderer(new TerritoryMapRenderer(getBeaconzPlugin()));
+                                if (map != null) {
+                                    map.addRenderer(new BeaconMap(getBeaconzPlugin()));
+                                    map.addRenderer(new TerritoryMapRenderer(getBeaconzPlugin()));
+                                } else {
+                                    getLogger().severe("Could not load map #" + id + " as it doesn't exist on this server. Skipping..."); 
+                                }
                             }
                             //getLogger().info("DEBUG: loaded beacon at " + x + "," + y + "," + z);
                         } else {
@@ -221,7 +225,7 @@ public class Register extends BeaconzPluginDependent {
                 String[] args = link.split(":");
                 BeaconObj dest = beaconRegister.get(new Point2D.Double(Double.valueOf(args[0]), Double.valueOf(args[1])));
                 if (dest != null) {
-                    LinkResult result = beacon.addLink(dest);                    
+                    LinkResult result = beacon.addOutboundLink(dest);                    
                     if (result.isSuccess()) {
                         addBeaconLink(beacon.getOwnership(), result.getLink());  
                     }
@@ -546,9 +550,9 @@ public class Register extends BeaconzPluginDependent {
                         //getLogger().info("DEBUG: Enemy triangle found inside triangle!");
                         return false;
                     }
-                    // Check if triangle already exists
+                    // Check if triangle already exists, as links go both ways it's possible and fine
                     if (triangle.equals(triangleField)) {
-                        getLogger().info("DEBUG: duplicate triangle found");
+                        //getLogger().info("DEBUG: duplicate triangle found");
                         return false;
                     }
                 }
@@ -762,6 +766,9 @@ public class Register extends BeaconzPluginDependent {
                     linkIterator.remove();
                 }
             }
+            // linkLossCount should always be a multiple of 2 because links go both ways
+            // so divide it by two
+            linkLossCount /= 2;
             // Tell folks what's going on
             if (linkLossCount == 1 && !quiet) {
                 getMessages().tellTeam(oldOwner, ChatColor.RED + "Your team lost a link!");
