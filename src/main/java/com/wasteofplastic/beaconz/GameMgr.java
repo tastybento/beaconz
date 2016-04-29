@@ -523,7 +523,7 @@ public class GameMgr extends BeaconzPluginDependent {
      * @return Region or null if none found
      */
     public Region getRegion (Location loc) {
-        return getRegion(loc.getX(), loc.getZ());
+        return getRegion(loc.getBlockX(), loc.getBlockZ());
     }  
 
     /**
@@ -532,7 +532,7 @@ public class GameMgr extends BeaconzPluginDependent {
      * @param z
      * @return Region where x,z is inside
      */
-    public Region getRegion (double x, double z) {
+    public Region getRegion (int x, int z) {
         // Returns the region that contains a point
         Region region = null;
         if (regions != null) {
@@ -583,17 +583,7 @@ public class GameMgr extends BeaconzPluginDependent {
      * @return Game or null if none
      */
     public Game getGame (Point2D point) {
-        return getGame(getRegion(point.getX(), point.getY()));
-    }
-
-    /**
-     * Get a game from a double precision coord
-     * @param x
-     * @param z
-     * @return Game or null if none
-     */
-    public Game getGame (double x, double z) {
-        return getGame(getRegion(x, z));
+        return getGame(getRegion((int)point.getX(), (int)point.getY()));
     }
 
     /**
@@ -611,7 +601,7 @@ public class GameMgr extends BeaconzPluginDependent {
      * @return Game or null if none
      */
     public Game getGame (Location loc) {
-        return getGame(getRegion(loc.getX(), loc.getZ()));
+        return getGame(getRegion(loc.getBlockX(), loc.getBlockZ()));
     }
 
     /**
@@ -620,7 +610,7 @@ public class GameMgr extends BeaconzPluginDependent {
      * @return Game or null if none
      */
     public Game getGame (Line2D link) {
-        return getGame(getRegion(link.getX1(), link.getY1()));
+        return getGame(getRegion((int)link.getX1(), (int)link.getY1()));
     }
 
     /** @return Game or null if none or null if none
@@ -649,7 +639,7 @@ public class GameMgr extends BeaconzPluginDependent {
      * @return scorcard or null if none
      */
     public Scorecard getSC(Player player) {
-        return getSC(player.getLocation().getX(), player.getLocation().getZ());  	
+        return getSC(player.getLocation().getBlockX(), player.getLocation().getBlockZ());  	
     }
 
     /**
@@ -658,18 +648,7 @@ public class GameMgr extends BeaconzPluginDependent {
      * @return Scorecard or null if none
      */
     public Scorecard getSC(Point2D point) {
-        return getSC(point.getX(), point.getY());  	  	
-    }
-    /**
-     * @param x
-     * @param z
-     * @return Scorecard or null if none
-     */
-    public Scorecard getSC(double x, double z) {
-        Scorecard sc = null;
-        Game game = getGame(x, z);
-        if (game != null) sc = game.getScorecard();
-        return sc;  	
+        return getSC((int)point.getX(), (int)point.getY());  	  	
     }
 
     /**
@@ -678,7 +657,10 @@ public class GameMgr extends BeaconzPluginDependent {
      * @return Scorecard or null if none
      */
     public Scorecard getSC(int x, int z) {
-        return getSC((double)x, (double)z);  	
+        Scorecard sc = null;
+        Game game = getGame(x, z);
+        if (game != null) sc = game.getScorecard();
+        return sc;	
     }
 
     /**
@@ -686,7 +668,7 @@ public class GameMgr extends BeaconzPluginDependent {
      * @return Scorecard or null if none
      */
     public Scorecard getSC(Location location) {
-        return getSC(location.getX(), location.getZ());
+        return getSC(location.getBlockX(), location.getBlockZ());
     }    
 
     /** 
@@ -722,7 +704,7 @@ public class GameMgr extends BeaconzPluginDependent {
      * @return true if in lobby
      */
     public Boolean isLocationInLobby(Location location) {
-        return lobby.containsPoint(location.getX(), location.getZ());
+        return lobby.containsPoint(location.getBlockX(), location.getBlockZ());
     }
 
     /**

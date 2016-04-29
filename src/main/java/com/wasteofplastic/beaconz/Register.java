@@ -571,7 +571,7 @@ public class Register extends BeaconzPluginDependent {
                 if (triangleFields.add(triangle)) {
                     //getLogger().info("DEBUG: Added control field!");
                     // New control field, refresh score
-                    Game game = getGameMgr().getGame(point2d.getX(), point2d.getY());
+                    Game game = getGameMgr().getGame(point2d);
                     game.getScorecard().refreshScores(owner, "area");
                     game.getScorecard().refreshScores(owner, "triangles");
                     //getLogger().info("DEBUG: New score is " + triangle.getArea());

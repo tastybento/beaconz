@@ -27,10 +27,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 
 import org.apache.commons.lang.math.NumberUtils;
@@ -108,6 +110,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
     private BiMap<UUID, BeaconObj> standingOn = HashBiMap.create();
     private HashMap<UUID, Collection<PotionEffect>> triangleEffects = new HashMap<UUID, Collection<PotionEffect>>();
     private HashMap<UUID, Location> deadPlayers = new HashMap<UUID,Location>();
+    private Set<UUID> barrierPlayers = new HashSet<UUID>();
     private final static boolean DEBUG = false;
 
     public BeaconListeners(Beaconz plugin) {
@@ -1148,6 +1151,11 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             Location to) {
         Region regionFrom = getGameMgr().getRegion(from);
         Region regionTo = getGameMgr().getRegion(to);
+        
+        // Check if a player is close to a barrier
+        if (regionFrom != null) {
+            regionFrom.showBarrier(player, 20);
+        }
 
         // Check if player is trying to leave a region by moving over a region boundary
         // And send him back to whence he came
@@ -1155,7 +1163,8 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             if (from.distanceSquared(to) < 6.25) {
                 //float pitch = player.getLocation().getPitch();
                 //float yaw = player.getLocation().getYaw();
-                Vector direction = player.getLocation().getDirection();                                     
+                Vector direction = player.getLocation().getDirection();
+                barrierPlayers.add(player.getUniqueId());
                 player.teleport(player.getLocation().add(from.toVector().subtract(to.toVector()).normalize()));
                 //player.getLocation().setPitch(pitch);
                 //player.getLocation().setPitch(yaw);
@@ -1439,6 +1448,12 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         if (event.getFrom().getWorld() == null || event.getTo().getWorld() == null) {
             if (DEBUG)
                 getLogger().info("DEBUG: from or to world is null");
+            return;
+        }
+        // If player is pushed back because of the barrier, just return
+        if (barrierPlayers.contains(event.getPlayer().getUniqueId())) {
+            //getLogger().info("DEBUG: ignoring barrier teleport");
+            barrierPlayers.remove(event.getPlayer().getUniqueId());
             return;
         }
         // Get the games associated with these locations

@@ -85,14 +85,20 @@ public class BeaconPopulator extends BlockPopulator {
                 return;
             }
         	// Don't do anything in the lobby
-        	if (plugin.getGameMgr().getLobby().containsPoint(source.getX() * 16.0, source.getZ() * 16.0)) {
+        	if (plugin.getGameMgr().getLobby().containsPoint(source.getX() * 16, source.getZ() * 16)) {
         		return;
         	}
         	// Don't do anything unless inside a region
-        	Region region = plugin.getGameMgr().getRegion(source.getX() * 16.0, source.getZ() * 16.0);
+        	// Check min coords
+        	Region region = plugin.getGameMgr().getRegion(source.getX() * 16, source.getZ() * 16);
         	if (region == null) {
         		return;
         	}
+        	// Check max coords of this chunk
+        	region = plugin.getGameMgr().getRegion(source.getX() * 16 + 15, source.getZ() * 16 + 15);
+            if (region == null) {
+                return;
+            }
         }        
         
         //plugin.getLogger().info("DEBUG: Populating chunk: " + source.getX() + ":" + source.getZ());        

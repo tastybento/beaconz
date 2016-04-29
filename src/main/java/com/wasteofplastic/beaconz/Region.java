@@ -257,6 +257,69 @@ public class Region extends BeaconzPluginDependent {
     }
 
     /**
+     * Displays the barrier blocks if player is within a distance of the barrier
+     * @param loc
+     * @param radius
+     * @return
+     */
+    @SuppressWarnings("deprecation")
+    public void showBarrier(Player player, int radius) {
+        Location loc = player.getLocation();
+        final Material barrier = Material.BEDROCK;
+        final byte color = 0;
+        //Set<Block> result = new HashSet<Block>();
+        int xMin = (int)corners[0].getX();
+        int zMin = (int)corners[0].getY();
+        int xMax = (int)corners[1].getX();
+        int zMax = (int)corners[1].getY();
+        if (loc.getX() - xMin < radius) {
+            // Close to min x
+            for (int z = -radius; z < radius; z++) {
+                for (int y = -radius; y < radius; y++) {
+                    Block b = getBeaconzWorld().getBlockAt(xMin-1, loc.getBlockY() + y, loc.getBlockZ() + z);
+                    if (b.getType().equals(Material.AIR)) {
+                        player.sendBlockChange(b.getLocation(), barrier, color);
+                    }
+                }
+            }
+        }
+        if (loc.getZ() - zMin < radius) {
+            // Close to min z
+            for (int x = -radius; x < radius; x++) {
+                for (int y = -radius; y < radius; y++) {
+                    Block b = getBeaconzWorld().getBlockAt(loc.getBlockX() + x, loc.getBlockY() + y, zMin-1);
+                    if (b.getType().equals(Material.AIR)) {
+                        player.sendBlockChange(b.getLocation(), barrier, color);
+                    }
+                }
+            }
+        }
+        if (xMax - loc.getBlockX() < radius) {
+            // Close to max x
+            for (int z = -radius; z < radius; z++) {
+                for (int y = -radius; y < radius; y++) {
+                    Block b = getBeaconzWorld().getBlockAt(xMax+1, loc.getBlockY() + y, loc.getBlockZ() + z);
+                    if (b.getType().equals(Material.AIR)) {
+                        player.sendBlockChange(b.getLocation(), barrier, color);
+                    }
+                }
+            }
+        }
+        if (loc.getZ() - zMin < radius) {
+            // Close to max z
+            for (int x = -radius; x < radius; x++) {
+                for (int y = -radius; y < radius; y++) {
+                    Block b = getBeaconzWorld().getBlockAt(loc.getBlockX() + x, loc.getBlockY() + y, zMax+1);
+                    if (b.getType().equals(Material.AIR)) {
+                        player.sendBlockChange(b.getLocation(), barrier, color);                       
+                    }
+                }
+            }
+        }
+    }
+
+
+    /**
      * Returns the region's center point  
      */
     public Point2D getCenter() {
@@ -287,37 +350,27 @@ public class Region extends BeaconzPluginDependent {
      * Determines whether a beacon or point lie inside the region
      */
     public Boolean containsBeacon(BeaconObj beacon) {
-        return containsPoint(beacon.getX() + 0.0, beacon.getY() + 0.0);
+        return containsPoint(beacon.getX(), beacon.getY());
     }
     public Boolean containsPoint(Point2D point) {
-        return (containsPoint(point.getX(),point.getY()));   
+        return (containsPoint((int)point.getX(),(int)point.getY()));   
     }
-    public Boolean containsPoint(Double x, Double z) {
+    public Boolean containsPoint(int x, int z) {
         // Make sure the coords are in the right order, although they should be..
-        Double xMin = corners[0].getX();
-        Double zMin = corners[0].getY();
-        Double xMax = corners[1].getX();
-        Double zMax = corners[1].getY();
-        if (xMin > xMax) {
-            Double a = xMin;
-            xMin = xMax;
-            xMax = a;
-        }
-        if (zMin > zMax) {
-            Double b = zMin;
-            zMin = zMax;
-            zMax = b;
-        }
-        Boolean contains = (xMin <= x && xMax >= x && zMin <= z && zMax >= z);
+        int xMin = (int)corners[0].getX();
+        int zMin = (int)corners[0].getY();
+        int xMax = (int)corners[1].getX();
+        int zMax = (int)corners[1].getY();
+        return (xMin <= x && xMax >= x && zMin <= z && zMax >= z);
         //getLogger().info("Contains: " + contains + " == x: " + x + " z: " + z + " corner1: " + corners[0].getX() + ":" + corners[0].getY() + " corner2: " + corners[1].getX() + ":" + corners[1].getY());
-        return contains;
+        //return contains;
     }
 
     /**
      * Determines whether a player is inside the region
      */
     public Boolean isPlayerInRegion(Player player) {
-        return containsPoint(player.getLocation().getX(), player.getLocation().getZ());
+        return containsPoint(player.getLocation().getBlockX(), player.getLocation().getBlockZ());
     }
 
     /**
@@ -344,7 +397,7 @@ public class Region extends BeaconzPluginDependent {
     public void setSpawnPoint(Location loc) {
         spawnpoint = loc;
     }
-    
+
     /**
      * Returns the region's spawn point
      */
