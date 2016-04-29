@@ -29,7 +29,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 
-import org.apache.commons.lang.math.NumberUtils;
 import org.bukkit.Difficulty;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -247,56 +246,19 @@ public class BeaconzStore extends BeaconzPluginDependent {
                 if (DEBUG) {
                     getLogger().info("DEBUG: chest is for this game " + gameName);
                 }
-                // They have a chest for this game, so give them the contents
-                Block chestBlock = beaconzStoreWorld.getBlockAt(index.get(player.getUniqueId()).get(gameName));
-                Chest chest = (Chest)chestBlock.getState();
+                DoubleChest chest = getChest(player, gameName);
+                IndexItem indexItem = new IndexItem(chest);
+                BeaconListeners.setTotalExperience(player, indexItem.getExp());
+                player.setHealth(indexItem.getHealth());
+                player.setFoodLevel(indexItem.getFoodLevel());
+                lastLoc = indexItem.getSpawnPoint();
+                if (!gameName.equalsIgnoreCase("lobby") && (getGameMgr().getGame(lastLoc) == null || !getGameMgr().getGame(lastLoc).equals(game))) {
+                    getLogger().warning("Last location for " + player.getName() + " for game " + gameName + " was not in the game and instead at " + lastLoc);
+                    lastLoc = null;
+                }               
                 InventoryHolder ih = chest.getInventory().getHolder();
                 if (ih instanceof DoubleChest) {
                     Inventory chestInv = ((DoubleChest) ih).getInventory();
-                    // Get the experience
-                    ItemStack paper = chestInv.getItem(0);
-                    if (paper != null) {
-                        if (DEBUG) {
-                            getLogger().info("DEBUG: index item found");
-                        }
-                        ItemMeta itemMeta = paper.getItemMeta();
-                        List<String> lore = itemMeta.getLore();
-                        if (lore.size() == 7) {
-                            // Exp
-                            String[] split = lore.get(3).split(":");
-                            if (split.length == 2 && NumberUtils.isNumber(split[1])) {
-                                int xp = Integer.valueOf(split[1]);
-                                if (DEBUG) {
-                                    getLogger().info("DEBUG: Setting player's xp to " + xp);
-                                }
-                                BeaconListeners.setTotalExperience(player, xp);
-                            }
-                            // Health
-                            split = lore.get(4).split(":");
-                            if (split.length == 2 && NumberUtils.isNumber(split[1])) {
-                                double health = Double.valueOf(split[1]);
-                                if (DEBUG)
-                                    getLogger().info("DEBUG: Setting player's health to " + health);
-                                player.setHealth(health);
-                            }
-                            // Food
-                            split = lore.get(5).split(":");
-                            if (split.length == 2 && NumberUtils.isNumber(split[1])) {
-                                int food = Integer.valueOf(split[1]);
-                                if (DEBUG)
-                                    getLogger().info("DEBUG: Setting player's food to " + food);
-                                player.setFoodLevel(food);
-                            }
-                            // Location
-                            lastLoc = Beaconz.getLocationString(lore.get(6));
-                            if (!gameName.equalsIgnoreCase("lobby") && (getGameMgr().getGame(lastLoc) == null || !getGameMgr().getGame(lastLoc).equals(game))) {
-                                getLogger().warning("Last location for " + player.getName() + " for game " + gameName + " was not in the game and instead at " + lore.get(6));
-                                lastLoc = null;
-                            }
-                            if (DEBUG)
-                                getLogger().info("DEBUG: Player's location " + lastLoc);
-                        }
-                    }
                     for (int i = 1; i < chestInv.getSize(); i++) {
                         // Give to player
                         player.getInventory().setItem(i-1, chestInv.getItem(i));
@@ -322,8 +284,61 @@ public class BeaconzStore extends BeaconzPluginDependent {
      * @param from - the last position of the player in this game
      */
     public void storeInventory(Player player, String gameName, Location from) {
+        storeInventory(player, gameName, from, true);
+    }
+
+    /**
+     * Puts the player's inventory into the right chest
+     * @param player
+     * @param gameName
+     * @param from
+     * @param storeInv - whether the inventory should be stored or not
+     */
+    public void storeInventory(Player player, String gameName, Location from, boolean storeInv) {
         if (DEBUG)
             getLogger().info("DEBUG: storeInventory for " + player.getName() + " leaving " + gameName + " from " + from);
+
+        DoubleChest chest = getChest(player, gameName);
+        if (chest == null) {
+            getLogger().severe("Chest at " + index.get(player.getUniqueId()).get(gameName) + " is not there anymore!");
+            index.get(player.getUniqueId()).remove(gameName);
+            rebuildIndex();
+            storeInventory(player, gameName, from);
+            return;
+        }       
+        Inventory chestInv = chest.getInventory();
+        // Clear any current inventory
+        chestInv.clear();
+        // Create the index item
+        if (DEBUG)
+            getLogger().info("DEBUG: creating index item");
+        IndexItem indexItem = new IndexItem(gameName, BeaconListeners.getTotalExperience(player), player.getHealth(), player.getFoodLevel(), from, player);
+        int itemIndex = 0;
+        chestInv.setItem(itemIndex++, indexItem.getIndexItem());
+        if (storeInv) {
+            if (DEBUG)
+                getLogger().info("DEBUG: copying player's inventory to chest");
+            // Copy the player's items to the chest
+            for (ItemStack item: player.getInventory()) {
+                chestInv.setItem(itemIndex++, item);
+            }
+        }
+        // Clear the player's inventory
+        player.getInventory().clear();
+        BeaconListeners.setTotalExperience(player, 0);
+
+        // Done!
+        if (DEBUG)
+            getLogger().info("DEBUG: Done!");
+    }
+
+    /**
+     * Gets the chest for this player for this game name
+     * @param player
+     * @param gameName
+     * @return Chest
+     */
+    private DoubleChest getChest(Player player, String gameName) {
         Block chestBlock = beaconzStoreWorld.getBlockAt(lastX, lastY, lastZ);
         // Find out if they have a chest already
         if (!index.containsKey(player.getUniqueId())) {
@@ -362,12 +377,8 @@ public class BeaconzStore extends BeaconzPluginDependent {
                     getLogger().info("DEBUG: player has chest for " + gameName);
                 // There is a chest already! So use it
                 chestBlock = index.get(player.getUniqueId()).get(gameName).getBlock();
-                if (!chestBlock.getType().equals(Material.CHEST)) {
-                    getLogger().severe("Chest at " + index.get(player.getUniqueId()).get(gameName) + " is not there anymore!");
-                    index.get(player.getUniqueId()).remove(gameName);
-                    rebuildIndex();
-                    storeInventory(player, gameName, from);
-                    return;
+                if (!chestBlock.getType().equals(Material.CHEST)) {                    
+                    return null;
                 }
             } else {
                 if (DEBUG)
@@ -397,49 +408,9 @@ public class BeaconzStore extends BeaconzPluginDependent {
                 index.put(player.getUniqueId(), placeHolder);
             }
         }
-        // Actually store the items in the chest
-        Chest chest = (Chest)chestBlock.getState();
-        InventoryHolder ih = chest.getInventory().getHolder();
-        if (ih instanceof DoubleChest){
-            Inventory chestInv = ((DoubleChest) ih).getInventory();
-            // Clear any current inventory
-            chestInv.clear();
-            // Create the index item
-            if (DEBUG)
-                getLogger().info("DEBUG: creating index item");
-            ItemStack indexItem = new ItemStack(Material.PAPER);
-            List<String> lore = new ArrayList<String>();
-            lore.add(player.getUniqueId().toString());
-            lore.add(gameName);
-            lore.add(player.getName());
-            lore.add("xp:" + BeaconListeners.getTotalExperience(player));
-            lore.add("health:" + player.getHealth());
-            lore.add("food:" + player.getFoodLevel());
-            // Check the player's location is in this game
-            if (gameName.equalsIgnoreCase("lobby") || (getGameMgr().getGame(from) != null && getGameMgr().getGame(from).getName().equals(gameName))) {
-                lore.add(Beaconz.getStringLocation(from));
-            } else {
-                getLogger().warning("Asked to store inventory for " + player.getName() + " for game name " + gameName + " but player's last location was not in the game. It was at " + from);
-            }
-            ItemMeta meta = indexItem.getItemMeta();
-            meta.setLore(lore);
-            indexItem.setItemMeta(meta);
-            int itemIndex = 0;
-            chestInv.setItem(itemIndex++, indexItem);
-            if (DEBUG)
-                getLogger().info("DEBUG: copying player's inventory to chest");
-            // Copy the player's items to the chest
-            for (ItemStack item: player.getInventory()) {
-                chestInv.setItem(itemIndex++, item);
-            }
-            // Clear the player's inventory
-            player.getInventory().clear();
-            BeaconListeners.setTotalExperience(player, 0);
-
-            // Done!
-            if (DEBUG)
-                getLogger().info("DEBUG: Done!");
-        }
+        // Return the chest
+        Chest chest = (Chest)(chestBlock.getState());
+        return (DoubleChest)(chest.getInventory().getHolder());
     }
 
     /**
@@ -459,5 +430,59 @@ public class BeaconzStore extends BeaconzPluginDependent {
             }
         }
     }
+
+    /**
+     * Clears all the items for player in game name, sets the respawn point
+     * @param player
+     * @param name
+     * @param spawnPoint
+     */
+    public void clearItems(Player player, String gameName, Location from) {
+        getLogger().info("DEBUG: clear inventory for " + player.getName() + " in " + gameName);
+        storeInventory(player, gameName, from, false);
+    }
+
+    /**
+     * Sets player's exp in game
+     * @param player
+     * @param gameName
+     * @param newExp
+     */
+    public void setExp(Player player, String gameName, int newExp) {
+        DoubleChest chest = getChest(player, gameName);
+        if (chest != null) {
+            IndexItem indexItem = new IndexItem(chest);
+            indexItem.setExp(newExp);
+        }
+    }
+
+    /**
+     * Sets player's health in game
+     * @param player
+     * @param gameName
+     * @param maxHealth
+     */
+    public void setHealth(Player player, String gameName, double maxHealth) {
+        DoubleChest chest = getChest(player, gameName);
+        if (chest != null) {
+            IndexItem indexItem = new IndexItem(chest);
+            indexItem.setHealth(maxHealth);
+        }      
+    }
+
+    /**
+     * Sets the player's food level in game
+     * @param player
+     * @param gameName
+     * @param foodLevel
+     */
+    public void setFood(Player player, String gameName, int foodLevel) {
+        DoubleChest chest = getChest(player, gameName);
+        if (chest != null) {
+            IndexItem indexItem = new IndexItem(chest);
+            indexItem.setFoodLevel(foodLevel);
+        }
+    }
+
 
 }

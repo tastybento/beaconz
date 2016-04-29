@@ -27,12 +27,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Random;
-import java.util.Set;
 import java.util.UUID;
 
 import org.apache.commons.lang.math.NumberUtils;
@@ -1562,30 +1560,51 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
      */
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onDeath(final PlayerDeathEvent event) {
-        getLogger().info("DEBUG: death");
+        //getLogger().info("DEBUG: death");
         Player player = event.getEntity();
         // Check if player died in-game
         if (!player.getWorld().equals(getBeaconzWorld())) {
-            getLogger().info("DEBUG: not in world");
+            //getLogger().info("DEBUG: not in world");
             return;
         }
         // If in the lobby, ignore
         if (getGameMgr().isLocationInLobby(player.getLocation())) {
-            getLogger().info("DEBUG: died in lobby");
+            //getLogger().info("DEBUG: died in lobby");
             return;
         }
         // Get game
         Game game = getGameMgr().getGame(player.getLocation());
         if (game != null) {
             Team team = game.getScorecard().getTeam(player);
-            getLogger().info("DEBUG: team is " + team.getDisplayName());
+            //getLogger().info("DEBUG: team is " + team.getDisplayName());
             // Store new spawn point
             Location spawnPoint = game.getScorecard().getTeamSpawnPoint(team);
-            getLogger().info("DEBUG: new spawn point is " + spawnPoint);
-            getBeaconzStore().storeInventory(player, game.getName(), spawnPoint);
+            //getLogger().info("DEBUG: new spawn point is " + spawnPoint);
+            if (event.getKeepInventory()) {
+                // Store the inventory for this player because they will get it when they come back
+                // Will also store their exp
+                //getLogger().info("DEBUG: keep inventory is true");
+                getBeaconzStore().storeInventory(player, game.getName(), spawnPoint);                
+            } else {
+                //getLogger().info("DEBUG: keep inventory is false");
+                // Their inventory is going to get dumped on the floor so they need to have their possessions removed
+                getBeaconzStore().clearItems(player, game.getName(), spawnPoint);                
+            }
+            if (!event.getKeepLevel()) {
+                //getLogger().info("DEBUG: lose level! - new exp = " + event.getNewExp());
+                // If they don't get to keep their level, their exp needs updating to what they'll get in this world.
+                getBeaconzStore().setExp(player, game.getName(), event.getNewExp());
+            } else {
+                //getLogger().info("DEBUG: keep level");
+            }
+            // They are dead, so when they respawn they need to have full health (otherwise they will die repeatedly)
+            getBeaconzStore().setHealth(player, game.getName(), player.getMaxHealth());
+            // They will also get full food level
+            getBeaconzStore().setFood(player, game.getName(), 20);
+            // Make a note of their death status
             deadPlayers.put(player.getUniqueId(), spawnPoint);
         } else {
-            getLogger().info("DEBUG: game is null");
+            //getLogger().info("DEBUG: game is null");
         }
     }
 
@@ -1595,17 +1614,15 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
      */
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onRespawn(final PlayerRespawnEvent event) {
-        getLogger().info("DEBUG: Respawn");
-        if (!deadPlayers.containsKey(event.getPlayer().getUniqueId())) {
-            getLogger().info("DEBUG: Not a known player");
+        //getLogger().info("DEBUG: Respawn");
+        if (!deadPlayers.containsKey(event.getPlayer().getUniqueId())) {            
             return;
-        }
-        
+        }    
         // Set respawn location to Beaconz lobby
-        event.setRespawnLocation(deadPlayers.get(event.getPlayer().getUniqueId()));
+        event.setRespawnLocation(getGameMgr().getLobby().getSpawnPoint());
         deadPlayers.remove(event.getPlayer().getUniqueId());
         // Get from store 
-        //getBeaconzStore().getInventory(event.getPlayer(), "Lobby");
+        getBeaconzStore().getInventory(event.getPlayer(), "Lobby");
     }
 
 }
