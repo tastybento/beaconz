@@ -113,12 +113,15 @@ public class Beaconz extends JavaPlugin {
     @Override
     public void onDisable()
     {
-        if (register != null) {
+        if (register != null) {           
             register.saveRegister();
+            // Remove all map renderers
+            register.removeMapRenderers();
         }
         if (beaconzStore != null) {
             beaconzStore.saveIndex();
         }
+        
         getGameMgr().saveAllGames();
         beaconzWorld.getPopulators().clear();
         if (beaconPopulator != null) {     

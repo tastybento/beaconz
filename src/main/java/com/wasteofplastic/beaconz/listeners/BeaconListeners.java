@@ -932,9 +932,9 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             //map.setWorld(getBeaconzWorld());
             map.setCenterX(beacon.getX());
             map.setCenterZ(beacon.getZ());
-            map.getRenderers().clear();
-            map.addRenderer(new BeaconMap(getBeaconzPlugin()));
+            map.getRenderers().clear();           
             map.addRenderer(new TerritoryMapRenderer(getBeaconzPlugin()));
+            map.addRenderer(new BeaconMap(getBeaconzPlugin()));
             event.getItem().setType(Material.MAP);
             event.getItem().setAmount(1);
             event.getItem().setDurability(map.getId());

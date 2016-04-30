@@ -44,6 +44,7 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
 import org.bukkit.scoreboard.Team;
 
@@ -114,7 +115,10 @@ public class Register extends BeaconzPluginDependent {
             List<String> maps = new ArrayList<String>();
             for (Short id : beaconMaps.keySet()) {                
                 if (beacon.equals(beaconMaps.get(id))) {
-                    maps.add(String.valueOf(id));                    
+                    // Check if this map still exists
+                    if (Bukkit.getMap(id) != null) {
+                        maps.add(String.valueOf(id)); 
+                    }
                 }      
             }
             beaconzYml.set("beacon." + count + ".maps", maps);
@@ -204,9 +208,14 @@ public class Register extends BeaconzPluginDependent {
                                 beaconMaps.put(id, newBeacon);
                                 @SuppressWarnings("deprecation")
                                 MapView map = Bukkit.getMap(id);
-                                if (map != null) {
-                                    map.addRenderer(new BeaconMap(getBeaconzPlugin()));
+                                if (map != null) { 
+                                    for (MapRenderer renderer : map.getRenderers()) {
+                                        if (renderer instanceof TerritoryMapRenderer || renderer instanceof BeaconMap) {
+                                            map.removeRenderer(renderer);
+                                        }
+                                    }                                    
                                     map.addRenderer(new TerritoryMapRenderer(getBeaconzPlugin()));
+                                    map.addRenderer(new BeaconMap(getBeaconzPlugin()));
                                 } else {
                                     getLogger().severe("Could not load map #" + id + " as it doesn't exist on this server. Skipping..."); 
                                 }
@@ -963,5 +972,21 @@ public class Register extends BeaconzPluginDependent {
             return true;
         }
         return false;
+    }
+
+    /**
+     * Removed Beaconz renderers from maps when the plugin is disabled
+     */
+    public void removeMapRenderers() {
+        for (Short id : beaconMaps.keySet()) {
+            MapView map = Bukkit.getMap(id);
+            if (map != null) {
+                for (MapRenderer renderer : map.getRenderers()) {
+                    if (renderer instanceof TerritoryMapRenderer || renderer instanceof BeaconMap) {
+                        map.removeRenderer(renderer);
+                    }
+                }
+            }
+        }
     }
 }

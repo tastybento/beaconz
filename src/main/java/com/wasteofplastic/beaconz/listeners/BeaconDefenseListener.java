@@ -57,6 +57,11 @@ import com.wasteofplastic.beaconz.Settings;
 public class BeaconDefenseListener extends BeaconzPluginDependent implements Listener {
 
     /**
+     * Maximum distance squared an emerald block can be placed from the beacon
+     */
+    private static final double MAXDISTANCE = 64;
+
+    /**
      * @param plugin
      */
     public BeaconDefenseListener(Beaconz plugin) {
@@ -187,6 +192,12 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
                     // Check if the team is placing a block on their own beacon or not
                     if (adjacentBeacon.getOwnership() == null || !adjacentBeacon.getOwnership().equals(team)) {
                         player.sendMessage(ChatColor.RED + "You can only extend a captured beacon!");
+                        event.setCancelled(true);
+                        return;
+                    }
+                    // Check the distance away from the main beacon
+                    if (block.getLocation().distanceSquared(adjacentBeacon.getLocation()) > MAXDISTANCE) {
+                        player.sendMessage(ChatColor.RED + "Cannot be extended any further in this direction!");
                         event.setCancelled(true);
                         return;
                     }

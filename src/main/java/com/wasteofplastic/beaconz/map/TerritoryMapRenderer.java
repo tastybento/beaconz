@@ -10,7 +10,9 @@ import java.util.Set;
 
 import org.bukkit.Color;
 import org.bukkit.DyeColor;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.map.MapCanvas;
 import org.bukkit.map.MapCursor;
 import org.bukkit.map.MapCursorCollection;
@@ -22,6 +24,7 @@ import org.bukkit.scoreboard.Team;
 
 import com.wasteofplastic.beaconz.BeaconObj;
 import com.wasteofplastic.beaconz.Beaconz;
+import com.wasteofplastic.beaconz.Game;
 import com.wasteofplastic.beaconz.Scorecard;
 import com.wasteofplastic.beaconz.TriangleField;
 
@@ -50,39 +53,81 @@ public class TerritoryMapRenderer extends MapRenderer {
 
     @Override
     public void render(MapView map, MapCanvas canvas, Player player) {
-        tick++;
-        if (tick > TICKS_PER_REFRESH) tick = 0;
-        if (tick != 0) return;
-        Map<Point2D, CachedBeacon> newCache = makeBeaconCache();
-        MapCoordinateConverter coordConverter = new MapCoordinateConverter(map);
-        if (beaconRegisterCache != null && beaconRegisterCache.equals(newCache)) {
-            // Beacons haven't changed since we last rendered, so we'll just use the same pixels as last time.
-            renderFromPixelCache(canvas);
-            if (canvas.getCursors().size() == 0) {
-                setCursors(coordConverter, canvas.getCursors(), player.hasPermission(MAP_UNCLAIMED_PERMISSION));
+        // Only render when on this world
+        if (!map.getWorld().equals(beaconz.getBeaconzWorld())) {
+            return;
+        }
+        // Only render if the map is in a hand
+        ItemStack inMainHand = player.getInventory().getItemInMainHand();
+        ItemStack inOffHand = player.getInventory().getItemInOffHand();
+        if (inMainHand.getType().equals(Material.MAP) || inOffHand.getType().equals(Material.MAP)) {
+            tick++;
+            if (tick > TICKS_PER_REFRESH) tick = 0;
+            if (tick != 0) return;
+            Map<Point2D, CachedBeacon> newCache = makeBeaconCache();
+            MapCoordinateConverter coordConverter = new MapCoordinateConverter(map);
+            if (beaconRegisterCache != null && beaconRegisterCache.equals(newCache)) {
+                // Beacons haven't changed since we last rendered, so we'll just use the same pixels as last time.
+                renderFromPixelCache(canvas);
+            } else {
+                beaconRegisterCache = newCache;
+                pixelCache = new Byte[128][];
+                renderToPixelCache(coordConverter);
+                renderFromPixelCache(canvas);
             }
-        } else {
-            beaconRegisterCache = newCache;
-            pixelCache = new Byte[128][];
-            renderToPixelCache(coordConverter);
-            renderFromPixelCache(canvas);
-            setCursors(coordConverter, canvas.getCursors(), player.hasPermission(MAP_UNCLAIMED_PERMISSION));
+            // Place beacon cursors
+            setCursors(canvas, coordConverter, canvas.getCursors(), player.hasPermission(MAP_UNCLAIMED_PERMISSION));
+            // Place player cursor
+            int x = coordConverter.blockXToPixelX(player.getLocation().getBlockX());
+            if (x < 0 || x > 127) return;
+            int z = coordConverter.blockZToPixelZ(player.getLocation().getBlockZ());
+            if (z < 0 || z > 127) return;
+            x = x * 2 - 128; // Pixels range from 0 to 127, but cursors range from -128 to 127. (wtf)                
+            z = z * 2 - 128; 
+            canvas.getCursors().addCursor(x, z, direction(player));
         }
     }
-
+    
+    private Byte direction(Player player){
+        double rotation = (player.getLocation().getYaw() + 90) % 360;
+          if (rotation < 0) {
+              rotation += 360.0;
+          }
+          if (0 <= rotation && rotation < 22.5) {
+              return 0xC; //S > E
+          } else if (22.5 <= rotation && rotation < 67.5) {
+              return 0xE; //SW > SE
+          } else if (67.5 <= rotation && rotation < 112.5) {
+              return 0x0; //W > E
+          } else if (112.5 <= rotation && rotation < 157.5) {
+              return 0x2; //NW > SW
+          } else if (157.5 <= rotation && rotation < 202.5) {
+              return 0x4; //N > W
+          } else if (202.5 <= rotation && rotation < 247.5) {
+              return 0x6; //NE > NW
+          } else if (247.5 <= rotation && rotation < 292.5) {
+              return 0x8; //E > N
+          } else if (292.5 <= rotation && rotation < 337.5) {
+              return 0xA; //SE > NE
+          } else if (337.5 <= rotation && rotation < 360.0) {
+              return 0xC; //S > E
+          } else {
+              return null;
+          }
+      }
     private void renderToPixelCache(MapCoordinateConverter coordConverter) {
         // triangles
         int count = 0;
         for (int x = 0; x < 128; x++) {
             for (int z = 0; z < 128; z++) {
+                int xBlock = coordConverter.pixelXToBlockX((byte) x);
+                int zBlock = coordConverter.pixelZToBlockZ((byte) z);
                 count ++;
-                if (count % 3 == 0) {
-                    int xBlock = coordConverter.pixelXToBlockX((byte) x);
-                    int zBlock = coordConverter.pixelZToBlockZ((byte) z);
+                if (count % 3 == 0) {                    
                     List<TriangleField> triangles = beaconz.getRegister().getTriangle(xBlock, zBlock);
                     if (triangles != null && !triangles.isEmpty()) {
                         TriangleField triangleField = triangles.get(0);
-                        Scorecard scoreCard = beaconz.getGameMgr().getSC(x,z);
+                        Scorecard scoreCard = beaconz.getGameMgr().getSC(xBlock,zBlock);
                         if (scoreCard != null) {
                             MaterialData materialData = scoreCard.getBlockID(triangleField.getOwner());
                             if (materialData != null) {
@@ -93,6 +138,12 @@ public class TerritoryMapRenderer extends MapRenderer {
                             }
                         }
                     }
+                }
+                // Boundary
+                Game game = beaconz.getGameMgr().getGame(xBlock, zBlock);
+                if (game == null) {
+                    if (pixelCache[x] == null) pixelCache[x] = new Byte[128];
+                    pixelCache[x][z] = (byte)0;
                 }
             }
         }
@@ -116,8 +167,15 @@ public class TerritoryMapRenderer extends MapRenderer {
         }
     }
 
+    /**
+     * Places the beacon cursors on the map
+     * @param canvas
+     * @param coordConverter
+     * @param cursors
+     * @param showUnclaimedBeacons
+     */
     @SuppressWarnings("deprecation")
-    private void setCursors(MapCoordinateConverter coordConverter, MapCursorCollection cursors, boolean showUnclaimedBeacons) {
+    private void setCursors(MapCanvas canvas, MapCoordinateConverter coordConverter, MapCursorCollection cursors, boolean showUnclaimedBeacons) {        
         for (int i = 0; i < cursors.size(); i++) {
             cursors.removeCursor(cursors.getCursor(i));
         }
@@ -126,26 +184,35 @@ public class TerritoryMapRenderer extends MapRenderer {
             if (!showUnclaimedBeacons && team == null) continue;
             Point2D point = entry.getKey();
             int x = coordConverter.blockXToPixelX((int) point.getX());
-            x = x * 2 - 128; // Pixels range from 0 to 127, but cursors range from -128 to 127. (wtf)
-            if (x < -128 || x >= 128) continue;
+            if (x < 0 || x > 127) continue;
             int z = coordConverter.blockZToPixelZ((int) point.getY());
-            z = z * 2 - 128;
-            if (z < -128 || z >= 128) continue;
-            int color = 16;
-            if (team != null) {
-                Scorecard sc = beaconz.getGameMgr().getSC(point);
-                if (sc != null) {
-                    color = sc.getBlockID(team).getData();	
-                }
+            if (z < 0 || z > 127) continue;
+            // Only add cursors to the portion of the map that has been discovered
+            if (canvas.getBasePixel(x, z) != 0) {
+                x = x * 2 - 128; // Pixels range from 0 to 127, but cursors range from -128 to 127. (wtf)                
+                z = z * 2 - 128;                
+                int color = 16;
+                if (team != null) {
+                    Scorecard sc = beaconz.getGameMgr().getSC(point);
+                    if (sc != null) {
+                        color = sc.getBlockID(team).getData();	
+                    }
+                } 
+                TeamCursor teamCursor = TEAM_CURSORS[color];
+                MapCursor cursor = cursors.addCursor(x, z, (byte)0);
+                cursor.setDirection(teamCursor.direction);
+                cursor.setType(teamCursor.type);
             }
-            cursors.addCursor(x, z, (byte)0);
-            MapCursor cursor = cursors.getCursor(cursors.size() - 1);
-            TeamCursor teamCursor = TEAM_CURSORS[color];
-            cursor.setDirection(teamCursor.direction);
-            cursor.setType(teamCursor.type);
         }
     }
 
+    /**
+     * Renders the link
+     * @param color
+     * @param coordConverter
+     * @param start
+     * @param finish
+     */
     private void renderLineToPixelCache(byte color, MapCoordinateConverter coordConverter, Point2D start, Point2D finish) {
         int startX = coordConverter.blockXToPixelX((int) start.getX());
         int startZ = coordConverter.blockZToPixelZ((int) start.getY());
@@ -173,22 +240,20 @@ public class TerritoryMapRenderer extends MapRenderer {
         return result;
     }
 
+    /**
+     * Sets the pixels on the map canvas from the cache
+     * @param canvas - the map canvas
+     */
     private void renderFromPixelCache(MapCanvas canvas) {
-        // todo: figure out whether calls to getBasePixel are actually necessary
         for (int x = 0; x < 128; x++) {
-            if (pixelCache[x] == null) {
+            if (pixelCache[x] != null) {
                 for (int z = 0; z < 128; z++) {
-                    canvas.setPixel(x, z, canvas.getBasePixel(x, z));
-                }
-            } else {
-                for (int z = 0; z < 128; z++) {
-                    if (pixelCache[x][z] == null) {
-                        canvas.setPixel(x, z, canvas.getBasePixel(x, z));
-                    } else {
+                    //Bukkit.getLogger().info("DEBUG: base pixel = " + canvas.getBasePixel(x, z));
+                    if (pixelCache[x][z] != null && canvas.getBasePixel(x, z) != 0) {
                         canvas.setPixel(x, z, pixelCache[x][z]);
                     }
                 }
-            }
+            }       
         }
     }
 
