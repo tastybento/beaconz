@@ -374,112 +374,18 @@ public class Register extends BeaconzPluginDependent {
      * @param team
      * @return total area
      */
-    public Integer getTeamArea(Team team) {
-        double area = 0; 
-
+    public int getTeamArea(Team team) {
+        return (int)TriangleScorer.getScore(triangleFields, team);
+        /*
+        int area = 0; 
+        // Legacy scoring - so simple!
         for (TriangleField triangle : triangleFields) {
             if (triangle.getOwner() != null && triangle.getOwner().equals(team)) {         
                 area += triangle.getArea();
             }
-        }
-        return (int)area;
-        /*
-        // Get the team's triangles
-        List<TriangleField> teamTriangles = new ArrayList<TriangleField>();
-        for (TriangleField triangle : triangleFields) {
-            if (triangle.getOwner() != null && triangle.getOwner().equals(team)) {
-                teamTriangles.add(triangle);
-            }
-        }
-        getLogger().info("DEBUG: there are " + teamTriangles.size() + " team triangles");
-        // Sort into groups of intersecting triangles
-        List<List<TriangleField>> groups = new ArrayList<>();
-        List<TriangleField> group = new ArrayList<TriangleField>();
-        Iterator<TriangleField> mainIt = teamTriangles.iterator();
-        while (mainIt.hasNext()) {
-            TriangleField triangle1 = mainIt.next();
-            getLogger().info("DEBUG: triangle 1 point a at " + triangle1.a);
-            // Start a new group
-            group.clear();
-            // Add the first triangle
-            group.add(triangle1);
-            // Remove it from the list
-            mainIt.remove();
-            getLogger().info("DEBUG: removed one, teamTriangles left " + teamTriangles.size());
-            // Compare against all remaining triangles. This group can grow so we use ListIterator.
-            ListIterator<TriangleField> listIterator = group.listIterator();
-            while(listIterator.hasNext()) { 
-                TriangleField t = listIterator.next();
-                getLogger().info("DEBUG: group size = " + group.size());
-                getLogger().info("DEBUG: teamTriangles to look through " + teamTriangles.size());
-                // Iterate through the remaining team triangles
-                Iterator<TriangleField> it2 = teamTriangles.iterator();
-                while (it2.hasNext()) {
-                    TriangleField triangle2 = it2.next();
-                    getLogger().info("DEBUG: checking triangle 2 point a at " + triangle2.a);
-                    // Check intersection
-                    if (triangle2.intersects(t)) {
-                        getLogger().info("DEBUG: triangle 1 and triangle 2 intersect. Adding triangle 2 to the group");
-                        // Add this to the group list and it'll be checked in the next loop
-                        listIterator.add(triangle2);
-                        // Remove it now that it's been sorted
-                        it2.remove();
-                        getLogger().info("DEBUG: triangle 2 removed, so now teamTriangles size = " + teamTriangles.size());
-                    }
-                }
-            }
-            // All the triangles in group have now been checked against every other triangle and removed from teamTriangles
-            // Save the group
-            getLogger().info("Group made of size " + group.size());
-            groups.add(group);
-        }
-        // Go through groups and calculate area
-
-        for (List<TriangleField> triangleGroup : groups) {
-            // Union all the areas
-            Area groupArea = new Area();
-            for (TriangleField triangle : triangleGroup) {
-                Area triPoly = new Area(triangle.getTriangle());
-                groupArea.add(triPoly);                
-            }
-            // Now calculate the area of the resulting polygon
-            PathIterator pathIterator = groupArea.getPathIterator(null);
-            float[] floats = new float[6];
-            List<Point2D> poly = new ArrayList<Point2D>();
-            while (!pathIterator.isDone()) {
-                pathIterator.currentSegment(floats);
-                Point2D point = new Point2D.Float(floats[0], floats[1]);
-
-                    getLogger().info("Adding point " + point);
-                    poly.add(point); 
-                pathIterator.next();
-            }            
-            area = area + polygonArea(poly.toArray(new Point2D[poly.size()]));
-            getLogger().info("area = " + area);
-        }
-        return (int)area; 
-         */
-    }
-
-    /**
-     * Function to calculate the area of a polygon, according to the algorithm
-     * defined at http://local.wasp.uwa.edu.au/~pbourke/geometry/polyarea/
-     * 
-     * @param polyPoints
-     *            array of points in the polygon
-     * @return area of the polygon defined by pgPoints
-     */
-    public static double polygonArea(Point2D[] polyPoints) {
-        int i, j, n = polyPoints.length;
-        double area = 0;
-
-        for (i = 0; i < n; i++) {
-            j = (i + 1) % n;
-            area += polyPoints[i].getX() * polyPoints[j].getY();
-            area -= polyPoints[j].getX() * polyPoints[i].getY();
-        }
-        area /= 2.0;
-        return Math.abs(area);
+        }        
+        return area;
+        */
     }
 
     /**
@@ -607,10 +513,10 @@ public class Register extends BeaconzPluginDependent {
     }
 
     /**
-     * @return the triangleFields
+     * @param triangleFields the triangleFields to set
      */
-    public Set<TriangleField> getTriangleFields() {
-        return triangleFields;
+    public void setTriangleFields(Set<TriangleField> triangleFields) {
+        this.triangleFields = triangleFields;
     }
 
     /**
