@@ -139,7 +139,7 @@ public class Messages extends BeaconzPluginDependent {
         messages.put(playerUUID, playerMessages);
 
     }   
-    
+
     /**
      * Tells all of a player's team members (online or offline) that something happened
      * 
@@ -147,43 +147,56 @@ public class Messages extends BeaconzPluginDependent {
      * @param message
      */
     public void tellTeam(Player player, String message) {
-    	Scorecard sc = getGameMgr().getSC(player);
-    	if (sc != null) {
-    		Team team = sc.getTeam(player);
+        Scorecard sc = getGameMgr().getSC(player);
+        if (sc != null) {
+            Team team = sc.getTeam(player);
             if (team == null) {
                 getLogger().info("DEBUG: A player who is not in a team did something that triggered a team message!");
             } else {
-            	tellTeam(team, message);
+                tellTeam(player, team, message);
             }
-    	}
+        }
     }
-    
+
     /**
      * Tells a message to all members of team, regardless of whether they are online or offline
      * @param team
      * @param message
      */
     public void tellTeam(Team team, String message) {
-    	// Tell other players
-    	Game game = getGameMgr().getGame(team);
-    	if (game != null) {
-    		HashMap<Team, List<String>> teamMembers = game.getScorecard().getTeamMembers();
-    		if (teamMembers != null) {
-    			List<String> members = teamMembers.get(team);
-    			if (members != null) {
-    	            for (String uuid : members) {
-    	            	Player member = Bukkit.getPlayer(UUID.fromString(uuid));
-    	                if (member != null) {
-    	                    member.sendMessage(message);
-    	                } else {
-    	                	setMessage(UUID.fromString(uuid), message);
-    	                }
-    	            }	            	    				
-    			}
-    		}
-    	}
+        tellTeam(null, team, message);
+    }
+
+    /**
+     * Tells a message to all members of team, regardless of whether they are online or offline.
+     * Ignores player
+     * @param player 
+     * @param team
+     * @param message
+     */
+    public void tellTeam(Player player, Team team, String message) {
+        // Tell other players
+        Game game = getGameMgr().getGame(team);
+        if (game != null) {
+            HashMap<Team, List<String>> teamMembers = game.getScorecard().getTeamMembers();
+            if (teamMembers != null) {
+                List<String> members = teamMembers.get(team);
+                if (members != null) {                    
+                    for (String uuid : members) {                      
+                        Player member = Bukkit.getPlayer(UUID.fromString(uuid));
+                        if (player == null || !player.getUniqueId().equals(UUID.fromString(uuid))) {
+                            if (member != null) {
+                                member.sendMessage(message);
+                            } else {
+                                setMessage(UUID.fromString(uuid), message);
+                            }
+                        }
+                    }	            	    				
+                }
+            }
+        }
     }     
-    
+
     /**
      * Broadcast a message to all teams other than this one
      * @param team

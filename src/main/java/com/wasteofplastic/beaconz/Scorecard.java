@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
@@ -147,7 +148,7 @@ public class Scorecard extends BeaconzPluginDependent{
         if (game.getGamegoalvalue() == 0) {
             goalstr = "<< Get the most " + game.getGamegoal() + "!! >>";
         } else {
-            goalstr = "<< Get " + game.getGamegoalvalue() + " " + game.getGamegoal() + "!! >>";
+            goalstr = "<< Get " + String.format(Locale.US, "%,d", game.getGamegoalvalue()) + " " + game.getGamegoal() + "!! >>";
         }
         goalstr = ChatColor.GREEN + goalstr;
         scoreline = scoreobjective.getScore(goalstr);
@@ -351,8 +352,9 @@ public class Scorecard extends BeaconzPluginDependent{
     public String fixScoreString (Team team, String scorename, Integer score, Integer maxlen) {
         String teamcolor = teamChatColor(team);
         String fixedstring = "";
-        String padstring = "____________________".substring(0, maxlen - 1 - score.toString().length());
-        fixedstring = ChatColor.GRAY + padstring + ChatColor.valueOf(teamcolor) + score + " " + team.getDisplayName() + " " + scorename;
+        String formattedScore = String.format(Locale.US, "%,d", score);
+        String padstring = "____________________".substring(0, maxlen - 1 - formattedScore.length());
+        fixedstring = ChatColor.GRAY + padstring + ChatColor.valueOf(teamcolor) + formattedScore + " " + team.getDisplayName() + " " + scorename;
         return fixedstring;
     }
 

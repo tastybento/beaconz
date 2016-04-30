@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
@@ -600,6 +601,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                     // Register the beacon to this team
                     getRegister().setBeaconOwner(beacon,team);
                     player.sendMessage(ChatColor.GREEN + "You captured a beacon! Mine the beacon for goodies if you have exp!");
+                    giveBeaconMap(player,beacon);
                 } else {
                     if (DEBUG)
                         getLogger().info("DEBUG: another block");
@@ -925,33 +927,10 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             return;
         }
         if (event.getItem().getType().equals(Material.PAPER)) {
-            // Make a map!
-            player.sendMessage(ChatColor.GREEN + "You made a beacon map! Take it to another beacon to link them up!");
-            int amount = event.getItem().getAmount() - 1;
-            MapView map = Bukkit.createMap(getBeaconzWorld());
-            //map.setWorld(getBeaconzWorld());
-            map.setCenterX(beacon.getX());
-            map.setCenterZ(beacon.getZ());
-            map.getRenderers().clear();           
-            map.addRenderer(new TerritoryMapRenderer(getBeaconzPlugin()));
-            map.addRenderer(new BeaconMap(getBeaconzPlugin()));
-            event.getItem().setType(Material.MAP);
-            event.getItem().setAmount(1);
-            event.getItem().setDurability(map.getId());
-            // Each map is unique and the durability defines the map ID, register it
-            getRegister().addBeaconMap(map.getId(), beacon);
-            //getLogger().info("DEBUG: beacon id = " + beacon.getId());
-            if (amount > 0) {
-                HashMap<Integer, ItemStack> leftOver = player.getInventory().addItem(new ItemStack(Material.PAPER, amount));
-                if (!leftOver.isEmpty()) {
-                    for (ItemStack stack: leftOver.values()) {
-                        player.getLocation().getWorld().dropItemNaturally(player.getLocation(), stack);
-                    }
-                }
-            }
-            ItemMeta meta = event.getItem().getItemMeta();
-            meta.setDisplayName("Beacon map for " + beacon.getName());
-            event.getItem().setItemMeta(meta);
+            // Give map to player
+            // Remove one paper
+            event.getItem().setAmount(event.getItem().getAmount() - 1);
+            giveBeaconMap(player, beacon);
             // Stop the beacon inventory opening
             event.setCancelled(true);
             return;
@@ -989,6 +968,35 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             }
             
         }
+    }
+
+    /**
+     * Puts a beacon map in the player's main hand
+     * @param player
+     * @param beacon
+     */
+    private void giveBeaconMap(Player player, BeaconObj beacon) {
+        // Make a map!
+        player.sendMessage(ChatColor.GREEN + "You have a beacon map! Take it to another beacon to link them up!");
+        MapView map = Bukkit.createMap(getBeaconzWorld());
+        //map.setWorld(getBeaconzWorld());
+        map.setCenterX(beacon.getX());
+        map.setCenterZ(beacon.getZ());
+        map.getRenderers().clear();           
+        map.addRenderer(new TerritoryMapRenderer(getBeaconzPlugin()));
+        map.addRenderer(new BeaconMap(getBeaconzPlugin()));
+        ItemStack newMap = new ItemStack(Material.MAP);
+        newMap.setDurability(map.getId());
+        ItemMeta meta = newMap.getItemMeta();
+        meta.setDisplayName("Beacon map for " + beacon.getName());
+        newMap.setItemMeta(meta);
+        // Each map is unique and the durability defines the map ID, register it
+        getRegister().addBeaconMap(map.getId(), beacon);
+        //getLogger().info("DEBUG: beacon id = " + beacon.getId());
+        // Put map into hand
+        ItemStack inHand = player.getInventory().getItemInMainHand();
+        player.getInventory().setItemInMainHand(newMap);
+        player.getInventory().addItem(inHand);
     }
 
     /**
@@ -1091,13 +1099,13 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         }
         if (result.getFieldsMade() > 0) {
             if (result.getFieldsMade() == 1) {
-                player.sendMessage(ChatColor.GREEN + "Triangle created! New score = " + getGameMgr().getSC(player).getScore(team, "area"));
-                getMessages().tellTeam(player, player.getDisplayName() + ChatColor.GREEN + " created a triangle! New team score = " + getGameMgr().getSC(player).getScore(team, "area"));
+                player.sendMessage(ChatColor.GOLD + "Triangle created! New score = " + String.format(Locale.US, "%,d",getGameMgr().getSC(player).getScore(team, "area")));
+                getMessages().tellTeam(player, player.getDisplayName() + ChatColor.GREEN + " created a triangle! New team score = " + String.format(Locale.US, "%,d", getGameMgr().getSC(player).getScore(team, "area")));
                 // Taunt other teams
                 getMessages().tellOtherTeams(team, ChatColor.RED + team.getDisplayName() + " team made a triangle!");
             } else {
-                player.sendMessage(ChatColor.GREEN + String.valueOf(result.getFieldsMade()) + " triangles created! New score = " + getGameMgr().getSC(player).getScore(team, "area"));
-                getMessages().tellTeam(player, player.getDisplayName() + ChatColor.GREEN + " created " + String.valueOf(result.getFieldsMade()) + " triangles! New team score = " + getGameMgr().getSC(player).getScore(team, "area"));
+                player.sendMessage(ChatColor.GOLD + String.valueOf(result.getFieldsMade()) + " triangles created! New score = " + String.format(Locale.US, "%,d", getGameMgr().getSC(player).getScore(team, "area")));
+                getMessages().tellTeam(player, player.getDisplayName() + ChatColor.GREEN + " created " + String.valueOf(result.getFieldsMade()) + " triangles! New team score = " + String.format(Locale.US, "%,d", getGameMgr().getSC(player).getScore(team, "area")));
                 // Taunt other teams
                 getMessages().tellOtherTeams(team, ChatColor.RED + team.getDisplayName() + " team made " + String.valueOf(result.getFieldsMade()) + " triangles!");
             }
