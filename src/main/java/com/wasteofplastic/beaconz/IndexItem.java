@@ -16,7 +16,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 /**
  * Class used to abstract the index item in the chest. Encodes and decodes the info to be stored.
- * 
+ *
  * @author tastybento
  *
  */
@@ -82,7 +82,7 @@ public class IndexItem {
                 if (split.length == 2 && NumberUtils.isNumber(split[1])) {
                     health = Double.valueOf(split[1]);
                     if (DEBUG)
-                        Bukkit.getLogger().info("DEBUG: Setting player's health to " + health);                    
+                        Bukkit.getLogger().info("DEBUG: Setting player's health to " + health);
                 }
                 // Food
                 split = lore.get(5).split(":");
@@ -120,7 +120,7 @@ public class IndexItem {
         lore.add("xp:" + exp);
         lore.add("health:" + health);
         lore.add("food:" + foodLevel);
-        lore.add(Beaconz.getStringLocation(spawnPoint));    
+        lore.add(Beaconz.getStringLocation(spawnPoint));
         meta.setLore(lore);
         indexItem.setItemMeta(meta);
         // If chest is known, then store the item

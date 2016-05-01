@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2015 tastybento
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
@@ -32,7 +32,7 @@ import org.bukkit.scoreboard.Team;
 
 /**
  * Represents a 2D triangular space that a faction can own
- *  
+ *
  * @author tastybento
  *
  */
@@ -67,11 +67,11 @@ public class TriangleField {
         sides.add(new Line2D.Double(c,a));
         //System.out.println("DEBUG: Control field made " + a.toString() + " " + b.toString() + " " + c.toString());
         double d = (a.getX() * (b.getY() - c.getY()) + b.getX() * (c.getY() - a.getY())
-            + c.getX() * (a.getY() - b.getY())) / 2D;
+                + c.getX() * (a.getY() - b.getY())) / 2D;
         this.area = Math.abs(d);
         //System.out.println("DEBUG: area = " + area);
     }
-    
+
     /* (non-Javadoc)
      * @see java.lang.Object#hashCode()
      */
@@ -115,23 +115,23 @@ public class TriangleField {
         }
         return true;
     }
-    
+
     /**
      * @return the owner
      */
     public Team getOwner() {
-    return owner;
+        return owner;
     }
 
     /**
      * @param owner the owner to set
      */
     public void setOwner(Team owner) {
-    this.owner = owner;
+        this.owner = owner;
     }
-    
+
     public int getArea() {
-    return (int) area;
+        return (int) area;
     }
 
     public Team contains(int x, int y) {
@@ -140,15 +140,15 @@ public class TriangleField {
         }
         return null;
     }
-    
+
     public boolean contains(Point2D point) {
-    return triangle.contains(point);
+        return triangle.contains(point);
     }
-    
+
     @Override
     public String toString() {
-    return (int)a.getX() + ":" + (int)a.getY() + ":" + (int)b.getX() + ":" + (int)b.getY() + ":"
-        + (int)c.getX() + ":" + (int)c.getY() + ":" + owner.getName();
+        return (int)a.getX() + ":" + (int)a.getY() + ":" + (int)b.getX() + ":" + (int)b.getY() + ":"
+                + (int)c.getX() + ":" + (int)c.getY() + ":" + owner.getName();
     }
 
     /**

@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2015 tastybento
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
@@ -24,6 +24,7 @@ package com.wasteofplastic.beaconz;
 
 import java.awt.geom.Point2D;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 
 import org.bukkit.Bukkit;
@@ -46,8 +47,8 @@ import org.bukkit.scoreboard.Score;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
-/** 
- * Region instantiates the various regions in the world     
+/**
+ * Region instantiates the various regions in the world
  * A region belongs to a game - except for the lobby, which is a region with no game
  * A region is defined by two sets of X:Z coordinates and encompasses all Ys
  * A region can be created and recreated freely; region.populate is not in the constructor and must be called explicitly
@@ -75,7 +76,7 @@ public class Region extends BeaconzPluginDependent {
     /**
      * Initializes the class without (re)constructing it
      */
-    public void initialize(Boolean newGame) {    	
+    public void initialize(Boolean newGame) {
 
         if (newGame) {
             // Set the region's default spawn point; start looking at the center of the region
@@ -83,17 +84,17 @@ public class Region extends BeaconzPluginDependent {
             setSpawnPoint(getCenter(), (int) rad);
 
             // That's it. Regenerate() is called from GameMgr or Game
-        }    	
+        }
     }
 
-    /** 
+    /**
      * Regenerates the region by regenerating its chunks
      * Cleans up the game area so it can be played again
      * Remember that regions are created so their limits match full chunks
      * Since the BeaconPopulator is registered with the World, it is used automatically when regenerating the chunks
      */
     public void regenerate(final CommandSender sender) {
-        if (this != getGameMgr().getLobby()) {        	
+        if (this != getGameMgr().getLobby()) {
 
             getLogger().info("Regenerating region at Ctr:Rad [" + this.getCenter().getX() + ", " + this.getCenter().getY() + "] : " + this.getRadius() + " ==> xMin: " + corners[0].getX() + " zMin: " +  corners[1].getX() + " xMax: " + corners[0].getY() + " zMax: " + corners[1].getY());
 
@@ -104,13 +105,13 @@ public class Region extends BeaconzPluginDependent {
             // **********************************************************
 
             // First clear the current register for the region
-            getRegister().clear(this);        	        	
+            getRegister().clear(this);
 
             // Then regenerate, in spurts of 25 chunks
             final int xMin = (int) corners[0].getX() -16;
             final int xMax = (int) corners[1].getX() +16;
             final int zMin = (int) corners[0].getY() -16;
-            final int zMax = (int) corners[1].getY() +16;                  	
+            final int zMax = (int) corners[1].getY() +16;
 
             totalregen = 0;
             chX = xMin;
@@ -119,29 +120,30 @@ public class Region extends BeaconzPluginDependent {
             final double chunksToDo = ((double)((xMax - xMin)/16) * (double)((xMax - xMin)/16));
             Settings.populate.clear();
 
-            // Regenerate the chunks in spurts of 25 
+            // Regenerate the chunks in spurts of 25
             // Can't do this asynchronously, as it relies on API calls
             task = getServer().getScheduler().runTaskTimer(plugin, new Runnable() {
-                public void run() {                  
+                @Override
+                public void run() {
                     loopcount = 0;
                     Settings.populate.clear();
                     outerloop:
                         while (chX <= xMax) {
                             while (chZ <= zMax) {
-                                // Settings.dontpopulate is used to abort the populator - there's no need to repopulate the chunks, they'll get populated when loaded in-game              	
+                                // Settings.dontpopulate is used to abort the populator - there's no need to repopulate the chunks, they'll get populated when loaded in-game
                                 // Only regen if the chunk has been populated so far
-                                if (getBeaconzWorld().loadChunk(chX/16, chZ/16, false) == true) {                    
+                                if (getBeaconzWorld().loadChunk(chX/16, chZ/16, false) == true) {
                                     //Settings.populate.add(new Pair((chX/16),(chZ/16)));
                                     getBeaconzWorld().regenerateChunk(chX/16, chZ/16);
                                     getBeaconzWorld().unloadChunkRequest(chX/16, chZ/16);
                                     //getLogger().info("Regenerating chunk: " + (chX/16) + ":" + (chZ/16) + " regen = " + getBeaconzWorld().regenerateChunk(chX/16, chZ/16));
                                     //getLogger().info("Unload queued: " + getBeaconzWorld().unloadChunkRequest(chX/16, chZ/16));
-                                    loopcount++;                               
-                                }                                
+                                    loopcount++;
+                                }
                                 totalregen++;
                                 if (loopcount >= step) {
-                                    //getLogger().info("Region.regenerate() -- loop break at chunks: " + (chX/16) + ":" + (chZ/16) + "----- or blocks: " + chX + ":" + chZ);                                    
-                                    long temp = Math.round(((double)totalregen/chunksToDo) * 100);
+                                    //getLogger().info("Region.regenerate() -- loop break at chunks: " + (chX/16) + ":" + (chZ/16) + "----- or blocks: " + chX + ":" + chZ);
+                                    long temp = Math.round((totalregen/chunksToDo) * 100);
                                     if (progress != temp) {
                                         progress = temp;
                                         getLogger().info(progress + "% complete");
@@ -153,19 +155,19 @@ public class Region extends BeaconzPluginDependent {
                             chZ = zMin;
                             chX = chX + 16;
                         }
-                    if (chX > xMax) {                		                	
+                    if (chX > xMax) {
                         task.cancel();
                         finishRegenerating(sender);
                     }
                 }
-            }, 5L, 1L);        	
-        }        
+            }, 5L, 1L);
+        }
     }
 
     public void finishRegenerating(CommandSender sender) {
         // Wrap things up
         createCorners();
-        sender.sendMessage(ChatColor.GREEN + "Reset complete. Regenerated " + totalregen + " chunks."); 
+        sender.sendMessage(ChatColor.GREEN + "Reset complete. Regenerated " + totalregen + " chunks.");
     }
 
     /**
@@ -187,7 +189,7 @@ public class Region extends BeaconzPluginDependent {
         for (Point2D point : fourcorners) {
             if (!getRegister().isNearBeacon(point, 5)) {
                 Block b = getBeaconzWorld().getHighestBlockAt((int)point.getX(), (int)point.getY());
-                while (b.getType().equals(Material.AIR) || b.getType().equals(Material.LEAVES) || b.getType().equals(Material.LEAVES_2)) {          
+                while (b.getType().equals(Material.AIR) || b.getType().equals(Material.LEAVES) || b.getType().equals(Material.LEAVES_2)) {
                     if (b.getY() == 0) {
                         // Oops, nothing here
                         break;
@@ -228,7 +230,7 @@ public class Region extends BeaconzPluginDependent {
         return corners;
     }
 
-    /** 
+    /**
      * Sets the region's corners, and in the right order
      */
     public Point2D [] setCorners(Point2D [] c) {
@@ -244,7 +246,7 @@ public class Region extends BeaconzPluginDependent {
             Double z = zMin;
             zMin = zMax;
             zMax = z;
-        }    	
+        }
         Point2D [] c = {new Point2D.Double(xMin, zMin), new Point2D.Double(xMax, zMax)};
         return c;
     }
@@ -311,7 +313,7 @@ public class Region extends BeaconzPluginDependent {
                 for (int y = -radius; y < radius; y++) {
                     Block b = getBeaconzWorld().getBlockAt(loc.getBlockX() + x, loc.getBlockY() + y, zMax+1);
                     if (b.getType().equals(Material.AIR)) {
-                        player.sendBlockChange(b.getLocation(), barrier, color);                       
+                        player.sendBlockChange(b.getLocation(), barrier, color);
                     }
                 }
             }
@@ -320,7 +322,7 @@ public class Region extends BeaconzPluginDependent {
 
 
     /**
-     * Returns the region's center point  
+     * Returns the region's center point
      */
     public Point2D getCenter() {
         Double x = (corners[0].getX() + corners[1].getX()) / 2.0;
@@ -338,10 +340,10 @@ public class Region extends BeaconzPluginDependent {
     /**
      * Returns the region's coordinates in a pretty display string
      */
-    public String displayCoords() {    	  
-        String coords = "center: [" + 
-                (int) getCenter().getX() + ":" + (int) getCenter().getY() + "] - corners: [" + 
-                (int) corners()[0].getX() + ":" + (int) corners()[0].getY() + "] and [" + 
+    public String displayCoords() {
+        String coords = "center: [" +
+                (int) getCenter().getX() + ":" + (int) getCenter().getY() + "] - corners: [" +
+                (int) corners()[0].getX() + ":" + (int) corners()[0].getY() + "] and [" +
                 (int) corners()[1].getX() + ":" + (int) corners()[1].getY() + "]";
         return coords;
     }
@@ -353,7 +355,7 @@ public class Region extends BeaconzPluginDependent {
         return containsPoint(beacon.getX(), beacon.getY());
     }
     public Boolean containsPoint(Point2D point) {
-        return (containsPoint((int)point.getX(),(int)point.getY()));   
+        return (containsPoint((int)point.getX(),(int)point.getY()));
     }
     public Boolean containsPoint(int x, int z) {
         // Make sure the coords are in the right order, although they should be..
@@ -433,16 +435,17 @@ public class Region extends BeaconzPluginDependent {
         player.sendMessage(ChatColor.GREEN + titleline);
         player.sendMessage(ChatColor.AQUA + subtitleline);
 
-        // Welcome player on screen        
+        // Welcome player on screen
         getServer().dispatchCommand(getServer().getConsoleSender(),
-                "title " + player.getName() + " title {\"text\":\"" + titleline + "\", \"color\":\"" + "gold" + "\"}");  
+                "title " + player.getName() + " title {\"text\":\"" + titleline + "\", \"color\":\"" + "gold" + "\"}");
         getServer().dispatchCommand(getServer().getConsoleSender(),
-                "title " + player.getName() + " subtitle {\"text\":\"" + subtitleline + "\", \"color\":\"" + "gold" + "\"}");        
+                "title " + player.getName() + " subtitle {\"text\":\"" + subtitleline + "\", \"color\":\"" + "gold" + "\"}");
         // Show the lobby scoreboard - wait for title message to disappear
         if (this.equals(getGameMgr().getLobby())) {
 
             getServer().getScheduler().runTaskLater(plugin, new Runnable() {
 
+                @Override
                 public void run() {
                     // This runs after a few seconds, so make sure that player is still in the lobby
                     if (getGameMgr().isPlayerInLobby(player)) {
@@ -452,28 +455,28 @@ public class Region extends BeaconzPluginDependent {
                         player.setScoreboard(sb);
 
                         try {
-                            sb.clearSlot(DisplaySlot.SIDEBAR);                    
+                            sb.clearSlot(DisplaySlot.SIDEBAR);
                         } catch (Exception e){ };
 
                         sbobj = sb.registerNewObjective("text", "dummy");
-                        sbobj.setDisplaySlot(DisplaySlot.SIDEBAR);        
+                        sbobj.setDisplaySlot(DisplaySlot.SIDEBAR);
                         sbobj.setDisplayName(ChatColor.GREEN + "Welcome to Beaconz! ");
                         scoreline = sbobj.getScore("You are in the lobby area.");
                         scoreline.setScore(15);
                         scoreline = sbobj.getScore("Hit a sign to start a game!");
                         scoreline.setScore(14);
                         scoreline = sbobj.getScore("Beaconz is a team game where");
-                        scoreline.setScore(13);       
+                        scoreline.setScore(13);
                         scoreline = sbobj.getScore("you try to find, claim and link");
-                        scoreline.setScore(12);       
+                        scoreline.setScore(12);
                         scoreline = sbobj.getScore("naturally occuring beaconz in");
-                        scoreline.setScore(11);       
+                        scoreline.setScore(11);
                         scoreline = sbobj.getScore("the world. You can mine beaconz");
-                        scoreline.setScore(10);       
+                        scoreline.setScore(10);
                         scoreline = sbobj.getScore("for goodies and defend them");
-                        scoreline.setScore(9);       
+                        scoreline.setScore(9);
                         scoreline = sbobj.getScore("with blocks and traps.");
-                        scoreline.setScore(8);  
+                        scoreline.setScore(8);
 
                         player.setScoreboard(sb);
 
@@ -483,14 +486,14 @@ public class Region extends BeaconzPluginDependent {
         }
     }
 
-    /** 
+    /**
      * Handles player Exit event
      */
     public void exit(Player player) {
         player.setScoreboard(Bukkit.getServer().getScoreboardManager().getNewScoreboard());
     }
 
-    /** 
+    /**
      * Handles player Enter event
      */
     public void enter(Player player) {
@@ -502,32 +505,32 @@ public class Region extends BeaconzPluginDependent {
             Team team = game.getScorecard().getTeam(player);
             if (team != null) teamname = team.getDisplayName();
             player.setScoreboard(game.getScorecard().getScoreboard());
-            //game.getScorecard().sendPlayersHome(player, true);        	        
+            //game.getScorecard().sendPlayersHome(player, true);
 
             // Welcome player in chat
             player.sendMessage(ChatColor.GREEN + "Welcome to Beaconz!");
             player.sendMessage(ChatColor.AQUA + "You're playing game " + game.getName() + " in " + game.getGamemode() + " mode!");
             player.sendMessage(ChatColor.AQUA + "You're a member of " + teamname + " team!");
             if (game.getGamegoalvalue() > 0) {
-                player.sendMessage(ChatColor.AQUA + "Your team's objective is to capture " + game.getGamegoalvalue() + " " + game.getGamegoal() + "!");
+                player.sendMessage(ChatColor.AQUA + "Your team's objective is to capture " + String.format(Locale.US, "%,d",game.getGamegoalvalue()) + " " + game.getGamegoal() + "!");
             } else {
                 player.sendMessage(ChatColor.AQUA + "Your team's objective is to capture the most " + game.getGamegoal() + "!");
             }
 
-            // Welcome player on screen        
+            // Welcome player on screen
             String titleline = "Beaconz game " + game.getName() + "!";
             String subtitleline = "You're playing " + game.getGamemode() + " mode - " + teamname + " team!";
             getServer().dispatchCommand(getServer().getConsoleSender(),
-                    "title " + player.getName() + " title {\"text\":\"" + titleline + "\", \"color\":\"" + "gold" + "\"}");  
+                    "title " + player.getName() + " title {\"text\":\"" + titleline + "\", \"color\":\"" + "gold" + "\"}");
             getServer().dispatchCommand(getServer().getConsoleSender(),
-                    "title " + player.getName() + " subtitle {\"text\":\"" + subtitleline + "\", \"color\":\"" + "gold" + "\"}");    		
+                    "title " + player.getName() + " subtitle {\"text\":\"" + subtitleline + "\", \"color\":\"" + "gold" + "\"}");
         }
     }
 
-    /** 
+    /**
      * Find the nearest safe spot to a given point, within a radius
      * The radius is arbitrarily limited to 20 blocks
-     * If no safe location within radius is found, this creates a safe spot by converting the block at location to 
+     * If no safe location within radius is found, this creates a safe spot by converting the block at location to
      */
     public Location findSafeSpot (Location location, Integer radius) {
         if (radius > 20) radius = 20;
@@ -537,20 +540,20 @@ public class Region extends BeaconzPluginDependent {
             Block bl = location.getBlock();
             String usedxyz = "";
 
-            // sweep in a concentric cube pattern to check for a safe spot    
+            // sweep in a concentric cube pattern to check for a safe spot
             Location checkloc = null;
             outerloop:
                 for (int rad = 0; rad < radius; rad++) {
                     //for (int y = -rad; y <= rad; y++) {
                     for (int z = -rad; z <= rad; z++) {
-                        for (int x = -rad; x <= rad; x++) {    						
+                        for (int x = -rad; x <= rad; x++) {
                             String coords = "#" + x + " "+ z + "#";
                             if (!usedxyz.contains(coords)) {
-                                usedxyz = usedxyz + coords;    							
+                                usedxyz = usedxyz + coords;
                                 checkloc = getBeaconzWorld().getHighestBlockAt(bl.getRelative(x, 0, z).getLocation()).getLocation();
                                 if (isLocationSafe(checkloc)) {
                                     safeloc = checkloc.add(0.5, 0.0, 0.5);
-                                    break outerloop;    						
+                                    break outerloop;
                                 }
                             }
                         }
@@ -570,9 +573,9 @@ public class Region extends BeaconzPluginDependent {
     }
 
     /**
-     * Checks if this location is safe for a player to teleport to. 
+     * Checks if this location is safe for a player to teleport to.
      * Unsafe is any liquid or air and also if there's no space
-     * 
+     *
      * @param location
      *            - Location to be checked
      * @return true if safe, otherwise false
@@ -628,7 +631,7 @@ public class Region extends BeaconzPluginDependent {
         // We don't want to be standing on leaves either
         if (ground.getType().equals(Material.LEAVES)) {
             return false;
-        }      
+        }
         // Check that the space is not solid
         // The isSolid function is not fully accurate (yet) so we have to
         // check a few other items

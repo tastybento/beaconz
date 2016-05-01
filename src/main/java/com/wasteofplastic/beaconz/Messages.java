@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2015 tastybento
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
@@ -36,9 +36,9 @@ import org.bukkit.scoreboard.Team;
 
 /**
  * Handles offline messaging to players and teams
- * 
+ *
  * @author tastybento
- * 
+ *
  */
 public class Messages extends BeaconzPluginDependent {
 
@@ -56,7 +56,7 @@ public class Messages extends BeaconzPluginDependent {
 
     /**
      * Returns what messages are waiting for the player or null if none
-     * 
+     *
      * @param playerUUID
      * @return
      */
@@ -67,7 +67,7 @@ public class Messages extends BeaconzPluginDependent {
 
     /**
      * Clears any messages for player
-     * 
+     *
      * @param playerUUID
      */
     public void clearMessages(UUID playerUUID) {
@@ -121,7 +121,7 @@ public class Messages extends BeaconzPluginDependent {
 
     /**
      * Provides the messages for the player
-     * 
+     *
      * @param playerUUID
      * @return List of messages
      */
@@ -131,18 +131,18 @@ public class Messages extends BeaconzPluginDependent {
 
     /**
      * Stores a message for player
-     * 
+     *
      * @param playerUUID
      * @param playerMessages
      */
     public void put(UUID playerUUID, List<String> playerMessages) {
         messages.put(playerUUID, playerMessages);
 
-    }   
+    }
 
     /**
      * Tells all of a player's team members (online or offline) that something happened
-     * 
+     *
      * @param playerUUID - the originating player, always an online player
      * @param message
      */
@@ -170,7 +170,7 @@ public class Messages extends BeaconzPluginDependent {
     /**
      * Tells a message to all members of team, regardless of whether they are online or offline.
      * Ignores player
-     * @param player 
+     * @param player
      * @param team
      * @param message
      */
@@ -181,8 +181,8 @@ public class Messages extends BeaconzPluginDependent {
             HashMap<Team, List<String>> teamMembers = game.getScorecard().getTeamMembers();
             if (teamMembers != null) {
                 List<String> members = teamMembers.get(team);
-                if (members != null) {                    
-                    for (String uuid : members) {                      
+                if (members != null) {
+                    for (String uuid : members) {
                         Player member = Bukkit.getPlayer(UUID.fromString(uuid));
                         if (player == null || !player.getUniqueId().equals(UUID.fromString(uuid))) {
                             if (member != null) {
@@ -191,11 +191,11 @@ public class Messages extends BeaconzPluginDependent {
                                 setMessage(UUID.fromString(uuid), message);
                             }
                         }
-                    }	            	    				
+                    }
                 }
             }
         }
-    }     
+    }
 
     /**
      * Broadcast a message to all teams other than this one
@@ -210,11 +210,11 @@ public class Messages extends BeaconzPluginDependent {
             }
         }
 
-    }    
+    }
 
     /**
      * Sets a message for the player to receive next time they login
-     * 
+     *
      * @param player
      * @param message
      * @return true if player is offline, false if online

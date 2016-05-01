@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2015 tastybento
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
@@ -75,20 +75,21 @@ public class Beaconz extends JavaPlugin {
 
 
         // Run commands that need to be run 1 tick after start
-        getServer().getScheduler().runTask(this, new Runnable() {            
+        getServer().getScheduler().runTask(this, new Runnable() {
 
-            public void run() {            	
-            	
-            	// Start the game manager and create the lobby region
-            	gameMgr = new GameMgr(plugin); 
+            @Override
+            public void run() {
+
+                // Start the game manager and create the lobby region
+                gameMgr = new GameMgr(plugin);
 
                 // Load the beacon register
                 register = new Register(plugin);
-                register.loadRegister();                                
-                
+                register.loadRegister();
+
                 // Create the block populator
                 getBp();
-                
+
                 // Create the world
                 getBeaconzWorld();
 
@@ -113,7 +114,7 @@ public class Beaconz extends JavaPlugin {
     @Override
     public void onDisable()
     {
-        if (register != null) {           
+        if (register != null) {
             register.saveRegister();
             // Remove all map renderers
             register.removeMapRenderers();
@@ -121,24 +122,24 @@ public class Beaconz extends JavaPlugin {
         if (beaconzStore != null) {
             beaconzStore.saveIndex();
         }
-        
+
         getGameMgr().saveAllGames();
         beaconzWorld.getPopulators().clear();
-        if (beaconPopulator != null) {     
+        if (beaconPopulator != null) {
             //beaconzWorld.getPopulators().remove(beaconPopulator);
         }
         //getConfig().set("world.distribution", Settings.distribution);
         //saveConfig();
     }
 
-    
-    /** 
+
+    /**
      * @return the gameMgr
      */
     public GameMgr getGameMgr() {
-    	return gameMgr;
+        return gameMgr;
     }
-    
+
     /**
      * @return the register
      */
@@ -155,63 +156,63 @@ public class Beaconz extends JavaPlugin {
         }
         return beaconPopulator;
     }
-    
+
     /**
      * Loads settings from config.yml
      * Clears all old settings
      */
     public void loadConfig() {
-    	// get the lobby coords and size, adjust to match chunk size
-    	Settings.lobbyx = (getConfig().getInt("world.lobbyx", 0) / 16) * 16;
-    	Settings.lobbyz = (getConfig().getInt("world.lobbyz", 0) / 16) * 16;
-    	Settings.lobbyradius = (getConfig().getInt("world.lobbyradius", 32) / 16) * 16;
-    	if (Settings.lobbyradius == 0) Settings.lobbyradius = 32;
-    	
-    	// Get the default number of teams
-    	Settings.default_teams = getConfig().getInt("default_teams", 2);
-    	
-    	// Get the default game mode 
-    	Settings.gamemode = getConfig().getString("gamemode", "minigame");
-    	Settings.gamemode = cleanString(Settings.gamemode, "minigame:strategy", "strategy");
-    	
-    	// Get the default score types to show
-    	Settings.minigameScoreTypes = getConfig().getString("sidebar.minigame", "beacons:links:triangles");
-    	Settings.minigameScoreTypes = cleanString(Settings.minigameScoreTypes, "beacons:links:triangles:area", "beacons:links:triangles");
-    	Settings.strategyScoreTypes = getConfig().getString("sidebar.strategy", "area:triangles");
-    	Settings.strategyScoreTypes = cleanString(Settings.strategyScoreTypes, "beacons:links:triangles:area", "beacons:triangles:area");
-    	
-    	// Get the default goals for each game mode
-    	String mgGoal = getConfig().getString("goals.minigame", "triangles:0");
-    	String sgGoal = getConfig().getString("goals.strategy", "area:10000");
-    	Settings.minigameGoal = mgGoal.split(":")[0];
-    	Settings.strategyGoal = sgGoal.split(":")[0];
-    	try{
-        	Settings.minigameGoalValue = Integer.valueOf(mgGoal.split(":")[1]);    		
-    	} catch (Exception e) {
-    		Settings.minigameGoalValue = 10;
-    	}
-    	try{
-    		Settings.strategyGoalValue = Integer.valueOf(sgGoal.split(":")[1]);
-    	} catch (Exception e) {
-    		Settings.strategyGoalValue = 10000;
-    	}   	    	
-    	// Check that the goals are actually among the chosen score types; if not, revert to defaults
-    	if (!Settings.minigameScoreTypes.contains(Settings.minigameGoal)) {
-    		Settings.minigameGoal = "triangles";
-    		Settings.minigameGoalValue = 0;
-    		if (!Settings.minigameScoreTypes.contains(Settings.minigameGoal)) Settings.minigameScoreTypes = Settings.minigameScoreTypes + ":" + Settings.minigameGoal;
-    	}
-    	if (!Settings.strategyScoreTypes.contains(Settings.strategyGoal)) {
-    		Settings.strategyGoal = "area";
-    		Settings.strategyGoalValue = 10000;
-    		if (!Settings.strategyScoreTypes.contains(Settings.strategyGoal)) Settings.strategyScoreTypes = Settings.strategyScoreTypes + ":" + Settings.strategyGoal;
-    	}    	
-        
-    	// Get the default timers for each game mode
-    	Settings.minigameTimer = getConfig().getInt("timer.minigame", 600);
-    	Settings.strategyTimer = getConfig().getInt("timer.strategy", 60000);
-    	
-    	Settings.linkDistance = getConfig().getDouble("world.linkdistance", 0);
+        // get the lobby coords and size, adjust to match chunk size
+        Settings.lobbyx = (getConfig().getInt("world.lobbyx", 0) / 16) * 16;
+        Settings.lobbyz = (getConfig().getInt("world.lobbyz", 0) / 16) * 16;
+        Settings.lobbyradius = (getConfig().getInt("world.lobbyradius", 32) / 16) * 16;
+        if (Settings.lobbyradius == 0) Settings.lobbyradius = 32;
+
+        // Get the default number of teams
+        Settings.default_teams = getConfig().getInt("default_teams", 2);
+
+        // Get the default game mode
+        Settings.gamemode = getConfig().getString("gamemode", "minigame");
+        Settings.gamemode = cleanString(Settings.gamemode, "minigame:strategy", "strategy");
+
+        // Get the default score types to show
+        Settings.minigameScoreTypes = getConfig().getString("sidebar.minigame", "beacons:links:triangles");
+        Settings.minigameScoreTypes = cleanString(Settings.minigameScoreTypes, "beacons:links:triangles:area", "beacons:links:triangles");
+        Settings.strategyScoreTypes = getConfig().getString("sidebar.strategy", "area:triangles");
+        Settings.strategyScoreTypes = cleanString(Settings.strategyScoreTypes, "beacons:links:triangles:area", "beacons:triangles:area");
+
+        // Get the default goals for each game mode
+        String mgGoal = getConfig().getString("goals.minigame", "triangles:0");
+        String sgGoal = getConfig().getString("goals.strategy", "area:10000");
+        Settings.minigameGoal = mgGoal.split(":")[0];
+        Settings.strategyGoal = sgGoal.split(":")[0];
+        try{
+            Settings.minigameGoalValue = Integer.valueOf(mgGoal.split(":")[1]);
+        } catch (Exception e) {
+            Settings.minigameGoalValue = 10;
+        }
+        try{
+            Settings.strategyGoalValue = Integer.valueOf(sgGoal.split(":")[1]);
+        } catch (Exception e) {
+            Settings.strategyGoalValue = 10000;
+        }
+        // Check that the goals are actually among the chosen score types; if not, revert to defaults
+        if (!Settings.minigameScoreTypes.contains(Settings.minigameGoal)) {
+            Settings.minigameGoal = "triangles";
+            Settings.minigameGoalValue = 0;
+            if (!Settings.minigameScoreTypes.contains(Settings.minigameGoal)) Settings.minigameScoreTypes = Settings.minigameScoreTypes + ":" + Settings.minigameGoal;
+        }
+        if (!Settings.strategyScoreTypes.contains(Settings.strategyGoal)) {
+            Settings.strategyGoal = "area";
+            Settings.strategyGoalValue = 10000;
+            if (!Settings.strategyScoreTypes.contains(Settings.strategyGoal)) Settings.strategyScoreTypes = Settings.strategyScoreTypes + ":" + Settings.strategyGoal;
+        }
+
+        // Get the default timers for each game mode
+        Settings.minigameTimer = getConfig().getInt("timer.minigame", 600);
+        Settings.strategyTimer = getConfig().getInt("timer.strategy", 60000);
+
+        Settings.linkDistance = getConfig().getDouble("world.linkdistance", 0);
         Settings.expDistance = getConfig().getDouble("world.expdistance", 10);
         Settings.beaconMineExhaustChance = getConfig().getInt("world.beaconmineexhaustchance", 10);
         if (Settings.beaconMineExhaustChance < 0) {
@@ -313,7 +314,7 @@ public class Beaconz extends JavaPlugin {
                     if (split.length == 1 || split.length > 2) {
                         PotionEffectType type = PotionEffectType.getByName(split[0]);
                         if (type != null) {
-                            effects.add(new PotionEffect(type, Integer.MAX_VALUE, 1));  
+                            effects.add(new PotionEffect(type, Integer.MAX_VALUE, 1));
                         }
                     }
                     if (split.length == 2) {
@@ -330,7 +331,7 @@ public class Beaconz extends JavaPlugin {
                     }
 
                 }
-                Settings.enemyFieldEffects.put(NumberUtils.toInt(part.getKey()), effects);               
+                Settings.enemyFieldEffects.put(NumberUtils.toInt(part.getKey()), effects);
             }
         }
         Settings.friendlyFieldEffects = new HashMap<Integer, List<PotionEffect>>();
@@ -349,7 +350,7 @@ public class Beaconz extends JavaPlugin {
                     if (split.length == 1 || split.length > 2) {
                         PotionEffectType type = PotionEffectType.getByName(split[0]);
                         if (type != null) {
-                            effects.add(new PotionEffect(type, Integer.MAX_VALUE, 1));  
+                            effects.add(new PotionEffect(type, Integer.MAX_VALUE, 1));
                         }
                     }
                     if (split.length == 2) {
@@ -366,7 +367,7 @@ public class Beaconz extends JavaPlugin {
                     }
 
                 }
-                Settings.friendlyFieldEffects.put(NumberUtils.toInt(part.getKey()), effects);               
+                Settings.friendlyFieldEffects.put(NumberUtils.toInt(part.getKey()), effects);
             }
         }
         Settings.minePenalty = getConfig().getStringList("world.minepenalty");
@@ -458,7 +459,7 @@ public class Beaconz extends JavaPlugin {
             } else {
                 try {
                     Material itemType = Material.valueOf(split[0]);
-                    return new ItemStack(itemType, qty); 
+                    return new ItemStack(itemType, qty);
                 } catch (Exception e) {
                     getLogger().severe("Could not parse " + split[0] + " skipping...");
                     return null;
@@ -506,7 +507,7 @@ public class Beaconz extends JavaPlugin {
             // World doesn't exist, so make it
             getLogger().info("World is '" + Settings.worldName + "'");
             try {
-                beaconzWorld = WorldCreator.name(Settings.worldName).type(WorldType.NORMAL).environment(World.Environment.NORMAL).createWorld();            
+                beaconzWorld = WorldCreator.name(Settings.worldName).type(WorldType.NORMAL).environment(World.Environment.NORMAL).createWorld();
             } catch (Exception e) {
                 getLogger().info("Could not make world yet..");
                 return null;
@@ -538,30 +539,30 @@ public class Beaconz extends JavaPlugin {
      * Cleans a ":"-delimited string of any extraneous elements
      * Used to ignore user typos on a list of parameters
      * so that "becons:links:triangles" becomes "links:triangles"
-     * 
+     *
      */
     public String cleanString(String strToClean, String basevalues, String defaultIfEmpty) {
-    	strToClean = strToClean + ":";
-    	basevalues = basevalues + ":";
-    	Boolean removestr = false;
-    	// Remove extraneous text
-    	for (String str : strToClean.split(":")) {
-    		removestr = true;
-    		for (String bv : basevalues.split(":")) {
-        		if (bv.equals(str)) removestr = false;        			
-    		}
-    		if (removestr) strToClean = strToClean.replace(str, "");
-    	}    		
+        strToClean = strToClean + ":";
+        basevalues = basevalues + ":";
+        Boolean removestr = false;
+        // Remove extraneous text
+        for (String str : strToClean.split(":")) {
+            removestr = true;
+            for (String bv : basevalues.split(":")) {
+                if (bv.equals(str)) removestr = false;
+            }
+            if (removestr) strToClean = strToClean.replace(str, "");
+        }
         //Reassemble the string
         String newString = "";
         for (String str: strToClean.split(":")) {
-        	if (!str.isEmpty()) newString = newString + str + ":";
+            if (!str.isEmpty()) newString = newString + str + ":";
         }
         if (newString.length() > 0) newString = newString.substring(0, newString.length()-1);
-    	if (newString.isEmpty()) newString = defaultIfEmpty;
-    	return newString;
+        if (newString.isEmpty()) newString = defaultIfEmpty;
+        return newString;
     }
-    
+
     /**
      * Gets the highest block in the world at x,z starting at the max height block can be
      * @param x
@@ -581,7 +582,7 @@ public class Beaconz extends JavaPlugin {
     /**
      * Converts a location to a simple string representation
      * If location is null, returns empty string
-     * 
+     *
      * @param l
      * @return String of location
      */
@@ -596,7 +597,7 @@ public class Beaconz extends JavaPlugin {
     /**
      * Converts a serialized location to a Location. Returns null if string is
      * empty
-     * 
+     *
      * @param s
      *            - serialized location in format "world:x:y:z"
      * @return Location
@@ -613,7 +614,7 @@ public class Beaconz extends JavaPlugin {
             }
             final double x = Double.valueOf(parts[1]);
             final double y = Double.valueOf(parts[2]);
-            final double z = Double.valueOf(parts[3]);            
+            final double z = Double.valueOf(parts[3]);
             final float yaw = Float.intBitsToFloat(Integer.parseInt(parts[4]));
             final float pitch = Float.intBitsToFloat(Integer.parseInt(parts[5]));
             return new Location(w, x, y, z, yaw, pitch);

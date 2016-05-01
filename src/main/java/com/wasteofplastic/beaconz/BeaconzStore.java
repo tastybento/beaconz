@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2015 tastybento
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
@@ -63,7 +63,7 @@ import com.wasteofplastic.beaconz.listeners.BeaconListeners;
  * Chests are currently stored at 0,0 going vertically until they get to the top of the sky. Then they move
  * in the positive X direction. TODO: write a better packing algorithm to make them go in a spiral or something.
  * If a game is deleted, then the chest is marked as empty and can be reused.
- * 
+ *
  * @author tastybento
  *
  */
@@ -82,7 +82,7 @@ public class BeaconzStore extends BeaconzPluginDependent {
         super(beaconzPlugin);
         // Make the world if it doesn't exist already
         beaconzStoreWorld = WorldCreator.name(Settings.worldName + "_store").type(WorldType.FLAT).environment(World.Environment.NORMAL).createWorld();
-        beaconzStoreWorld.setDifficulty(Difficulty.PEACEFUL);              
+        beaconzStoreWorld.setDifficulty(Difficulty.PEACEFUL);
         beaconzStoreWorld.setSpawnFlags(false, false);
         beaconzStoreWorld.setPVP(false);
         beaconzStoreWorld.setAutoSave(true);
@@ -157,14 +157,14 @@ public class BeaconzStore extends BeaconzPluginDependent {
             // Get empty chests
             List<String> tempList = ymlIndex.getStringList("emptyChests");
             for (String loc : tempList) {
-                emptyChests.add(Beaconz.getLocationString(loc)); 
+                emptyChests.add(Beaconz.getLocationString(loc));
             }
         } catch (Exception e) {
             // Something went wrong
             getLogger().severe("Could not load inventory index file, rebuilding");
             rebuildIndex();
             saveIndex();
-        } 
+        }
     }
 
     /**
@@ -195,7 +195,7 @@ public class BeaconzStore extends BeaconzPluginDependent {
                         UUID uuid = UUID.fromString(info.get(0));
                         HashMap<String, Location> temp = new HashMap<String, Location>();
                         if (index.containsKey(uuid)) {
-                            temp = index.get(uuid);              
+                            temp = index.get(uuid);
                         }
                         temp.put(info.get(1), chestBlock.getLocation());
                         index.put(uuid, temp);
@@ -228,7 +228,7 @@ public class BeaconzStore extends BeaconzPluginDependent {
     public Location getInventory(Player player, String gameName) {
         Game game = getGameMgr().getGame(gameName);
         if (!gameName.equalsIgnoreCase("lobby") && game == null) {
-            getLogger().severe("Asked to get inventory for " + gameName + " but a game by that name does not exist!");   
+            getLogger().severe("Asked to get inventory for " + gameName + " but a game by that name does not exist!");
             return null;
         }
         Location lastLoc = null;
@@ -255,7 +255,7 @@ public class BeaconzStore extends BeaconzPluginDependent {
                 if (!gameName.equalsIgnoreCase("lobby") && (getGameMgr().getGame(lastLoc) == null || !getGameMgr().getGame(lastLoc).equals(game))) {
                     getLogger().warning("Last location for " + player.getName() + " for game " + gameName + " was not in the game and instead at " + lastLoc);
                     lastLoc = null;
-                }               
+                }
                 InventoryHolder ih = chest.getInventory().getHolder();
                 if (ih instanceof DoubleChest) {
                     Inventory chestInv = ((DoubleChest) ih).getInventory();
@@ -264,7 +264,7 @@ public class BeaconzStore extends BeaconzPluginDependent {
                         player.getInventory().setItem(i-1, chestInv.getItem(i));
                         // Remove from chest
                         chestInv.setItem(i, null);
-                    }                    
+                    }
                 }
             } else {
                 if (DEBUG)
@@ -305,7 +305,7 @@ public class BeaconzStore extends BeaconzPluginDependent {
             rebuildIndex();
             storeInventory(player, gameName, from);
             return;
-        }       
+        }
         Inventory chestInv = chest.getInventory();
         // Clear any current inventory
         chestInv.clear();
@@ -344,7 +344,7 @@ public class BeaconzStore extends BeaconzPluginDependent {
         if (!index.containsKey(player.getUniqueId())) {
             if (DEBUG)
                 getLogger().info("DEBUG: player has no chest");
-            // Make a chest            
+            // Make a chest
             // Check if there are any free chests
             if (!emptyChests.isEmpty()) {
                 if (DEBUG)
@@ -352,7 +352,7 @@ public class BeaconzStore extends BeaconzPluginDependent {
                 chestBlock = emptyChests.get(0).getBlock();
                 emptyChests.remove(0);
             } else {
-                // There is no chest, so make one 
+                // There is no chest, so make one
                 if (DEBUG)
                     getLogger().info("DEBUG: Making chest");
                 chestBlock.setType(Material.CHEST);
@@ -377,7 +377,7 @@ public class BeaconzStore extends BeaconzPluginDependent {
                     getLogger().info("DEBUG: player has chest for " + gameName);
                 // There is a chest already! So use it
                 chestBlock = index.get(player.getUniqueId()).get(gameName).getBlock();
-                if (!chestBlock.getType().equals(Material.CHEST)) {                    
+                if (!chestBlock.getType().equals(Material.CHEST)) {
                     return null;
                 }
             } else {
@@ -390,7 +390,7 @@ public class BeaconzStore extends BeaconzPluginDependent {
                     chestBlock = emptyChests.get(0).getBlock();
                     emptyChests.remove(0);
                 } else {
-                    // There is no chest, so make one 
+                    // There is no chest, so make one
                     if (DEBUG)
                         getLogger().info("DEBUG: Making chest");
                     chestBlock.setType(Material.CHEST);
@@ -425,7 +425,7 @@ public class BeaconzStore extends BeaconzPluginDependent {
                 if (game.equals(gameName)) {
                     // Add to empty chest location
                     emptyChests.add(index.get(uuid).get(gameName));
-                    it.remove();                    
+                    it.remove();
                 }
             }
         }
@@ -467,7 +467,7 @@ public class BeaconzStore extends BeaconzPluginDependent {
         if (chest != null) {
             IndexItem indexItem = new IndexItem(chest);
             indexItem.setHealth(maxHealth);
-        }      
+        }
     }
 
     /**

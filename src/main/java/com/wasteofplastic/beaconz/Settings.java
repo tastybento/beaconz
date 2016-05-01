@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2015 tastybento
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
@@ -46,13 +46,13 @@ public class Settings {
     /**
      * The density of the random distribution of beacons in the world
      * Number should be between 0 and 1
-     */    
+     */
     public static Double distribution;
     /**
      * The default gamemode - "minigame" or "strategy"
      */
     public static String gamemode;
-    /** 
+    /**
      * The default number of teams for a new game
      */
     public static Integer default_teams;
@@ -67,15 +67,15 @@ public class Settings {
      * The default sidebar options for the two game modes
      */
     public static String minigameScoreTypes;
-    public static String strategyScoreTypes;    
+    public static String strategyScoreTypes;
     /**
      * The default goals for the two game modes
      */
     public static String minigameGoal;
     public static Integer minigameGoalValue;
     public static String strategyGoal;
-    public static Integer strategyGoalValue;    
-    /**    
+    public static Integer strategyGoalValue;
+    /**
     /**
      * The x central position of the world. Will also be the default (not team) spawn point
      */
@@ -115,79 +115,79 @@ public class Settings {
      *   Rewards from hacking enemy team beacon
      *   Format is "Id#/Material:[Durability/Qty]:Qty:%Chance"
      */
-    public static TreeMap<Integer,ItemStack> enemyGoodies = new TreeMap<Integer,ItemStack>();  
+    public static TreeMap<Integer,ItemStack> enemyGoodies = new TreeMap<Integer,ItemStack>();
     /**
      * Effects from going into enemy triangle fields. Effects are cumulative
-     * Integer is the level of triangle overlap. 
+     * Integer is the level of triangle overlap.
      */
     public static HashMap<Integer, List<PotionEffect>> enemyFieldEffects;
     /**
      * Effects from going into friendly triangle fields. Effects are cumulative
-     * Integer is the level of triangle overlap. 
+     * Integer is the level of triangle overlap.
      */
     public static HashMap<Integer, List<PotionEffect>> friendlyFieldEffects;
-    
+
     /**
      * What newbies get when they join the game
      * Format is "Id#/Material:[Durability/Qty]:Qty"
      */
     public static List<ItemStack> newbieKit = new ArrayList<ItemStack>();
-    
+
     /**
      * Whether teamchat is on or not
      */
     public static boolean teamChat;
-    
+
     /**
      * Determines how links will be created (player pairs or maps)
      */
     public static boolean pairLinking;
-    
+
     /**
      * Max height above a beacon that defenses can be built.
      */
     public static int defenseHeight;
-    
+
     /**
      * Distance between repeated games. Reuses the same world between games
      */
     public static int gameDistance;
-    
+
     /**
      * The experience required to mine a beacon
      */
     public static int beaconMineExpRequired;
-    
+
     /**
      * Chance that the beacon becomes exhausted and enters a cool down period
      */
     public static int beaconMineExhaustChance;
-    
+
     /**
      * The base distance in blocks that players can link beacons without experience points
      * If set to -1, beacons can be any distance apart
      */
     public static double linkDistance;
-    
+
     /**
      * The distance that each exp point will go when linking a beacon
      * If zero, there is no exp cost to link beacons
      */
     public static double expDistance;
-    
+
     /**
      * List of levels required to build at each level around a beacon
      */
     public static List<Integer> defenseLevels;
-    
+
     /**
      * List of levels required to attack at each level around a beacon
      */
     public static List<Integer> attackLevels;
-    
+
     /**
      * Coordinates of the chunk we're regenerating via the "reset" command
      */
     public static Set<Pair> populate = new HashSet<Pair>();
-    
+
 }

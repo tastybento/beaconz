@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2015 tastybento
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
@@ -99,7 +99,7 @@ public class ChatListener extends BeaconzPluginDependent implements Listener {
             boolean onLine = false;
             for (OfflinePlayer teamPlayer : teamMembers) {
                 if (teamPlayer != null && teamPlayer.isOnline()) {
-                    ((Player)teamPlayer).sendMessage(ChatColor.LIGHT_PURPLE + "[" + team.getDisplayName() + "]<" 
+                    ((Player)teamPlayer).sendMessage(ChatColor.LIGHT_PURPLE + "[" + team.getDisplayName() + "]<"
                             + player.getDisplayName() + "> " + message);
                     if (!teamPlayer.getUniqueId().equals(player.getUniqueId())) {
                         onLine = true;
@@ -118,13 +118,13 @@ public class ChatListener extends BeaconzPluginDependent implements Listener {
                 // Tell everyone
                 for (Player onlinePlayer: getServer().getOnlinePlayers()) {
                     if (!onlinePlayer.equals(player)) {
-                        onlinePlayer.sendMessage(ChatColor.LIGHT_PURPLE + "[" + team.getDisplayName() + "]<" 
-                            + player.getDisplayName() + "> " + message);
+                        onlinePlayer.sendMessage(ChatColor.LIGHT_PURPLE + "[" + team.getDisplayName() + "]<"
+                                + player.getDisplayName() + "> " + message);
                     }
                 }
             }
         } else {
-         // Tell everyone
+            // Tell everyone
             for (Player onlinePlayer: getServer().getOnlinePlayers()) {
                 if (!onlinePlayer.equals(player)) {
                     onlinePlayer.sendMessage(event.getFormat() + ": " + message);

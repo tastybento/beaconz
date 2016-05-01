@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2015 tastybento
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
@@ -110,7 +110,7 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
         }
     }
 
-    
+
     /**
      * Prevents sticky piston damage
      * @param event
@@ -145,27 +145,27 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
         }
         //getLogger().info("DEBUG: This is a beacon");
         Player player = event.getPlayer();
-    	// Only Ops can break or place blocks in the lobby
-    	if (getGameMgr().isPlayerInLobby(player)) {
-    		if (player.isOp()) {    			
-    			return;
-    		} else {
-    			event.setCancelled(true);
-    			return;
-    		}
-    	}
+        // Only Ops can break or place blocks in the lobby
+        if (getGameMgr().isPlayerInLobby(player)) {
+            if (player.isOp()) {
+                return;
+            } else {
+                event.setCancelled(true);
+                return;
+            }
+        }
         // Get the player's team
         Scorecard sc = getGameMgr().getSC(player);
-        if (sc == null || sc.getTeam(player) == null) {        	
-        	if (!player.isOp()) {
+        if (sc == null || sc.getTeam(player) == null) {
+            if (!player.isOp()) {
                 event.setCancelled(true);
-                player.sendMessage(ChatColor.RED + "You must join a game to play in this world");            
+                player.sendMessage(ChatColor.RED + "You must join a game to play in this world");
                 getGameMgr().getLobby().tpToRegionSpawn(player);
-                return;        		
-        	} else {
-        		player.sendMessage(ChatColor.RED + "You are not in a team.");
-        		return;
-        	} 
+                return;
+            } else {
+                player.sendMessage(ChatColor.RED + "You are not in a team.");
+                return;
+            }
         }
         Team team = sc.getTeam(player);
         // Check if block is a beacon extension block
@@ -455,7 +455,7 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
         case SAND:
             if (block.getData() == (byte)1) {
                 player.sendMessage(ChatColor.YELLOW + "It's red" + levelPlaced);
-                break; 
+                break;
             }
         case SANDSTONE:
         case SANDSTONE_STAIRS:
@@ -508,7 +508,7 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
         case WEB:
             player.sendMessage(ChatColor.GREEN + "Slow down the enemy!" + levelPlaced);
             break;
-       case WOOD_PLATE:
+        case WOOD_PLATE:
             player.sendMessage(ChatColor.GREEN + "Trap?" + levelPlaced);
             break;
         case WOOL:
@@ -538,27 +538,27 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
         }
         //getLogger().info("DEBUG: This is a beacon");
         Player player = event.getPlayer();
-    	// Only Ops can break or place blocks in the lobby
-    	if (getGameMgr().isPlayerInLobby(player)) {
-    		if (player.isOp()) {    			
-    			return;
-    		} else {
-    			event.setCancelled(true);
-    			return;
-    		}
-    	}
+        // Only Ops can break or place blocks in the lobby
+        if (getGameMgr().isPlayerInLobby(player)) {
+            if (player.isOp()) {
+                return;
+            } else {
+                event.setCancelled(true);
+                return;
+            }
+        }
         // Get the player's team
         Scorecard sc = getGameMgr().getSC(player);
-        if (sc == null || sc.getTeam(player) == null) {        	
-        	if (!player.isOp()) {
+        if (sc == null || sc.getTeam(player) == null) {
+            if (!player.isOp()) {
                 event.setCancelled(true);
-                player.sendMessage(ChatColor.RED + "You must join a game to play in this world");            
+                player.sendMessage(ChatColor.RED + "You must join a game to play in this world");
                 getGameMgr().getLobby().tpToRegionSpawn(player);
-                return;        		
-        	} else {
-        		player.sendMessage(ChatColor.RED + "You are not in a team.");
-        		return;
-        	} 
+                return;
+            } else {
+                player.sendMessage(ChatColor.RED + "You are not in a team.");
+                return;
+            }
         }
         Team team = sc.getTeam(player);
         // Check if the block is a beacon or the surrounding pyramid
@@ -617,27 +617,27 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
         }
         //getLogger().info("DEBUG: This is a beacon");
         Player player = event.getPlayer();
-    	// Only Ops can break or place blocks in the lobby
-    	if (getGameMgr().isPlayerInLobby(player)) {
-    		if (player.isOp()) {    			
-    			return;
-    		} else {
-    			event.setCancelled(true);
-    			return;
-    		}
-    	}
+        // Only Ops can break or place blocks in the lobby
+        if (getGameMgr().isPlayerInLobby(player)) {
+            if (player.isOp()) {
+                return;
+            } else {
+                event.setCancelled(true);
+                return;
+            }
+        }
         // Get the player's team
         Scorecard sc = getGameMgr().getSC(player);
-        if (sc == null || sc.getTeam(player) == null) {        	
-        	if (!player.isOp()) {
+        if (sc == null || sc.getTeam(player) == null) {
+            if (!player.isOp()) {
                 event.setCancelled(true);
-                player.sendMessage(ChatColor.RED + "You must join a game to play in this world");            
+                player.sendMessage(ChatColor.RED + "You must join a game to play in this world");
                 getGameMgr().getLobby().tpToRegionSpawn(player);
-                return;        		
-        	} else {
-        		player.sendMessage(ChatColor.RED + "You are not in a team.");
-        		return;
-        	} 
+                return;
+            } else {
+                player.sendMessage(ChatColor.RED + "You are not in a team.");
+                return;
+            }
         }
         Team team = sc.getTeam(player);
         // Check if the block is a beacon or the surrounding pyramid
@@ -709,7 +709,7 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
             event.getPlayer().sendMessage(ChatColor.RED + "You cannot do that here!");
         }
     }
-    */
+     */
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onBlockFlow(final BlockFromToEvent event) {
         //getLogger().info("DEBUG: " + event.getEventName());
@@ -721,7 +721,7 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
         if (getRegister().isAboveBeacon(event.getToBlock().getLocation())) {
             event.setCancelled(true);
             getLogger().info("DEBUG: stopping flow");
-        }       
+        }
     }
 
 }

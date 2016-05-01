@@ -82,39 +82,39 @@ public class TerritoryMapRenderer extends MapRenderer {
             if (x < 0 || x > 127) return;
             int z = coordConverter.blockZToPixelZ(player.getLocation().getBlockZ());
             if (z < 0 || z > 127) return;
-            x = x * 2 - 128; // Pixels range from 0 to 127, but cursors range from -128 to 127. (wtf)                
-            z = z * 2 - 128; 
+            x = x * 2 - 128; // Pixels range from 0 to 127, but cursors range from -128 to 127. (wtf)
+            z = z * 2 - 128;
             canvas.getCursors().addCursor(x, z, direction(player));
         }
     }
-    
+
     private Byte direction(Player player){
         double rotation = (player.getLocation().getYaw() + 90) % 360;
-          if (rotation < 0) {
-              rotation += 360.0;
-          }
-          if (0 <= rotation && rotation < 22.5) {
-              return 0xC; //S > E
-          } else if (22.5 <= rotation && rotation < 67.5) {
-              return 0xE; //SW > SE
-          } else if (67.5 <= rotation && rotation < 112.5) {
-              return 0x0; //W > E
-          } else if (112.5 <= rotation && rotation < 157.5) {
-              return 0x2; //NW > SW
-          } else if (157.5 <= rotation && rotation < 202.5) {
-              return 0x4; //N > W
-          } else if (202.5 <= rotation && rotation < 247.5) {
-              return 0x6; //NE > NW
-          } else if (247.5 <= rotation && rotation < 292.5) {
-              return 0x8; //E > N
-          } else if (292.5 <= rotation && rotation < 337.5) {
-              return 0xA; //SE > NE
-          } else if (337.5 <= rotation && rotation < 360.0) {
-              return 0xC; //S > E
-          } else {
-              return null;
-          }
-      }
+        if (rotation < 0) {
+            rotation += 360.0;
+        }
+        if (0 <= rotation && rotation < 22.5) {
+            return 0xC; //S > E
+        } else if (22.5 <= rotation && rotation < 67.5) {
+            return 0xE; //SW > SE
+        } else if (67.5 <= rotation && rotation < 112.5) {
+            return 0x0; //W > E
+        } else if (112.5 <= rotation && rotation < 157.5) {
+            return 0x2; //NW > SW
+        } else if (157.5 <= rotation && rotation < 202.5) {
+            return 0x4; //N > W
+        } else if (202.5 <= rotation && rotation < 247.5) {
+            return 0x6; //NE > NW
+        } else if (247.5 <= rotation && rotation < 292.5) {
+            return 0x8; //E > N
+        } else if (292.5 <= rotation && rotation < 337.5) {
+            return 0xA; //SE > NE
+        } else if (337.5 <= rotation && rotation < 360.0) {
+            return 0xC; //S > E
+        } else {
+            return null;
+        }
+    }
     private void renderToPixelCache(MapCoordinateConverter coordConverter) {
         // triangles
         int count = 0;
@@ -123,7 +123,7 @@ public class TerritoryMapRenderer extends MapRenderer {
                 int xBlock = coordConverter.pixelXToBlockX((byte) x);
                 int zBlock = coordConverter.pixelZToBlockZ((byte) z);
                 count ++;
-                if (count % 3 == 0) {                    
+                if (count % 3 == 0) {
                     List<TriangleField> triangles = beaconz.getRegister().getTriangle(xBlock, zBlock);
                     if (triangles != null && !triangles.isEmpty()) {
                         TriangleField triangleField = triangles.get(0);
@@ -175,7 +175,7 @@ public class TerritoryMapRenderer extends MapRenderer {
      * @param showUnclaimedBeacons
      */
     @SuppressWarnings("deprecation")
-    private void setCursors(MapCanvas canvas, MapCoordinateConverter coordConverter, MapCursorCollection cursors, boolean showUnclaimedBeacons) {        
+    private void setCursors(MapCanvas canvas, MapCoordinateConverter coordConverter, MapCursorCollection cursors, boolean showUnclaimedBeacons) {
         for (int i = 0; i < cursors.size(); i++) {
             cursors.removeCursor(cursors.getCursor(i));
         }
@@ -189,15 +189,15 @@ public class TerritoryMapRenderer extends MapRenderer {
             if (z < 0 || z > 127) continue;
             // Only add cursors to the portion of the map that has been discovered
             if (canvas.getBasePixel(x, z) != 0) {
-                x = x * 2 - 128; // Pixels range from 0 to 127, but cursors range from -128 to 127. (wtf)                
-                z = z * 2 - 128;                
+                x = x * 2 - 128; // Pixels range from 0 to 127, but cursors range from -128 to 127. (wtf)
+                z = z * 2 - 128;
                 int color = 16;
                 if (team != null) {
                     Scorecard sc = beaconz.getGameMgr().getSC(point);
                     if (sc != null) {
-                        color = sc.getBlockID(team).getData();	
+                        color = sc.getBlockID(team).getData();
                     }
-                } 
+                }
                 TeamCursor teamCursor = TEAM_CURSORS[color];
                 MapCursor cursor = cursors.addCursor(x, z, (byte)0);
                 cursor.setDirection(teamCursor.direction);
@@ -253,7 +253,7 @@ public class TerritoryMapRenderer extends MapRenderer {
                         canvas.setPixel(x, z, pixelCache[x][z]);
                     }
                 }
-            }       
+            }
         }
     }
 

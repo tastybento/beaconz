@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2015 tastybento
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
@@ -92,7 +92,7 @@ public class BeaconObj extends BeaconzPluginDependent {
     public Point2D getPoint() {
         return location;
     }
-    
+
     /**
      * @return the Bukkit location of this beacon
      */
@@ -110,7 +110,7 @@ public class BeaconObj extends BeaconzPluginDependent {
     /**
      * Add a link from this beacon to another beacon - and another one back
      * @param destination
-     * @param player 
+     * @param player
      * @return true if control field made, false if the max outbound limit is reached or the link already exists
      */
     public LinkResult addOutboundLink(BeaconObj destination) {
@@ -164,7 +164,7 @@ public class BeaconObj extends BeaconzPluginDependent {
                             // Result is true if the triangle is made okay, otherwise, don't make the link and return false
                             if (getRegister().addTriangle(starter.getPoint(), this.getPoint(),
                                     directlyLinkedBeacon.getPoint(), ownership)) {
-                                fieldsMade++;                             
+                                fieldsMade++;
                             } else {
                                 fieldsFailed++;
                             }
@@ -219,7 +219,7 @@ public class BeaconObj extends BeaconzPluginDependent {
      */
     public int getNumberOfLinks() {
         return links.size();
-    }    
+    }
 
     /**
      * Name for this beacon based on its coordinates
@@ -316,16 +316,16 @@ public class BeaconObj extends BeaconzPluginDependent {
      * @param levelRequired
      */
     public void addDefenseBlock(Block block, int levelRequired) {
-          defenseBlocks.put(block, levelRequired);
+        defenseBlocks.put(block, levelRequired);
     }
-    
+
     /**
      * Removes the defense block
      * @param block
      */
     public void removeDefenseBlock(Block block) {
         defenseBlocks.remove(block);
-    }  
+    }
 
     /**
      * @return the defenseBlocks

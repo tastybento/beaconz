@@ -1,15 +1,15 @@
 /*
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
@@ -21,11 +21,15 @@
 
 package com.wasteofplastic.beaconz.commands;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Team;
 
@@ -34,7 +38,7 @@ import com.wasteofplastic.beaconz.BeaconzPluginDependent;
 import com.wasteofplastic.beaconz.Game;
 import com.wasteofplastic.beaconz.Scorecard;
 
-public class CmdHandler extends BeaconzPluginDependent implements CommandExecutor {
+public class CmdHandler extends BeaconzPluginDependent implements CommandExecutor, TabCompleter {
 
     public CmdHandler(Beaconz beaconzPlugin) {
         super(beaconzPlugin);
@@ -100,10 +104,10 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
             case "score":
                 if (sender.isOp()) {
                     int gamecnt = 0;
-                    for (Game game : getGameMgr().getGames().values()) {	   
+                    for (Game game : getGameMgr().getGames().values()) {
                         sender.sendMessage(ChatColor.GREEN + "Game: " + game.getName());
                         showGameScores(sender, game);
-                        gamecnt++;	        				
+                        gamecnt++;
                     }
                     if (gamecnt ==0 ) {
                         sender.sendMessage(ChatColor.GREEN + "No games are currently defined.");
@@ -120,7 +124,7 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
                         } else {
                             sender.sendMessage(ChatColor.GREEN + "You still need to join a team");
                         }
-                        showGameScores(sender, game);	        						        	    		
+                        showGameScores(sender, game);
                     }
                 }
 
@@ -129,19 +133,19 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
                 if (player.getScoreboard().getEntries().isEmpty()) {
                     Game game = getGameMgr().getGame(player.getLocation());
                     if (game != null) {
-                        player.setScoreboard(game.getScorecard().getScoreboard()); 
+                        player.setScoreboard(game.getScorecard().getScoreboard());
                     } else {
                         player.setScoreboard(Bukkit.getServer().getScoreboardManager().getNewScoreboard());
-                    }	        			
+                    }
                 } else {
-                    player.setScoreboard(Bukkit.getServer().getScoreboardManager().getNewScoreboard());	
+                    player.setScoreboard(Bukkit.getServer().getScoreboardManager().getNewScoreboard());
                 }
                 break;
             default:
                 break;
             }
-            break;                	        	
-        case 2: 
+            break;
+        case 2:
             Game game;
             switch (args[0].toLowerCase()) {
             case "join":
@@ -154,13 +158,13 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
                 }
                 break;
             case "leave":
-                game = getGameMgr().getGame(player.getLocation());        			
+                game = getGameMgr().getGame(player.getLocation());
                 if (game == null) {
                     sender.sendMessage(ChatColor.AQUA + "You are not currently in a game.");
                 } else {
                     game.leave(player);
                 }
-                break;        			
+                break;
             default:
                 break;
             }
@@ -187,4 +191,52 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
         }
     }
 
+    @Override
+    public List<String> onTabComplete(CommandSender sender, Command command,
+            String alias, String[] args) {
+        if (!(sender instanceof Player)) {
+            return new ArrayList<String>();
+        }
+        final List<String> options = new ArrayList<String>();
+        String lastArg = (args.length != 0 ? args[args.length - 1] : "");
+
+        switch (args.length) {
+        case 0:
+        case 1:
+            options.add("help");
+            options.add("join");
+            options.add("leave");
+            options.add("lobby");
+            options.add("location");
+            options.add("score");
+            options.add("scoreboard");
+            break;
+        case 2:
+            if (args[0].equalsIgnoreCase("join") || args[0].equalsIgnoreCase("leave")) {
+                // List all the games
+                options.addAll(getGameMgr().getGames().keySet());
+            }
+            break;
+        }
+        return tabLimit(options, lastArg);
+    }
+
+    /**
+     * Returns all of the items that begin with the given start,
+     * ignoring case.  Intended for tabcompletion.
+     *
+     * @param list
+     * @param start
+     * @return List of items that start with the letters
+     */
+    public static List<String> tabLimit(final List<String> list, final String start) {
+        final List<String> returned = new ArrayList<String>();
+        for (String s : list) {
+            if (s.toLowerCase().startsWith(start.toLowerCase())) {
+                returned.add(s);
+            }
+        }
+
+        return returned;
+    }
 }

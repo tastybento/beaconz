@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2015 tastybento, planetguy
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
@@ -35,17 +35,17 @@ import org.bukkit.generator.BlockPopulator;
 import com.wasteofplastic.include.it.unimi.dsi.util.XorShift;
 
 
-/** 
+/**
  * BeaconPopulator class
  * @author TastyBento
  *
  * This is called every time a chunk is (re)generated in the world
- * The idea is to place a single beacon on a chunk if a XorShift 
+ * The idea is to place a single beacon on a chunk if a XorShift
  * generates a random number below the Settings.distribution threshold
  * If Settings.distribution were 1, every chunk would get a single beacon;
  * the lower it is, the fewer chunks get a beacon and the beacons
  * are more spread out in the world.
- *  
+ *
  *
  */
 public class BeaconPopulator extends BlockPopulator {
@@ -59,16 +59,16 @@ public class BeaconPopulator extends BlockPopulator {
     public void populate(World world, Random unused, Chunk source) {
         //Bukkit.getLogger().info("DEBUG: populator called. ");
 
-    	// If we're regenerating this chunk from within the game (e.g. a "reset" command), don't do anything
+        // If we're regenerating this chunk from within the game (e.g. a "reset" command), don't do anything
         /*
         boolean regen = false;
-    	if (Settings.populate.contains(new Pair(source.getX(),source.getZ()))) {  
-    	    plugin.getLogger().info("DEBUG: POPULATING chunk: " + source.getX() + ":" + source.getZ()); 
+    	if (Settings.populate.contains(new Pair(source.getX(),source.getZ()))) {
+    	    plugin.getLogger().info("DEBUG: POPULATING chunk: " + source.getX() + ":" + source.getZ());
     	    regen = true;
     	}
     	regen = true;*/
         // Don't bother to make anything if it is outside the border. Make it just a bit smaller than the border
-    	// THERE IS NO BORDER ANYMORE, THIS MAY BE REMOVED
+        // THERE IS NO BORDER ANYMORE, THIS MAY BE REMOVED
         if (Settings.borderSize > 0) {
             int minX = (Settings.xCenter - Settings.borderSize/2) / 16 + 1;
             int minZ = (Settings.zCenter - Settings.borderSize/2) / 16 + 1;
@@ -84,29 +84,29 @@ public class BeaconPopulator extends BlockPopulator {
                 // No lobby yet
                 return;
             }
-        	// Don't do anything in the lobby
-        	if (plugin.getGameMgr().getLobby().containsPoint(source.getX() * 16, source.getZ() * 16)) {
-        		return;
-        	}
-        	// Don't do anything unless inside a region
-        	// Check min coords
-        	Region region = plugin.getGameMgr().getRegion(source.getX() * 16, source.getZ() * 16);
-        	if (region == null) {
-        		return;
-        	}
-        	// Check max coords of this chunk
-        	region = plugin.getGameMgr().getRegion(source.getX() * 16 + 15, source.getZ() * 16 + 15);
+            // Don't do anything in the lobby
+            if (plugin.getGameMgr().getLobby().containsPoint(source.getX() * 16, source.getZ() * 16)) {
+                return;
+            }
+            // Don't do anything unless inside a region
+            // Check min coords
+            Region region = plugin.getGameMgr().getRegion(source.getX() * 16, source.getZ() * 16);
             if (region == null) {
                 return;
             }
-        }        
-        
-        //plugin.getLogger().info("DEBUG: Populating chunk: " + source.getX() + ":" + source.getZ());        
-        
+            // Check max coords of this chunk
+            region = plugin.getGameMgr().getRegion(source.getX() * 16 + 15, source.getZ() * 16 + 15);
+            if (region == null) {
+                return;
+            }
+        }
+
+        //plugin.getLogger().info("DEBUG: Populating chunk: " + source.getX() + ":" + source.getZ());
+
         // pseudo-randomly place a beacon
         XorShift gen=new XorShift(new long[] {
-                (long)source.getX(),
-                (long)source.getZ(),
+                source.getX(),
+                source.getZ(),
                 world.getSeed(),
                 Settings.seedAdjustment
         });
@@ -116,15 +116,15 @@ public class BeaconPopulator extends BlockPopulator {
             int x = gen.nextInt(16);
             int z = gen.nextInt(16);
             // Check if there is already a beacon here, if so, don't make it again
-            
+
             if (plugin.getRegister().getBeaconAt((source.getX() * 16 + x), (source.getZ()*16 + z)) != null) {
                 plugin.getLogger().info("DEBUG: Beacon already at " + (source.getX() * 16 + x) + "," + (source.getZ()*16 + z));
                 return;
             }
-            
+
             plugin.getLogger().info("DEBUG: Creating beacon at " + (source.getX() * 16 + x) + "," + (source.getZ()*16 + z));
-            
-            int y = source.getChunkSnapshot().getHighestBlockYAt(x, z);            
+
+            int y = source.getChunkSnapshot().getHighestBlockYAt(x, z);
             Block b = source.getBlock(x, y, z);
             // Don't make in the ocean or deep ocean because they are too easy to find.
             // Frozen ocean okay for now.

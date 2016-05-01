@@ -1,15 +1,15 @@
 /*
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
@@ -82,7 +82,7 @@ public class Register extends BeaconzPluginDependent {
         if (beaconzFile.exists()) {
             File backup = new File(getBeaconzPlugin().getDataFolder(),"beaconz.old");
             beaconzFile.renameTo(backup);
-        }   
+        }
         int count = 0;
         for (BeaconObj beacon : beaconRegister.values()) {
             String owner = "unowned";
@@ -100,7 +100,7 @@ public class Register extends BeaconzPluginDependent {
                 beaconzYml.set("beacon." + count + ".id", beacon.getId());
             }
             // Save additional blocks added to beacon
-            List<String> defenseBlocks = new ArrayList<String>();            
+            List<String> defenseBlocks = new ArrayList<String>();
             for (Point2D point: defenseBlocksInverse.get(beacon)) {
                 defenseBlocks.add((int)point.getX() + ":" + (int)point.getY());
             }
@@ -108,18 +108,18 @@ public class Register extends BeaconzPluginDependent {
             // Save the defenses
             defenseBlocks.clear();
             for (Entry<Block, Integer> defensiveBlock : beacon.getDefenseBlocks().entrySet()) {
-                beaconzYml.set("beacon." + count + ".defensiveblocks." 
+                beaconzYml.set("beacon." + count + ".defensiveblocks."
                         + Beaconz.getStringLocation(defensiveBlock.getKey().getLocation()).replace('.', '_'), defensiveBlock.getValue());
             }
             // Save maps
             List<String> maps = new ArrayList<String>();
-            for (Short id : beaconMaps.keySet()) {                
+            for (Short id : beaconMaps.keySet()) {
                 if (beacon.equals(beaconMaps.get(id))) {
                     // Check if this map still exists
                     if (Bukkit.getMap(id) != null) {
-                        maps.add(String.valueOf(id)); 
+                        maps.add(String.valueOf(id));
                     }
-                }      
+                }
             }
             beaconzYml.set("beacon." + count + ".maps", maps);
             count++;
@@ -163,14 +163,14 @@ public class Register extends BeaconzPluginDependent {
         if (configSec != null) {
             for (String beacon : configSec.getValues(false).keySet()) {
                 String info = configSec.getString(beacon + ".location","");
-                String[] args = info.split(":");       
+                String[] args = info.split(":");
                 if (!info.isEmpty() && args.length == 4) {
                     if (NumberUtils.isNumber(args[0]) && NumberUtils.isNumber(args[1]) && NumberUtils.isNumber(args[2])) {
                         int x = Integer.valueOf(args[0]);
                         int y = Integer.valueOf(args[1]);
                         int z = Integer.valueOf(args[2]);
 
-                        Game game = getGameMgr().getGame(x, z); 
+                        Game game = getGameMgr().getGame(x, z);
                         if (game != null) {
                             Team team = null;
                             if (!args[3].equalsIgnoreCase("unowned")) {
@@ -208,16 +208,16 @@ public class Register extends BeaconzPluginDependent {
                                 beaconMaps.put(id, newBeacon);
                                 @SuppressWarnings("deprecation")
                                 MapView map = Bukkit.getMap(id);
-                                if (map != null) { 
+                                if (map != null) {
                                     for (MapRenderer renderer : map.getRenderers()) {
                                         if (renderer instanceof TerritoryMapRenderer || renderer instanceof BeaconMap) {
                                             map.removeRenderer(renderer);
                                         }
-                                    }                                    
+                                    }
                                     map.addRenderer(new TerritoryMapRenderer(getBeaconzPlugin()));
                                     map.addRenderer(new BeaconMap(getBeaconzPlugin()));
                                 } else {
-                                    getLogger().severe("Could not load map #" + id + " as it doesn't exist on this server. Skipping..."); 
+                                    getLogger().severe("Could not load map #" + id + " as it doesn't exist on this server. Skipping...");
                                 }
                             }
                             //getLogger().info("DEBUG: loaded beacon at " + x + "," + y + "," + z);
@@ -225,18 +225,18 @@ public class Register extends BeaconzPluginDependent {
                             getLogger().warning("Tried to load beacon at " + x + "," + y + "," + z + " but there is no active game there. Skipping...");
                         }
                     }
-                }	
+                }
             }
         }
-        // Add links        
+        // Add links
         for (BeaconObj beacon: beaconLinks.keySet()) {
             for (String link : beaconLinks.get(beacon)) {
                 String[] args = link.split(":");
                 BeaconObj dest = beaconRegister.get(new Point2D.Double(Double.valueOf(args[0]), Double.valueOf(args[1])));
                 if (dest != null) {
-                    LinkResult result = beacon.addOutboundLink(dest);                    
+                    LinkResult result = beacon.addOutboundLink(dest);
                     if (result.isSuccess()) {
-                        addBeaconLink(beacon.getOwnership(), result.getLink());  
+                        addBeaconLink(beacon.getOwnership(), result.getLink());
                     }
                 }
             }
@@ -255,7 +255,7 @@ public class Register extends BeaconzPluginDependent {
             beaconMaps.clear();
             beaconRegister.clear();
             triangleFields.clear();
-            links.clear();    		
+            links.clear();
         } else {
             Iterator<Entry<Short, BeaconObj>> bmit = beaconMaps.entrySet().iterator();
             while (bmit.hasNext()) {
@@ -268,34 +268,34 @@ public class Register extends BeaconzPluginDependent {
                 if (region.containsBeacon(brit.next().getValue())) {
                     brit.remove();
                 }
-            }    	
+            }
             Iterator<TriangleField> trit = triangleFields.iterator();
             while (trit.hasNext()) {
                 if (region.containsPoint(trit.next().a)) {
                     trit.remove();
                 }
-            } 
+            }
             Iterator<Entry<Team, Set<Line2D>>> lkit = links.entrySet().iterator();
             while (lkit.hasNext()) {
                 Team team = lkit.next().getKey();
                 if (team != null) {
                     Game game =  getGameMgr().getGame(team);
                     if (game != null && game.getRegion().equals(region)) {
-                        lkit.remove();	
+                        lkit.remove();
                     }
                 }
             }
-        } 
+        }
     }
 
     public void addBeaconLink(Team team, Line2D link) {
         Set<Line2D> linkSet = new HashSet<Line2D>();
         if (links.containsKey(team)) {
-            linkSet = links.get(team); 
+            linkSet = links.get(team);
         }
-        linkSet.add(link);		
+        linkSet.add(link);
         links.put(team, linkSet);
-        getGameMgr().getSC(link.getP1()).refreshScores(team, "links");  
+        getGameMgr().getSC(link.getP1()).refreshScores(team, "links");
     }
 
     /**
@@ -345,7 +345,7 @@ public class Register extends BeaconzPluginDependent {
      * @return set of beacons or empty set if none
      */
     public List<BeaconObj> getTeamBeacons(Team team) {
-        List<BeaconObj> teambeacons = new ArrayList<BeaconObj>(); 
+        List<BeaconObj> teambeacons = new ArrayList<BeaconObj>();
         for (BeaconObj beacon : beaconRegister.values()) {
             if (beacon.getOwnership() != null && beacon.getOwnership().equals(team)) {
                 teambeacons.add(beacon);
@@ -360,14 +360,14 @@ public class Register extends BeaconzPluginDependent {
      * @return set of triangles or empty set if none
      */
     public Set<TriangleField> getTeamTriangles(Team team) {
-        Set<TriangleField> teamtriangles = new HashSet<TriangleField>(); 
+        Set<TriangleField> teamtriangles = new HashSet<TriangleField>();
         for (TriangleField triangle : triangleFields) {
             if (triangle.getOwner() != null && triangle.getOwner().equals(team)) {
                 teamtriangles.add(triangle);
             }
         }
         return teamtriangles;
-    } 
+    }
 
     /**
      * Return total area owned by team
@@ -377,15 +377,15 @@ public class Register extends BeaconzPluginDependent {
     public int getTeamArea(Team team) {
         return (int)TriangleScorer.getScore(triangleFields, team);
         /*
-        int area = 0; 
+        int area = 0;
         // Legacy scoring - so simple!
         for (TriangleField triangle : triangleFields) {
-            if (triangle.getOwner() != null && triangle.getOwner().equals(team)) {         
+            if (triangle.getOwner() != null && triangle.getOwner().equals(team)) {
                 area += triangle.getArea();
             }
-        }        
+        }
         return area;
-        */
+         */
     }
 
     /**
@@ -426,7 +426,7 @@ public class Register extends BeaconzPluginDependent {
         }
 
         return beacon;
-    } 
+    }
 
     /**
      * Creates a triangular field covering the world between three beacons
@@ -561,7 +561,7 @@ public class Register extends BeaconzPluginDependent {
                 result.add(beaconRegister.get(beacon));
             }
         }
-        return result;        
+        return result;
     }
 
     /**
@@ -666,11 +666,11 @@ public class Register extends BeaconzPluginDependent {
 
         // Remove links to the beacon (and back)
         Iterator<BeaconObj> beaconIterator = beacon.getLinks().iterator();
-        while (beaconIterator.hasNext()) { 
+        while (beaconIterator.hasNext()) {
             beaconIterator.next().removeLink(beacon);
         }
 
-        // Remove links from this register 
+        // Remove links from this register
         if (links.get(oldOwner) != null) {
             Iterator<Line2D> linkIterator = links.get(oldOwner).iterator();
             int linkLossCount = 0;
@@ -690,11 +690,11 @@ public class Register extends BeaconzPluginDependent {
                 getMessages().tellOtherTeams(oldOwner, ChatColor.GREEN + oldOwner.getDisplayName() + ChatColor.GREEN + " lost a link!");
             } else if (linkLossCount > 1) {
                 getMessages().tellTeam(oldOwner, ChatColor.RED + "Your team lost " + linkLossCount + " links!");
-                getMessages().tellOtherTeams(oldOwner, ChatColor.GREEN + oldOwner.getDisplayName() + ChatColor.GREEN + " lost " + linkLossCount + " links!");  
-            }            
-        }        
+                getMessages().tellOtherTeams(oldOwner, ChatColor.GREEN + oldOwner.getDisplayName() + ChatColor.GREEN + " lost " + linkLossCount + " links!");
+            }
+        }
 
-        beacon.removeLinks();        
+        beacon.removeLinks();
 
         // Get any control triangles that have been removed because of this
         Iterator<TriangleField> it = triangleFields.iterator();
@@ -705,7 +705,7 @@ public class Register extends BeaconzPluginDependent {
                 // Tell folks what's going on
                 if (!quiet) {
                     getMessages().tellTeam(triangle.getOwner(), ChatColor.RED + "Your team lost a triangle worth " + triangle.getArea() + "!");
-                    getMessages().tellOtherTeams(triangle.getOwner(), ChatColor.GREEN + triangle.getOwner().getDisplayName() + ChatColor.GREEN + " lost a triangle worth " + triangle.getArea() + "!");                    
+                    getMessages().tellOtherTeams(triangle.getOwner(), ChatColor.GREEN + triangle.getOwner().getDisplayName() + ChatColor.GREEN + " lost a triangle worth " + triangle.getArea() + "!");
                 }
                 // Remove triangle
                 it.remove();
@@ -759,9 +759,9 @@ public class Register extends BeaconzPluginDependent {
             if (tri.contains(x, y) != null) {
                 /*
                 getLogger().info("DEBUG: triangle " + index++);
-                for (Line2D line : tri.getSides()) {                    
+                for (Line2D line : tri.getSides()) {
                     getLogger().info("DEBUG: " + line.getP1().toString() + " to " + line.getP2().toString());
-                } */               
+                } */
                 result.add(tri);
             }
         }
@@ -775,7 +775,7 @@ public class Register extends BeaconzPluginDependent {
      * @return beacon object
      */
     public BeaconObj getBeaconAt(int x, int z) {
-        Point2D point = new Point2D.Double((double)x,(double)z);
+        Point2D point = new Point2D.Double(x,z);
         return beaconRegister.get(point);
     }
 
@@ -790,7 +790,7 @@ public class Register extends BeaconzPluginDependent {
         // TODO : Add other things in the future as a result of the ownership change
         Game game = getGameMgr().getGame(beacon.getX(), beacon.getZ());
         if (oldowner != null) {
-            game.getScorecard().refreshScores(oldowner);      
+            game.getScorecard().refreshScores(oldowner);
         }
         game.getScorecard().refreshScores(team);
     }
@@ -836,7 +836,7 @@ public class Register extends BeaconzPluginDependent {
             points = new HashSet<Point2D>();
         }
         points.add(point);
-        defenseBlocksInverse.put(beacon, points); 
+        defenseBlocksInverse.put(beacon, points);
     }
 
     /**

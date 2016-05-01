@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2015 tastybento
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
@@ -124,7 +124,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                 if (beacon != null) {
                     // Add players to beacon standing
                     standingOn.put(player.getUniqueId(), beacon);
-                } 
+                }
             }
         }
         // Run a repeating task to apply effects
@@ -135,7 +135,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                 for (Player player: getServer().getOnlinePlayers()) {
                     // Only apply if in the world, not in the lobby and if there's an affect to apply
                     if (player.getWorld().equals(getBeaconzWorld()) && triangleEffects.containsKey(player.getUniqueId())
-                            && !getGameMgr().isPlayerInLobby(player)) {                     
+                            && !getGameMgr().isPlayerInLobby(player)) {
                         player.addPotionEffects(triangleEffects.get(player.getUniqueId()));
                     }
                 }
@@ -171,7 +171,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         Player player = event.getPlayer();
         // Only Ops can break or place blocks in the lobby
         if (getGameMgr().isPlayerInLobby(player)) {
-            if (player.isOp()) {    			
+            if (player.isOp()) {
                 return;
             } else {
                 event.setCancelled(true);
@@ -204,14 +204,14 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                 // Check that the beacon is clear of blocks
                 if (!beacon.isClear()) {
                     // You can't capture an uncleared beacon
-                    player.sendMessage(ChatColor.RED + "Clear around the beacon first!");
+                    player.sendMessage(ChatColor.GOLD + "Clear around the beacon to capture or mine the beacon for goodies!");
                     event.setCancelled(true);
                     return;
                 }
             }
         } else {
             // Attempt to break another part of the beacon
-        }        		
+        }
 
     }
 
@@ -350,13 +350,13 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         if (!event.getBlock().getType().equals(Material.DISPENSER)) {
             return;
         }
-        Dispenser dispenser = (Dispenser)event.getBlock().getState().getData();        
+        Dispenser dispenser = (Dispenser)event.getBlock().getState().getData();
         Block b = event.getBlock().getRelative(dispenser.getFacing());
         if (DEBUG)
             getLogger().info("DEBUG: " + b.getLocation());
         if (getRegister().isAboveBeacon(b.getLocation())) {
             world.playSound(b.getLocation(), Sound.BLOCK_STONE_BREAK, 1F, 2F);
-            event.setCancelled(true);            
+            event.setCancelled(true);
         }
     }
 
@@ -365,7 +365,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
      * @param event
      */
     @EventHandler(priority = EventPriority.NORMAL)
-    public void onLeave(final PlayerQuitEvent event) {  
+    public void onLeave(final PlayerQuitEvent event) {
         if (event.getPlayer().getWorld().equals(getBeaconzWorld())) {
             for (PotionEffect effect : event.getPlayer().getActivePotionEffects())
                 event.getPlayer().removePotionEffect(effect.getType());
@@ -377,10 +377,10 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
      * @param event
      */
     @EventHandler(priority = EventPriority.NORMAL)
-    public void onJoin(final PlayerJoinEvent event) {  
+    public void onJoin(final PlayerJoinEvent event) {
         if (event.getPlayer().getWorld().equals(getBeaconzWorld())) {
             final Player player = event.getPlayer();
-            final UUID playerUUID = player.getUniqueId();                   	
+            final UUID playerUUID = player.getUniqueId();
             // Check if game is still in progress
             Game game = getGameMgr().getGame(event.getPlayer().getLocation());
             if (game == null) {
@@ -419,35 +419,35 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
     @EventHandler(priority = EventPriority.HIGH)
     public void onWorldEnter(final PlayerChangedWorldEvent event) {
         // Entering Beaconz world
-        if (event.getPlayer().getWorld().equals((getBeaconzWorld()))) {         
+        if (event.getPlayer().getWorld().equals((getBeaconzWorld()))) {
             // Send player to lobby
             getGameMgr().getLobby().tpToRegionSpawn(event.getPlayer());
             for (PotionEffect effect : event.getPlayer().getActivePotionEffects())
                 event.getPlayer().removePotionEffect(effect.getType());
         }
-    }    
+    }
 
     @EventHandler(priority = EventPriority.LOW)
     public void onWorldExit(final PlayerChangedWorldEvent event) {
         // Exiting Beaconz world
-        if (event.getFrom().equals((getBeaconzWorld()))) {         
+        if (event.getFrom().equals((getBeaconzWorld()))) {
             // Remove player from map and remove his scoreboard
             standingOn.remove(event.getPlayer().getUniqueId());
-            event.getPlayer().setScoreboard(Bukkit.getServer().getScoreboardManager().getNewScoreboard());	
+            event.getPlayer().setScoreboard(Bukkit.getServer().getScoreboardManager().getNewScoreboard());
             // Remove any potion effects
             for (PotionEffect effect : event.getPlayer().getActivePotionEffects())
                 event.getPlayer().removePotionEffect(effect.getType());
         }
-    }    
+    }
 
     /**
      * Prevents liquid flowing over the beacon beam
      * @param event
      */
     @EventHandler(priority = EventPriority.LOW)
-    public void onLiquidFlow(final BlockFromToEvent event) {        
+    public void onLiquidFlow(final BlockFromToEvent event) {
         World world = event.getBlock().getWorld();
-        if (!world.equals(getBeaconzWorld())) {            
+        if (!world.equals(getBeaconzWorld())) {
             return;
         }
         // Only bother with horizontal flows
@@ -481,7 +481,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         Player player = event.getPlayer();
         // Only Ops place blocks in the lobby
         if (getGameMgr().isPlayerInLobby(player)) {
-            if (player.isOp()) {    			
+            if (player.isOp()) {
                 return;
             } else {
                 event.setCancelled(true);
@@ -538,13 +538,13 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
 
         // Only Ops can break blocks in the lobby
         if (getGameMgr().isPlayerInLobby(player)) {
-            if (player.isOp()) {    			
+            if (player.isOp()) {
                 return;
             } else {
                 event.setCancelled(true);
                 return;
             }
-        } 
+        }
         // Prevent breakage of blocks outside the game area
         Game game = getGameMgr().getGame(event.getBlock().getLocation());
         if (DEBUG)
@@ -566,7 +566,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         }
 
         // Apply triangle effects
-        applyEffects(player, getRegister().getTriangle(player.getLocation().getBlockX(), player.getLocation().getBlockZ()), team);
+        //applyEffects(player, getRegister().getTriangle(player.getLocation().getBlockX(), player.getLocation().getBlockZ()), team);
 
         // Check if the block is a beacon or the surrounding pyramid
         Block block = event.getBlock();
@@ -600,7 +600,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                     block.setData(getGameMgr().getSC(player).getBlockID(team).getData());
                     // Register the beacon to this team
                     getRegister().setBeaconOwner(beacon,team);
-                    player.sendMessage(ChatColor.GREEN + "You captured a beacon! Mine the beacon for goodies if you have exp!");
+                    player.sendMessage(ChatColor.GREEN + "You captured a beacon! Mine the beacon for more beacon maps.");
                     giveBeaconMap(player,beacon);
                 } else {
                     if (DEBUG)
@@ -659,13 +659,17 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                         player.getWorld().playSound(player.getLocation(), Sound.BLOCK_ANVIL_BREAK, 1F, 1F);
                         return;
                     }
-                    Random rand = new Random();                    
+                    Random rand = new Random();
                     if (beacon.getOwnership().equals(team)) {
                         // Own team
                         int value = rand.nextInt(Settings.teamGoodies.lastKey()) + 1;
                         Entry<Integer, ItemStack> en = Settings.teamGoodies.floorEntry(value);
                         if (en != null && en.getValue() != null) {
-                            player.getWorld().dropItemNaturally(event.getBlock().getLocation(), en.getValue());
+                            if (en.getValue().getType().equals(Material.MAP)) {
+                                giveBeaconMap(player,beacon);
+                            } else {
+                                player.getWorld().dropItem(event.getPlayer().getLocation(), en.getValue());
+                            }
                             if (rand.nextInt(100) < Settings.beaconMineExhaustChance) {
                                 beacon.resetHackTimer();
                                 player.sendMessage(ChatColor.GREEN + "Success! Beacon is exhausted. Try again in " + (Settings.mineCoolDown/60000) + " minute(s)");
@@ -693,6 +697,8 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                                 player.sendMessage(ChatColor.GREEN + "Success!");
                                 player.getWorld().playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 1F, 1F);
                             }
+                            // Remove exp
+                            removeExp(player, Settings.beaconMineExpRequired);
                         } else {
                             player.getWorld().spawnEntity(player.getLocation(),EntityType.ENDERMITE);
                             player.getWorld().playSound(player.getLocation(), Sound.ENTITY_ENDERMITE_AMBIENT, 1F, 1F);
@@ -700,7 +706,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                         }
                     }
                 } else {
-                    // Damage player                   
+                    // Damage player
                     int num = (int) (beacon.getHackTimer() + Settings.mineCoolDown - System.currentTimeMillis())/50;
                     for (String effect : Settings.minePenalty) {
                         String[] split = effect.split(":");
@@ -727,7 +733,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                 }
             }
         }
-    }   
+    }
 
     /**
      * Handles using signs in the lobby to join games
@@ -752,9 +758,9 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                             event.getPlayer().sendMessage("That sign does not point to an active game");
                         }
                     }
-                }	
-            }    	    		
-        } else if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK) && event.getClickedBlock().getWorld().equals(getBeaconzWorld()) 
+                }
+            }
+        } else if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK) && event.getClickedBlock().getWorld().equals(getBeaconzWorld())
                 && getGameMgr().getGame(event.getClickedBlock().getLocation()) == null) {
             event.setCancelled(true);
             event.getPlayer().sendMessage(ChatColor.RED + "You cannot do that!");
@@ -775,7 +781,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                 event.getWhoClicked().sendMessage(ChatColor.RED + "You cannot do that!");
             }
         }
-    }  
+    }
      */
     /**
      * @param event
@@ -788,7 +794,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                 event.getPlayer().sendMessage(ChatColor.RED + "You cannot do that!");
             }
         }
-    }  
+    }
 
     /**
      * @param event
@@ -814,7 +820,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                 event.getPlayer().sendMessage(ChatColor.RED + "You cannot do that!");
             }
         }
-    } 
+    }
 
 
     /**
@@ -828,7 +834,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                 event.getPlayer().sendMessage(ChatColor.RED + "You cannot do that!");
             }
         }
-    } 
+    }
 
     /**
      * @param event
@@ -860,13 +866,13 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             Location to = event.getTo();
             if (checkMove(player, event.getVehicle().getWorld(), from, to)) {
                 // Vehicle should stop moving
-                Vector direction = event.getVehicle().getLocation().getDirection();                                     
+                Vector direction = event.getVehicle().getLocation().getDirection();
                 event.getVehicle().teleport(event.getVehicle().getLocation().add(from.toVector().subtract(to.toVector()).normalize()));
                 event.getVehicle().getLocation().setDirection(direction);
                 event.getVehicle().setVelocity(new Vector(0,0,0));
             }
         }
-    } 
+    }
 
     /**
      * Handles the event of hitting a beacon with paper or a map
@@ -953,7 +959,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                         player.sendMessage(ChatColor.RED + "This beacon is " + (int)distance + " blocks away.");
                         return;
                     }
-                } 
+                }
                 if (linkBeacons(player, team, beacon, mappedBeacon)) {
                     player.sendMessage(ChatColor.GREEN + "The map disintegrates!");
                     player.setItemInHand(null);
@@ -963,10 +969,10 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                 // No exp required
                 if (linkBeacons(player, team, beacon, mappedBeacon)) {
                     player.sendMessage(ChatColor.GREEN + "The map disintegrates!");
-                    player.setItemInHand(null);                   
+                    player.setItemInHand(null);
                 }
             }
-            
+
         }
     }
 
@@ -982,7 +988,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         //map.setWorld(getBeaconzWorld());
         map.setCenterX(beacon.getX());
         map.setCenterZ(beacon.getZ());
-        map.getRenderers().clear();           
+        map.getRenderers().clear();
         map.addRenderer(new TerritoryMapRenderer(getBeaconzPlugin()));
         map.addRenderer(new BeaconMap(getBeaconzPlugin()));
         ItemStack newMap = new ItemStack(Material.MAP);
@@ -1030,7 +1036,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
      * 2. beacon having 8 links already
      * 3. link already exists
      * 4.link crosses opposition team's links
-     * 
+     *
      * @param player
      * @param team
      * @param beacon
@@ -1120,7 +1126,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             } else {
                 player.sendMessage(ChatColor.RED + String.valueOf(result.getFieldsFailedToMake()) + " triangle could not be created because of overlapping enemy elements!");
             }
-        }          
+        }
         return true;
     }
 
@@ -1131,8 +1137,8 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
      */
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onPlayerMove(PlayerMoveEvent event) {
-        // Remember that teleporting is not detected as player movement.. 
-        // If we want to catch movement by teleportation, we have to keep track of the players to-from by ourselves 
+        // Remember that teleporting is not detected as player movement..
+        // If we want to catch movement by teleportation, we have to keep track of the players to-from by ourselves
         // Only proceed if there's been a change in X or Z coords
         if (event.getFrom().getBlockX() == event.getTo().getBlockX() && event.getFrom().getBlockZ() == event.getTo().getBlockZ()) {
             return;
@@ -1159,7 +1165,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             Location to) {
         Region regionFrom = getGameMgr().getRegion(from);
         Region regionTo = getGameMgr().getRegion(to);
-        
+
         // Check if a player is close to a barrier
         if (regionFrom != null) {
             regionFrom.showBarrier(player, 20);
@@ -1187,7 +1193,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
 
         // Leaving
         if (regionFrom != null && regionFrom != regionTo) {
-            regionFrom.exit(player);            
+            regionFrom.exit(player);
         }
         // Entering
         if (regionTo != null && regionFrom != regionTo) {
@@ -1236,7 +1242,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                                 Team otherteam = getGameMgr().getPlayerTeam(player);
                                 if (otherteam != null && otherteam.equals(team)) {
                                     // Only do if beacons are different locations
-                                    if (otherplayer.getLocation().getBlockX() != to.getBlockX() 
+                                    if (otherplayer.getLocation().getBlockX() != to.getBlockX()
                                             && otherplayer.getLocation().getBlockZ() != to.getBlockZ()) {
                                         // Check if this link already exists
                                         if (!beacon.getLinks().contains(standingOn.get(others))) {
@@ -1248,7 +1254,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                             }
                         }
                         // Forceput removes any other player's on this beacon
-                        standingOn.forcePut(player.getUniqueId(), beacon); 
+                        standingOn.forcePut(player.getUniqueId(), beacon);
                     }
                 }
             } else {
@@ -1296,10 +1302,10 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
      * @param team
      */
     private void applyEffects(final Player player, final List<TriangleField> to, final Team team) {
-        if (to == null || to.isEmpty() || team == null) { 
+        if (to == null || to.isEmpty() || team == null) {
             for (PotionEffect effect : player.getActivePotionEffects())
                 player.removePotionEffect(effect.getType());
-            triangleEffects.remove(player.getUniqueId());            
+            triangleEffects.remove(player.getUniqueId());
             return;
         }
         // Update the active effects on the player
@@ -1322,7 +1328,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                 }
             }
             player.addPotionEffects(effects);
-        }       
+        }
         triangleEffects.put(player.getUniqueId(), effects);
     }
 
@@ -1336,7 +1342,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
     public boolean testForExp(Player player , int xpRequired){
         return getTotalExperience(player) >= xpRequired ? true : false;
     }
-    
+
     /**
      * Removes the experience from the player
      * @param player
@@ -1345,7 +1351,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
      */
     public void removeExp(Player player , int xpRequired){
         int xp = getTotalExperience(player);
-        if (xp >= xpRequired) {                
+        if (xp >= xpRequired) {
             setTotalExperience(player, xp - xpRequired);
         }
     }
@@ -1427,7 +1433,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
     //Without this people would be able to use exp and then still sell it.
     public static int getTotalExperience(final Player player)
     {
-        int exp = (int)Math.round(getExpAtLevel(player) * player.getExp());
+        int exp = Math.round(getExpAtLevel(player) * player.getExp());
         int currentLevel = player.getLevel();
 
         while (currentLevel > 0)
@@ -1444,7 +1450,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
 
     public static int getExpUntilNextLevel(final Player player)
     {
-        int exp = (int)Math.round(getExpAtLevel(player) * player.getExp());     
+        int exp = Math.round(getExpAtLevel(player) * player.getExp());
         int nextLevel = player.getLevel();
         return getExpAtLevel(nextLevel) - exp;
     }
@@ -1475,7 +1481,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         if (!event.getTo().getWorld().equals(getBeaconzWorld()) && fromGame != null) {
             if (DEBUG)
                 getLogger().info("DEBUG: Teleporting out of world");
-            // Store 
+            // Store
             getBeaconzStore().storeInventory(event.getPlayer(), fromGame.getName(), event.getFrom());
             // Load lobby inv
             getBeaconzStore().getInventory(event.getPlayer(), "Lobby");
@@ -1485,12 +1491,12 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         // Teleporting into Beaconz World
         if (event.getTo().getWorld().equals(getBeaconzWorld()) && event.getFrom().getWorld().equals(getBeaconzWorld())) {
             getLogger().info("DEBUG: Teleporting into world");
-            // Get from store 
+            // Get from store
             getBeaconzPlugin().getServer().getScheduler().runTaskLater(getBeaconzPlugin(), new Runnable() {
 
                 @Override
                 public void run() {
-                    getBeaconzStore().getInventory(event.getPlayer(), event.getTo());                    
+                    getBeaconzStore().getInventory(event.getPlayer(), event.getTo());
                 }}, 5L);
 
             return;
@@ -1509,10 +1515,10 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             if (toLobby && fromGame != null) {
                 if (DEBUG)
                     getLogger().info("DEBUG: Teleporting to lobby from game " + fromGame.getName());
-                // Store 
+                // Store
                 getBeaconzStore().storeInventory(event.getPlayer(), fromGame.getName(), event.getFrom());
-                // Get from store 
-                getBeaconzStore().getInventory(event.getPlayer(), "Lobby");                                       
+                // Get from store
+                getBeaconzStore().getInventory(event.getPlayer(), "Lobby");
                 return;
             }
 
@@ -1530,7 +1536,8 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                 }
                 return;
             }
-            getLogger().info("DEBUG: Not a lobby teleport");
+            if (DEBUG)
+                getLogger().info("DEBUG: Not a lobby teleport");
             // Not a lobby
             if (fromGame != null && toGame != null && fromGame.equals(toGame)) {
                 if (DEBUG)
@@ -1541,7 +1548,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             if (fromGame != null) {
                 if (DEBUG)
                     getLogger().info("DEBUG: Teleporting from game " + fromGame.getName());
-                // Store 
+                // Store
                 getBeaconzStore().storeInventory(event.getPlayer(), fromGame.getName(), event.getFrom());
             }
             if (toGame != null) {
@@ -1556,15 +1563,15 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                             getLogger().info("DEBUG: Teleporting player to last location" + newTo);
                         newTo = toGame.getRegion().findSafeSpot(newTo, 10);
                         event.setTo(newTo);
-                    }                    
+                    }
                     /*
                     getBeaconzPlugin().getServer().getScheduler().runTaskLater(getBeaconzPlugin(), new Runnable() {
 
                         @Override
                         public void run() {
-                            getBeaconzStore().getInventory(event.getPlayer(), toGame.getName());                    
+                            getBeaconzStore().getInventory(event.getPlayer(), toGame.getName());
                         }}, 5L);
-                        */
+                     */
                 } else {
                     if (DEBUG)
                         getLogger().info("DEBUG: Player is not in this game");
@@ -1576,7 +1583,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             return;
         }
     }
-    
+
     /**
      * Saves the player's death and resets their spawn point to the team spawn
      * @param event
@@ -1607,11 +1614,11 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                 // Store the inventory for this player because they will get it when they come back
                 // Will also store their exp
                 //getLogger().info("DEBUG: keep inventory is true");
-                getBeaconzStore().storeInventory(player, game.getName(), spawnPoint);                
+                getBeaconzStore().storeInventory(player, game.getName(), spawnPoint);
             } else {
                 //getLogger().info("DEBUG: keep inventory is false");
                 // Their inventory is going to get dumped on the floor so they need to have their possessions removed
-                getBeaconzStore().clearItems(player, game.getName(), spawnPoint);                
+                getBeaconzStore().clearItems(player, game.getName(), spawnPoint);
             }
             if (!event.getKeepLevel()) {
                 //getLogger().info("DEBUG: lose level! - new exp = " + event.getNewExp());
@@ -1638,13 +1645,13 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onRespawn(final PlayerRespawnEvent event) {
         //getLogger().info("DEBUG: Respawn");
-        if (!deadPlayers.containsKey(event.getPlayer().getUniqueId())) {            
+        if (!deadPlayers.containsKey(event.getPlayer().getUniqueId())) {
             return;
-        }    
+        }
         // Set respawn location to Beaconz lobby
         event.setRespawnLocation(getGameMgr().getLobby().getSpawnPoint());
         deadPlayers.remove(event.getPlayer().getUniqueId());
-        // Get from store 
+        // Get from store
         getBeaconzStore().getInventory(event.getPlayer(), "Lobby");
     }
 

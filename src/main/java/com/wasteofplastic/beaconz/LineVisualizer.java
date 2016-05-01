@@ -42,7 +42,7 @@ public class LineVisualizer extends BeaconzPluginDependent {
                 }
                 if (!it.hasNext()) {
                     // Cancel task
-                   this.cancel();
+                    this.cancel();
                 }
             }
         }.runTaskTimer(beaconzPlugin, 0, 5L);

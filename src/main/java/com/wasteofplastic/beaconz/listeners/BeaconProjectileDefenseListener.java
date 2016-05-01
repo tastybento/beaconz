@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2015 tastybento
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
@@ -125,7 +125,7 @@ public class BeaconProjectileDefenseListener extends BeaconzPluginDependent impl
                 event.setCancelled(true);
                 return;
             }
-            // Else it's fine to hurt! 
+            // Else it's fine to hurt!
             //getLogger().info("DEBUG: die!");
         }
     }
@@ -136,8 +136,8 @@ public class BeaconProjectileDefenseListener extends BeaconzPluginDependent impl
      */
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onPlayerMove(PlayerMoveEvent event) {
-        // Remember that teleporting is not detected as player movement.. 
-        // If we want to catch movement by teleportation, we have to keep track of the players to-from by ourselves 
+        // Remember that teleporting is not detected as player movement..
+        // If we want to catch movement by teleportation, we have to keep track of the players to-from by ourselves
         // Only proceed if there's been a move, not just a head move
         if (event.getFrom().getBlockX() == event.getTo().getBlockX() && event.getFrom().getBlockY() == event.getTo().getBlockY()
                 && event.getFrom().getBlockZ() == event.getTo().getBlockZ()) {
@@ -150,7 +150,7 @@ public class BeaconProjectileDefenseListener extends BeaconzPluginDependent impl
 
         Player player = event.getPlayer();
         // Nothing from here on applies to Lobby...
-        if (getGameMgr().isPlayerInLobby(player)) {            
+        if (getGameMgr().isPlayerInLobby(player)) {
             return;
         }
         // Check if player is in a team
@@ -177,23 +177,23 @@ public class BeaconProjectileDefenseListener extends BeaconzPluginDependent impl
                         break;
                     case DISPENSER:
                         InventoryHolder ih = (InventoryHolder)block.getState();
-                        if (ih.getInventory().contains(Material.ARROW) || ih.getInventory().contains(Material.TIPPED_ARROW) 
+                        if (ih.getInventory().contains(Material.ARROW) || ih.getInventory().contains(Material.TIPPED_ARROW)
                                 || ih.getInventory().contains(Material.SPECTRAL_ARROW) || ih.getInventory().contains(Material.FIREBALL)) {
                             //getLogger().info("DEBUG: contains arrow");
                             Vector adjust = (event.getTo().toVector().subtract(event.getFrom().toVector()));
-                            fireProjectile(block, defense.getValue(), event.getTo(), adjust, beacon.getOwnership());                          
+                            fireProjectile(block, defense.getValue(), event.getTo(), adjust, beacon.getOwnership());
                             //getLogger().info("DEBUG: velocity = " + adjust);
                         }
                         //getLogger().info("DEBUG: dispenser");
                         break;
                     default:
-                    }              
+                    }
                 }
             }
         }
     }
 
-    private void fireProjectile(Block block, Integer value, Location target, Vector adjust, Team team) {        
+    private void fireProjectile(Block block, Integer value, Location target, Vector adjust, Team team) {
         // Check line of sight
         Vector playerLoc = target.toVector().add(new Vector(0.5D,1.75D,0.5D));
         // Get start location
@@ -205,7 +205,7 @@ public class BeaconProjectileDefenseListener extends BeaconzPluginDependent impl
         // Get the direction the dispenser is facing
         BlockFace blockFace = BlockFace.UP;
         if (block.getType().equals(Material.DISPENSER)) {
-            blockFace = ((Dispenser)block.getState().getData()).getFacing(); 
+            blockFace = ((Dispenser)block.getState().getData()).getFacing();
         }
         //getLogger().info("DEBUG: dispenser is facing " + blockFace);
         Block inFront = block.getRelative(blockFace);
@@ -256,7 +256,7 @@ public class BeaconProjectileDefenseListener extends BeaconzPluginDependent impl
             face.add(new Vector(0,diff + 0.1 ,0));
             break;
         case WEST:
-            // Negative X            
+            // Negative X
             // If X goes positive don't shoot
             if (direction.getX() < 0) {
                 shoot = true;
@@ -271,14 +271,14 @@ public class BeaconProjectileDefenseListener extends BeaconzPluginDependent impl
             return;
         }
         // Check to see if the player is visible
-        BlockIterator iterator = new BlockIterator(target.getWorld(), defenseLoc.add(direction).add(face), direction, 0, RANGE);                
+        BlockIterator iterator = new BlockIterator(target.getWorld(), defenseLoc.add(direction).add(face), direction, 0, RANGE);
         //getLogger().info("DEBUG: player's vector = " + target.toVector());
         while (iterator.hasNext()) {
             Block item = iterator.next();
             if (item.getX() == target.getBlockX() && item.getY() == target.getBlockY() && item.getZ() == target.getBlockZ()) {
                 //if (item.getLocation().toVector().equals(player.getLocation().toVector())) {
                 //getLogger().info("DEBUG: Saw you directly!");
-                break; 
+                break;
             }
             /*
             if (item.getX() == player.getLocation().getBlockX() && item.getY() == player.getLocation().getBlockY() && item.getZ() == player.getLocation().getBlockZ()) {
@@ -288,7 +288,7 @@ public class BeaconProjectileDefenseListener extends BeaconzPluginDependent impl
             //getLogger().info("DEBUG: Block is " + item.getType() + " " + item.getLocation().toVector());
             if (!item.getType().equals(Material.AIR) && !item.isLiquid()) {
                 //getLogger().info("DEBUG: Blocking is " + item.getType() + " " + item.getLocation().toVector());
-                //getLogger().info("DEBUG: Cannot see you!");                        
+                //getLogger().info("DEBUG: Cannot see you!");
                 return;
             }
         }
@@ -305,13 +305,13 @@ public class BeaconProjectileDefenseListener extends BeaconzPluginDependent impl
             if (ih.getInventory().contains(Material.ARROW)) {
                 //getLogger().info("DEBUG: regular arrow");
                 projectile = block.getWorld().spawnArrow(from, direction.add(adjust), 1F, 10F);
-                ((Arrow)projectile).setKnockbackStrength(1); 
+                ((Arrow)projectile).setKnockbackStrength(1);
             } else if (ih.getInventory().contains(Material.TIPPED_ARROW)) {
                 //getLogger().info("DEBUG: tipped arrow");
                 projectile = block.getWorld().spawnArrow(from, direction.add(adjust), 1F, 10F, TippedArrow.class);
                 ItemStack item = ih.getInventory().getItem(ih.getInventory().first(Material.TIPPED_ARROW));
                 PotionMeta meta = (PotionMeta) item.getItemMeta();
-                ((TippedArrow)projectile).setBasePotionData(meta.getBasePotionData()); 
+                ((TippedArrow)projectile).setBasePotionData(meta.getBasePotionData());
             } else if (ih.getInventory().contains(Material.SPECTRAL_ARROW)) {
                 //getLogger().info("DEBUG: spectral arrow");
                 projectile = block.getWorld().spawnArrow(from, direction.add(adjust), 1F, 10F, SpectralArrow.class);

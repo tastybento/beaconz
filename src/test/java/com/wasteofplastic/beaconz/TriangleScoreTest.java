@@ -19,7 +19,7 @@ public class TriangleScoreTest {
                 0, 0, 10, 0, 0, 10, // 50
                 20, 0, 30, 0, 30, 10, // +50 non overlapping
                 50, 50, 60, 50, 60, 60, // overlaps with the next one
-                50, 50, 50, 60, 60, 50, // +75 total                
+                50, 50, 50, 60, 60, 50, // +75 total
         };
         // Create some triangles
         for (int i = 0; i < data.length; i = i + 6) {
@@ -65,7 +65,7 @@ public class TriangleScoreTest {
             triangleFields.add(tri1);
         }
         area = (int)TriangleScorer.getTriangleSetArea(triangleFields);
-        assertThat(area, is(100));   
+        assertThat(area, is(100));
         // Four triangles all interecting
         int[] data3 = {
                 0, 0, -20, 40, 30,50,
