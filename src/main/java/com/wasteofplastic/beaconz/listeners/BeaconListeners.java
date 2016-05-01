@@ -204,7 +204,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                 // Check that the beacon is clear of blocks
                 if (!beacon.isClear()) {
                     // You can't capture an uncleared beacon
-                    player.sendMessage(ChatColor.GOLD + "Clear around the beacon to capture or mine the beacon for goodies!");
+                    player.sendMessage(ChatColor.GOLD + "Clear around the beacon to capture!");
                     event.setCancelled(true);
                     return;
                 }
@@ -662,8 +662,14 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                     Random rand = new Random();
                     if (beacon.getOwnership().equals(team)) {
                         // Own team
+                        getLogger().info("DEBUG: own team");
+                        for (Entry<Integer, ItemStack> ent : Settings.teamGoodies.entrySet()) {
+                            getLogger().info("DEBUG: " + ent.getKey() + " " + ent.getValue());
+                        }
                         int value = rand.nextInt(Settings.teamGoodies.lastKey()) + 1;
-                        Entry<Integer, ItemStack> en = Settings.teamGoodies.floorEntry(value);
+                        getLogger().info("DEBUG: value = " + value);
+                        Entry<Integer, ItemStack> en = Settings.teamGoodies.ceilingEntry(value);
+                        getLogger().info("DEBUG: en = " + en);
                         if (en != null && en.getValue() != null) {
                             if (en.getValue().getType().equals(Material.MAP)) {
                                 giveBeaconMap(player,beacon);
@@ -686,7 +692,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                     } else {
                         // Enemy
                         int value = rand.nextInt(Settings.enemyGoodies.lastKey()) + 1;
-                        Entry<Integer, ItemStack> en = Settings.enemyGoodies.floorEntry(value);
+                        Entry<Integer, ItemStack> en = Settings.enemyGoodies.ceilingEntry(value);
                         if (en != null && en.getValue() != null) {
                             player.getWorld().dropItemNaturally(event.getBlock().getLocation(), en.getValue());
                             if (rand.nextInt(100) < Settings.beaconMineExhaustChance) {

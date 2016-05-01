@@ -385,14 +385,14 @@ public class Beaconz extends JavaPlugin {
                 if (NumberUtils.isNumber(split[1])) {
                     chance = NumberUtils.toInt(split[1]) + lastChance;
                 }
-                ItemStack item = getItemFromString(split[0]);
+                ItemStack item = getItemFromString(split[0].toUpperCase());
                 if (item != null) {
                     Settings.enemyGoodies.put(chance, item);
+                } else {
+                    getLogger().severe("Could not import " + split[0] + " as enemy goodie, skipping...");
                 }
             }
         }
-        // Add the final element - any number above this value will return a null element
-        Settings.enemyGoodies.put(Settings.enemyGoodies.lastKey() + 1, null);
         // Debug
         /*
         for (Entry<Integer, ItemStack> ent : Settings.enemyGoodies.entrySet()) {
@@ -414,21 +414,21 @@ public class Beaconz extends JavaPlugin {
                 if (NumberUtils.isNumber(split[1])) {
                     chance = NumberUtils.toInt(split[1]) + lastChance;
                 }
-                ItemStack item = getItemFromString(split[0]);
+                ItemStack item = getItemFromString(split[0].toUpperCase());
                 if (item != null) {
                     Settings.teamGoodies.put(chance, item);
+                } else {
+                    getLogger().severe("Could not import " + split[0] + " as a team goodie, skipping...");
                 }
             }
         }
 
-        // Add the final element - any number above this value will return a null element
-        Settings.teamGoodies.put(Settings.teamGoodies.lastKey() + 1, null);
         // Own team
-        /*
+        /* 
         for (Entry<Integer, ItemStack> ent : Settings.teamGoodies.entrySet()) {
             plugin.getLogger().info("DEBUG: " + ent.getKey() + " " + ent.getValue());
         }
-         */
+        */
         // Add initial inventory
         List<String> newbieKit = getConfig().getStringList("world.newbiekit");
         Settings.newbieKit.clear();
