@@ -90,7 +90,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
             if (sender instanceof Player) {
                 sender.sendMessage(cc1 + "/" + label + cc2 + " link <x> <z>" + cc3 + " - force-links a beacon you are standing on to one at x,z");
             }
-            sender.sendMessage(cc1 + "/" + label + cc2 + " list [all |<gamename>]" + cc3 + " - lists all known beacons in the game | all games");
+            sender.sendMessage(cc1 + "/" + label + cc2 + " list [all |<gamename>] [team]" + cc3 + " - lists all known beacons in the game | all games owned by team");
             sender.sendMessage(cc1 + "/" + label + cc2 + " listparms <gamename>" + cc3 + " - lists game parameters");
             sender.sendMessage(cc1 + "/" + label + cc2 + " newgame <gamename> [<parm1:value> <parm2:value>...]" + cc3 + " - creates a new game in an empty region; parameters are optional - do /" + label + " newgame help for a list of the possible parameters");
             sender.sendMessage(cc1 + "/" + label + cc2 + " reload" + cc3 + " - reloads the plugin, preserving existing games");
@@ -366,7 +366,9 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
 
             case "list":
                 if (args.length < 2) {
-                    sender.sendMessage(ChatColor.RED + "/" + label + " list [all |<gamename>] - lists all known beacons in the game | all games");
+                    sender.sendMessage(ChatColor.RED + "/" + label + " list [all |<gamename>] [team] - lists all known beacons in the game | all games owned by team");
+                } else if (args.length == 3) {
+                    listBeacons(sender, args[1], args[2]);
                 } else {
                     listBeacons(sender, args[1]);
                 }
@@ -590,6 +592,16 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
      * @param name - either 'all' or a valid game name
      */
     public void listBeacons(CommandSender sender, String name) {
+        listBeacons(sender, name, "");
+    }
+
+    /**
+     * Lists all beacons for a given game or for 'all' games
+     * @param sender
+     * @param name - either 'all' or a valid game name
+     * @param search - team name to show
+     */
+    public void listBeacons(CommandSender sender, String name, String search) {
         int count = 0;
         int gamecnt = 0;
         for (Game game : getGameMgr().getGames().values()) {
@@ -601,7 +613,14 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                 for (BeaconObj b : getRegister().getBeaconRegister().values()) {
                     if (game.getRegion().containsBeacon(b)) {
                         count++;
-                        sender.sendMessage(b.getPoint().getX() + ":" + b.getPoint().getY() + " >> Owner: " + (b.getOwnership() == null ? "unowned" :b.getOwnership().getDisplayName()) + " >> Links: " + b.getLinks().size());
+                        String owner = "unowned";
+                        if (b.getOwnership() != null) {
+                            owner = b.getOwnership().getName();
+                        }
+                        if (search.isEmpty() || owner.equalsIgnoreCase(search)) {
+                            sender.sendMessage(b.getLocation().getBlockX() + "," + b.getLocation().getBlockY() + "," + b.getLocation().getBlockZ() + " >> Owner: " 
+                                    + (b.getOwnership() == null ? "unowned" :b.getOwnership().getDisplayName()) + " >> Links: " + b.getLinks().size());
+                        }
                     }
                 }
                 if (count == 0) sender.sendMessage("None");
@@ -909,16 +928,26 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
             break;
         case 3:
             if (sender instanceof Player) {
-                player = (Player)sender;
-                game = getGameMgr().getGame(player.getLocation());
+                player = (Player)sender;           
                 if (args[0].equalsIgnoreCase("join")) {
                     // List all the teams
-                    options.addAll(game.getScorecard().getTeamsNames());
+                    game = getGameMgr().getGame(args[1]);
+                    if (game != null) {
+                        options.addAll(game.getScorecard().getTeamsNames());
+                    }
                 }
             }
             if (args[0].equalsIgnoreCase("kick") ) {
                 // List all the games
                 options.addAll(getGameMgr().getGames().keySet());
+            }
+            if (args[0].equalsIgnoreCase("list") && !args[1].equalsIgnoreCase("all")) {
+                // List all the teams in the game
+                game = getGameMgr().getGame(args[1]);
+                if (game != null) {
+                    options.addAll(game.getScorecard().getTeamsNames());
+                }
+                options.add("unowned");
             }
         default:
             // For length > 2 setgameparms only
