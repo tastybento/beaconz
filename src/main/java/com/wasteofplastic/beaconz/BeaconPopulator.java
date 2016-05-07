@@ -131,7 +131,8 @@ public class BeaconPopulator extends BlockPopulator {
             if (b.getBiome().equals(Biome.OCEAN) || b.getBiome().equals(Biome.DEEP_OCEAN)) {
                 return;
             }
-            while (b.getType().equals(Material.AIR) || b.getType().equals(Material.LEAVES) || b.getType().equals(Material.LEAVES_2)) {
+            while (b.getType().equals(Material.AIR) || b.getType().equals(Material.LEAVES) || b.getType().equals(Material.LEAVES_2)
+                    || b.getType().equals(Material.HUGE_MUSHROOM_1) || b.getType().equals(Material.HUGE_MUSHROOM_2)) {
                 y--;
                 if (y == 0) {
                     // Oops, nothing here
