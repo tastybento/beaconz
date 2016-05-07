@@ -316,7 +316,7 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
             player.sendMessage(ChatColor.GREEN + "Fortune will smile upon you!" + levelPlaced);
             break;
         case DISPENSER:
-            player.sendMessage(ChatColor.GREEN + "Load it up with arrows to make an auto turret!" + levelPlaced);
+            player.sendMessage(ChatColor.GREEN + "Load it up with ammo to make an auto turret!" + levelPlaced);            
             beacon.addDefenseBlock(event.getBlock(), levelRequired);
             break;
         case DRAGON_EGG:

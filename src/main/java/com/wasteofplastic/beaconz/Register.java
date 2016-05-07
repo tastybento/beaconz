@@ -44,6 +44,7 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
 import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
 import org.bukkit.scoreboard.Team;
@@ -849,6 +850,18 @@ public class Register extends BeaconzPluginDependent {
     }
 
     /**
+     * Get the beacon associated with this defensive block
+     * @param point
+     * @return beacon or null if it doesn't exist
+     */
+    public BeaconObj getBeaconDefenseAt(Location location) {
+        if (location == null) {
+            return null;
+        }
+        return defenseBlocks.get(new Point2D.Double(location.getBlockX(),location.getBlockZ()));
+    }
+
+    /**
      * Gets all the defense blocks at this beacon
      * @param beacon
      * @return Set of points
@@ -895,4 +908,5 @@ public class Register extends BeaconzPluginDependent {
             }
         }
     }
+
 }

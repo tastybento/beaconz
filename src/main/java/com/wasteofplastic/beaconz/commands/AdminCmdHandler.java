@@ -38,6 +38,7 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
+import org.bukkit.potion.PotionEffect;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
@@ -186,6 +187,9 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                             // Found an alternative
                             game.getScorecard().addTeamPlayer(newTeam, player);
                             sender.sendMessage(ChatColor.GREEN + "Switched to " + newTeam.getDisplayName() + "!");
+                            // Remove any potion effects
+                            for (PotionEffect effect : player.getActivePotionEffects())
+                                player.removePotionEffect(effect.getType());
                             return true;
                         }
                     }

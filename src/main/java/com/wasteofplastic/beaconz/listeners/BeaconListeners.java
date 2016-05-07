@@ -65,6 +65,8 @@ import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.entity.PlayerLeashEntityEvent;
 import org.bukkit.event.hanging.HangingPlaceEvent;
+import org.bukkit.event.inventory.InventoryOpenEvent;
+import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
@@ -662,14 +664,14 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                     Random rand = new Random();
                     if (beacon.getOwnership().equals(team)) {
                         // Own team
-                        getLogger().info("DEBUG: own team");
+                        //getLogger().info("DEBUG: own team");
                         for (Entry<Integer, ItemStack> ent : Settings.teamGoodies.entrySet()) {
                             getLogger().info("DEBUG: " + ent.getKey() + " " + ent.getValue());
                         }
                         int value = rand.nextInt(Settings.teamGoodies.lastKey()) + 1;
-                        getLogger().info("DEBUG: value = " + value);
+                        //getLogger().info("DEBUG: value = " + value);
                         Entry<Integer, ItemStack> en = Settings.teamGoodies.ceilingEntry(value);
-                        getLogger().info("DEBUG: en = " + en);
+                        //getLogger().info("DEBUG: en = " + en);
                         if (en != null && en.getValue() != null) {
                             if (en.getValue().getType().equals(Material.MAP)) {
                                 giveBeaconMap(player,beacon);
@@ -921,9 +923,6 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                 return;
             }
         }
-        // Apply triangle effects
-        applyEffects(player, getRegister().getTriangle(player.getLocation().getBlockX(), player.getLocation().getBlockZ()), team);
-
         // Check if the block is a beacon or the surrounding pyramid
         Block b = event.getClickedBlock();
         final BeaconObj beacon = getRegister().getBeacon(b);
@@ -951,6 +950,11 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             BeaconObj mappedBeacon = getRegister().getBeaconMap(event.getItem().getDurability());
             if (mappedBeacon == null) {
                 // This is not a beacon map
+                return;
+            }
+            // Check the team
+            if (mappedBeacon.getOwnership() == null || !mappedBeacon.getOwnership().equals(team)) {
+                player.sendMessage(ChatColor.RED + "Origin beacon is not owned by " + team.getDisplayName() + "!");
                 return;
             }
             event.setCancelled(true);
@@ -1454,6 +1458,11 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         return exp;
     }
 
+    /**
+     * Gets the experience required to obtain the next level
+     * @param player
+     * @return experience
+     */
     public static int getExpUntilNextLevel(final Player player)
     {
         int exp = Math.round(getExpAtLevel(player) * player.getExp());
@@ -1659,6 +1668,48 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         deadPlayers.remove(event.getPlayer().getUniqueId());
         // Get from store
         getBeaconzStore().getInventory(event.getPlayer(), "Lobby");
+    }
+
+    /**
+     * Projects all chests inside triangles or on beacons
+     * @param event
+     */
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onInventoryOpen(final InventoryOpenEvent event) {
+        // Check what type of inventory this is
+        if (event.getInventory().getType().equals(InventoryType.PLAYER)) {
+            return;
+        }
+        Location invLoc = event.getInventory().getLocation();
+        if (invLoc == null) {
+            return;
+        }
+        World world = event.getPlayer().getWorld();
+        if (!world.equals(getBeaconzWorld())) {
+            return;
+        }
+        Player player = (Player) event.getPlayer();
+        Game game = getGameMgr().getGame(player.getLocation());
+        if (game != null) {
+            Team team = game.getScorecard().getTeam(player);         
+            // Check beacon defense            
+            BeaconObj beacon = getRegister().getBeaconDefenseAt(invLoc);
+            if (beacon != null) {
+                if (!beacon.getOwnership().equals(team)) {
+                    player.sendMessage(ChatColor.RED + "This belongs to " + beacon.getOwnership().getDisplayName() + "!");
+                    event.setCancelled(true);
+                    return;
+                }
+            }
+            // Check triangle
+            for (TriangleField triangle : getRegister().getTriangle(invLoc.getBlockX(), invLoc.getBlockZ())) {
+                if (!triangle.getOwner().equals(team)) {
+                    player.sendMessage(ChatColor.RED + "This belongs to " + triangle.getOwner().getDisplayName() + "!");
+                    event.setCancelled(true);
+                    return;
+                }
+            }
+        }
     }
 
 }
