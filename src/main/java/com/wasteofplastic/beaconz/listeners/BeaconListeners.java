@@ -98,6 +98,7 @@ import com.wasteofplastic.beaconz.BeaconObj;
 import com.wasteofplastic.beaconz.Beaconz;
 import com.wasteofplastic.beaconz.BeaconzPluginDependent;
 import com.wasteofplastic.beaconz.Game;
+import com.wasteofplastic.beaconz.Lang;
 import com.wasteofplastic.beaconz.LinkResult;
 import com.wasteofplastic.beaconz.Region;
 import com.wasteofplastic.beaconz.Settings;
@@ -115,6 +116,8 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
     private HashMap<UUID, Location> deadPlayers = new HashMap<UUID,Location>();
     private Set<UUID> barrierPlayers = new HashSet<UUID>();
     private final static boolean DEBUG = false;
+    private final static int MAX_LINKS = 8;
+    private static final String LOBBY = "Lobby";
 
     public BeaconListeners(Beaconz plugin) {
         super(plugin);
@@ -206,7 +209,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                 // Check that the beacon is clear of blocks
                 if (!beacon.isClear()) {
                     // You can't capture an uncleared beacon
-                    player.sendMessage(ChatColor.GOLD + "Clear around the beacon to capture!");
+                    player.sendMessage(ChatColor.GOLD + Lang.errorClearAroundBeacon);
                     event.setCancelled(true);
                     return;
                 }
@@ -239,7 +242,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
     }
 
     /**
-     * Prevents trees from growing above the beacon
+     * Prevents LOGS from growing above the beacon
      * @param event
      */
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
@@ -322,11 +325,11 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         BeaconObj beacon = getRegister().getBeaconAt(b.getX(),b.getZ());
         if (beacon != null && beacon.getY() <= event.getBlockClicked().getY()) {
             event.setCancelled(true);
-            event.getPlayer().sendMessage(ChatColor.RED + "You cannot place liquids above a beacon!");
+            event.getPlayer().sendMessage(ChatColor.RED + Lang.beaconCannotPlaceLiquids);
         }
         if (getRegister().isAboveBeacon(b.getLocation())) {
             event.setCancelled(true);
-            event.getPlayer().sendMessage(ChatColor.RED + "You cannot place liquids above a beacon!");
+            event.getPlayer().sendMessage(ChatColor.RED + Lang.beaconCannotPlaceLiquids);
         }
     }
 
@@ -402,7 +405,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                 getServer().getScheduler().runTaskLater(getBeaconzPlugin(), new Runnable() {
                     @Override
                     public void run() {
-                        player.sendMessage(ChatColor.AQUA + "Beaconz News");
+                        player.sendMessage(ChatColor.AQUA + Lang.beaconzNews);
                         int i = 1;
                         for (String message : messages) {
                             player.sendMessage(i++ + ": " + message);
@@ -418,6 +421,10 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
     }
 
 
+    /**
+     * Sends player to lobby if they enter the world
+     * @param event
+     */
     @EventHandler(priority = EventPriority.HIGH)
     public void onWorldEnter(final PlayerChangedWorldEvent event) {
         // Entering Beaconz world
@@ -429,6 +436,10 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         }
     }
 
+    /**
+     * Removes the scoreboard from the player, resets other world-specific items
+     * @param event
+     */
     @EventHandler(priority = EventPriority.LOW)
     public void onWorldExit(final PlayerChangedWorldEvent event) {
         // Exiting Beaconz world
@@ -495,7 +506,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         Game game = getGameMgr().getGame(event.getBlock().getLocation());
         if (game == null) {
             event.setCancelled(true);
-            player.sendMessage(ChatColor.RED + "You cannot do that!");
+            player.sendMessage(ChatColor.RED + Lang.errorYouCannotDoThat);
             return;
         }
 
@@ -515,7 +526,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         BeaconObj beacon = getRegister().getBeaconAt(event.getBlock().getX(),event.getBlock().getZ());
         if (beacon != null && beacon.getY() < event.getBlock().getY()) {
             event.setCancelled(true);
-            event.getPlayer().sendMessage(ChatColor.RED + "You cannot build on top of a beacon!");
+            event.getPlayer().sendMessage(ChatColor.RED + Lang.errorYouCannotBuildThere);
             return;
         }
     }
@@ -553,7 +564,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             getLogger().info("DEBUG: game = " + game);
         if (game == null) {
             event.setCancelled(true);
-            player.sendMessage(ChatColor.RED + "You cannot do that!");
+            player.sendMessage(ChatColor.RED + Lang.errorYouCannotDoThat);
             return;
         }
         // Get the player's team
@@ -591,7 +602,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                     // Check that the beacon is clear of blocks
                     if (!beacon.isClear()) {
                         // You can't capture an uncleared beacon
-                        player.sendMessage(ChatColor.RED + "Clear around the beacon first!");
+                        player.sendMessage(ChatColor.RED + Lang.errorClearAroundBeacon);
                         event.setCancelled(true);
                         return;
                     }
@@ -602,7 +613,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                     block.setData(getGameMgr().getSC(player).getBlockID(team).getData());
                     // Register the beacon to this team
                     getRegister().setBeaconOwner(beacon,team);
-                    player.sendMessage(ChatColor.GREEN + "You captured a beacon! Mine the beacon for more beacon maps.");
+                    player.sendMessage(ChatColor.GREEN + Lang.beaconYouCapturedABeacon);
                     giveBeaconMap(player,beacon);
                 } else {
                     if (DEBUG)
@@ -613,22 +624,22 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                             getLogger().info("DEBUG: known team block");
                         if (team.equals(beaconTeam)) {
                             // You can't destroy your own beacon
-                            player.sendMessage(ChatColor.RED + "You cannot destroy your own beacon");
+                            player.sendMessage(ChatColor.RED + Lang.beaconYouCannotDestroyYourOwnBeacon);
                             event.setCancelled(true);
                             return;
                         }
                         // Check that the beacon is clear of blocks
                         if (!beacon.isClear()) {
                             // You can't capture an uncleared beacon
-                            player.sendMessage(ChatColor.RED + "Clear around the beacon first!");
+                            player.sendMessage(ChatColor.RED + Lang.errorClearAroundBeacon);
                             event.setCancelled(true);
                             return;
                         }
                         // Enemy team has lost a beacon!
                         // Taunt other teams
-                        getMessages().tellOtherTeams(team, ChatColor.RED + team.getDisplayName() + " team destroyed " + beaconTeam.getDisplayName() + "'s beacon!");
-                        getMessages().tellTeam(player, player.getDisplayName() + " destroyed one of " + beaconTeam.getDisplayName() + "'s beacons!");
-                        player.sendMessage(ChatColor.GREEN + "You destroyed " + beaconTeam.getDisplayName() + " team's beacon!");
+                        getMessages().tellOtherTeams(team, ChatColor.RED + (Lang.beaconTeamDestroyed.replace("[team1]", team.getDisplayName()).replace("[team2]", beaconTeam.getDisplayName())));
+                        getMessages().tellTeam(player, (Lang.beaconPlayerDestroyed.replace("[player]", player.getDisplayName()).replace("[team]", beaconTeam.getDisplayName())));
+                        player.sendMessage(ChatColor.GREEN + Lang.beaconYouDestroyed.replace("[team]", beaconTeam.getDisplayName()));
                         player.getWorld().playSound(player.getLocation(), Sound.BLOCK_CHORUS_FLOWER_DEATH, 1F, 1F);
                         getRegister().removeBeaconOwnership(beacon);
                         block.setType(Material.OBSIDIAN);
@@ -657,7 +668,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                     if (DEBUG)
                         getLogger().info("DEBUG: player has " + player.getTotalExperience() + " and needs " + Settings.beaconMineExpRequired);
                     if (!testForExp(player, Settings.beaconMineExpRequired)) {
-                        player.sendMessage(ChatColor.RED + "You do not have enough experience to mine this beacon!");
+                        player.sendMessage(ChatColor.RED + Lang.errorNotEnoughExperience);
                         player.getWorld().playSound(player.getLocation(), Sound.BLOCK_ANVIL_BREAK, 1F, 1F);
                         return;
                     }
@@ -680,16 +691,16 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                             }
                             if (rand.nextInt(100) < Settings.beaconMineExhaustChance) {
                                 beacon.resetHackTimer();
-                                player.sendMessage(ChatColor.GREEN + "Success! Beacon is exhausted. Try again in " + (Settings.mineCoolDown/60000) + " minute(s)");
+                                player.sendMessage(ChatColor.GREEN + Lang.success + " " + Lang.beaconIsExhausted.replace("[minutes]", String.valueOf(Settings.mineCoolDown/60000)));
                                 player.getWorld().playSound(player.getLocation(), Sound.BLOCK_ENDERCHEST_CLOSE, 1F, 1F);
                             } else {
-                                player.sendMessage(ChatColor.GREEN + "Success!");
+                                player.sendMessage(ChatColor.GREEN + Lang.success);
                                 player.getWorld().playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 1F, 1F);
                             }
                             // Remove exp
                             removeExp(player, Settings.beaconMineExpRequired);
                         } else {
-                            player.sendMessage(ChatColor.RED + "Failure!");
+                            player.sendMessage(ChatColor.RED + Lang.failure);
                         }
                     } else {
                         // Enemy
@@ -699,10 +710,10 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                             player.getWorld().dropItemNaturally(event.getBlock().getLocation(), en.getValue());
                             if (rand.nextInt(100) < Settings.beaconMineExhaustChance) {
                                 beacon.resetHackTimer();
-                                player.sendMessage(ChatColor.GREEN + "Success! Beacon is exhausted. Try again in " + (Settings.mineCoolDown/60000) + " minute(s)");
+                                player.sendMessage(ChatColor.GREEN + Lang.success + Lang.beaconIsExhausted.replace("[minutes]", String.valueOf(Settings.mineCoolDown/60000)));
                                 player.getWorld().playSound(player.getLocation(), Sound.BLOCK_ENDERCHEST_CLOSE, 1F, 1F);
                             } else {
-                                player.sendMessage(ChatColor.GREEN + "Success!");
+                                player.sendMessage(ChatColor.GREEN + Lang.success);
                                 player.getWorld().playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 1F, 1F);
                             }
                             // Remove exp
@@ -710,7 +721,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                         } else {
                             player.getWorld().spawnEntity(player.getLocation(),EntityType.ENDERMITE);
                             player.getWorld().playSound(player.getLocation(), Sound.ENTITY_ENDERMITE_AMBIENT, 1F, 1F);
-                            player.sendMessage(ChatColor.RED + "Failure! Watch out!");
+                            player.sendMessage(ChatColor.RED + Lang.failure + " Watch out!");
                         }
                     }
                 } else {
@@ -763,7 +774,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                             }
                         }
                         if (!foundgame) {
-                            event.getPlayer().sendMessage("That sign does not point to an active game");
+                            event.getPlayer().sendMessage(Lang.notReady);
                         }
                     }
                 }
@@ -771,26 +782,12 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         } else if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK) && event.getClickedBlock().getWorld().equals(getBeaconzWorld())
                 && getGameMgr().getGame(event.getClickedBlock().getLocation()) == null) {
             event.setCancelled(true);
-            event.getPlayer().sendMessage(ChatColor.RED + "You cannot do that!");
+            event.getPlayer().sendMessage(ChatColor.RED + Lang.errorYouCannotDoThat);
         }
 
     }
 
 
-    /**
-     * @param event
-     */
-    /*
-    @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
-    public void onInventoryClick(final InventoryClickEvent event) {
-        if (event.getInventory().getLocation().getWorld().equals(getBeaconzWorld())) {
-            if (getGameMgr().getGame(event.getInventory().getLocation()) == null) {
-                event.setCancelled(true);
-                event.getWhoClicked().sendMessage(ChatColor.RED + "You cannot do that!");
-            }
-        }
-    }
-     */
     /**
      * @param event
      */
@@ -799,7 +796,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         if (event.getEntity().getWorld().equals(getBeaconzWorld())) {
             if (getGameMgr().getGame(event.getEntity().getLocation()) == null) {
                 event.setCancelled(true);
-                event.getPlayer().sendMessage(ChatColor.RED + "You cannot do that!");
+                event.getPlayer().sendMessage(ChatColor.RED + Lang.errorYouCannotDoThat);
             }
         }
     }
@@ -812,7 +809,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         if (event.getRightClicked().getWorld().equals(getBeaconzWorld())) {
             if (getGameMgr().getGame(event.getRightClicked().getLocation()) == null) {
                 event.setCancelled(true);
-                event.getPlayer().sendMessage(ChatColor.RED + "You cannot do that!");
+                event.getPlayer().sendMessage(ChatColor.RED + Lang.errorYouCannotDoThat);
             }
         }
     }
@@ -825,7 +822,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         if (event.getEntity().getWorld().equals(getBeaconzWorld())) {
             if (getGameMgr().getGame(event.getEntity().getLocation()) == null) {
                 event.setCancelled(true);
-                event.getPlayer().sendMessage(ChatColor.RED + "You cannot do that!");
+                event.getPlayer().sendMessage(ChatColor.RED + Lang.errorYouCannotDoThat);
             }
         }
     }
@@ -839,7 +836,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         if (event.getEntity().getWorld().equals(getBeaconzWorld())) {
             if (getGameMgr().getGame(event.getEntity().getLocation()) == null) {
                 event.setCancelled(true);
-                event.getPlayer().sendMessage(ChatColor.RED + "You cannot do that!");
+                event.getPlayer().sendMessage(ChatColor.RED + Lang.errorYouCannotDoThat);
             }
         }
     }
@@ -856,7 +853,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         if (player.getWorld().equals(getBeaconzWorld())) {
             if (getGameMgr().getGame(event.getVehicle().getLocation()) == null) {
                 event.setCancelled(true);
-                player.sendMessage(ChatColor.RED + "You cannot do that!");
+                player.sendMessage(ChatColor.RED + Lang.errorYouCannotDoThat);
             }
         }
     }
@@ -933,7 +930,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         }
         // Check the team
         if (beacon.getOwnership() == null || !beacon.getOwnership().equals(team)) {
-            player.sendMessage(ChatColor.RED + "You must capture this beacon first!");
+            player.sendMessage(ChatColor.RED + Lang.beaconYouMustCapturedBeacon);
             event.setCancelled(true);
             return;
         }
@@ -954,7 +951,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             }
             // Check the team
             if (mappedBeacon.getOwnership() == null || !mappedBeacon.getOwnership().equals(team)) {
-                player.sendMessage(ChatColor.RED + "Origin beacon is not owned by " + team.getDisplayName() + "!");
+                player.sendMessage(ChatColor.RED + Lang.beaconOriginNotOwned.replace("[team]",team.getDisplayName()));
                 return;
             }
             event.setCancelled(true);
@@ -964,21 +961,21 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                 distance -= Settings.linkDistance;
                 if (distance > 0) {
                     if (!testForExp(player, (int)(distance/Settings.expDistance))) {
-                        player.sendMessage(ChatColor.RED + "You do not have enough experience to link to this beacon!");
-                        player.sendMessage(ChatColor.RED + "You can link up to " + (int)(Settings.expDistance * getTotalExperience(player)) + " blocks away.");
-                        player.sendMessage(ChatColor.RED + "This beacon is " + (int)distance + " blocks away.");
+                        player.sendMessage(ChatColor.RED + Lang.errorNotEnoughExperience);
+                        player.sendMessage(ChatColor.RED + Lang.beaconYouCanLinkUpTo.replace("[number]", String.valueOf((int)(Settings.expDistance * getTotalExperience(player)))));
+                        player.sendMessage(ChatColor.RED + Lang.beaconThisBeaconIsBlocksAway.replace("[number]", String.valueOf((int)distance)));
                         return;
                     }
                 }
                 if (linkBeacons(player, team, beacon, mappedBeacon)) {
-                    player.sendMessage(ChatColor.GREEN + "The map disintegrates!");
+                    player.sendMessage(ChatColor.GREEN + Lang.beaconTheMapDisintegrates);
                     player.setItemInHand(null);
                     removeExp(player, (int)(distance/Settings.expDistance));
                 }
             } else {
                 // No exp required
                 if (linkBeacons(player, team, beacon, mappedBeacon)) {
-                    player.sendMessage(ChatColor.GREEN + "The map disintegrates!");
+                    player.sendMessage(ChatColor.GREEN + Lang.beaconTheMapDisintegrates);
                     player.setItemInHand(null);
                 }
             }
@@ -993,7 +990,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
      */
     private void giveBeaconMap(Player player, BeaconObj beacon) {
         // Make a map!
-        player.sendMessage(ChatColor.GREEN + "You have a beacon map! Take it to another beacon to link them up!");
+        player.sendMessage(ChatColor.GREEN + Lang.beaconYouHaveAMap);
         MapView map = Bukkit.createMap(getBeaconzWorld());
         //map.setWorld(getBeaconzWorld());
         map.setCenterX(beacon.getX());
@@ -1043,7 +1040,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
     /**
      * Tries to link two beacons. Failure reasons could be:
      * 1. trying to link a beacon to itself
-     * 2. beacon having 8 links already
+     * 2. beacon having MAX_LINKS links already
      * 3. link already exists
      * 4.link crosses opposition team's links
      *
@@ -1056,16 +1053,16 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
     private boolean linkBeacons(Player player, Team team, BeaconObj beacon,
             BeaconObj otherBeacon) {
         if (beacon.equals(otherBeacon)) {
-            player.sendMessage(ChatColor.RED + "You cannot link a beacon to itself!");
+            player.sendMessage(ChatColor.RED + Lang.beaconYouCannotLinkToSelf);
             return false;
         }
-        if (beacon.getNumberOfLinks() == 8) {
-            player.sendMessage(ChatColor.RED + "This beacon already has 8 outbound links!");
+        if (beacon.getNumberOfLinks() == MAX_LINKS) {
+            player.sendMessage(ChatColor.RED + Lang.beaconMaxLinks.replace("[number]", String.valueOf(MAX_LINKS)));
             return false;
         }
         // Check if this link already exists
         if (beacon.getLinks().contains(otherBeacon)) {
-            player.sendMessage(ChatColor.RED + "Link already exists!");
+            player.sendMessage(ChatColor.RED + Lang.beaconLinkAlreadyExists);
             return false;
         }
         // Proposed link
@@ -1077,7 +1074,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             if (DEBUG)
                 getLogger().info("DEBUG: checking line " + line.getP1() + " to " + line.getP2());
             if (line.intersectsLine(proposedLink)) {
-                player.sendMessage(ChatColor.RED + "Link cannot cross enemy link!");
+                player.sendMessage(ChatColor.RED + Lang.beaconLinkCannotCrossEnemy);
                 return false;
             }
         }
@@ -1085,8 +1082,8 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         // Link the two beacons!
         LinkResult result = beacon.addOutboundLink(otherBeacon);
         if (result.isSuccess()) {
-            player.sendMessage(ChatColor.GREEN + "Link created!");
-            player.sendMessage(ChatColor.GREEN + "This beacon now has " + beacon.getNumberOfLinks() + " links");
+            player.sendMessage(ChatColor.GREEN + Lang.beaconLinkCreated);
+            player.sendMessage(ChatColor.GREEN + Lang.beaconNowHasLinks.replace("[number]", String.valueOf(beacon.getNumberOfLinks())));
             player.getWorld().playSound(player.getLocation(), Sound.ENTITY_FIREWORK_LARGE_BLAST, 1F, 1F);
             //player.getWorld().spawnEntity(player.getLocation(), EntityType.EXPERIENCE_ORB);
             if (Settings.pairLinking) {
@@ -1094,47 +1091,45 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                 if (standingOn.containsValue(otherBeacon)) {
                     Player otherPlayer = getServer().getPlayer(standingOn.inverse().get(otherBeacon));
                     if (otherPlayer != null) {
-                        otherPlayer.sendMessage(ChatColor.GREEN + "Link created!");
+                        otherPlayer.sendMessage(ChatColor.GREEN + Lang.beaconLinkCreated);
 
                         otherPlayer.getWorld().playSound(otherPlayer.getLocation(), Sound.ENTITY_FIREWORK_LARGE_BLAST, 1F, 1F);
                         //otherPlayer.getWorld().spawnEntity(otherPlayer.getLocation(), EntityType.EXPERIENCE_ORB);
                     }
                     // Tell the team
-                    getMessages().tellTeam(player, player.getDisplayName() + ChatColor.GREEN + " and " + otherPlayer.getDisplayName()
-                            + ChatColor.GREEN + " created a link!");
+                    getMessages().tellTeam(player, Lang.beaconNameCreatedALink.replace("[name]", player.getDisplayName()));
+                    getMessages().tellTeam(player, Lang.beaconNameCreatedALink.replace("[name]", otherPlayer.getDisplayName()));
                     // Taunt other teams
-                    getMessages().tellOtherTeams(team, ChatColor.GOLD + team.getDisplayName() + " team made a link!");
+                    getMessages().tellOtherTeams(team, ChatColor.GOLD + Lang.beaconNameCreatedALink.replace("[name]", team.getDisplayName()));
                 }
             } else {
                 // Tell the team
-                getMessages().tellTeam(player, player.getDisplayName() + ChatColor.GREEN + " created a link!");
+                getMessages().tellTeam(player, ChatColor.GREEN + Lang.beaconNameCreatedALink.replace("[name]", player.getDisplayName()));
             }
         } else {
-            player.sendMessage(ChatColor.RED + "Link could not be created!");
+            player.sendMessage(ChatColor.RED + Lang.beaconLinkCouldNotBeCreated);
             return false;
         }
         if (result.getFieldsMade() > 0) {
             if (result.getFieldsMade() == 1) {
-                player.sendMessage(ChatColor.GOLD + "Triangle created! New score = " + String.format(Locale.US, "%,d",getGameMgr().getSC(player).getScore(team, "area")));
-                getMessages().tellTeam(player, player.getDisplayName() + ChatColor.GREEN + " created a triangle! New team score = " + String.format(Locale.US, "%,d", getGameMgr().getSC(player).getScore(team, "area")));
+                player.sendMessage(ChatColor.GOLD + Lang.beaconTriangleCreated + " " + Lang.scoreNewScore + " = " + String.format(Locale.US, "%,d",getGameMgr().getSC(player).getScore(team, "area")));
+                getMessages().tellTeam(player, ChatColor.GREEN + Lang.beaconNameCreateATriangle.replace("[name]", player.getDisplayName()) + " " + Lang.scoreNewScore + " = " + String.format(Locale.US, "%,d", getGameMgr().getSC(player).getScore(team, "area")));
                 // Taunt other teams
-                getMessages().tellOtherTeams(team, ChatColor.RED + team.getDisplayName() + " team made a triangle!");
+                getMessages().tellOtherTeams(team, ChatColor.RED + Lang.beaconNameCreateATriangle.replace("[name]", team.getDisplayName()));
             } else {
-                player.sendMessage(ChatColor.GOLD + String.valueOf(result.getFieldsMade()) + " triangles created! New score = " + String.format(Locale.US, "%,d", getGameMgr().getSC(player).getScore(team, "area")));
-                getMessages().tellTeam(player, player.getDisplayName() + ChatColor.GREEN + " created " + String.valueOf(result.getFieldsMade()) + " triangles! New team score = " + String.format(Locale.US, "%,d", getGameMgr().getSC(player).getScore(team, "area")));
+                String message = (Lang.beaconNameCreateTriangles.replace("[name]", player.getDisplayName())).replace("[number]", String.valueOf(result.getFieldsMade()));
+                String newScore = Lang.scoreNewScore + " " + String.format(Locale.US, "%,d", getGameMgr().getSC(player).getScore(team, "area"));
+                player.sendMessage(ChatColor.GOLD + message + " " + newScore);
+                getMessages().tellTeam(player, ChatColor.GREEN + message + " " + newScore);
                 // Taunt other teams
-                getMessages().tellOtherTeams(team, ChatColor.RED + team.getDisplayName() + " team made " + String.valueOf(result.getFieldsMade()) + " triangles!");
+                getMessages().tellOtherTeams(team, ChatColor.RED + message);
             }
-            /*
-            for (int i = 0; i < result.getFieldsMade(); i++) {
-                player.getWorld().spawnEntity(player.getLocation(), EntityType.EXPERIENCE_ORB);
-            }*/
         }
         if (result.getFieldsFailedToMake() > 0) {
             if (result.getFieldsFailedToMake() == 1) {
-                player.sendMessage(ChatColor.RED + "One triangle could not be created because of overlapping enemy elements!");
+                player.sendMessage(ChatColor.RED + Lang.triangleCouldNotMake);
             } else {
-                player.sendMessage(ChatColor.RED + String.valueOf(result.getFieldsFailedToMake()) + " triangle could not be created because of overlapping enemy elements!");
+                player.sendMessage(ChatColor.RED + Lang.trianglesCouldNotMake.replace("[number]", String.valueOf(result.getFieldsFailedToMake())));
             }
         }
         return true;
@@ -1194,7 +1189,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                 //player.getLocation().setPitch(yaw);
                 player.getLocation().setDirection(direction);
                 player.setVelocity(new Vector(0,0,0));
-                player.sendMessage(ChatColor.YELLOW + "That's the limit of the game region, you can't go any further that way.");
+                player.sendMessage(ChatColor.YELLOW + Lang.regionLimit);
                 return true;
             }
         }
@@ -1283,7 +1278,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         // Check if to is not a triangle
         if (toTriangle.size() == 0) {
             // Leaving a control triangle
-            player.sendMessage("Leaving " + fromTriangle.get(0).getOwner().getDisplayName() + "'s control area");
+            player.sendMessage(Lang.triangleLeaving.replace("[team]", fromTriangle.get(0).getOwner().getDisplayName()));
             for (PotionEffect effect : player.getActivePotionEffects())
                 player.removePotionEffect(effect.getType());
             triangleEffects.remove(player.getUniqueId());
@@ -1291,12 +1286,12 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         }
         // Entering a field, or moving to a stronger field
         if (fromTriangle.size() < toTriangle.size()) {
-            player.sendMessage("Now entering " + toTriangle.get(0).getOwner().getDisplayName() + "'s area of control level " + toTriangle.size());
+            player.sendMessage((Lang.triangleEntering.replace("[team]", toTriangle.get(0).getOwner().getDisplayName())).replace("[level]",String.valueOf(toTriangle.size())));
         } else if (toTriangle.size() < fromTriangle.size()) {
             // Remove all current effects - the lower set will be applied below
             for (PotionEffect effect : player.getActivePotionEffects())
                 player.removePotionEffect(effect.getType());
-            player.sendMessage(toTriangle.get(0).getOwner().getDisplayName() + "'s control level dropping to " + toTriangle.size());
+            player.sendMessage((Lang.triangleDroppingToLevel.replace("[team]", toTriangle.get(0).getOwner().getDisplayName())).replace("[level]",String.valueOf(toTriangle.size())));
         }
 
         // Apply triangle effects
@@ -1499,7 +1494,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             // Store
             getBeaconzStore().storeInventory(event.getPlayer(), fromGame.getName(), event.getFrom());
             // Load lobby inv
-            getBeaconzStore().getInventory(event.getPlayer(), "Lobby");
+            getBeaconzStore().getInventory(event.getPlayer(), LOBBY);
             return;
         }
         /*
@@ -1533,7 +1528,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                 // Store
                 getBeaconzStore().storeInventory(event.getPlayer(), fromGame.getName(), event.getFrom());
                 // Get from store
-                getBeaconzStore().getInventory(event.getPlayer(), "Lobby");
+                getBeaconzStore().getInventory(event.getPlayer(), LOBBY);
                 return;
             }
 
@@ -1541,7 +1536,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                 if (DEBUG)
                     getLogger().info("DEBUG: Teleporting from lobby to a game " + toGame.getName());
                 // Store in lobby
-                getBeaconzStore().storeInventory(event.getPlayer(), "Lobby", event.getFrom());
+                getBeaconzStore().storeInventory(event.getPlayer(), LOBBY, event.getFrom());
                 // Get from store and move to last known position
                 Location newTo = getBeaconzStore().getInventory(event.getPlayer(), toGame.getName());
                 if (newTo != null) {
@@ -1591,7 +1586,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                     if (DEBUG)
                         getLogger().info("DEBUG: Player is not in this game");
                     // Send them to the lobby
-                    event.getPlayer().sendMessage(ChatColor.RED + "You are not in the game '" + toGame.getName() + "'! Going to the lobby...");
+                    event.getPlayer().sendMessage(ChatColor.RED + Lang.errorNotInGame.replace("[game]", toGame.getName()));
                     event.setTo(getGameMgr().getLobby().getSpawnPoint());
                 }
             }
@@ -1667,7 +1662,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         event.setRespawnLocation(getGameMgr().getLobby().getSpawnPoint());
         deadPlayers.remove(event.getPlayer().getUniqueId());
         // Get from store
-        getBeaconzStore().getInventory(event.getPlayer(), "Lobby");
+        getBeaconzStore().getInventory(event.getPlayer(), LOBBY);
     }
 
     /**
@@ -1696,7 +1691,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             BeaconObj beacon = getRegister().getBeaconDefenseAt(invLoc);
             if (beacon != null) {
                 if (!beacon.getOwnership().equals(team)) {
-                    player.sendMessage(ChatColor.RED + "This belongs to " + beacon.getOwnership().getDisplayName() + "!");
+                    player.sendMessage(ChatColor.RED + Lang.triangleThisBelongsTo.replace("[team]", beacon.getOwnership().getDisplayName()));
                     event.setCancelled(true);
                     return;
                 }
@@ -1704,7 +1699,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
             // Check triangle
             for (TriangleField triangle : getRegister().getTriangle(invLoc.getBlockX(), invLoc.getBlockZ())) {
                 if (!triangle.getOwner().equals(team)) {
-                    player.sendMessage(ChatColor.RED + "This belongs to " + triangle.getOwner().getDisplayName() + "!");
+                    player.sendMessage(ChatColor.RED + Lang.triangleThisBelongsTo.replace("[team]", beacon.getOwnership().getDisplayName()));
                     event.setCancelled(true);
                     return;
                 }

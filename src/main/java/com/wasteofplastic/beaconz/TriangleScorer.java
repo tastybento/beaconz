@@ -94,33 +94,7 @@ public class TriangleScorer {
                     // Try to union this triangle with the others
                     //System.out.println("DEBUG: Try to union this triangle with the others");
                     Area tempUnion = new Area(polyArea);
-                    /*
-                    pathIterator = tempUnion.getPathIterator(null);
-                    floats = new float[6];
-                    poly = new ArrayList<Point2D>();
-                    while (!pathIterator.isDone()) {
-                        pathIterator.currentSegment(floats);
-                        Point2D point = new Point2D.Float(floats[0], floats[1]);
-
-                        System.out.println("DEBUG: Poly area point " + point);
-                        poly.add(point);
-                        pathIterator.next();
-                    }
-                    System.out.println("DEBUG: Test triangle points " + tri.a + " " + tri.b + " " + tri.c);
-                     */
                     tempUnion.add(new Area(tri.getTriangle()));
-                    /*
-                    pathIterator = tempUnion.getPathIterator(null);
-                    floats = new float[6];
-                    poly = new ArrayList<Point2D>();
-                    while (!pathIterator.isDone()) {
-                        pathIterator.currentSegment(floats);
-                        Point2D point = new Point2D.Float(floats[0], floats[1]);
-
-                        System.out.println("DEBUG: Post union point " + point);
-                        poly.add(point);
-                        pathIterator.next();
-                    } */
                     // If a triangle becomes part of the polygon, then it will form another polygon
                     // isSingular checks if the resulting polygon has a single path or not
                     if (tempUnion.isSingular()) {

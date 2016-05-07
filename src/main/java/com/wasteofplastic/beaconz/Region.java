@@ -167,7 +167,7 @@ public class Region extends BeaconzPluginDependent {
     public void finishRegenerating(CommandSender sender) {
         // Wrap things up
         createCorners();
-        sender.sendMessage(ChatColor.GREEN + "Reset complete. Regenerated " + totalregen + " chunks.");
+        sender.sendMessage(ChatColor.GREEN + Lang.adminResetComplete.replace("[number]", String.valueOf(totalregen)));
     }
 
     /**
@@ -428,8 +428,8 @@ public class Region extends BeaconzPluginDependent {
      * Handles player entering the Lobby
      */
     public void enterLobby(final Player player) {
-        String titleline = "Welcome to Beaconz!";
-        String subtitleline = "Join a game, defeat opposing teams!";
+        String titleline = Lang.welcome;
+        String subtitleline = Lang.subTitle;
 
         // Welcome player in chat
         player.sendMessage(ChatColor.GREEN + titleline);
@@ -437,9 +437,9 @@ public class Region extends BeaconzPluginDependent {
 
         // Welcome player on screen
         getServer().dispatchCommand(getServer().getConsoleSender(),
-                "title " + player.getName() + " title {\"text\":\"" + titleline + "\", \"color\":\"" + "gold" + "\"}");
+                "title " + player.getName() + " title {\"text\":\"" + titleline + "\", \"color\":\"" + Lang.welcomeColor + "\"}");
         getServer().dispatchCommand(getServer().getConsoleSender(),
-                "title " + player.getName() + " subtitle {\"text\":\"" + subtitleline + "\", \"color\":\"" + "gold" + "\"}");
+                "title " + player.getName() + " subtitle {\"text\":\"" + subtitleline + "\", \"color\":\"" + Lang.subTitleColor + "\"}");
         // Show the lobby scoreboard - wait for title message to disappear
         if (this.equals(getGameMgr().getLobby())) {
 
@@ -460,24 +460,12 @@ public class Region extends BeaconzPluginDependent {
 
                         sbobj = sb.registerNewObjective("text", "dummy");
                         sbobj.setDisplaySlot(DisplaySlot.SIDEBAR);
-                        sbobj.setDisplayName(ChatColor.GREEN + "Welcome to Beaconz! ");
-                        scoreline = sbobj.getScore("You are in the lobby area.");
-                        scoreline.setScore(15);
-                        scoreline = sbobj.getScore("Hit a sign to start a game!");
-                        scoreline.setScore(14);
-                        scoreline = sbobj.getScore("Beaconz is a team game where");
-                        scoreline.setScore(13);
-                        scoreline = sbobj.getScore("you try to find, claim and link");
-                        scoreline.setScore(12);
-                        scoreline = sbobj.getScore("naturally occuring beaconz in");
-                        scoreline.setScore(11);
-                        scoreline = sbobj.getScore("the world. You can mine beaconz");
-                        scoreline.setScore(10);
-                        scoreline = sbobj.getScore("for goodies and defend them");
-                        scoreline.setScore(9);
-                        scoreline = sbobj.getScore("with blocks and traps.");
-                        scoreline.setScore(8);
-
+                        String[] lobbyInfo = Lang.lobbyInfo.split("\\|");
+                        sbobj.setDisplayName(ChatColor.GREEN + lobbyInfo[0]);
+                        for (int line = 1; line < lobbyInfo.length; line++) {
+                            scoreline = sbobj.getScore(lobbyInfo[line]);
+                            scoreline.setScore(16-line);
+                        }
                         player.setScoreboard(sb);
 
                     }
@@ -508,22 +496,22 @@ public class Region extends BeaconzPluginDependent {
             //game.getScorecard().sendPlayersHome(player, true);
 
             // Welcome player in chat
-            player.sendMessage(ChatColor.GREEN + "Welcome to Beaconz!");
-            player.sendMessage(ChatColor.AQUA + "You're playing game " + game.getName() + " in " + game.getGamemode() + " mode!");
-            player.sendMessage(ChatColor.AQUA + "You're a member of " + teamname + " team!");
+            player.sendMessage(ChatColor.GREEN + Lang.welcome);
+            player.sendMessage(ChatColor.AQUA + (Lang.startYourePlaying.replace("[name]", game.getName())).replace("[mode]", game.getGamemode()));
+            player.sendMessage(ChatColor.AQUA + Lang.startYoureAMember.replace("[name]", teamname));
             if (game.getGamegoalvalue() > 0) {
-                player.sendMessage(ChatColor.AQUA + "Your team's objective is to capture " + String.format(Locale.US, "%,d",game.getGamegoalvalue()) + " " + game.getGamegoal() + "!");
+                player.sendMessage(ChatColor.AQUA + (Lang.startObjective.replace("[value]", String.format(Locale.US, "%,d",game.getGamegoalvalue())).replace("[goal]", game.getGamegoal())));
             } else {
-                player.sendMessage(ChatColor.AQUA + "Your team's objective is to capture the most " + game.getGamegoal() + "!");
+                player.sendMessage(ChatColor.AQUA + Lang.startMostObjective.replace("[goal]", game.getGamegoal()));
             }
 
             // Welcome player on screen
-            String titleline = "Beaconz game " + game.getName() + "!";
-            String subtitleline = "You're playing " + game.getGamemode() + " mode - " + teamname + " team!";
+            String titleline = Lang.startYoureAMember.replace("[name]", teamname);
+            String subtitleline = (Lang.startYourePlaying.replace("[name]", game.getName())).replace("[mode]", game.getGamemode());
             getServer().dispatchCommand(getServer().getConsoleSender(),
-                    "title " + player.getName() + " title {\"text\":\"" + titleline + "\", \"color\":\"" + "gold" + "\"}");
+                    "title " + player.getName() + " title {\"text\":\"" + titleline + "\", \"color\":\"" + Lang.welcomeColor + "\"}");
             getServer().dispatchCommand(getServer().getConsoleSender(),
-                    "title " + player.getName() + " subtitle {\"text\":\"" + subtitleline + "\", \"color\":\"" + "gold" + "\"}");
+                    "title " + player.getName() + " subtitle {\"text\":\"" + subtitleline + "\", \"color\":\"" + Lang.subTitleColor + "\"}");
         }
     }
 
@@ -562,7 +550,7 @@ public class Region extends BeaconzPluginDependent {
                 }
         }
         if (safeloc == null) {
-            getLogger().info(ChatColor.RED + "Could not find a safe spot for region spawn point. Region at " + displayCoords() + ". Using default.");
+            getLogger().warning(ChatColor.RED + "Could not find a safe spot for region spawn point. Region at " + displayCoords() + ". Using default.");
             safeloc = getBeaconzWorld().getHighestBlockAt((int) location.getX(), (int) location.getZ()).getLocation();
             safeloc = safeloc.add(0.5, 0.0, 0.5);
             if (safeloc.getBlock().isLiquid() || safeloc.getBlock().isEmpty()) {

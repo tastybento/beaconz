@@ -42,6 +42,7 @@ import org.bukkit.event.player.PlayerBucketEmptyEvent;
 
 import com.wasteofplastic.beaconz.Beaconz;
 import com.wasteofplastic.beaconz.BeaconzPluginDependent;
+import com.wasteofplastic.beaconz.Lang;
 
 /**
  * Class to protect the top layer of blocks in the sky (the glass lines) so that they can't be broken or
@@ -72,7 +73,7 @@ public class SkyListeners extends BeaconzPluginDependent implements Listener {
         Player player = event.getPlayer();
         if (!player.isOp() && event.getBlock().getY() == BLOCK_HEIGHT) {
             event.setCancelled(true);
-            event.getPlayer().sendMessage(ChatColor.RED + "You cannot do that here!");
+            event.getPlayer().sendMessage(ChatColor.RED + Lang.errorYouCannotDoThat);
         }
     }
 
@@ -145,7 +146,7 @@ public class SkyListeners extends BeaconzPluginDependent implements Listener {
         }
         if (event.getBlockClicked().getY() == BLOCK_HEIGHT) {
             event.setCancelled(true);
-            event.getPlayer().sendMessage(ChatColor.RED + "You cannot do that here!");
+            event.getPlayer().sendMessage(ChatColor.RED + Lang.errorYouCannotDoThat);
         }
     }
 
@@ -162,7 +163,7 @@ public class SkyListeners extends BeaconzPluginDependent implements Listener {
         Player player = event.getPlayer();
         if (!player.isOp() && (event.getBlock().getY() == BLOCK_HEIGHT || event.getBlockAgainst().getY() == BLOCK_HEIGHT)) {
             event.setCancelled(true);
-            event.getPlayer().sendMessage(ChatColor.RED + "You cannot do that here!");
+            event.getPlayer().sendMessage(ChatColor.RED + Lang.errorYouCannotDoThat);
         }
     }
 
@@ -180,7 +181,7 @@ public class SkyListeners extends BeaconzPluginDependent implements Listener {
         Player player = event.getPlayer();
         if (!player.isOp() && event.getBlock().getY() == BLOCK_HEIGHT) {
             event.setCancelled(true);
-            event.getPlayer().sendMessage(ChatColor.RED + "You cannot do that here!");
+            event.getPlayer().sendMessage(ChatColor.RED + Lang.errorYouCannotDoThat);
         }
     }
 }

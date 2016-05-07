@@ -36,6 +36,7 @@ import org.bukkit.scoreboard.Team;
 import com.wasteofplastic.beaconz.Beaconz;
 import com.wasteofplastic.beaconz.BeaconzPluginDependent;
 import com.wasteofplastic.beaconz.Game;
+import com.wasteofplastic.beaconz.Lang;
 import com.wasteofplastic.beaconz.Scorecard;
 
 public class CmdHandler extends BeaconzPluginDependent implements CommandExecutor, TabCompleter {
@@ -48,7 +49,7 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
         if (!(sender instanceof Player)) {
-            sender.sendMessage("Only available to players");
+            sender.sendMessage(Lang.errorOnlyPlayers);
             return true;
         }
         Player player = (Player)sender;
@@ -68,13 +69,13 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
         case 1:
             switch (args[0].toLowerCase()) {
             case "help":
-                sender.sendMessage("/" + label + " help - this help");
-                sender.sendMessage("/" + label + " join <game> - join an ongoing game");
-                sender.sendMessage("/" + label + " leave <game> - leave a game");
-                sender.sendMessage("/" + label + " lobby - go the lobby area");
-                sender.sendMessage("/" + label + " location - tells you where you are");
-                sender.sendMessage("/" + label + " score - show the team scores");
-                sender.sendMessage("/" + label + " scoreboard - toggles the scoreboard on and off");
+                sender.sendMessage("/" + label + " help " + Lang.helpHelp);
+                sender.sendMessage("/" + label + " join <game> " + Lang.helpJoin);
+                sender.sendMessage("/" + label + " leave <game> " + Lang.helpLeave);
+                sender.sendMessage("/" + label + " lobby " + Lang.helpLobby);
+                sender.sendMessage("/" + label + " location " + Lang.helpLocation);
+                sender.sendMessage("/" + label + " score " + Lang.helpScore);
+                sender.sendMessage("/" + label + " scoreboard " + Lang.helpScoreboard);
                 break;
             case "lobby":
                 player.setScoreboard(Bukkit.getServer().getScoreboardManager().getNewScoreboard());
@@ -82,17 +83,17 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
                 break;
             case "location":
                 if (getGameMgr().isPlayerInLobby(player)) {
-                    sender.sendMessage(ChatColor.AQUA + "You're in the Beaconz Lobby at");
+                    sender.sendMessage(ChatColor.AQUA + Lang.cmdLocation);
                     sender.sendMessage(ChatColor.AQUA + getGameMgr().getLobby().displayCoords());
                 } else {
                     Game game = getGameMgr().getGame(player.getLocation());
                     if (game != null) {
-                        sender.sendMessage(ChatColor.AQUA + "You're playing Beaconz game " + game.getName());
+                        sender.sendMessage(ChatColor.AQUA + Lang.cmdYourePlaying.replace("[game]", game.getName()));
                         Scorecard sc = game.getScorecard();
                         if (sc != null && sc.getTeam(player) != null) {
-                            sender.sendMessage(ChatColor.AQUA + "You're in the " + sc.getTeam(player).getDisplayName() + " team.");
+                            sender.sendMessage(ChatColor.AQUA + Lang.youAreInTeam.replace("[team]", sc.getTeam(player).getDisplayName()));
                         } else {
-                            sender.sendMessage(ChatColor.AQUA + "You need to join a team to play in this game.");
+                            sender.sendMessage(ChatColor.AQUA + Lang.errorYouMustBeInATeam);
                         }
                         sender.sendMessage(ChatColor.AQUA + game.getRegion().displayCoords());
                     } else {
@@ -115,14 +116,14 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
                 } else {
                     Game game = getGameMgr().getGame(player.getLocation());
                     if (game == null || game.getScorecard() == null || game.getScorecard().getTeam(player) == null) {
-                        sender.sendMessage(ChatColor.GREEN + "You need to join a game in order to see the scores");
+                        sender.sendMessage(ChatColor.GREEN + Lang.errorYouMustBeInAGame);
                     } else {
                         sender.sendMessage(ChatColor.GREEN + "Game: " + game.getName());
                         Team team = game.getScorecard().getTeam(player);
                         if (team != null){
-                            sender.sendMessage(ChatColor.GREEN + "You're in the " + team.getDisplayName() + " team");
+                            sender.sendMessage(ChatColor.GREEN + Lang.youAreInTeam.replace("[team]", team.getDisplayName()));
                         } else {
-                            sender.sendMessage(ChatColor.GREEN + "You still need to join a team");
+                            sender.sendMessage(ChatColor.GREEN + Lang.errorYouMustBeInAGame);
                         }
                         showGameScores(sender, game);
                     }
@@ -152,7 +153,7 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
                 String gamename = args[1];
                 game = getGameMgr().getGame(gamename);
                 if (game == null) {
-                    sender.sendMessage(ChatColor.AQUA + "Could not find a game called " + gamename);
+                    sender.sendMessage(ChatColor.AQUA + Lang.errorNoSuchGame + " '" + gamename + "'");
                 } else {
                     game.join(player);
                 }
@@ -160,7 +161,7 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
             case "leave":
                 game = getGameMgr().getGame(player.getLocation());
                 if (game == null) {
-                    sender.sendMessage(ChatColor.AQUA + "You are not currently in a game.");
+                    sender.sendMessage(ChatColor.AQUA + Lang.errorYouMustBeInAGame);
                 } else {
                     game.leave(player);
                 }
@@ -170,8 +171,8 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
             }
             break;
         default:
-            sender.sendMessage(ChatColor.RED + "Error - unknown command. Do /" + label + " help");
-            break;
+            sender.sendMessage(ChatColor.RED + Lang.errorUnknownCommand);
+            return false;
         }
         return true;
     }

@@ -150,7 +150,7 @@ public class GameMgr extends BeaconzPluginDependent {
      * Loads games from file
      */
     public void loadAllGames() {
-        getLogger().info("DEBUG: loading all games");
+        //getLogger().info("DEBUG: loading all games");
         games.clear();
         loadGames(null);
     }
@@ -180,7 +180,7 @@ public class GameMgr extends BeaconzPluginDependent {
             // Load the lobby when it is started if it exists
             if (gameName == null) {
                 if (csec != null) {
-                    getLogger().info("DEBUG: Loading lobby from file");
+                    //getLogger().info("DEBUG: Loading lobby from file");
                     Point2D [] corners = strCoordToPts(csec.getString("region"));
                     lobby = new Region(plugin, corners);
                     String spawn = csec.getString("spawn", "");
@@ -231,7 +231,7 @@ public class GameMgr extends BeaconzPluginDependent {
      * OR we need to have the option of loading different schematics
      */
     public void createLobby() {
-        getLogger().info("DEBUG: creating lobby");
+        //getLogger().info("DEBUG: creating lobby");
         Integer rad = Settings.lobbyradius;
         Point2D ctr = new Point2D.Double(Settings.lobbyx, Settings.lobbyz);
 
@@ -240,7 +240,7 @@ public class GameMgr extends BeaconzPluginDependent {
         // Just to be safe, let's check that and try smaller areas
         // Check that lobby area is FREE. Admin is responsible for making sure it is safe
         if (!checkAreaFree(ctr, rad + 0.0)) {
-            getLogger().info("Lobby area wasn't free. Trying smaller area.");
+            getLogger().warning("Lobby area wasn't free. Trying smaller area.");
             for (int i = rad-16; i > 0; i =- 16) {
                 rad = i;
                 if (checkAreaFree(ctr, i + 0.0)) {
@@ -251,15 +251,15 @@ public class GameMgr extends BeaconzPluginDependent {
         }
 
         if (rad >= 16) {
-            getLogger().info("Creating lobby at Ctr:Rad [" + ctr.getX() + ", " + ctr.getY() + "] : " + rad);
+            //getLogger().info("Creating lobby at Ctr:Rad [" + ctr.getX() + ", " + ctr.getY() + "] : " + rad);
             Point2D c1 = new Point2D.Double(Settings.lobbyx + rad, Settings.lobbyz + rad);
             Point2D c2 = new Point2D.Double(Settings.lobbyx - rad, Settings.lobbyz - rad);
             Point2D[] corners = {c1, c2};
             lobby = new Region(plugin, corners);
             regions.put(corners, lobby);
         } else {
-            getLogger().info("Could not find a free area of at least 4 chunks for the lobby.");
-            getLogger().info("Creating a default lobby of 1 chunk at 0,0.");
+            getLogger().warning("Could not find a free area of at least 4 chunks for the lobby.");
+            getLogger().warning("Creating a default lobby of 1 chunk at 0,0.");
             Point2D c1 = new Point2D.Double(8,8);
             Point2D c2 = new Point2D.Double(-8,-8);
             Point2D[] corners = {c1, c2};
@@ -280,7 +280,7 @@ public class GameMgr extends BeaconzPluginDependent {
 
         Double radius = rup16(Settings.gameDistance / 2.0);
         if (ctr == null) {
-            getLogger().info("Could not find a location to create the next region.");
+            getLogger().warning("Could not find a location to create the next region.");
         } else {
             Point2D c1 = new Point2D.Double(rup16(ctr.getX() - radius + Settings.xCenter), rup16(ctr.getY() - radius + Settings.zCenter));
             Point2D c2 = new Point2D.Double(rup16(ctr.getX() + radius + Settings.xCenter), rup16(ctr.getY() + radius + Settings.zCenter));
@@ -293,7 +293,7 @@ public class GameMgr extends BeaconzPluginDependent {
             Game game = null;
             Boolean nametaken = (getGames().get(gameName) != null);
             if (region == null || nametaken || gameName == null) {
-                getLogger().info("Could not create new game.");
+                getLogger().warning("Could not create new game.");
             } else {
                 game = new Game(plugin, region, gameName, gamemode, nbr_teams, gamegoal, gamegoalvalue, timer, scoretypes);
                 games.put(gameName, game);
@@ -365,10 +365,10 @@ public class GameMgr extends BeaconzPluginDependent {
         //getLogger().info("GameMgr.goodNeighbor =================== from origin [" + rctr.getX() + ", " + rctr.getY() + "]" + " and distance = " + distance);
         Point2D location = null;
         // now try all four sides
-        Point2D upctr  = new Point2D.Double(rup16(rctr.getX()), rup16(rctr.getY()) + distance);
-        Point2D downctr  = new Point2D.Double(rup16(rctr.getX()), rup16(rctr.getY()) - distance);
-        Point2D rightctr   = new Point2D.Double(rup16(rctr.getX() + distance), rup16(rctr.getY()));
-        Point2D leftctr   = new Point2D.Double(rup16(rctr.getX() - distance), rup16(rctr.getY()));
+        Point2D upctr = new Point2D.Double(rup16(rctr.getX()), rup16(rctr.getY()) + distance);
+        Point2D downctr = new Point2D.Double(rup16(rctr.getX()), rup16(rctr.getY()) - distance);
+        Point2D rightctr = new Point2D.Double(rup16(rctr.getX() + distance), rup16(rctr.getY()));
+        Point2D leftctr = new Point2D.Double(rup16(rctr.getX() - distance), rup16(rctr.getY()));
 
         Double radius = rup16(Settings.gameDistance / 2.0);
         if (isAreaFree(upctr, radius) && isAreaSafe(upctr, radius, 0.4)) {
@@ -503,7 +503,7 @@ public class GameMgr extends BeaconzPluginDependent {
                 // player.sendMessage(ChatColor.RED + "You are not in a team!");
             } else {
                 if (!isPlayerInLobby(player)) {
-                    player.sendMessage(ChatColor.RED + "Player " + player.getName() + " must join a team to play in this world");
+                    //player.sendMessage(ChatColor.RED + "Player " + player.getName() + " must join a team to play in this world");
                     getLobby().tpToRegionSpawn(player);
                 }
             }

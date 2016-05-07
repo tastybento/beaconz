@@ -32,6 +32,7 @@ import org.bukkit.map.MinecraftFont;
 
 import com.wasteofplastic.beaconz.BeaconObj;
 import com.wasteofplastic.beaconz.Beaconz;
+import com.wasteofplastic.beaconz.Lang;
 
 
 public class BeaconMap extends MapRenderer {
@@ -58,14 +59,14 @@ public class BeaconMap extends MapRenderer {
             //Bukkit.getLogger().info("DEBUG: render");
             // here's where you do your drawing - see the Javadocs for the MapCanvas class for
             // the methods you can use
-            canvas.drawText(10, 10, MinecraftFont.Font, "Beacon Map #" + map.getId());
+            canvas.drawText(10, 10, MinecraftFont.Font, Lang.mapBeaconMap + " #" + map.getId());
             // Get the text
             BeaconObj beacon = plugin.getRegister().getBeaconMap(map.getId());
             if (beacon != null) {
-                canvas.drawText(10, 20, MinecraftFont.Font, "Location: " + beacon.getName());
+                canvas.drawText(10, 20, MinecraftFont.Font, Lang.location + ": " + beacon.getName());
                 canvas.setPixel(64, 64, (byte) 64);
             } else {
-                canvas.drawText(10, 20, MinecraftFont.Font, "Unknown beacon");
+                canvas.drawText(10, 20, MinecraftFont.Font, Lang.mapUnknownBeacon);
             }
         }
     }

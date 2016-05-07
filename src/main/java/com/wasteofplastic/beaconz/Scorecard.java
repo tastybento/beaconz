@@ -127,7 +127,7 @@ public class Scorecard extends BeaconzPluginDependent{
         starttimemilis = game.getStartTime();
         countdownTimer = game.getCountdownTimer();
         timertype = countdownTimer == 0 ? "openended" : "countdown";
-        getLogger().info("DEBUG: countdownTimer = " + countdownTimer + " timertype = " + timertype);
+        //getLogger().info("DEBUG: countdownTimer = " + countdownTimer + " timertype = " + timertype);
         // Define the scoreboard
         try {
             scoreboard.clearSlot(DisplaySlot.SIDEBAR);
@@ -143,12 +143,12 @@ public class Scorecard extends BeaconzPluginDependent{
 
         // Set up the scoreboard with the goal
         //getLogger().info("GameMode: " + game.getGamemode());
-        scoreobjective.setDisplayName(ChatColor.GREEN + "Beaconz " + game.getGamemode() + "! 00d 00:00:00");
+        scoreobjective.setDisplayName(ChatColor.GREEN + Lang.beaconz + " " + game.getGamemode() + "! 00d 00:00:00");
         goalstr = "";
         if (game.getGamegoalvalue() == 0) {
-            goalstr = "<< Get the most " + game.getGamegoal() + "!! >>";
+            goalstr = Lang.scoreGetTheMostGoal.replace("[goal]", game.getGamegoal());
         } else {
-            goalstr = "<< Get " + String.format(Locale.US, "%,d", game.getGamegoalvalue()) + " " + game.getGamegoal() + "!! >>";
+            goalstr = (Lang.scoreGetValueGoal.replace("[value]", String.format(Locale.US, "%,d", game.getGamegoalvalue())).replace("[goal]",game.getGamegoal()));
         }
         goalstr = ChatColor.GREEN + goalstr;
         scoreline = scoreobjective.getScore(goalstr);
@@ -164,10 +164,6 @@ public class Scorecard extends BeaconzPluginDependent{
         teamBlock = new HashMap<Team, MaterialData>();
         addTeams();
         loadTeamMembers();
-
-        // Send everyone home, restart the Game
-        // TAKING THIS OUT BECAUSE IT SHIFTS PLAYERS IF THE PLUGIN IS RELOADED.
-        //sendPlayersHome(true);
 
         // Start the timer
         runtimer();
@@ -206,7 +202,7 @@ public class Scorecard extends BeaconzPluginDependent{
                 }
             }
         }
-        if (teamcnt == 0) getLogger().info("ERROR - Scorecard.addTeams did not add any teams. Game: " + game.getName());
+        if (teamcnt == 0) getLogger().severe("Scorecard.addTeams did not add any teams. Game: " + game.getName());
     }
 
     /**
@@ -259,7 +255,7 @@ public class Scorecard extends BeaconzPluginDependent{
             // See if we have a winner
             // If the gamegoal value is zero, then the game is never ending
             if (game.getGamegoalvalue() > 0 && timertype.equals("openended") && scoretype.equals(game.getGamegoal()) && value >= game.getGamegoalvalue()) {
-                getLogger().info("DEBUG: ending game goal = " + game.getGamegoal() + " required value = " + game.getGamegoalvalue() + " actual value = " + value);
+                //getLogger().info("DEBUG: ending game goal = " + game.getGamegoal() + " required value = " + game.getGamegoalvalue() + " actual value = " + value);
                 endGame();
             }
         }
@@ -329,7 +325,7 @@ public class Scorecard extends BeaconzPluginDependent{
                     scoreentry = scoreobjective.getScore(scorestring);
                     scoreentry.setScore(sidebarline);
                 } else {
-                    getLogger().info("Could not show new team scores on the sidebar, ran out of lines. Team = " + teamName);
+                    getLogger().warning("Could not show new team scores on the sidebar, ran out of lines. Team = " + teamName);
                 }
             }
         }
@@ -428,14 +424,14 @@ public class Scorecard extends BeaconzPluginDependent{
      * @param ingameOnly
      */
     public void sendPlayersHome(Player player, boolean ingameOnly) {
-        getLogger().info("DEBUG: Send player home method called");
+        //getLogger().info("DEBUG: Send player home method called");
         Team team = getTeam(player);
         if (!ingameOnly || game.getRegion().isPlayerInRegion(player)) {
             Location loc = teamSpawnPoint.get(team);
             // Teleport player to a captured beacon
-            getLogger().info("DEBUG: Team is " + team.getName());
+            //getLogger().info("DEBUG: Team is " + team.getName());
             List<BeaconObj> beaconz = getRegister().getTeamBeacons(team);
-            getLogger().info("DEBUG: # of beaconz = " + beaconz.size());
+            //getLogger().info("DEBUG: # of beaconz = " + beaconz.size());
             if (beaconz.size() > 0) {
                 Random rand = new Random();
                 loc = beaconz.get(rand.nextInt(beaconz.size())).getLocation().add(new Vector(0,1,0));
@@ -945,14 +941,14 @@ public class Scorecard extends BeaconzPluginDependent{
      * Ends the game
      */
     public void endGame() {
-        getLogger().info("DEBUG: end game called");
+        //getLogger().info("DEBUG: end game called");
         // Stop timer
         if (timertaskid != null) timertaskid.cancel();
         // Stop keeping score
         gameON = false;
         // Change the objective line in the scoreboard
         scoreboard.resetScores(goalstr);
-        scoreline = scoreobjective.getScore(ChatColor.GREEN + "<< GAME OVER >>");
+        scoreline = scoreobjective.getScore(ChatColor.GREEN + Lang.scoreGameOver);
         scoreline.setScore(15);
         // Wait a second to let all other messages display first
         getBeaconzPlugin().getServer().getScheduler().runTaskLaterAsynchronously(getBeaconzPlugin(), new Runnable() {
@@ -960,11 +956,11 @@ public class Scorecard extends BeaconzPluginDependent{
             public void run() {
                 // Announce winner to all players
                 Team winner = frontRunner(game.getGamegoal());
-                String titleline = "Game over!!";
-                String subtitleline = "There were no winners!";
+                String titleline = Lang.scoreGameOver;
+                String subtitleline = Lang.scoreNoWinners;
                 if (winner != null) {
-                    titleline = winner.getDisplayName().toUpperCase() + " TEAM WINS!!!!!";
-                    subtitleline = "Congratulations";
+                    titleline = Lang.scoreTeamWins.replace("[team]", winner.getDisplayName().toUpperCase());
+                    subtitleline = Lang.scoreCongratulations;
                 }
                 for (Team team : scoreboard.getTeams()) {
                     for (String entry : team.getEntries()) {
@@ -974,10 +970,10 @@ public class Scorecard extends BeaconzPluginDependent{
                                     "title " + player.getName() + " title {\"text\":\"" + titleline + "\", \"color\":\"" + "gold" + "\"}");
                             getServer().dispatchCommand(getServer().getConsoleSender(),
                                     "title " + player.getName() + " subtitle {\"text\":\"" + subtitleline + "\", \"color\":\"" + "gold" + "\"}");
-                            player.sendMessage(ChatColor.GREEN + "===================================================");
+                            player.sendMessage(ChatColor.GREEN + Lang.helpLine);
                             player.sendMessage(ChatColor.YELLOW + titleline);
                             player.sendMessage(ChatColor.YELLOW + subtitleline);
-                            player.sendMessage(ChatColor.GREEN + "===================================================");
+                            player.sendMessage(ChatColor.GREEN + Lang.helpLine);
                         }
                     }
                 }

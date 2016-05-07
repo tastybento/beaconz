@@ -35,6 +35,7 @@ import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Fireball;
+import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.entity.SpectralArrow;
@@ -105,10 +106,12 @@ public class BeaconProjectileDefenseListener extends BeaconzPluginDependent impl
             Team team = projectiles.get(damager.getUniqueId());
             // Remove the projectile from the hashmap
             projectiles.remove(damager.getUniqueId());
-            // Only damage players - nothing else
+            // Only damage players or mobs
             if (!(entity instanceof Player)) {
                 //getLogger().info("DEBUG: prevented damage to non-player entity " + entity.getType());
-                event.setCancelled(true);
+                if (!(entity instanceof Monster)) {
+                    event.setCancelled(true);
+                }
                 return;
             }
             Player player = (Player)entity;
