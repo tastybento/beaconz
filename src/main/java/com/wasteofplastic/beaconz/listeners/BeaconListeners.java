@@ -129,37 +129,31 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                 BeaconObj beacon = getRegister().getBeaconAt(player.getLocation().getBlockX(), player.getLocation().getBlockZ());
                 if (beacon != null) {
                     // Add players to beacon standing
-                    standingOn.put(player.getUniqueId(), beacon);
+                    if (player.getLocation().getBlockY() >= beacon.getY() && (player.getLocation().getBlockY() < beacon.getY() + Settings.defenseHeight)) {
+                        standingOn.put(player.getUniqueId(), beacon);
+                    }
                 }
             }
         }
-        // Run a repeating task to apply effects
-        // Run a task to continuously apply effects if they exist
+        // Run a repeating task to move people off the beacon beam
         new BukkitRunnable() {
             @Override
             public void run() {
-                for (Player player: getServer().getOnlinePlayers()) {
-                    // Only apply if in the world, not in the lobby and if there's an affect to apply
-                    if (player.getWorld().equals(getBeaconzWorld()) && triangleEffects.containsKey(player.getUniqueId())
-                            && !getGameMgr().isPlayerInLobby(player)) {
-                        player.addPotionEffects(triangleEffects.get(player.getUniqueId()));
-                    }
-                    // Hurt players who stand on enemy beacons
-                    if (player.getWorld().equals(getBeaconzWorld()) && standingOn.containsKey(player.getUniqueId())
-                            && !getGameMgr().isPlayerInLobby(player)) {
-                        double health = player.getHealth() - DAMAGE;
-                        if (health < 0D) {
-                            health = 0D;
-                        } else if (health > 20D) {
-                            health = 20D;
-                        }
-                        player.setHealth(health);
-                        player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PLAYER_HURT, 3F, 3F);
-                    }
+                Iterator<Entry<UUID, BeaconObj>> it = standingOn.entrySet().iterator();
+                while (it.hasNext()) { 
+                    Entry<UUID, BeaconObj> entry = it.next();
+                    Player player = getServer().getPlayer(entry.getKey());
+                    if (player != null && player.isOnline() && player.getWorld().equals(getBeaconzWorld()) && !getGameMgr().isPlayerInLobby(player)
+                            && player.getLocation().getBlockY() > entry.getValue().getY() && player.getLocation().getBlockY() < entry.getValue().getY() + Settings.defenseHeight) {
+                        // Do something
+                        Random rand = new Random();
+                        player.setVelocity(new Vector(rand.nextGaussian(),1.2,rand.nextGaussian()));
+                        getBeaconzWorld().playSound(player.getLocation(), Sound.BLOCK_NOTE_HARP, 1F, 1F);
+                    } 
                 }
             }
         }.runTaskTimer(getBeaconzPlugin(), 0L, 20L);
-        
+
     }
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
@@ -385,6 +379,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
      */
     @EventHandler(priority = EventPriority.NORMAL)
     public void onLeave(final PlayerQuitEvent event) {
+        standingOn.remove(event.getPlayer().getUniqueId());
         if (event.getPlayer().getWorld().equals(getBeaconzWorld())) {
             for (PotionEffect effect : event.getPlayer().getActivePotionEffects())
                 event.getPlayer().removePotionEffect(effect.getType());
@@ -1243,15 +1238,14 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
         }
         // Check if a player is standing on an enemy beacon
         BeaconObj beacon = getRegister().getBeaconAt(to.getBlockX(), to.getBlockZ());
-        if (beacon != null && beacon.getOwnership() != null && !beacon.getOwnership().equals(team)) {
+        if (beacon != null && beacon.getOwnership() != null) {
             standingOn.put(player.getUniqueId(), beacon);
         } else {
-            // Remove
             standingOn.remove(player.getUniqueId());
         }
-        
+
         // Run the following if players can create links by standing on them in pairs (or more)
-                    /*
+        /*
         if (Settings.pairLinking) {
             // Check if player is standing on a beacon
             BeaconObj beacon = getRegister().getBeaconAt(to.getBlockX(), to.getBlockZ());
@@ -1290,7 +1284,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                 standingOn.remove(player.getUniqueId());
             }
         }
-        */
+         */
         // Check the From
         List<TriangleField> fromTriangle = getRegister().getTriangle(from.getBlockX(), from.getBlockZ());
         // Check the To
