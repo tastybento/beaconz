@@ -118,6 +118,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
     private final static boolean DEBUG = false;
     private final static int MAX_LINKS = 8;
     private static final String LOBBY = "Lobby";
+    protected static final double DAMAGE = 1;
 
     public BeaconListeners(Beaconz plugin) {
         super(plugin);
@@ -143,9 +144,22 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                             && !getGameMgr().isPlayerInLobby(player)) {
                         player.addPotionEffects(triangleEffects.get(player.getUniqueId()));
                     }
+                    // Hurt players who stand on enemy beacons
+                    if (player.getWorld().equals(getBeaconzWorld()) && standingOn.containsKey(player.getUniqueId())
+                            && !getGameMgr().isPlayerInLobby(player)) {
+                        double health = player.getHealth() - DAMAGE;
+                        if (health < 0D) {
+                            health = 0D;
+                        } else if (health > 20D) {
+                            health = 20D;
+                        }
+                        player.setHealth(health);
+                        player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PLAYER_HURT, 3F, 3F);
+                    }
                 }
             }
         }.runTaskTimer(getBeaconzPlugin(), 0L, 20L);
+        
     }
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
@@ -1227,8 +1241,17 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                 return true;
             }
         }
-
+        // Check if a player is standing on an enemy beacon
+        BeaconObj beacon = getRegister().getBeaconAt(to.getBlockX(), to.getBlockZ());
+        if (beacon != null && beacon.getOwnership() != null && !beacon.getOwnership().equals(team)) {
+            standingOn.put(player.getUniqueId(), beacon);
+        } else {
+            // Remove
+            standingOn.remove(player.getUniqueId());
+        }
+        
         // Run the following if players can create links by standing on them in pairs (or more)
+                    /*
         if (Settings.pairLinking) {
             // Check if player is standing on a beacon
             BeaconObj beacon = getRegister().getBeaconAt(to.getBlockX(), to.getBlockZ());
@@ -1267,6 +1290,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                 standingOn.remove(player.getUniqueId());
             }
         }
+        */
         // Check the From
         List<TriangleField> fromTriangle = getRegister().getTriangle(from.getBlockX(), from.getBlockZ());
         // Check the To
@@ -1474,6 +1498,8 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
                 getLogger().info("DEBUG: from or to world is null");
             return;
         }
+        // Remove from standing - any teleport 
+        standingOn.remove(event.getPlayer().getUniqueId());
         // If player is pushed back because of the barrier, just return
         if (barrierPlayers.contains(event.getPlayer().getUniqueId())) {
             //getLogger().info("DEBUG: ignoring barrier teleport");
