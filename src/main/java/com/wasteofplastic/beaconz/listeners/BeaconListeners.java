@@ -321,7 +321,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
      * Prevents the tipping of liquids over the beacon
      * @param event
      */
-    @EventHandler(priority = EventPriority.LOW)
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onBucketEmpty(final PlayerBucketEmptyEvent event) {
         if (DEBUG)
             getLogger().info("DEBUG: " + event.getEventName());
@@ -345,7 +345,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
      * Prevents the tipping of liquids over the beacon
      * @param event
      */
-    @EventHandler(priority = EventPriority.LOW)
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onDispense(final BlockDispenseEvent event) {
         if (DEBUG)
             getLogger().info("DEBUG: " + event.getEventName());
@@ -377,7 +377,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
      * Removes any residual beaconz effects when player logs out
      * @param event
      */
-    @EventHandler(priority = EventPriority.NORMAL)
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled=true)
     public void onLeave(final PlayerQuitEvent event) {
         standingOn.remove(event.getPlayer().getUniqueId());
         if (event.getPlayer().getWorld().equals(getBeaconzWorld())) {
@@ -390,7 +390,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
      * Processes players coming directly into the game
      * @param event
      */
-    @EventHandler(priority = EventPriority.NORMAL)
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled=true)
     public void onJoin(final PlayerJoinEvent event) {
         if (event.getPlayer().getWorld().equals(getBeaconzWorld())) {
             final Player player = event.getPlayer();
@@ -434,12 +434,15 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
      * Sends player to lobby if they enter the world
      * @param event
      */
-    @EventHandler(priority = EventPriority.HIGH)
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled=true)
     public void onWorldEnter(final PlayerChangedWorldEvent event) {
         // Entering Beaconz world
         if (event.getPlayer().getWorld().equals((getBeaconzWorld()))) {
-            // Send player to lobby
-            getGameMgr().getLobby().tpToRegionSpawn(event.getPlayer());
+            getLogger().info("DEBUG: entering world");
+            if (!getGameMgr().isPlayerInLobby(event.getPlayer())) {                
+                // Send player to lobby
+                getGameMgr().getLobby().tpToRegionSpawn(event.getPlayer());
+            }
             for (PotionEffect effect : event.getPlayer().getActivePotionEffects())
                 event.getPlayer().removePotionEffect(effect.getType());
         }
@@ -449,7 +452,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
      * Removes the scoreboard from the player, resets other world-specific items
      * @param event
      */
-    @EventHandler(priority = EventPriority.LOW)
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onWorldExit(final PlayerChangedWorldEvent event) {
         // Exiting Beaconz world
         if (event.getFrom().equals((getBeaconzWorld()))) {
@@ -466,7 +469,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
      * Prevents liquid flowing over the beacon beam
      * @param event
      */
-    @EventHandler(priority = EventPriority.LOW)
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onLiquidFlow(final BlockFromToEvent event) {
         World world = event.getBlock().getWorld();
         if (!world.equals(getBeaconzWorld())) {
@@ -768,8 +771,9 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
      */
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onSignClick(final PlayerInteractEvent event) {
+        //getLogger().info("DEBUG: click sign");
         if (getGameMgr().getLobby().isPlayerInRegion(event.getPlayer())) {
-            if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK)) {
+            if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK) || (event.getAction().equals(Action.LEFT_CLICK_BLOCK) && !event.getPlayer().isOp())) {
                 if (event.getClickedBlock().getState() instanceof Sign) {
                     Sign sign = (Sign) event.getClickedBlock().getState();
                     if (Arrays.toString(sign.getLines()).toLowerCase().contains("beaconz")) {
@@ -1025,7 +1029,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
      * Make sure all player held maps have triangle overlays. (todo: make sure all maps on item frames do as well)
      * There seem to be some bugs around this. It doesn't always take on the first try.
      */
-    @EventHandler(priority = EventPriority.MONITOR)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled=true)
     public void onMapHold(final PlayerItemHeldEvent event) {
         Player player = event.getPlayer();
         ItemStack itemInHand = player.getInventory().getItem(event.getNewSlot());
@@ -1175,8 +1179,7 @@ public class BeaconListeners extends BeaconzPluginDependent implements Listener 
      * @param to
      * @return true if the event should be canceled
      */
-    private boolean checkMove(Player player, World world, Location from,
-            Location to) {
+    private boolean checkMove(Player player, World world, Location from, Location to) {
         Region regionFrom = getGameMgr().getRegion(from);
         Region regionTo = getGameMgr().getRegion(to);
 

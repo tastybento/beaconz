@@ -267,7 +267,7 @@ public class Region extends BeaconzPluginDependent {
     @SuppressWarnings("deprecation")
     public void showBarrier(Player player, int radius) {
         Location loc = player.getLocation();
-        final Material barrier = Material.BEDROCK;
+        final Material barrier = Material.BARRIER;
         final byte color = 0;
         //Set<Block> result = new HashSet<Block>();
         int xMin = (int)corners[0].getX();
@@ -411,7 +411,7 @@ public class Region extends BeaconzPluginDependent {
      * Teleports a player to the region's spawn point
      */
     public void tpToRegionSpawn(Player player) {
-
+        //getLogger().info("DEBUG: tpToRegionSpawnPoint");
         player.teleport(spawnpoint);
         if (this.equals(getGameMgr().getLobby())) {
             enterLobby(player);
@@ -428,18 +428,15 @@ public class Region extends BeaconzPluginDependent {
      * Handles player entering the Lobby
      */
     public void enterLobby(final Player player) {
-        String titleline = Lang.welcome;
-        String subtitleline = Lang.subTitle;
-
         // Welcome player in chat
-        player.sendMessage(ChatColor.GREEN + titleline);
-        player.sendMessage(ChatColor.AQUA + subtitleline);
+        player.sendMessage(ChatColor.GREEN + Lang.welcome);
+        player.sendMessage(ChatColor.AQUA + Lang.subTitle);
 
         // Welcome player on screen
         getServer().dispatchCommand(getServer().getConsoleSender(),
-                "title " + player.getName() + " title {\"text\":\"" + titleline + "\", \"color\":\"" + Lang.welcomeColor + "\"}");
+                "title " + player.getName() + " title {\"text\":\"" + Lang.welcome + "\", \"color\":\"" + Lang.welcomeColor + "\"}");
         getServer().dispatchCommand(getServer().getConsoleSender(),
-                "title " + player.getName() + " subtitle {\"text\":\"" + subtitleline + "\", \"color\":\"" + Lang.subTitleColor + "\"}");
+                "title " + player.getName() + " subtitle {\"text\":\"" + Lang.subTitle + "\", \"color\":\"" + Lang.subTitleColor + "\"}");
         // Show the lobby scoreboard - wait for title message to disappear
         if (this.equals(getGameMgr().getLobby())) {
 
@@ -486,6 +483,7 @@ public class Region extends BeaconzPluginDependent {
      */
     public void enter(Player player) {
         if (getGameMgr().isPlayerInLobby(player)) {
+            getLogger().info("DEBUG: enter - player is in lobby, enter lobby");
             enterLobby(player);
         } else {
             Game game = getGameMgr().getGame(this);
@@ -506,12 +504,10 @@ public class Region extends BeaconzPluginDependent {
             }
 
             // Welcome player on screen
-            String titleline = Lang.startYoureAMember.replace("[name]", teamname);
-            String subtitleline = (Lang.startYourePlaying.replace("[name]", game.getName())).replace("[mode]", game.getGamemode());
             getServer().dispatchCommand(getServer().getConsoleSender(),
-                    "title " + player.getName() + " title {\"text\":\"" + titleline + "\", \"color\":\"" + Lang.welcomeColor + "\"}");
+                    "title " + player.getName() + " title {\"text\":\"" + Lang.welcome + "\", \"color\":\"" + Lang.welcomeColor + "\"}");
             getServer().dispatchCommand(getServer().getConsoleSender(),
-                    "title " + player.getName() + " subtitle {\"text\":\"" + subtitleline + "\", \"color\":\"" + Lang.subTitleColor + "\"}");
+                    "title " + player.getName() + " subtitle {\"text\":\"" + Lang.subTitle + "\", \"color\":\"" + Lang.subTitleColor + "\"}");
         }
     }
 
