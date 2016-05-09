@@ -174,16 +174,16 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
         if (block.getType().equals(Material.EMERALD_BLOCK)) {
             // Check to see if it is being placed adjacent to a beacon
             Block adjBlock = block.getRelative(BlockFace.NORTH);
-            BeaconObj adjacentBeacon = getRegister().getBeaconDefenseAt(new Point2D.Double(adjBlock.getX(), adjBlock.getZ()));
+            BeaconObj adjacentBeacon = getRegister().getBeaconAt(new Point2D.Double(adjBlock.getX(), adjBlock.getZ()));
             if (adjacentBeacon == null) {
                 adjBlock = block.getRelative(BlockFace.SOUTH);
-                adjacentBeacon = getRegister().getBeaconDefenseAt(new Point2D.Double(adjBlock.getX(), adjBlock.getZ()));
+                adjacentBeacon = getRegister().getBeaconAt(new Point2D.Double(adjBlock.getX(), adjBlock.getZ()));
                 if (adjacentBeacon == null) {
                     adjBlock = block.getRelative(BlockFace.EAST);
-                    adjacentBeacon = getRegister().getBeaconDefenseAt(new Point2D.Double(adjBlock.getX(), adjBlock.getZ()));
+                    adjacentBeacon = getRegister().getBeaconAt(new Point2D.Double(adjBlock.getX(), adjBlock.getZ()));
                     if (adjacentBeacon == null) {
                         adjBlock = block.getRelative(BlockFace.WEST);
-                        adjacentBeacon = getRegister().getBeaconDefenseAt(new Point2D.Double(adjBlock.getX(), adjBlock.getZ()));
+                        adjacentBeacon = getRegister().getBeaconAt(new Point2D.Double(adjBlock.getX(), adjBlock.getZ()));
                     }
                 }
             }
@@ -220,7 +220,7 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
         }
 
         // Check if the block is a defensive block
-        BeaconObj beacon = getRegister().getBeaconDefenseAt(new Point2D.Double(block.getX(), block.getZ()));
+        BeaconObj beacon = getRegister().getBeaconAt(new Point2D.Double(block.getX(), block.getZ()));
         if (beacon == null || beacon.getOwnership() == null) {
             return;
         }
@@ -312,7 +312,7 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
         Team team = sc.getTeam(player);
         // Check if the block is a beacon or the surrounding pyramid
         Block block = event.getBlock();
-        BeaconObj beacon = getRegister().getBeaconDefenseAt(new Point2D.Double(block.getX(), block.getZ()));
+        BeaconObj beacon = getRegister().getBeaconAt(new Point2D.Double(block.getX(), block.getZ()));
         if (beacon == null || beacon.getOwnership() == null) {
             return;
         }
@@ -391,7 +391,7 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
         Team team = sc.getTeam(player);
         // Check if the block is a beacon or the surrounding pyramid
         Block block = event.getBlock();
-        BeaconObj beacon = getRegister().getBeaconDefenseAt(new Point2D.Double(block.getX(), block.getZ()));
+        BeaconObj beacon = getRegister().getBeaconAt(new Point2D.Double(block.getX(), block.getZ()));
         if (beacon == null || beacon.getOwnership() == null) {
             return;
         }

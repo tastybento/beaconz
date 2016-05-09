@@ -245,4 +245,6 @@ goals:
 # timer in seconds, for when the goal value is greater than zero 
 timer:
   minigame: 600
-  strategy: 0  
+  strategy: 0 
+# Number of seconds a player must be stationary before they will be teleported
+teleportdelay: 5 

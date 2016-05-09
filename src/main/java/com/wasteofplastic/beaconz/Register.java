@@ -44,7 +44,6 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.entity.Player;
 import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
 import org.bukkit.scoreboard.Team;
@@ -70,10 +69,10 @@ public class Register extends BeaconzPluginDependent {
     private HashMap<Team, Set<Line2D>> links = new HashMap<Team, Set<Line2D>>();
     /**
      * Store of the blocks around a beacon. Starts as the initial 8 blocks adjacent to the
-     * beacon. Can expand as players add diamond blocks to the beacon.
+     * beacon. Can expand as players add emerald blocks to the beacon.
      */
-    private HashMap<Point2D, BeaconObj> defenseBlocks = new HashMap<Point2D, BeaconObj>();
-    private HashMap<BeaconObj, Set<Point2D>> defenseBlocksInverse = new HashMap<BeaconObj, Set<Point2D>>();
+    private HashMap<Point2D, BeaconObj> plinthBlocks = new HashMap<Point2D, BeaconObj>();
+    private HashMap<BeaconObj, Set<Point2D>> plinthBlocksInverse = new HashMap<BeaconObj, Set<Point2D>>();
 
     public void saveRegister() {
         // Save the beacons
@@ -101,13 +100,14 @@ public class Register extends BeaconzPluginDependent {
                 beaconzYml.set("beacon." + count + ".id", beacon.getId());
             }
             // Save additional blocks added to beacon
-            List<String> defenseBlocks = new ArrayList<String>();
-            for (Point2D point: defenseBlocksInverse.get(beacon)) {
-                defenseBlocks.add((int)point.getX() + ":" + (int)point.getY());
+            //getLogger().info("DEBUG: plinthBlocksInverse = " + plinthBlocksInverse.toString());
+            List<String> plinthBlocksString = new ArrayList<String>();
+            for (Point2D point: plinthBlocksInverse.get(beacon)) {
+                //getLogger().info("DEBUG: writing plinth block " + point);
+                plinthBlocksString.add((int)point.getX() + ":" + (int)point.getY());
             }
-            beaconzYml.set("beacon." + count + ".defenseblocks", defenseBlocks);
+            beaconzYml.set("beacon." + count + ".defenseblocks", plinthBlocksString);
             // Save the defenses
-            defenseBlocks.clear();
             for (Entry<Block, Integer> defensiveBlock : beacon.getDefenseBlocks().entrySet()) {
                 beaconzYml.set("beacon." + count + ".defensiveblocks."
                         + Beaconz.getStringLocation(defensiveBlock.getKey().getLocation()).replace('.', '_'), defensiveBlock.getValue());
@@ -182,7 +182,7 @@ public class Register extends BeaconzPluginDependent {
                             //BeaconObj newBeacon = new BeaconObj(getBeaconzPlugin(), x,y,z , team));
                             // Check for links
                             beaconLinks.put(newBeacon, configSec.getStringList(beacon + ".links"));
-                            // Load defense blocks
+                            // Load plinth blocks
                             List<String> defenseBlocks = configSec.getStringList(beacon + ".defenseblocks");
                             for (String defenseBlock : defenseBlocks) {
                                 String[] args2 = defenseBlock.split(":");
@@ -190,7 +190,7 @@ public class Register extends BeaconzPluginDependent {
                                     if (NumberUtils.isNumber(args2[0]) && NumberUtils.isNumber(args2[1])) {
                                         int blockX = Integer.valueOf(args2[0]);
                                         int blockZ = Integer.valueOf(args2[1]);
-                                        addBeaconDefenseBlock(blockX, blockZ, newBeacon);
+                                        addBeaconPlinthBlock(blockX, blockZ, newBeacon);
                                     }
                                 }
                             }
@@ -377,16 +377,6 @@ public class Register extends BeaconzPluginDependent {
      */
     public int getTeamArea(Team team) {
         return (int)TriangleScorer.getScore(triangleFields, team);
-        /*
-        int area = 0;
-        // Legacy scoring - so simple!
-        for (TriangleField triangle : triangleFields) {
-            if (triangle.getOwner() != null && triangle.getOwner().equals(team)) {
-                area += triangle.getArea();
-            }
-        }
-        return area;
-         */
     }
 
     /**
@@ -409,13 +399,13 @@ public class Register extends BeaconzPluginDependent {
                     beaconRegister.put(location, beacon);
                 } else {
                     // Put the defensive blocks
-                    defenseBlocks.put(location, beacon);
-                    Set<Point2D> points = defenseBlocksInverse.get(beacon);
+                    plinthBlocks.put(location, beacon);
+                    Set<Point2D> points = plinthBlocksInverse.get(beacon);
                     if (points == null) {
                         points = new HashSet<Point2D>();
                     }
                     points.add(location);
-                    defenseBlocksInverse.put(beacon, points);
+                    plinthBlocksInverse.put(beacon, points);
                     //getLogger().info("DEBUG: registered defense block at " + location + " status " + owner);
                 }
             }
@@ -593,11 +583,11 @@ public class Register extends BeaconzPluginDependent {
         //getLogger().info("DEBUG: correct material");
         Point2D point = new Point2D.Double(block.getLocation().getBlockX(),block.getLocation().getBlockZ());
 
-        // Check defense blocks
+        // Check plinth blocks
         if (block.getType().equals(Material.EMERALD_BLOCK)) {
-            if (defenseBlocks.containsKey(point)) {
+            if (plinthBlocks.containsKey(point)) {
                 // Check height
-                BeaconObj beacon = defenseBlocks.get(point);
+                BeaconObj beacon = plinthBlocks.get(point);
                 if (beacon.getY() == block.getY() + 1) {
                     // Correct height
                     return beacon;
@@ -820,7 +810,7 @@ public class Register extends BeaconzPluginDependent {
      * @param beacon
      */
     public void addBeaconDefenseBlock(Location location, BeaconObj beacon) {
-        addBeaconDefenseBlock(location.getBlockX(), location.getBlockZ(), beacon);
+        addBeaconPlinthBlock(location.getBlockX(), location.getBlockZ(), beacon);
     }
 
     /**
@@ -829,15 +819,15 @@ public class Register extends BeaconzPluginDependent {
      * @param z
      * @param beacon
      */
-    public void addBeaconDefenseBlock(int x, int z, BeaconObj beacon) {
+    public void addBeaconPlinthBlock(int x, int z, BeaconObj beacon) {
         Point2D point = new Point2D.Double(x,z);
-        defenseBlocks.put(point, beacon);
-        Set<Point2D> points = defenseBlocksInverse.get(beacon);
+        plinthBlocks.put(point, beacon);
+        Set<Point2D> points = plinthBlocksInverse.get(beacon);
         if (points == null) {
             points = new HashSet<Point2D>();
         }
         points.add(point);
-        defenseBlocksInverse.put(beacon, points);
+        plinthBlocksInverse.put(beacon, points);
     }
 
     /**
@@ -845,29 +835,31 @@ public class Register extends BeaconzPluginDependent {
      * @param point
      * @return beacon or null if it doesn't exist
      */
-    public BeaconObj getBeaconDefenseAt(Point2D point) {
-        return defenseBlocks.get(point);
+    public BeaconObj getBeaconAt(Point2D point) {
+        return plinthBlocks.get(point);
     }
 
     /**
-     * Get the beacon associated with this defensive block
+     * Get the beacon associated with this location. World and Y coord is ignored.
      * @param point
      * @return beacon or null if it doesn't exist
      */
-    public BeaconObj getBeaconDefenseAt(Location location) {
+    public BeaconObj getBeaconAt(Location location) {
         if (location == null) {
             return null;
         }
-        return defenseBlocks.get(new Point2D.Double(location.getBlockX(),location.getBlockZ()));
+        Point2D point = new Point2D.Double(location.getBlockX(),location.getBlockZ());
+        //getLogger().info("DEBUG: " + point);
+        return plinthBlocks.get(point);
     }
 
     /**
-     * Gets all the defense blocks at this beacon
+     * Gets all the plinth blocks at this beacon
      * @param beacon
      * @return Set of points
      */
     public Set<Point2D> getDefensesAtBeacon(BeaconObj beacon) {
-        return defenseBlocksInverse.get(beacon);
+        return plinthBlocksInverse.get(beacon);
     }
 
     /**
@@ -877,8 +869,8 @@ public class Register extends BeaconzPluginDependent {
      */
     public boolean isAboveBeacon(Location loc) {
         Point2D point = new Point2D.Double(loc.getBlockX(),loc.getBlockZ());
-        if (defenseBlocks.containsKey(point)) {
-            BeaconObj beacon = defenseBlocks.get(point);
+        if (plinthBlocks.containsKey(point)) {
+            BeaconObj beacon = plinthBlocks.get(point);
             // Check ownership
             if (beacon.getOwnership() == null) {
                 return false;

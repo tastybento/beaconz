@@ -189,5 +189,11 @@ public class Settings {
      * Coordinates of the chunk we're regenerating via the "reset" command
      */
     public static Set<Pair> populate = new HashSet<Pair>();
+    
+    
+    /**
+     * Number of seconds to wait until teleporting player
+     */
+    public static int teleportDelay;
 
 }

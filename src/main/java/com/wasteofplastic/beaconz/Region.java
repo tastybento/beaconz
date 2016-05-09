@@ -413,9 +413,10 @@ public class Region extends BeaconzPluginDependent {
     public void tpToRegionSpawn(Player player) {
         //getLogger().info("DEBUG: tpToRegionSpawnPoint");
         player.teleport(spawnpoint);
+        /*
         if (this.equals(getGameMgr().getLobby())) {
             enterLobby(player);
-        }
+        }*/
         // Remove any Mobs around the area
         for (Entity entity : player.getNearbyEntities(10, 10, 10)) {
             if (entity instanceof Monster) {

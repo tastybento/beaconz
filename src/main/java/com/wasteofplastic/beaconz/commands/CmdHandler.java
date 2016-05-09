@@ -38,6 +38,7 @@ import com.wasteofplastic.beaconz.BeaconzPluginDependent;
 import com.wasteofplastic.beaconz.Game;
 import com.wasteofplastic.beaconz.Lang;
 import com.wasteofplastic.beaconz.Scorecard;
+import com.wasteofplastic.beaconz.Settings;
 
 public class CmdHandler extends BeaconzPluginDependent implements CommandExecutor, TabCompleter {
 

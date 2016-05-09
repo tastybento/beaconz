@@ -293,5 +293,7 @@ public class Lang {
     
     public static String mapBeaconMap = "Beacon Map";
     public static String mapUnknownBeacon = "Unknown beacon";
+    public static String doNotMove = "Do not move, teleporting in [number] seconds!";
+    public static String youMoved = "You moved! Cancelling teleport!";
     
 }

@@ -162,6 +162,8 @@ public class Beaconz extends JavaPlugin {
      * Clears all old settings
      */
     public void loadConfig() {
+        // Load teleport delay
+        Settings.teleportDelay = getConfig().getInt("teleportdelay",5);
         // get the lobby coords and size, adjust to match chunk size
         Settings.lobbyx = (getConfig().getInt("world.lobbyx", 0) / 16) * 16;
         Settings.lobbyz = (getConfig().getInt("world.lobbyz", 0) / 16) * 16;
