@@ -46,7 +46,7 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
-import com.wasteofplastic.beaconz.listeners.BeaconListeners;
+import com.wasteofplastic.beaconz.listeners.BeaconLinkListener;
 
 /**
  * This class provides inventory, health, xp and food level swapping between games and between worlds.
@@ -248,7 +248,7 @@ public class BeaconzStore extends BeaconzPluginDependent {
                 }
                 DoubleChest chest = getChest(player, gameName);
                 IndexItem indexItem = new IndexItem(chest);
-                BeaconListeners.setTotalExperience(player, indexItem.getExp());
+                BeaconLinkListener.setTotalExperience(player, indexItem.getExp());
                 player.setHealth(indexItem.getHealth());
                 player.setFoodLevel(indexItem.getFoodLevel());
                 lastLoc = indexItem.getSpawnPoint();
@@ -312,7 +312,7 @@ public class BeaconzStore extends BeaconzPluginDependent {
         // Create the index item
         if (DEBUG)
             getLogger().info("DEBUG: creating index item");
-        IndexItem indexItem = new IndexItem(gameName, BeaconListeners.getTotalExperience(player), player.getHealth(), player.getFoodLevel(), from, player);
+        IndexItem indexItem = new IndexItem(gameName, BeaconLinkListener.getTotalExperience(player), player.getHealth(), player.getFoodLevel(), from, player);
         int itemIndex = 0;
         chestInv.setItem(itemIndex++, indexItem.getIndexItem());
         if (storeInv) {
@@ -325,7 +325,7 @@ public class BeaconzStore extends BeaconzPluginDependent {
         }
         // Clear the player's inventory
         player.getInventory().clear();
-        BeaconListeners.setTotalExperience(player, 0);
+        BeaconLinkListener.setTotalExperience(player, 0);
 
         // Done!
         if (DEBUG)

@@ -55,7 +55,7 @@ import com.wasteofplastic.beaconz.Settings;
  * @author tastybento
  *
  */
-public class BeaconDefenseListener extends BeaconzPluginDependent implements Listener {
+public class BeaconPassiveDefenseListener extends BeaconzPluginDependent implements Listener {
 
     /**
      * Maximum distance squared an emerald block can be placed from the beacon
@@ -65,7 +65,7 @@ public class BeaconDefenseListener extends BeaconzPluginDependent implements Lis
     /**
      * @param plugin
      */
-    public BeaconDefenseListener(Beaconz plugin) {
+    public BeaconPassiveDefenseListener(Beaconz plugin) {
         super(plugin);
     }
 

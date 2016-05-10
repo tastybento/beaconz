@@ -139,11 +139,6 @@ public class Settings {
     public static boolean teamChat;
 
     /**
-     * Determines how links will be created (player pairs or maps)
-     */
-    public static boolean pairLinking;
-
-    /**
      * Max height above a beacon that defenses can be built.
      */
     public static int defenseHeight;

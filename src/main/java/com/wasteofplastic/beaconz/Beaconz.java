@@ -44,11 +44,18 @@ import org.bukkit.potion.PotionEffectType;
 
 import com.wasteofplastic.beaconz.commands.AdminCmdHandler;
 import com.wasteofplastic.beaconz.commands.CmdHandler;
-import com.wasteofplastic.beaconz.listeners.BeaconDefenseListener;
-import com.wasteofplastic.beaconz.listeners.BeaconListeners;
+import com.wasteofplastic.beaconz.listeners.BeaconCaptureListener;
+import com.wasteofplastic.beaconz.listeners.BeaconLinkListener;
+import com.wasteofplastic.beaconz.listeners.BeaconPassiveDefenseListener;
 import com.wasteofplastic.beaconz.listeners.BeaconProjectileDefenseListener;
+import com.wasteofplastic.beaconz.listeners.BeaconProtectionListener;
 import com.wasteofplastic.beaconz.listeners.ChatListener;
+import com.wasteofplastic.beaconz.listeners.PlayerDeathListener;
+import com.wasteofplastic.beaconz.listeners.PlayerJoinLeaveListener;
+import com.wasteofplastic.beaconz.listeners.PlayerMovementListener;
+import com.wasteofplastic.beaconz.listeners.PlayerTeleportListener;
 import com.wasteofplastic.beaconz.listeners.SkyListeners;
+import com.wasteofplastic.beaconz.listeners.WorldListener;
 
 public class Beaconz extends JavaPlugin {
     private Register register;
@@ -71,9 +78,6 @@ public class Beaconz extends JavaPlugin {
         getCommand("beaconz").setExecutor(new CmdHandler(this));
         getCommand("badmin").setExecutor(new AdminCmdHandler(this));
 
-        //getServer().getPluginManager().registerEvents(new WorldLoader(this), this);
-
-
         // Run commands that need to be run 1 tick after start
         getServer().getScheduler().runTask(this, new Runnable() {
 
@@ -95,13 +99,19 @@ public class Beaconz extends JavaPlugin {
 
                 // Create the store world
                 beaconzStore = new BeaconzStore(plugin);
-                // Register the listeners - block break etc.
-                BeaconListeners ev = new BeaconListeners(plugin);
-                getServer().getPluginManager().registerEvents(ev, plugin);
+                // Register the listeners - block break etc. 
+                getServer().getPluginManager().registerEvents(new BeaconLinkListener(plugin), plugin);
+                getServer().getPluginManager().registerEvents(new BeaconCaptureListener(plugin), plugin);
                 getServer().getPluginManager().registerEvents(new ChatListener(plugin), plugin);
-                getServer().getPluginManager().registerEvents(new BeaconDefenseListener(plugin), plugin);
+                getServer().getPluginManager().registerEvents(new BeaconPassiveDefenseListener(plugin), plugin);
                 getServer().getPluginManager().registerEvents(new BeaconProjectileDefenseListener(plugin), plugin);
+                getServer().getPluginManager().registerEvents(new BeaconProtectionListener(plugin), plugin);
+                getServer().getPluginManager().registerEvents(new PlayerDeathListener(plugin), plugin);
+                getServer().getPluginManager().registerEvents(new PlayerJoinLeaveListener(plugin), plugin);
+                getServer().getPluginManager().registerEvents(new PlayerMovementListener(plugin), plugin);
+                getServer().getPluginManager().registerEvents(new PlayerTeleportListener(plugin), plugin);
                 getServer().getPluginManager().registerEvents(new SkyListeners(plugin), plugin);
+                getServer().getPluginManager().registerEvents(new WorldListener(plugin), plugin);
 
                 // Load messages for players
                 messages = new Messages(plugin);
@@ -290,7 +300,6 @@ public class Beaconz extends JavaPlugin {
                 }
             }
         }
-        Settings.pairLinking = getConfig().getBoolean("world.pairs", true);
         Settings.teamChat = getConfig().getBoolean("world.teamchat", false);
         Settings.worldName = getConfig().getString("world.name", "beaconz");
         Settings.distribution = getConfig().getDouble("world.distribution", 0.05D);

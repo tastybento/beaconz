@@ -34,10 +34,6 @@ world:
   # Seed adjustment
   seedadjustment: 0
   
-  # Use maps or player pairs to make links
-  # If false, maps will be used
-  pairs: false
-  
   # The base distance in blocks that players can link beacons without experience points
   # If set to -1, beacons can be any distance apart
   linkdistance: 0

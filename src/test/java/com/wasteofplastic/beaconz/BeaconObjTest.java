@@ -3,10 +3,11 @@
  */
 package com.wasteofplastic.beaconz;
 
-import java.awt.geom.Point2D;
-
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+
+import java.awt.geom.Point2D;
+
 import org.testng.annotations.Test;
 
 

@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Random;
 
-import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
