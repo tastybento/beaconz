@@ -22,9 +22,11 @@
 
 package com.wasteofplastic.beaconz.listeners;
 
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -55,6 +57,25 @@ public class BeaconSurroundListener extends BeaconzPluginDependent implements Li
     // Make breaking blocks 90% harder
     private static final double PROBABILITY = 1D;
     private static final double DAMAGE = 0D;
+    private static final Set<Material> protectedMaterials = new HashSet<Material>();
+    static {
+        protectedMaterials.add(Material.BARRIER);
+        protectedMaterials.add(Material.BEACON);
+        protectedMaterials.add(Material.BEDROCK);
+        protectedMaterials.add(Material.CLAY);
+        protectedMaterials.add(Material.COBBLESTONE);
+        protectedMaterials.add(Material.DIRT);
+        protectedMaterials.add(Material.GRASS);
+        protectedMaterials.add(Material.GRASS_PATH);
+        protectedMaterials.add(Material.HARD_CLAY);
+        protectedMaterials.add(Material.MOSSY_COBBLESTONE);
+        protectedMaterials.add(Material.OBSIDIAN);
+        protectedMaterials.add(Material.RED_SANDSTONE);
+        protectedMaterials.add(Material.SANDSTONE);
+        protectedMaterials.add(Material.SOIL);
+        protectedMaterials.add(Material.STAINED_CLAY);
+        protectedMaterials.add(Material.STONE);
+    }
 
     public BeaconSurroundListener(Beaconz plugin) {
         super(plugin);
@@ -70,6 +91,10 @@ public class BeaconSurroundListener extends BeaconzPluginDependent implements Li
             getLogger().info("DEBUG: " + event.getEventName());
         World world = event.getBlock().getWorld();
         if (!world.equals(getBeaconzWorld())) {
+            return;
+        }
+        // Only care about these blocks
+        if (!protectedMaterials.contains(event.getBlock().getType())) {
             return;
         }
         // See if this block is near a beacon
@@ -136,23 +161,22 @@ public class BeaconSurroundListener extends BeaconzPluginDependent implements Li
         Iterator<Block> it = event.blockList().iterator();
         while (it.hasNext()) {
             Block block = it.next();
-            if (DEBUG)
-                getLogger().info("DEBUG: " + block.getLocation());
-            // See if this block is near a beacon
-            List<BeaconObj> beacons = getRegister().getNearbyBeacons(block.getLocation(), RANGE);
-            if (!beacons.isEmpty()) {
-                // Check if this block is lower than beacon
-                int lowestY = getBeaconzWorld().getMaxHeight();
-                for (BeaconObj beacon : beacons) {
-                    lowestY = Math.min(lowestY, beacon.getY());
-                }
-                if (block.getY() >= lowestY - RANGE) {
+            if (protectedMaterials.contains(block.getType())) {
+                if (DEBUG)
+                    getLogger().info("DEBUG: " + block.getLocation());
+                // See if this block is near a beacon
+                List<BeaconObj> beacons = getRegister().getNearbyBeacons(block.getLocation(), RANGE);
+                if (!beacons.isEmpty()) {
+                    // Check if this block is lower than beacon
+                    int lowestY = getBeaconzWorld().getMaxHeight();
+                    for (BeaconObj beacon : beacons) {
+                        lowestY = Math.min(lowestY, beacon.getY());
+                    }
                     // Else no effect
                     it.remove();
                 }
             }
         }
     }
-
-
 }
+

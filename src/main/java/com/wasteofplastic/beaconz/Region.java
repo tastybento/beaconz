@@ -274,7 +274,7 @@ public class Region extends BeaconzPluginDependent {
         int zMin = (int)corners[0].getY();
         int xMax = (int)corners[1].getX();
         int zMax = (int)corners[1].getY();
-        if (loc.getX() - xMin < radius) {
+        if (loc.getBlockX() - xMin < radius) {
             // Close to min x
             for (int z = -radius; z < radius; z++) {
                 for (int y = -radius; y < radius; y++) {
@@ -285,7 +285,7 @@ public class Region extends BeaconzPluginDependent {
                 }
             }
         }
-        if (loc.getZ() - zMin < radius) {
+        if (loc.getBlockZ() - zMin < radius) {
             // Close to min z
             for (int x = -radius; x < radius; x++) {
                 for (int y = -radius; y < radius; y++) {
@@ -307,7 +307,7 @@ public class Region extends BeaconzPluginDependent {
                 }
             }
         }
-        if (loc.getZ() - zMin < radius) {
+        if (zMax - loc.getBlockZ() < radius) {
             // Close to max z
             for (int x = -radius; x < radius; x++) {
                 for (int y = -radius; y < radius; y++) {
