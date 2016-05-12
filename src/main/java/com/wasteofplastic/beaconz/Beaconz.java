@@ -49,6 +49,7 @@ import com.wasteofplastic.beaconz.listeners.BeaconLinkListener;
 import com.wasteofplastic.beaconz.listeners.BeaconPassiveDefenseListener;
 import com.wasteofplastic.beaconz.listeners.BeaconProjectileDefenseListener;
 import com.wasteofplastic.beaconz.listeners.BeaconProtectionListener;
+import com.wasteofplastic.beaconz.listeners.BeaconSurroundListener;
 import com.wasteofplastic.beaconz.listeners.ChatListener;
 import com.wasteofplastic.beaconz.listeners.PlayerDeathListener;
 import com.wasteofplastic.beaconz.listeners.PlayerJoinLeaveListener;
@@ -112,6 +113,7 @@ public class Beaconz extends JavaPlugin {
                 getServer().getPluginManager().registerEvents(new PlayerTeleportListener(plugin), plugin);
                 getServer().getPluginManager().registerEvents(new SkyListeners(plugin), plugin);
                 getServer().getPluginManager().registerEvents(new WorldListener(plugin), plugin);
+                getServer().getPluginManager().registerEvents(new BeaconSurroundListener(plugin), plugin);
 
                 // Load messages for players
                 messages = new Messages(plugin);

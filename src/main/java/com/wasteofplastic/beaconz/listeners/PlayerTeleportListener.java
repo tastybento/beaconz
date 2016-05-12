@@ -302,7 +302,7 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
                         // Teleport
                         player.teleport(to);
                         // If this is the lobby run the entrance welcome
-                        if (toGame.equals(LOBBY)) {
+                        if (to.getWorld().equals(getBeaconzWorld()) && toGame.equals(LOBBY)) {
                             getGameMgr().getLobby().enterLobby(player);
                         }
                     } else {

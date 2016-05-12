@@ -280,7 +280,7 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
         if (toTriangle.size() == 0) {
             // Leaving a control triangle
             player.sendMessage(Lang.triangleLeaving.replace("[team]", fromTriangle.get(0).getOwner().getDisplayName()));
-            for (PotionEffect effect : player.getActivePotionEffects())
+            for (PotionEffect effect : triangleEffects.get(player.getUniqueId()))
                 player.removePotionEffect(effect.getType());
             triangleEffects.remove(player.getUniqueId());
             return false;
@@ -290,7 +290,7 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
             player.sendMessage((Lang.triangleEntering.replace("[team]", toTriangle.get(0).getOwner().getDisplayName())).replace("[level]",String.valueOf(toTriangle.size())));
         } else if (toTriangle.size() < fromTriangle.size()) {
             // Remove all current effects - the lower set will be applied below
-            for (PotionEffect effect : player.getActivePotionEffects())
+            for (PotionEffect effect : triangleEffects.get(player.getUniqueId()))
                 player.removePotionEffect(effect.getType());
             player.sendMessage((Lang.triangleDroppingToLevel.replace("[team]", toTriangle.get(0).getOwner().getDisplayName())).replace("[level]",String.valueOf(toTriangle.size())));
         }
@@ -310,7 +310,7 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
     private void applyEffects(final Player player, final List<TriangleField> to, final Team team) {
         //getLogger().info("DEBUG: applying effects");
         if (to == null || to.isEmpty() || team == null) {
-            for (PotionEffect effect : player.getActivePotionEffects())
+            for (PotionEffect effect : triangleEffects.get(player.getUniqueId()))
                 player.removePotionEffect(effect.getType());
             triangleEffects.remove(player.getUniqueId());
             return;
