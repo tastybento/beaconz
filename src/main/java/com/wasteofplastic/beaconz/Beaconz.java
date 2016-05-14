@@ -23,6 +23,7 @@
 package com.wasteofplastic.beaconz;
 
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -599,11 +600,12 @@ public class Beaconz extends JavaPlugin {
      * @param l
      * @return String of location
      */
-    static public String getStringLocation(final Location location) {
-        if (location == null || location.getWorld() == null) {
+    static public String getStringLocation(final Location l) {
+        if (l == null || l.getWorld() == null) {
             return "";
         }
-        return location.getWorld().getName() + ":" + location.getX() + ":" + location.getY() + ":" + location.getZ() + ":" + Float.floatToIntBits(location.getYaw()) + ":" + Float.floatToIntBits(location.getPitch());
+        DecimalFormat df1 = new DecimalFormat(".#");
+        return l.getWorld().getName() + ":" + df1.format(l.getX()) + ":" + df1.format(l.getY()) + ":" + df1.format(l.getZ()) + ":" + Float.floatToIntBits(l.getYaw()) + ":" + Float.floatToIntBits(l.getPitch());
     }
 
 
@@ -612,7 +614,7 @@ public class Beaconz extends JavaPlugin {
      * empty
      *
      * @param s
-     *            - serialized location in format "world:x:y:z"
+     *            - serialized location in format "world:x:y:z:yaw:pitch"
      * @return Location
      */
     static public Location getLocationString(final String s) {
@@ -631,6 +633,8 @@ public class Beaconz extends JavaPlugin {
             final float yaw = Float.intBitsToFloat(Integer.parseInt(parts[4]));
             final float pitch = Float.intBitsToFloat(Integer.parseInt(parts[5]));
             return new Location(w, x, y, z, yaw, pitch);
+        } else {
+            Bukkit.getLogger().severe("Format of location string is wrong!");
         }
         return null;
     }

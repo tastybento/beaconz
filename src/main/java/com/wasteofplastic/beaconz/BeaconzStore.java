@@ -71,9 +71,9 @@ public class BeaconzStore extends BeaconzPluginDependent {
     private World beaconzStoreWorld;
     private HashMap<UUID,HashMap<String,Location>> index = new HashMap<UUID, HashMap<String,Location>>();
     private List<Location> emptyChests = new ArrayList<Location>();
-    private int lastX;
-    private int lastY;
-    private int lastZ;
+    private int lastX = 0;
+    private int lastY = 4;
+    private int lastZ = 0;
     private YamlConfiguration ymlIndex;
     private File indexFile;
     private static final boolean DEBUG = false;
@@ -116,6 +116,9 @@ public class BeaconzStore extends BeaconzPluginDependent {
                 tempList.add(Beaconz.getStringLocation(loc));
             }
             ymlIndex.set("emptyChests", tempList);
+            ymlIndex.set("lastX", lastX);
+            ymlIndex.set("lastY", lastY);
+            ymlIndex.set("lastZ", lastZ);
             // Save file
             ymlIndex.save(indexFile);
         } catch (Exception e) {
@@ -159,6 +162,10 @@ public class BeaconzStore extends BeaconzPluginDependent {
             for (String loc : tempList) {
                 emptyChests.add(Beaconz.getLocationString(loc));
             }
+            // Get the next last location
+            lastX = ymlIndex.getInt("lastX");
+            lastY = ymlIndex.getInt("lastY");
+            lastZ = ymlIndex.getInt("lastZ");
         } catch (Exception e) {
             // Something went wrong
             getLogger().severe("Could not load inventory index file, rebuilding");
@@ -333,7 +340,7 @@ public class BeaconzStore extends BeaconzPluginDependent {
     }
 
     /**
-     * Gets the chest for this player for this game name
+     * Gets the chest for this player for this game name. If one does not exist, it is made.
      * @param player
      * @param gameName
      * @return Chest

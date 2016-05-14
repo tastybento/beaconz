@@ -60,6 +60,7 @@ import org.bukkit.scoreboard.Team;
 import org.bukkit.util.Vector;
 
 public class Scorecard extends BeaconzPluginDependent{
+    private static final Integer MAXSCORELENGTH = 10;
     private Boolean gameON;
     private Game game;
     private String gameName;
@@ -286,7 +287,7 @@ public class Scorecard extends BeaconzPluginDependent{
             HashMap<String,Integer> stypes = score.get(team);
             int sv = 0;
             if (stypes != null && stypes.get(scoretype) != null) sv = stypes.get(scoretype);
-            String scorestring = fixScoreString(team, scoretype, sv, 8);
+            String scorestring = fixScoreString(team, scoretype, sv, MAXSCORELENGTH);
 
             String oldentry = sbEntry(team, scoretype);
             int line = scoreobjective.getScore(oldentry).getScore();
@@ -349,7 +350,7 @@ public class Scorecard extends BeaconzPluginDependent{
         String teamcolor = teamChatColor(team);
         String fixedstring = "";
         String formattedScore = String.format(Locale.US, "%,d", score);
-        String padstring = "____________________".substring(0, maxlen - 1 - formattedScore.length());
+        String padstring = "____________________".substring(0, Math.max(0, maxlen - 1 - formattedScore.length()));
         fixedstring = ChatColor.GRAY + padstring + ChatColor.valueOf(teamcolor) + formattedScore + " " + team.getDisplayName() + " " + scorename;
         return fixedstring;
     }
