@@ -249,6 +249,8 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
 
         // Nothing from here on applies to Lobby...
         if (getGameMgr().isPlayerInLobby(player)) {
+            for (PotionEffect effect : player.getActivePotionEffects())
+                player.removePotionEffect(effect.getType());
             triangleEffects.remove(player.getUniqueId());
             return false;
         }
@@ -274,6 +276,9 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
         List<TriangleField> toTriangle = getRegister().getTriangle(to.getBlockX(), to.getBlockZ());
         // Outside any field
         if (fromTriangle.isEmpty() && toTriangle.isEmpty()) {
+            for (PotionEffect effect : player.getActivePotionEffects())
+                player.removePotionEffect(effect.getType());
+            triangleEffects.remove(player.getUniqueId());
             return false;
         }
         // Check if to is not a triangle

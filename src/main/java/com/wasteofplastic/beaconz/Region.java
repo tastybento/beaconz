@@ -518,6 +518,10 @@ public class Region extends BeaconzPluginDependent {
      * If no safe location within radius is found, this creates a safe spot by converting the block at location to
      */
     public Location findSafeSpot (Location location, Integer radius) {
+        // Check actual first location
+        if (isLocationSafe(location)) {
+            return location;
+        }
         if (radius > 20) radius = 20;
         Location safeloc = null;
         if (location != null) {
