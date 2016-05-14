@@ -100,13 +100,21 @@ public class BeaconzStore extends BeaconzPluginDependent {
      * Saves the location of all the chests to a file
      */
     public void saveIndex() {
+        if (DEBUG) {
+            getLogger().info("DEBUG: index: " + index);
+        }
         ymlIndex = new YamlConfiguration();
         try {
             // Save the index
-            HashMap<String, Location> locations = new HashMap<String, Location>();
             for (UUID uuid: index.keySet()) {
-                locations = index.get(uuid);
+                if (DEBUG)
+                    getLogger().info("DEBUG: saving player UUID + " + uuid.toString());
+                HashMap<String, Location> locations = index.get(uuid);
+                if (DEBUG)
+                    getLogger().info("DEBUG: Player has " + locations.size() + " games to store");
                 for (String gameName: locations.keySet()) {
+                    if (DEBUG)
+                        getLogger().info("DEBUG: Storing gamename " + gameName + " located at " + locations.get(gameName));
                     ymlIndex.set("index." + uuid.toString() + "." + gameName, Beaconz.getStringLocation(locations.get(gameName)));
                 }
             }
@@ -145,16 +153,17 @@ public class BeaconzStore extends BeaconzPluginDependent {
             ymlIndex.load(indexFile);
             // Parse
             ConfigurationSection players = ymlIndex.getConfigurationSection("index");
-            if (players != null) {
-                HashMap<String, Location> locations = new HashMap<String, Location>();
+            if (players != null) {               
                 for (String uuid : players.getValues(false).keySet()) {
+                    HashMap<String, Location> locations = new HashMap<String, Location>();
                     UUID playerUUID = UUID.fromString(uuid);
-                    locations.clear();
                     ConfigurationSection chestLocations = players.getConfigurationSection(uuid);
                     for (String gameName : chestLocations.getValues(false).keySet()) {
                         locations.put(gameName, Beaconz.getLocationString(chestLocations.getString(gameName)));
                     }
                     index.put(playerUUID, locations);
+                    if (DEBUG)
+                        getLogger().info("DEBUG: 1 Loading index for " + playerUUID);
                 }
             }
             // Get empty chests
@@ -205,6 +214,8 @@ public class BeaconzStore extends BeaconzPluginDependent {
                             temp = index.get(uuid);
                         }
                         temp.put(info.get(1), chestBlock.getLocation());
+                        if (DEBUG)
+                            getLogger().info("DEBUG: 2 Storing index for " + uuid);
                         index.put(uuid, temp);
                     }
                 } else {
@@ -346,6 +357,8 @@ public class BeaconzStore extends BeaconzPluginDependent {
      * @return Chest
      */
     private DoubleChest getChest(Player player, String gameName) {
+        if (DEBUG)
+            getLogger().info("DEBUG: index = " + index);
         Block chestBlock = beaconzStoreWorld.getBlockAt(lastX, lastY, lastZ);
         // Find out if they have a chest already
         if (!index.containsKey(player.getUniqueId())) {
@@ -375,6 +388,8 @@ public class BeaconzStore extends BeaconzPluginDependent {
             // Store in index
             HashMap<String,Location> placeHolder = new HashMap<String,Location>();
             placeHolder.put(gameName,chestBlock.getLocation());
+            if (DEBUG)
+                getLogger().info("DEBUG: 3 Storing index for " + player.getName() + " for game " + gameName);
             index.put(player.getUniqueId(), placeHolder);
         } else {
             if (DEBUG)
@@ -413,8 +428,12 @@ public class BeaconzStore extends BeaconzPluginDependent {
                 HashMap<String,Location> placeHolder = index.get(player.getUniqueId());
                 placeHolder.put(gameName,chestBlock.getLocation());
                 index.put(player.getUniqueId(), placeHolder);
+                if (DEBUG)
+                    getLogger().info("DEBUG: 4 Storing index for " + player.getName() + " for game " + gameName);
             }
         }
+        if (DEBUG)
+            getLogger().info("DEBUG: index = " + index);
         // Return the chest
         Chest chest = (Chest)(chestBlock.getState());
         return (DoubleChest)(chest.getInventory().getHolder());
