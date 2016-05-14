@@ -205,6 +205,8 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
                     getRegister().setBeaconOwner(beacon,team);
                     player.sendMessage(ChatColor.GREEN + Lang.beaconYouCapturedABeacon);
                     giveBeaconMap(player,beacon);
+                    // Save for safety
+                    getRegister().saveRegister();
                 } else {
                     if (DEBUG)
                         getLogger().info("DEBUG: another block");
@@ -371,10 +373,10 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
         getRegister().addBeaconMap(map.getId(), beacon);
         //getLogger().info("DEBUG: beacon id = " + beacon.getId());
         // Put map into hand
-        ItemStack inHand = player.getInventory().getItemInMainHand();
+        //ItemStack inHand = player.getInventory().getItemInMainHand();
         ItemStack offHand = player.getInventory().getItemInOffHand();
-        player.getInventory().setItemInMainHand(newMap);
-        player.getInventory().setItemInOffHand(inHand);
+        player.getInventory().setItemInOffHand(newMap);
+        //player.getInventory().setItemInOffHand(inHand);
         if (offHand != null && !offHand.getType().equals(Material.AIR)) {
             HashMap<Integer, ItemStack> leftOvers = player.getInventory().addItem(offHand);
             if (!leftOvers.isEmpty()) {

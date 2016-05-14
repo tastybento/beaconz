@@ -147,10 +147,14 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
         // If player is teleporting, then ignore this event
         if (teleportingPlayers.containsKey(event.getPlayer().getUniqueId())) {
             return;
-        }            
+        }    
         if (event.getFrom().getWorld() == null || event.getTo().getWorld() == null) {
             if (DEBUG)
                 getLogger().info("DEBUG: from or to world is null");
+            return;
+        }
+        if (event.getFrom().getWorld() != getBeaconzWorld()) {
+            // Ignore
             return;
         }
         // Remove from standing - any teleport 

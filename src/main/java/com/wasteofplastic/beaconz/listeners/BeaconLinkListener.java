@@ -151,12 +151,16 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
                     player.sendMessage(ChatColor.GREEN + Lang.beaconTheMapDisintegrates);
                     player.setItemInHand(null);
                     removeExp(player, (int)(distance/Settings.expDistance));
+                    // Save for safety
+                    getRegister().saveRegister();
                 }
             } else {
                 // No exp required
                 if (linkBeacons(player, team, beacon, mappedBeacon)) {
                     player.sendMessage(ChatColor.GREEN + Lang.beaconTheMapDisintegrates);
                     player.setItemInHand(null);
+                    // Save for safety
+                    getRegister().saveRegister();
                 }
             }
 
