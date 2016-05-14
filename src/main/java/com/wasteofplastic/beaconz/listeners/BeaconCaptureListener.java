@@ -22,6 +22,7 @@
 
 package com.wasteofplastic.beaconz.listeners;
 
+import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.Random;
 
@@ -371,8 +372,19 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
         //getLogger().info("DEBUG: beacon id = " + beacon.getId());
         // Put map into hand
         ItemStack inHand = player.getInventory().getItemInMainHand();
+        ItemStack offHand = player.getInventory().getItemInOffHand();
         player.getInventory().setItemInMainHand(newMap);
-        player.getInventory().addItem(inHand);
+        player.getInventory().setItemInOffHand(inHand);
+        if (offHand != null && !offHand.getType().equals(Material.AIR)) {
+            HashMap<Integer, ItemStack> leftOvers = player.getInventory().addItem(offHand);
+            if (!leftOvers.isEmpty()) {
+                player.sendMessage(ChatColor.RED + Lang.errorInventoryFull);
+                for (ItemStack item: leftOvers.values()) {
+                    player.getWorld().dropItem(player.getLocation(), item);
+                    player.getWorld().playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 1F, 0.5F);
+                }
+            }
+        }
     }
 
 }
