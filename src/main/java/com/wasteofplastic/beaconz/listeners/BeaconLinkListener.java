@@ -90,6 +90,11 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
         if (getGameMgr().isPlayerInLobby(player)) {
             return;
         }
+        // Check that there is paper or map in the MAIN hand
+        ItemStack mainHand = player.getInventory().getItemInMainHand();
+        if (!mainHand.equals(event.getItem())) {
+            return;
+        }
         // Get the player's team
         Team team = getGameMgr().getPlayerTeam(player);
         if (team == null) {

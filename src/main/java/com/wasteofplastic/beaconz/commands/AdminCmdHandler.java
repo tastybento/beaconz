@@ -633,38 +633,6 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                 sender.sendMessage(ChatColor.RED + Lang.errorNoSuchGame + " '" + name + "'");
             } 
         }
-        
-        /*
-        for (Game game : getGameMgr().getGames().values()) {
-            String gameName = game.getName();
-            if (name.toLowerCase().equals("all") || gameName.toLowerCase().equals(name.toLowerCase())) {
-                gamecnt++;
-                count = 0;
-                sender.sendMessage(ChatColor.GREEN + Lang.adminListBeaconsInGame.replace("[name]", gameName));
-                for (BeaconObj b : getRegister().getBeaconRegister().values()) {
-                    if (game.getRegion().containsBeacon(b)) {
-                        count++;
-                        String owner = Lang.unowned;
-                        if (b.getOwnership() != null) {
-                            owner = b.getOwnership().getName();
-                        }
-                        if (search.isEmpty() || owner.equalsIgnoreCase(search)) {
-                            sender.sendMessage(b.getLocation().getBlockX() + "," + b.getLocation().getBlockY() + "," + b.getLocation().getBlockZ() + " >> " + Lang.team + ": " 
-                                    + (b.getOwnership() == null ? Lang.unowned :b.getOwnership().getDisplayName()) + " >> " + Lang.links + ": " + b.getLinks().size());
-                        }
-                    }
-                }
-                if (count == 0) sender.sendMessage(Lang.none);
-            }
-        }
-        if (gamecnt == 0) {
-            if (name.equals("all")) {
-                sender.sendMessage(Lang.errorNoGames);
-            } else {
-                sender.sendMessage(ChatColor.RED + Lang.errorNoSuchGame + "'" + name + "'");
-            }
-        }
-        */
     }
 
     /**
