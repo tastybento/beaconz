@@ -24,6 +24,13 @@ package com.wasteofplastic.beaconz;
 
 import java.awt.geom.Line2D;
 
+/**
+ * Provides the result of a linking of beacons.
+ * Provides the number of fields made, the number that were failed to be made,
+ * whether the linking was successful or not and the resulting Line2D link.
+ * @author tastybento
+ *
+ */
 public class LinkResult {
     // The number of triangles successfully made
     private int fieldsMade;

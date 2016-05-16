@@ -151,8 +151,8 @@ public class Lang {
     public static String regionLimit = "That's the limit of the game region, you can't go any further that way.";
 
     public static String triangleLeaving = "Leaving [team]'s control area";
-    public static String triangleEntering = "Now entering [team]'s control area level [level]";
-    public static String triangleDroppingToLevel = "[team]'s control level dropping to [level]";
+    public static String triangleEntering = ChatColor.GRAY + "Now entering [team]'s control area level [level]";
+    public static String triangleDroppingToLevel = ChatColor.GRAY + "[team]'s control level dropping to [level]";
     public static String triangleCouldNotMake = "One triangle could not be created because of overlapping enemy elements!";
     public static String trianglesCouldNotMake = "[number] triangles could not be created because of overlapping enemy elements!";
     public static String triangleThisBelongsTo = "This belongs to [team]!";

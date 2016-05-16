@@ -27,12 +27,15 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.TreeMap;
 
 import org.apache.commons.lang.math.NumberUtils;
 import org.bukkit.Bukkit;
@@ -78,6 +81,7 @@ public class Register extends BeaconzPluginDependent {
         // Save the beacons
         File beaconzFile = new File(getBeaconzPlugin().getDataFolder(),"beaconz.yml");
         YamlConfiguration beaconzYml = new YamlConfiguration();
+        List<BeaconPair> beaconPairs = new ArrayList<BeaconPair>();
         // Backup the beacons file just in case
         if (beaconzFile.exists()) {
             File backup = new File(getBeaconzPlugin().getDataFolder(),"beaconz.old");
@@ -91,9 +95,15 @@ public class Register extends BeaconzPluginDependent {
             }
             beaconzYml.set("beacon." + count + ".location", beacon.getX() + ":" + beacon.getY() + ":" + beacon.getZ()
                     + ":" + owner);
+            // Add timestamp
             List<String> beaconLinks = new ArrayList<String>();
             for (BeaconObj linkedBeacon: beacon.getLinks()) {
-                beaconLinks.add(linkedBeacon.getX() +":" + linkedBeacon.getZ());
+                // Do not store duplicate links
+                BeaconPair newPair = new BeaconPair(beacon, linkedBeacon, beacon.getLinkTime(linkedBeacon));
+                if (!beaconPairs.contains(newPair)) {
+                    beaconPairs.add(newPair);
+                    beaconLinks.add(linkedBeacon.getX() +":" + linkedBeacon.getZ()+ ":" + linkedBeacon.getLinkTime(beacon));
+                } 
             }
             beaconzYml.set("beacon." + count + ".links", beaconLinks);
             if (beacon.getId() != null) {
@@ -230,16 +240,48 @@ public class Register extends BeaconzPluginDependent {
             }
         }
         // Add links
+        List<BeaconPair> beaconPairs = new ArrayList<BeaconPair>();
+        long count = 0;
         for (BeaconObj beacon: beaconLinks.keySet()) {
             for (String link : beaconLinks.get(beacon)) {
                 String[] args = link.split(":");
                 BeaconObj dest = beaconRegister.get(new Point2D.Double(Double.valueOf(args[0]), Double.valueOf(args[1])));
                 if (dest != null) {
-                    LinkResult result = beacon.addOutboundLink(dest);
-                    if (result.isSuccess()) {
-                        addBeaconLink(beacon.getOwnership(), result.getLink());
+                    Long linkTime = 0L;
+                    if (args.length == 3) {
+                        linkTime = Long.valueOf(args[2]);
+                    } else {
+                        count += 1000;
+                        linkTime = count;
+                    }
+                    BeaconPair newBeaconPair = new BeaconPair(beacon, dest,linkTime);
+                    // Duplicates are made when the link is made below
+                    if (!beaconPairs.contains(newBeaconPair)) {
+                        beaconPairs.add(newBeaconPair);
+                    } else {
+                        getLogger().warning("Removed duplicate link");
                     }
                 }
+            }
+        }
+        // Sort the list
+        //getLogger().info("DEBUG: number of beacon links: " + beaconPairs.size());
+        Collections.sort(beaconPairs);
+        // Create the links in the same order they were created
+        for (BeaconPair beaconPair: beaconPairs) {
+            BeaconObj beacon1 = beaconPair.getBeacon1();
+            BeaconObj beacon2 = beaconPair.getBeacon2();
+            LinkResult result = beacon1.addOutboundLink(beacon2, beaconPair.getTimeStamp());
+            if (result.isSuccess()) {
+                /*
+                getLogger().info("DEBUG: Trying to link beacons owned by " + beacon1.getOwnership().getName());
+                getLogger().info("DEBUG: Timestamp: " + new Date(beaconPair.getTimeStamp()));
+                getLogger().info("DEBUG: " + beacon1.getX() + "," + beacon1.getZ() + " to " + beacon2.getX() + "," + beacon2.getZ());
+                getLogger().info("DEBUG: link was successful");
+                getLogger().info("DEBUG: fields made " + result.getFieldsMade());
+                getLogger().info("DEBUG: fields failed to make " + result.getFieldsFailedToMake());
+                */ 
+                addBeaconLink(beacon1.getOwnership(), result.getLink());
             }
         }
         // Score and control fields should be automatically created

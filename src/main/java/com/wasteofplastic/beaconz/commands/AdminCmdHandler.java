@@ -606,8 +606,35 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
      * @param search - team name to show
      */
     public void listBeacons(CommandSender sender, String name, String search) {
-        int count = 0;
-        int gamecnt = 0;
+        // Run through all the beacons
+        sender.sendMessage(ChatColor.GREEN + Lang.adminListBeaconsInGame.replace("[name]", name));
+        boolean none = true;
+        boolean noGame = true;
+        for (BeaconObj b : getRegister().getBeaconRegister().values()) { 
+            // Find the game this beacon is in
+            Game game = getGameMgr().getGame(b.getLocation());
+            if (name.equalsIgnoreCase("all") || game.getName().equalsIgnoreCase(name)) {
+                noGame = false;
+                // Find the team
+                if (search.isEmpty() || (search.equalsIgnoreCase("unowned") && b.getOwnership() == null) || (b.getOwnership() != null && b.getOwnership().getName().equalsIgnoreCase(search))) {
+                    none = false;
+                    sender.sendMessage(game.getName() + ": " + b.getLocation().getBlockX() + "," + b.getLocation().getBlockY() + "," + b.getLocation().getBlockZ() + " >> " + Lang.team + ": " 
+                            + (b.getOwnership() == null ? Lang.unowned :b.getOwnership().getDisplayName()) + " >> " + Lang.links + ": " + b.getLinks().size());
+                }
+            }
+        }
+        if (none) {
+            sender.sendMessage(Lang.none);  
+        }
+        if (noGame) {
+            if (name.equals("all")) {
+                sender.sendMessage(Lang.errorNoGames);
+            } else {
+                sender.sendMessage(ChatColor.RED + Lang.errorNoSuchGame + " '" + name + "'");
+            } 
+        }
+        
+        /*
         for (Game game : getGameMgr().getGames().values()) {
             String gameName = game.getName();
             if (name.toLowerCase().equals("all") || gameName.toLowerCase().equals(name.toLowerCase())) {
@@ -637,6 +664,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                 sender.sendMessage(ChatColor.RED + Lang.errorNoSuchGame + "'" + name + "'");
             }
         }
+        */
     }
 
     /**
