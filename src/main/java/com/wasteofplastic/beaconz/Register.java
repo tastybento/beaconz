@@ -28,14 +28,12 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.TreeMap;
 
 import org.apache.commons.lang.math.NumberUtils;
 import org.bukkit.Bukkit;
@@ -69,7 +67,9 @@ public class Register extends BeaconzPluginDependent {
     private HashMap<Short, BeaconObj> beaconMaps = new HashMap<Short, BeaconObj>();
     private HashMap<Point2D, BeaconObj> beaconRegister = new HashMap<Point2D, BeaconObj>();
     private Set<TriangleField> triangleFields = new HashSet<TriangleField>();
-    private HashMap<Team, Set<Line2D>> links = new HashMap<Team, Set<Line2D>>();
+    //private HashMap<Team, Set<Line2D>> links = new HashMap<Team, Set<Line2D>>();
+    private HashMap<Game,List<BeaconLink>> beaconLinks = new HashMap<Game, List<BeaconLink>>();
+
     /**
      * Store of the blocks around a beacon. Starts as the initial 8 blocks adjacent to the
      * beacon. Can expand as players add emerald blocks to the beacon.
@@ -80,8 +80,8 @@ public class Register extends BeaconzPluginDependent {
     public void saveRegister() {
         // Save the beacons
         File beaconzFile = new File(getBeaconzPlugin().getDataFolder(),"beaconz.yml");
+        Set<BeaconLink> storedLinks = new HashSet<BeaconLink>();
         YamlConfiguration beaconzYml = new YamlConfiguration();
-        List<BeaconPair> beaconPairs = new ArrayList<BeaconPair>();
         // Backup the beacons file just in case
         if (beaconzFile.exists()) {
             File backup = new File(getBeaconzPlugin().getDataFolder(),"beaconz.old");
@@ -89,23 +89,29 @@ public class Register extends BeaconzPluginDependent {
         }
         int count = 0;
         for (BeaconObj beacon : beaconRegister.values()) {
+            Game game = getGameMgr().getGame(beacon.getPoint());
+            String gameName = game == null? "None":game.getName();
+            beaconzYml.set("beacon." + count + ".game",gameName);
             String owner = "unowned";
             if (beacon.getOwnership() != null) {
                 owner = beacon.getOwnership().getName();
             }
             beaconzYml.set("beacon." + count + ".location", beacon.getX() + ":" + beacon.getY() + ":" + beacon.getZ()
                     + ":" + owner);
-            // Add timestamp
-            List<String> beaconLinks = new ArrayList<String>();
-            for (BeaconObj linkedBeacon: beacon.getLinks()) {
-                // Do not store duplicate links
-                BeaconPair newPair = new BeaconPair(beacon, linkedBeacon, beacon.getLinkTime(linkedBeacon));
-                if (!beaconPairs.contains(newPair)) {
-                    beaconPairs.add(newPair);
-                    beaconLinks.add(linkedBeacon.getX() +":" + linkedBeacon.getZ()+ ":" + linkedBeacon.getLinkTime(beacon));
-                } 
+            // Store links
+            if (game != null) {
+                List<String> beaconStringLinks = new ArrayList<String>();
+                if (beaconLinks.containsKey(game)) {
+                    for (BeaconLink link : beaconLinks.get(game)) {
+                        if (!storedLinks.contains(link) && link.getBeacon1().equals(beacon)) {
+                            beaconStringLinks.add(link.getBeacon2().getX() +":" + link.getBeacon2().getZ()+ ":" + link.getTimeStamp());
+                            // Only store the link once. Reduces file size and when it is loaded the reverse link will be auto made.
+                            storedLinks.add(link);
+                        }
+                    }
+                    beaconzYml.set("beacon." + count + ".links", beaconStringLinks);
+                }
             }
-            beaconzYml.set("beacon." + count + ".links", beaconLinks);
             if (beacon.getId() != null) {
                 beaconzYml.set("beacon." + count + ".id", beacon.getId());
             }
@@ -144,7 +150,7 @@ public class Register extends BeaconzPluginDependent {
     }
 
     /**
-     * Loads register info
+     * Loads register info from a file. Deserializes a the YML
      */
     public void loadRegister() {
         //int count = 0;
@@ -169,10 +175,11 @@ public class Register extends BeaconzPluginDependent {
             e.printStackTrace();
         }
         //beacons
-        HashMap<BeaconObj, List<String>> beaconLinks = new HashMap<BeaconObj, List<String>>();
+        HashMap<BeaconObj, List<String>> beaconStringLinks = new HashMap<BeaconObj, List<String>>();
         ConfigurationSection configSec = beaconzYml.getConfigurationSection("beacon");
         if (configSec != null) {
             for (String beacon : configSec.getValues(false).keySet()) {
+
                 String info = configSec.getString(beacon + ".location","");
                 String[] args = info.split(":");
                 if (!info.isEmpty() && args.length == 4) {
@@ -191,7 +198,7 @@ public class Register extends BeaconzPluginDependent {
                             //count++;
                             //BeaconObj newBeacon = new BeaconObj(getBeaconzPlugin(), x,y,z , team));
                             // Check for links
-                            beaconLinks.put(newBeacon, configSec.getStringList(beacon + ".links"));
+                            beaconStringLinks.put(newBeacon, configSec.getStringList(beacon + ".links"));
                             // Load plinth blocks
                             List<String> defenseBlocks = configSec.getStringList(beacon + ".defenseblocks");
                             for (String defenseBlock : defenseBlocks) {
@@ -239,11 +246,11 @@ public class Register extends BeaconzPluginDependent {
                 }
             }
         }
-        // Add links
-        List<BeaconPair> beaconPairs = new ArrayList<BeaconPair>();
+        // Once all beacons have been loaded, add links and make triangles
+        beaconLinks.clear();
         long count = 0;
-        for (BeaconObj beacon: beaconLinks.keySet()) {
-            for (String link : beaconLinks.get(beacon)) {
+        for (BeaconObj beacon: beaconStringLinks.keySet()) {
+            for (String link : beaconStringLinks.get(beacon)) {
                 String[] args = link.split(":");
                 BeaconObj dest = beaconRegister.get(new Point2D.Double(Double.valueOf(args[0]), Double.valueOf(args[1])));
                 if (dest != null) {
@@ -254,37 +261,36 @@ public class Register extends BeaconzPluginDependent {
                         count += 1000;
                         linkTime = count;
                     }
-                    BeaconPair newBeaconPair = new BeaconPair(beacon, dest,linkTime);
+                    BeaconLink newBeaconPair = new BeaconLink(beacon, dest, linkTime);
                     // Duplicates are made when the link is made below
-                    if (!beaconPairs.contains(newBeaconPair)) {
-                        beaconPairs.add(newBeaconPair);
-                    } else {
-                        getLogger().warning("Removed duplicate link");
+                    Game game = getGameMgr().getGame(beacon.getPoint());
+                    if (game != null) {
+                        if (beaconLinks.get(game) == null) {
+                            List<BeaconLink> pairs = new ArrayList<BeaconLink>();
+                            beaconLinks.put(game, pairs);
+                        }
+                        if (!beaconLinks.get(game).contains(newBeaconPair)) {
+                            beaconLinks.get(game).add(newBeaconPair);
+                        } else {
+                            getLogger().warning("Removed duplicate link");
+                        }
                     }
                 }
             }
         }
-        // Sort the list
-        //getLogger().info("DEBUG: number of beacon links: " + beaconPairs.size());
-        Collections.sort(beaconPairs);
-        // Create the links in the same order they were created
-        for (BeaconPair beaconPair: beaconPairs) {
-            BeaconObj beacon1 = beaconPair.getBeacon1();
-            BeaconObj beacon2 = beaconPair.getBeacon2();
-            LinkResult result = beacon1.addOutboundLink(beacon2, beaconPair.getTimeStamp());
-            if (result.isSuccess()) {
-                /*
-                getLogger().info("DEBUG: Trying to link beacons owned by " + beacon1.getOwnership().getName());
-                getLogger().info("DEBUG: Timestamp: " + new Date(beaconPair.getTimeStamp()));
-                getLogger().info("DEBUG: " + beacon1.getX() + "," + beacon1.getZ() + " to " + beacon2.getX() + "," + beacon2.getZ());
-                getLogger().info("DEBUG: link was successful");
-                getLogger().info("DEBUG: fields made " + result.getFieldsMade());
-                getLogger().info("DEBUG: fields failed to make " + result.getFieldsFailedToMake());
-                */ 
-                addBeaconLink(beacon1.getOwnership(), result.getLink());
+
+        // Make the links game by game
+        for (Entry<Game, List<BeaconLink>> entry : beaconLinks.entrySet()) {           
+            // Sort the list
+            Collections.sort(entry.getValue());
+            //getLogger().info("DEBUG: number of beacon links: " + entry.getValue().size());
+            // Create the links in the same order they were created
+            for (BeaconLink beaconPair: entry.getValue()) {
+                beaconPair.getBeacon1().addOutboundLink(beaconPair.getBeacon2());
             }
+            // Calculate the score for the game
+            recalculateScore(entry.getKey());
         }
-        // Score and control fields should be automatically created
     }
 
     /**
@@ -298,7 +304,8 @@ public class Register extends BeaconzPluginDependent {
             beaconMaps.clear();
             beaconRegister.clear();
             triangleFields.clear();
-            links.clear();
+            //links.clear();
+            beaconLinks.clear();
         } else {
             Iterator<Entry<Short, BeaconObj>> bmit = beaconMaps.entrySet().iterator();
             while (bmit.hasNext()) {
@@ -318,57 +325,72 @@ public class Register extends BeaconzPluginDependent {
                     trit.remove();
                 }
             }
-            Iterator<Entry<Team, Set<Line2D>>> lkit = links.entrySet().iterator();
-            while (lkit.hasNext()) {
-                Team team = lkit.next().getKey();
-                if (team != null) {
-                    Game game =  getGameMgr().getGame(team);
-                    if (game != null && game.getRegion().equals(region)) {
-                        lkit.remove();
-                    }
-                }
-            }
+            beaconLinks.remove(region.getGame());         
         }
-    }
-
-    public void addBeaconLink(Team team, Line2D link) {
-        Set<Line2D> linkSet = new HashSet<Line2D>();
-        if (links.containsKey(team)) {
-            linkSet = links.get(team);
-        }
-        linkSet.add(link);
-        links.put(team, linkSet);
-        getGameMgr().getSC(link.getP1()).refreshScores(team, "links");
     }
 
     /**
-     * Deletes any links that starts
-     * @param faction
-     * @param point
-     * NOTE: THIS ISN'T USED ANYWHERE *****************************
+     * Add a link between beacons created now
+     * @param beacon
+     * @param otherBeacon
+     * @return number of fields made, success/failure and number of fields failed to make
      */
-    public void deleteBeaconLinks(Team team, Point2D point) {
-        Set<Line2D> linkSet = new HashSet<Line2D>();
-        if (links.containsKey(team)) {
-            linkSet = links.get(team);
+    public LinkResult addBeaconLink(BeaconObj startBeacon, BeaconObj endBeacon) {
+        Game game = getGameMgr().getGame(startBeacon.getPoint());
+        BeaconLink beaconPair = new BeaconLink(startBeacon, endBeacon);
+        if (beaconLinks.get(game) == null) {
+            List<BeaconLink> pairs = new ArrayList<BeaconLink>();
+            beaconLinks.put(game, pairs);
         }
-        Iterator<Line2D> it = linkSet.iterator();
-        while (it.hasNext()) {
-            Line2D line = it.next();
-            if (line.getP1().equals(point) || line.getP2().equals(point)) {
-                // Devisualize - TODO: make async or something
-                for (Iterator<Point2D> lineIt = new LineIterator(line); lineIt.hasNext();) {
-                    Point2D current = lineIt.next();
-                    Block b = getBeaconzWorld().getBlockAt((int)current.getX(), getBeaconzWorld().getMaxHeight()-1, (int)current.getY());
-                    b.setType(Material.AIR);
-                }
-                it.remove();
-                Game game = getGameMgr().getGame(it.next());
-                game.getScorecard().refreshScores(team, "links");
+        if (!beaconLinks.get(game).contains(beaconLinks)) {
+            beaconLinks.get(game).add(beaconPair);
+            // Try to add link - if there are too many already, refuse
+            if (!startBeacon.addOutboundLink(endBeacon)) {
+                return new LinkResult(0,false,0);
             }
+            // Visualize
+            new LineVisualizer(this.getBeaconzPlugin(), beaconPair, true);
+            // See if there's a score from this
+            int fieldsMade = 0;
+            int fieldsFailed = 0;
+            //getLogger().info("DEBUG: recalc score for " + game.getName());
+            //getLogger().info("DEBUG: Checking links from " + startBeacon.getPoint());
+            // Go to all the beacons this beacon is linked to
+            for (BeaconObj secondPoint : startBeacon.getLinks()) {
+                //getLogger().info("DEBUG: Linked to " + secondPoint.getPoint());
+                //getLogger().info("DEBUG: This beacon has " + secondPoint.getLinks().size() + " links (one of which should be back)");
+                // Check the next set of links
+                for (BeaconObj thirdPoint : secondPoint.getLinks()) {
+                    // Run through the 1st point's links and see if they include the 3rd point
+                    // Ignore the 3rd point if it is the first point
+                    if (!thirdPoint.equals(startBeacon)) {
+                        //getLogger().info("DEBUG: " + secondPoint.getPoint() + " => " + thirdPoint.getPoint());
+                        if (thirdPoint.equals(endBeacon)) {
+                            //getLogger().info("DEBUG: Triangle found! ");
+                            // We have a winner
+                            try {
+                                // Result is true if the triangle is made okay, otherwise, don't make the link and return false
+                                if (getRegister().addTriangle(startBeacon.getPoint(), secondPoint.getPoint(),
+                                        thirdPoint.getPoint(), startBeacon.getOwnership())) {
+                                    fieldsMade++;
+                                } else {
+                                    fieldsFailed++;
+                                }
+                            } catch (IllegalArgumentException e) {
+                                // TODO Auto-generated catch block
+                                e.printStackTrace();
+                            }
+                            // There could be more than one, so continue
+                        }
+                    }
+                }
+            }
+            // Return the result
+            return new LinkResult(fieldsMade, true, fieldsFailed); 
         }
+        // Failure
+        return new LinkResult(0, false, 0); 
     }
-
 
     /**
      * Return all the links for a team
@@ -376,10 +398,13 @@ public class Register extends BeaconzPluginDependent {
      * @return set of links or empty set if none
      */
     public Set<Line2D> getTeamLinks(Team team) {
-        if (links.get(team) == null) {
-            return new HashSet<Line2D>();
+        Set<Line2D> result = new HashSet<Line2D>();
+        for (BeaconLink pair: beaconLinks.get(getGameMgr().getGame(team))) {
+            if (pair.getOwner().equals(team)) {
+                result.add(pair.getLine());
+            }
         }
-        return links.get(team);
+        return result;
     }
 
     /**
@@ -466,7 +491,7 @@ public class Register extends BeaconzPluginDependent {
      * @param point2d
      * @param point2d2
      * @param point2d3
-     * @return false if the triangle is valid, otherwise true
+     * @return true if the triangle is valid, otherwise false
      */
     public Boolean addTriangle(Point2D point2d, Point2D point2d2, Point2D point2d3, Team owner)  throws IllegalArgumentException {
         //getLogger().info("DEBUG: Adding triangle at " + point2d + " " + point2d2 + " " + point2d3);
@@ -477,7 +502,7 @@ public class Register extends BeaconzPluginDependent {
             if (beaconRegister.get(point2d).getOwnership().equals(owner)
                     && beaconRegister.get(point2d2).getOwnership().equals(owner)
                     && beaconRegister.get(point2d3).getOwnership().equals(owner)) {
-                //getLogger().info("DEBUG: All beacons are owned by same faction");
+                //getLogger().info("DEBUG: All beacons are owned by same team");
                 TriangleField triangle = new TriangleField(point2d, point2d2, point2d3, owner);
                 // Check to see if this control field would overlap enemy-held beacons
                 // Allow this for now
@@ -504,28 +529,36 @@ public class Register extends BeaconzPluginDependent {
                         return false;
                     }
                 }
+                // Check if this new line intersects with any enemy links
+                for (Line2D link: getEnemyLinks(owner)) {
+                    for (Line2D side : triangle.getSides()) {
+                        if (side.intersectsLine(link)) {
+                            //getLogger().info("DEBUG: Enemy beacon link found inside triangle!");
+                            return false;
+                        }
+                    }
+                }
+                /*
                 for (Entry<Team, Set<Line2D>> linkSet : links.entrySet()) {
                     if (!linkSet.getKey().equals(owner)) {
                         for (Line2D link : linkSet.getValue()) {
                             for (Line2D side : triangle.getSides()) {
                                 if (side.intersectsLine(link)) {
-                                    //getLogger().info("DEBUG: Enemy beacon link found inside triangle!");
+                                    getLogger().info("DEBUG: Enemy beacon link found inside triangle!");
                                     return false;
                                 }
                             }
                         }
                     }
-                }
+                }*/
                 if (triangleFields.add(triangle)) {
                     //getLogger().info("DEBUG: Added control field!");
                     // New control field, refresh score
                     Game game = getGameMgr().getGame(point2d);
                     game.getScorecard().refreshScores(owner, "area");
                     game.getScorecard().refreshScores(owner, "triangles");
-                    //getLogger().info("DEBUG: New score is " + triangle.getArea());
+                    //getLogger().info("DEBUG: New score is " + game.getScorecard().getScore(owner, "area"));
                     return true;
-                } else {
-                    // getLogger().info("DEBUG: Control field already exists");
                 }
             } else {
                 //getLogger().info("DEBUG: beacons are not owned by the same faction");
@@ -686,6 +719,7 @@ public class Register extends BeaconzPluginDependent {
         }
         return null;
     }
+
     /**
      * Removes this beacon from team ownership and makes it unowned
      * @param beacon
@@ -693,6 +727,12 @@ public class Register extends BeaconzPluginDependent {
     public void removeBeaconOwnership(BeaconObj beacon) {
         removeBeaconOwnership(beacon, false);
     }
+
+    /**
+     * Removes this beacon from team ownership and makes it unowned
+     * @param beacon
+     * @param quiet - if true, then no messages are sent to the team
+     */
     public void removeBeaconOwnership(BeaconObj beacon, Boolean quiet) {
         Team oldOwner = beacon.getOwnership();
         beacon.setOwnership(null);
@@ -704,6 +744,34 @@ public class Register extends BeaconzPluginDependent {
         }
 
         // Remove links from this register
+        Iterator<BeaconLink> beaconPairIterator = beaconLinks.get(getGameMgr().getGame(oldOwner)).iterator();
+        while (beaconPairIterator.hasNext()) {
+            BeaconLink beaconPair = beaconPairIterator.next();
+            if (beaconPair.getBeacon1().equals(beacon) || beaconPair.getBeacon2().equals(beacon)) {
+                beaconPairIterator.remove();
+            }
+        }
+        Iterator<BeaconLink> linkIterator = beaconLinks.get(getGameMgr().getGame(oldOwner)).iterator();
+        int linkLossCount = 0;
+        while (linkIterator.hasNext()) {
+            BeaconLink pair = linkIterator.next();
+            if (pair.getBeacon1().equals(beacon) || pair.getBeacon2().equals(beacon)) {
+                linkLossCount++;
+                linkIterator.remove();
+            }
+        }
+        // linkLossCount should always be a multiple of 2 because links go both ways
+        // so divide it by two
+        linkLossCount /= 2;
+        // Tell folks what's going on
+        if (linkLossCount == 1 && !quiet) {
+            getMessages().tellTeam(oldOwner, ChatColor.RED + "Your team lost a link!");
+            getMessages().tellOtherTeams(oldOwner, ChatColor.GREEN + oldOwner.getDisplayName() + ChatColor.GREEN + " lost a link!");
+        } else if (linkLossCount > 1) {
+            getMessages().tellTeam(oldOwner, ChatColor.RED + "Your team lost " + linkLossCount + " links!");
+            getMessages().tellOtherTeams(oldOwner, ChatColor.GREEN + oldOwner.getDisplayName() + ChatColor.GREEN + " lost " + linkLossCount + " links!");
+        }
+        /*
         if (links.get(oldOwner) != null) {
             Iterator<Line2D> linkIterator = links.get(oldOwner).iterator();
             int linkLossCount = 0;
@@ -725,7 +793,7 @@ public class Register extends BeaconzPluginDependent {
                 getMessages().tellTeam(oldOwner, ChatColor.RED + "Your team lost " + linkLossCount + " links!");
                 getMessages().tellOtherTeams(oldOwner, ChatColor.GREEN + oldOwner.getDisplayName() + ChatColor.GREEN + " lost " + linkLossCount + " links!");
             }
-        }
+        }*/
 
         beacon.removeLinks();
 
@@ -749,6 +817,7 @@ public class Register extends BeaconzPluginDependent {
         getBeaconzWorld().getBlockAt(beacon.getX(), beacon.getHeight() + 1, beacon.getZ()).setType(Material.OBSIDIAN);
 
         // Refresh the scores
+        recalculateScore(getGameMgr().getGame(beacon.getX(), beacon.getZ()));
         Scorecard sc = getGameMgr().getSC(beacon.getX(), beacon.getZ());
         if(sc!=null) sc.refreshScores(oldOwner);
     }
@@ -835,6 +904,13 @@ public class Register extends BeaconzPluginDependent {
      */
     public Set<Line2D> getEnemyLinks(Team team) {
         Set<Line2D> result = new HashSet<Line2D>();
+        for (BeaconLink pair: beaconLinks.get(getGameMgr().getGame(team))) {
+            if (!pair.getOwner().equals(team)) {
+                result.add(pair.getLine());
+            }
+        }
+        return result;
+        /*
         //getLogger().info("DEBUG: There are " + links.keySet().size() + " teams in the link database");
         for (Team opposition : links.keySet()) {
             //getLogger().info("DEBUG: checking team " + opposition.getName() + " links");
@@ -842,8 +918,8 @@ public class Register extends BeaconzPluginDependent {
                 result.addAll(links.get(opposition));
                 //getLogger().info("DEBUG: added " + links.get(opposition).size() + " links");
             }
-        }
-        return result;
+        }*/
+
     }
 
     /**
@@ -942,5 +1018,49 @@ public class Register extends BeaconzPluginDependent {
             }
         }
     }
+
+    /**
+     * Recalculates the score for game. Used when a beacon is lost because that could enable the opposition to
+     * then make a new triangle that they could not before. Also used when loading plugin.
+     * Note that all links should already be in place.
+     */
+    public void recalculateScore(Game game) {
+        //getLogger().info("DEBUG: recalc score for " + game.getName());
+        // Run through the beacon pairs
+        // Sort in order of age
+        Collections.sort(beaconLinks.get(game));
+        // Build the score
+        // Go through all the links in this game
+        for (BeaconLink firstPoint: beaconLinks.get(game)) {
+            //getLogger().info("DEBUG: Checking links from " + firstPoint.getBeacon1().getPoint());
+            // Go to all the beacons this beacon is linked to
+            for (BeaconObj secondPoint : firstPoint.getBeacon1().getLinks()) {
+                //getLogger().info("DEBUG: Linked to " + secondPoint.getPoint());
+                //getLogger().info("DEBUG: This beacon has " + secondPoint.getLinks().size() + " links (one of which should be back)");
+                // Check the next set of links
+                for (BeaconObj thirdPoint : secondPoint.getLinks()) {
+                    // Run through the 3rd point's links and see if they include the 1st point
+                    if (!thirdPoint.equals(firstPoint)) {
+                        //getLogger().info("DEBUG: " + secondPoint.getPoint() + " => " + thirdPoint.getPoint());
+                        if (thirdPoint.equals(firstPoint.getBeacon2())) {
+                            //getLogger().info("DEBUG: Triangle found! ");
+                            // We have a winner
+                            try {
+                                // Result is true if the triangle is made okay, otherwise, don't make the link and return false
+                                getRegister().addTriangle(firstPoint.getBeacon1().getPoint(), secondPoint.getPoint(),
+                                        thirdPoint.getPoint(), firstPoint.getOwner());
+                            } catch (IllegalArgumentException e) {
+                                // TODO Auto-generated catch block
+                                e.printStackTrace();
+                            }
+                            // There could be more than one, so continue
+                        }
+                    }
+                }
+            }
+
+        }
+    }
+
 
 }

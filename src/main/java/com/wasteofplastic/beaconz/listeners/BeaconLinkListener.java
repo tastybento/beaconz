@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 tastybento
+ * Copyright (c) 2015 - 2016 tastybento
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -270,7 +270,7 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
         }
 
         // Link the two beacons!
-        LinkResult result = beacon.addOutboundLink(otherBeacon);
+        LinkResult result = getRegister().addBeaconLink(beacon, otherBeacon);
         if (result.isSuccess()) {
             player.sendMessage(ChatColor.GREEN + Lang.beaconLinkCreated);
             player.sendMessage(ChatColor.GREEN + Lang.beaconNowHasLinks.replace("[number]", String.valueOf(beacon.getNumberOfLinks())));

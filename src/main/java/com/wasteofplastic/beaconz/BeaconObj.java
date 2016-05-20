@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 tastybento
+ * Copyright (c) 2015 - 2016 tastybento
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,17 +22,15 @@
 
 package com.wasteofplastic.beaconz;
 
-import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Iterator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.scoreboard.Team;
@@ -54,7 +52,7 @@ public class BeaconObj extends BeaconzPluginDependent {
     private boolean newBeacon = true;
     private static final List<BlockFace> FACES = new ArrayList<BlockFace>(Arrays.asList(BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST, BlockFace.NORTH_EAST, BlockFace.NORTH_WEST, BlockFace.SOUTH_EAST, BlockFace.SOUTH_WEST));
     private HashMap<Block, Integer> defenseBlocks = new HashMap<Block, Integer>();
-    private HashMap<BeaconObj,Long> links = new HashMap<BeaconObj,Long>();
+    private Set<BeaconObj> links = new HashSet<BeaconObj>();
 
     /**
      * Represents a beacon
@@ -101,119 +99,37 @@ public class BeaconObj extends BeaconzPluginDependent {
     }
 
     /**
-     * @return the beacons this beacon is directly linked to
+     * @return the beacons directly linked from this beacon
      */
     public Set<BeaconObj> getLinks() {
-        return links.keySet();
+        return links;
     }
 
     /**
-     * Add a link from this beacon to another beacon - and another one back
-     * @param destination
-     * @param player
-     * @return true if control field made, false if the max outbound limit is reached or the link already exists
+     * Add a link from this beacon to another beacon and make a return link
+     * @param beaconPair
+     * @return true if link made, false if not
      */
-    public LinkResult addOutboundLink(BeaconObj destination) {
-        return addOutboundLink(destination, null);
-    }
-
-    /**
-     * Add a link from this beacon to another beacon - and another one back and set the time that this was done
-     * @param destination
-     * @param linkTime
-     * @return true if control field made, false if the max outbound limit is reached or the link already exists
-     */
-    public LinkResult addOutboundLink(BeaconObj destination, Long linkTime) {
+    public boolean addOutboundLink(BeaconObj beacon) {
         //getLogger().info("DEBUG: Trying to add link");
         // There is a max of 8 outgoing links allowed
         if (links.size() == 8) {
             //getLogger().info("DEBUG: outbound link limit reached");
-            return new LinkResult(0,false,0);
+            return false;
         }
-        Line2D newLink = new Line2D.Double(this.location, destination.getPoint());
-        // Add link to this beacon
-        if (linkTime == null) {
-            linkTime = System.currentTimeMillis();
-        }
-        if (!links.containsKey(destination)) {
-            links.put(destination,linkTime);
-            //getLogger().info("DEBUG: Adding link from " + this.location + " to " + destination.getLocation());
-            // Add to global register for quick lookup
-            getRegister().addBeaconLink(ownership, newLink);
-            // Tell the destination beacon to add a link back
-            //getLogger().info("DEBUG: Telling dest to add link");
-            return destination.addLink(this);
-        }
-        return new LinkResult(0,false,0);
+        beacon.addLink(this);
+        links.add(beacon);
+        return true;
+
     }
 
     /**
-     * Adds a beacon link and check if any fields are made as a result
-     * Called by another beacon
-     * @param starter
-     * @return true if a field is made, false if not
+     * Called by another beacon. Adds a link
+     * @param beaconPair
      */
-    public LinkResult addLink(BeaconObj starter) {
-        return addLink(starter, null);
+    public void addLink(BeaconObj beacon) {
+        links.add(beacon);
     }
-
-    /**
-     * Adds a beacon link and check if any fields are made as a result
-     * Called by another beacon
-     * @param starter
-     * @return true if a field is made, false if not
-     */
-    public LinkResult addLink(BeaconObj starter, Long linkTime) {
-        //getLogger().info("DEBUG: Adding link back from " + this.location + " to " + starter.getLocation());
-        if (links.containsKey(starter)) {
-            return new LinkResult(0, false, 0); 
-        }
-        if (linkTime == null) {
-            linkTime = System.currentTimeMillis();
-        }
-        links.put(starter, linkTime);
-        int fieldsMade = 0;
-        int fieldsFailed = 0;
-        //getLogger().info("DEBUG: link added");
-        // Check to see if we have a triangle
-        //getLogger().info("DEBUG: Checking for triangles");
-        // Run through each of the beacons this beacon is directly linked to
-        for (BeaconObj directlyLinkedBeacon : links.keySet()) {
-            //getLogger().info("DEBUG: Checking links from " + directlyLinkedBeacon.getLocation());
-            // See if any of the beacons linked to our direct links link back to us
-            for (BeaconObj indirectlyLinkedBeacon : directlyLinkedBeacon.getLinks()) {
-                if (!indirectlyLinkedBeacon.equals(this)) {
-                    //getLogger().info("DEBUG: " + directlyLinkedBeacon.getLocation() + " => " + indirectlyLinkedBeacon.getLocation());
-                    if (indirectlyLinkedBeacon.equals(starter)) {
-                        //getLogger().info("DEBUG: Triangle found! ");
-                        // We have a winner
-                        try {
-                            // Result is true if the triangle is made okay, otherwise, don't make the link and return false
-                            if (getRegister().addTriangle(starter.getPoint(), this.getPoint(),
-                                    directlyLinkedBeacon.getPoint(), ownership)) {
-                                fieldsMade++;
-                            } else {
-                                fieldsFailed++;
-                            }
-                        } catch (IllegalArgumentException e) {
-                            // TODO Auto-generated catch block
-                            e.printStackTrace();
-                        }
-                        // There could be more than one, so continue
-                    }
-                }
-            }
-        }
-        // The resulting line
-        Line2D line = new Line2D.Double(starter.getPoint(), location);
-        // Make sure line is counted in the Register
-        getRegister().addBeaconLink(ownership, line);
-        // Visualize
-        new LineVisualizer(this.getBeaconzPlugin(),line, ownership);
-        // Return the result
-        return new LinkResult(fieldsMade, true, fieldsFailed, line);
-    }
-
 
     /**
      * @return the hackTimer
@@ -273,23 +189,9 @@ public class BeaconObj extends BeaconzPluginDependent {
      */
     public void removeLink(BeaconObj beacon) {
         // Devisualize the link
-        //List<Point2D> points = new ArrayList<Point2D>();
-        Line2D line = new Line2D.Double(beacon.getPoint(), location);
-        Point2D current;
-        for (Iterator<Point2D> it = new LineIterator(line); it.hasNext();) {
-            current = it.next();
-            Block b = getBeaconzWorld().getBlockAt((int)current.getX(), getBeaconzWorld().getMaxHeight()-1, (int)current.getY());
-            if (!b.getType().equals(Material.AIR)) {
-                b.setType(Material.AIR);
-            }
-        }
-        // TODO: One block is being missed. It's a rounding issue. Need to make the line inclusive of these end points
-        getBeaconzWorld().getBlockAt(x, getBeaconzWorld().getMaxHeight()-1, z).setType(Material.AIR);
-        getBeaconzWorld().getBlockAt(beacon.getX(), getBeaconzWorld().getMaxHeight()-1, beacon.getZ()).setType(Material.AIR);
-
+        new LineVisualizer(this.getBeaconzPlugin(), new BeaconLink(this,beacon), false);
         // remove the link
         links.remove(beacon);
-
     }
 
     /**
@@ -366,14 +268,6 @@ public class BeaconObj extends BeaconzPluginDependent {
      */
     public void setDefenseBlocks(HashMap<Block, Integer> defenseBlocks) {
         this.defenseBlocks = defenseBlocks;
-    }
-
-    /**
-     * @param beacon
-     * @return the time when this link was made
-     */
-    public long getLinkTime(BeaconObj beacon) {
-        return links.get(beacon);
     }
 
 }

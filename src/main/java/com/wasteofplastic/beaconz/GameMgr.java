@@ -209,11 +209,13 @@ public class GameMgr extends BeaconzPluginDependent {
                         if (game != null && gameName != null) {
                             // We're loading an active game, reset the game parms and reload it
                             game.setGameParms(gm, nt, gg, gv,gt, st, gs);
+                            region.setGame(game);
                             game.reload();
                         } else {
                             // We're loading an existing game from file that's not currently active
                             regions.put(corners, region);
                             game = new Game(plugin, region, gname, gm, nt, gg, gv, gt, gs);
+                            region.setGame(game);
                             games.put(gname, game);
                         }
                     }
@@ -296,6 +298,7 @@ public class GameMgr extends BeaconzPluginDependent {
             } else {
                 game = new Game(plugin, region, gameName, gamemode, nbr_teams, gamegoal, gamegoalvalue, timer, scoretypes);
                 games.put(gameName, game);
+                region.setGame(game);
                 regions.put(region.corners(), region);
                 // Create the corner beacons
                 if (region != lobby) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 tastybento
+ * Copyright (c) 2015 - 2016 tastybento
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -64,6 +64,7 @@ public class Region extends BeaconzPluginDependent {
     private BukkitTask task = null;
     private int totalregen;
     private long progress;
+    private Game game = null;
 
 
     public Region(Beaconz beaconzPlugin, Point2D[] corners) {
@@ -633,6 +634,20 @@ public class Region extends BeaconzPluginDependent {
         }
         // Safe
         return true;
+    }
+
+    /**
+     * @return the game or null if this is the lobby
+     */
+    public Game getGame() {
+        return game;
+    }
+
+    /**
+     * @param game the game to set
+     */
+    public void setGame(Game game) {
+        this.game = game;
     }
 
 }
