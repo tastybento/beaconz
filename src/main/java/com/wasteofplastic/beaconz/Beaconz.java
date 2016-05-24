@@ -133,7 +133,7 @@ public class Beaconz extends JavaPlugin {
             register.removeMapRenderers();
         }
         if (beaconzStore != null) {
-            beaconzStore.saveIndex();
+            beaconzStore.saveInventories();
         }
 
         getGameMgr().saveAllGames();
