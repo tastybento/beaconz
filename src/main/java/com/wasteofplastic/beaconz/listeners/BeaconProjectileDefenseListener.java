@@ -35,7 +35,6 @@ import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Fireball;
-import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.entity.SpectralArrow;
@@ -46,6 +45,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.vehicle.VehicleMoveEvent;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.PotionMeta;
@@ -95,8 +95,18 @@ public class BeaconProjectileDefenseListener extends BeaconzPluginDependent impl
         }
     }
 
+    /**
+     * Ensures that damage is not inflicted on defenders
+     * @param event
+     */
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled=true)
     public void onAttackDamage(EntityDamageByEntityEvent event) {
+        if (!(event.getEntity() instanceof Player)) {
+            return;
+        }
+        if (!event.getEntity().getWorld().equals(getBeaconzWorld())) {
+            return;
+        }
         //getLogger().info("DEBUG: entity damage by entity event");
         // getLogger().info("DEBUG: entity = " + event.getEntityType());
         Entity entity = event.getEntity();
@@ -106,14 +116,6 @@ public class BeaconProjectileDefenseListener extends BeaconzPluginDependent impl
             Team team = projectiles.get(damager.getUniqueId());
             // Remove the projectile from the hashmap
             projectiles.remove(damager.getUniqueId());
-            // Only damage players or mobs
-            if (!(entity instanceof Player)) {
-                //getLogger().info("DEBUG: prevented damage to non-player entity " + entity.getType());
-                if (!(entity instanceof Monster)) {
-                    event.setCancelled(true);
-                }
-                return;
-            }
             Player player = (Player)entity;
 
             // Only damage opposing team members
@@ -152,48 +154,7 @@ public class BeaconProjectileDefenseListener extends BeaconzPluginDependent impl
         }
 
         Player player = event.getPlayer();
-        // Nothing from here on applies to Lobby...
-        if (getGameMgr().isPlayerInLobby(player)) {
-            return;
-        }
-        // Check if player is in a team
-        Team team = getGameMgr().getPlayerTeam(player);
-        if (team == null) {
-            return;
-        }
-        Location to = event.getTo();
-        for (BeaconObj beacon : getRegister().getNearbyBeacons(to, RANGE)) {
-            // Only deal with enemy-owned beacons
-            if (beacon.getOwnership() != null && !beacon.getOwnership().equals(team)) {
-                // Offensive beacon
-                //getLogger().info("DEBUG: enemy beacon");
-                // TODO: check if beacon has active defenses
-                for (Entry<Block, Integer> defense : beacon.getDefenseBlocks().entrySet()) {
-                    // Do different things depending on the type
-                    Block block = defense.getKey();
-                    //getLogger().info("DEBUG: defense block = " + block.getType());
-                    switch (block.getType()) {
-                    case AIR:
-                        // Remove defense
-                        beacon.removeDefenseBlock(block);
-                        //getLogger().info("DEBUG: removed");
-                        break;
-                    case DISPENSER:
-                        InventoryHolder ih = (InventoryHolder)block.getState();
-                        if (ih.getInventory().contains(Material.ARROW) || ih.getInventory().contains(Material.TIPPED_ARROW)
-                                || ih.getInventory().contains(Material.SPECTRAL_ARROW) || ih.getInventory().contains(Material.FIREBALL)) {
-                            //getLogger().info("DEBUG: contains arrow");
-                            Vector adjust = (event.getTo().toVector().subtract(event.getFrom().toVector()));
-                            fireProjectile(block, defense.getValue(), event.getTo(), adjust, beacon.getOwnership());
-                            //getLogger().info("DEBUG: velocity = " + adjust);
-                        }
-                        //getLogger().info("DEBUG: dispenser");
-                        break;
-                    default:
-                    }
-                }
-            }
-        }
+        fireOnPlayer(player, event.getFrom(), event.getTo());
     }
 
     private void fireProjectile(Block block, Integer value, Location target, Vector adjust, Team team) {
@@ -328,5 +289,77 @@ public class BeaconProjectileDefenseListener extends BeaconzPluginDependent impl
             }
             projectiles.put(projectile.getUniqueId(), team);
         }
+    }
+
+    /**
+     * Check if player comes within range of a beacon
+     * @param event
+     */
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
+    public void onVehicleMove(VehicleMoveEvent event) {
+        // Remember that teleporting is not detected as player movement..
+        // If we want to catch movement by teleportation, we have to keep track of the players to-from by ourselves
+        // Only proceed if there's been a move, not just a head move
+        if (event.getFrom().getBlockX() == event.getTo().getBlockX() && event.getFrom().getBlockY() == event.getTo().getBlockY()
+                && event.getFrom().getBlockZ() == event.getTo().getBlockZ()) {
+            return;
+        }
+        World world = event.getTo().getWorld();
+        if (!world.equals(getBeaconzWorld())) {
+            return;
+        }
+        if (event.getVehicle().getPassenger() == null) {
+            return;
+        }
+        if (!(event.getVehicle().getPassenger() instanceof Player)) {
+            return;
+        }
+        Player player = (Player)event.getVehicle().getPassenger();
+        fireOnPlayer(player, event.getFrom(), event.getTo());
+    }
+
+    private void fireOnPlayer(Player player, Location from, Location to) {
+        // Nothing from here on applies to Lobby...
+        if (getGameMgr().isPlayerInLobby(player)) {
+            return;
+        }
+        // Check if player is in a team
+        Team team = getGameMgr().getPlayerTeam(player);
+        if (team == null) {
+            return;
+        }
+        for (BeaconObj beacon : getRegister().getNearbyBeacons(to, RANGE)) {
+            // Only deal with enemy-owned beacons
+            if (beacon.getOwnership() != null && !beacon.getOwnership().equals(team)) {
+                // Offensive beacon
+                //getLogger().info("DEBUG: enemy beacon");
+                // TODO: check if beacon has active defenses
+                for (Entry<Block, Integer> defense : beacon.getDefenseBlocks().entrySet()) {
+                    // Do different things depending on the type
+                    Block block = defense.getKey();
+                    //getLogger().info("DEBUG: defense block = " + block.getType());
+                    switch (block.getType()) {
+                    case AIR:
+                        // Remove defense
+                        beacon.removeDefenseBlock(block);
+                        //getLogger().info("DEBUG: removed");
+                        break;
+                    case DISPENSER:
+                        InventoryHolder ih = (InventoryHolder)block.getState();
+                        if (ih.getInventory().contains(Material.ARROW) || ih.getInventory().contains(Material.TIPPED_ARROW)
+                                || ih.getInventory().contains(Material.SPECTRAL_ARROW) || ih.getInventory().contains(Material.FIREBALL)) {
+                            //getLogger().info("DEBUG: contains arrow");
+                            Vector adjust = (to.toVector().subtract(from.toVector()));
+                            fireProjectile(block, defense.getValue(), to, adjust, beacon.getOwnership());
+                            //getLogger().info("DEBUG: velocity = " + adjust);
+                        }
+                        //getLogger().info("DEBUG: dispenser");
+                        break;
+                    default:
+                    }
+                }
+            }
+        }
+        
     }
 }

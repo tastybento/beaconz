@@ -239,11 +239,11 @@ public class Scorecard extends BeaconzPluginDependent{
                     break;
                 }
                 case ("links"): {
-                    value = getRegister().getTeamLinks(team).size()/2;
+                    value = getRegister().getTeamLinks(team);
                     break;
                 }
                 case ("triangles"): {
-                    value = getRegister().getTeamTriangles(team).size();
+                    value = getRegister().getTeamTriangles(team);
                     break;
                 }
                 default:

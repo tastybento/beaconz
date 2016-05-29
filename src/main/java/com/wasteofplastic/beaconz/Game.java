@@ -236,6 +236,9 @@ public class Game extends BeaconzPluginDependent {
 
         // Process region enter
         region.enter(player);
+        
+        // Update scores
+        scorecard.refreshScores();
 
         // Give newbie kit
         if (newPlayer) {

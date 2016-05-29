@@ -339,9 +339,9 @@ public class Register extends BeaconzPluginDependent {
         Game game = getGameMgr().getGame(startBeacon.getPoint());
         BeaconLink beaconPair = new BeaconLink(startBeacon, endBeacon);
         if (beaconLinks.get(game) == null) {
-            List<BeaconLink> pairs = new ArrayList<BeaconLink>();
-            beaconLinks.put(game, pairs);
+            beaconLinks.put(game, new ArrayList<BeaconLink>());
         }
+        // Note that links cannot be duplicated
         if (!beaconLinks.get(game).contains(beaconLinks)) {
             beaconLinks.get(game).add(beaconPair);
             // Try to add link - if there are too many already, refuse
@@ -393,15 +393,16 @@ public class Register extends BeaconzPluginDependent {
     }
 
     /**
-     * Return all the links for a team
+     * Get the number of links a team has
      * @param team
-     * @return set of links or empty set if none
+     * @return number of links
      */
-    public Set<Line2D> getTeamLinks(Team team) {
-        Set<Line2D> result = new HashSet<Line2D>();
+    public int getTeamLinks(Team team) {
+        //getLogger().info("DEBUG: getting team links " + beaconLinks.get(getGameMgr().getGame(team)));
+        int result = 0;
         for (BeaconLink pair: beaconLinks.get(getGameMgr().getGame(team))) {
             if (pair.getOwner().equals(team)) {
-                result.add(pair.getLine());
+                result++;
             }
         }
         return result;
@@ -423,15 +424,15 @@ public class Register extends BeaconzPluginDependent {
     }
 
     /**
-     * Return all the triangles for a team
+     * Get number the triangles for a team
      * @param team
-     * @return set of triangles or empty set if none
+     * @return number of triangles
      */
-    public Set<TriangleField> getTeamTriangles(Team team) {
-        Set<TriangleField> teamtriangles = new HashSet<TriangleField>();
+    public int getTeamTriangles(Team team) {
+        int teamtriangles = 0;
         for (TriangleField triangle : triangleFields) {
             if (triangle.getOwner() != null && triangle.getOwner().equals(team)) {
-                teamtriangles.add(triangle);
+                teamtriangles++;
             }
         }
         return teamtriangles;
