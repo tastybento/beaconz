@@ -5,6 +5,7 @@ description: Capture the beacons game
 author: tastybento
 load: startup
 loadbefore: [Multiverse-Core]
+softdepend: [dynmap]
 commands:
     beaconz:
         description: Main player command

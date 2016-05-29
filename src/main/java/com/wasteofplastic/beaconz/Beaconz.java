@@ -39,12 +39,15 @@ import org.bukkit.WorldType;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.generator.BlockPopulator;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
 import com.wasteofplastic.beaconz.commands.AdminCmdHandler;
 import com.wasteofplastic.beaconz.commands.CmdHandler;
+import com.wasteofplastic.beaconz.dynmap.OurServerListener;
 import com.wasteofplastic.beaconz.listeners.BeaconCaptureListener;
 import com.wasteofplastic.beaconz.listeners.BeaconLinkListener;
 import com.wasteofplastic.beaconz.listeners.BeaconPassiveDefenseListener;
@@ -118,6 +121,14 @@ public class Beaconz extends JavaPlugin {
 
                 // Load messages for players
                 messages = new Messages(plugin);
+                
+                /* Get dynmap */
+                PluginManager pm = getServer().getPluginManager();
+                Plugin dynmap = pm.getPlugin("dynmap");
+                if(dynmap != null) {
+                    getLogger().info("Hooking into dynmap.");
+                    getServer().getPluginManager().registerEvents(new OurServerListener(plugin, dynmap), plugin); 
+                }
             }
 
         });

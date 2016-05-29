@@ -1,0 +1,40 @@
+# Dynmap-Beaconz configuration
+#
+update:
+  # Seconds between checks for updates
+  period: 300
+
+layer:
+  name: "Beaconz"
+  # ordering priority in layer menu (low goes before high - default is 0)
+  layerprio: 0
+  # (optional) set minimum zoom level before layer is visible (0 = defalt, always visible)
+  minzoom: 0
+  
+# Set true to show 3D volumes for zones  
+use3dregions: false
+
+# Format for popup - substitute values for macros
+# Macros are:
+# %ownername% - team name
+infowindow: '<div class=\"infowindow\">Owner <span style="font-weight:bold;">%ownername%<br/></span><br/></div>'
+
+trianglestyle:
+  strokeColor: "#FF0000"
+  strokeOpacity: 0.8
+  strokeWeight: 3
+  fillColor: "#FF0000"
+  fillOpacity: 0.35
+  
+# Optional per-owner overrides for islandstyle - use owner's UUID or name
+ownerstyle:
+  # Team colors
+  blue:
+    strokeColor: "#0000FF"
+    fillColor: "#0000FF"
+  red:
+    strokeColor: "#FF0000"
+    fillColor: "#FF0000"
+    
+# Limit number of triangles processed per tick (avoid lag spikes on servers with lots of triangles)
+updates-per-tick: 300

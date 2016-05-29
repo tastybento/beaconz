@@ -587,6 +587,13 @@ public class Register extends BeaconzPluginDependent {
     }
 
     /**
+     * @return the triangleFields
+     */
+    public Set<TriangleField> getTriangleFields() {
+        return triangleFields;
+    }
+
+    /**
      * Checks if a block is part of a natural beacon
      * @param b
      * @return true if it is part of a beacon, false if not
