@@ -400,9 +400,11 @@ public class Register extends BeaconzPluginDependent {
     public int getTeamLinks(Team team) {
         //getLogger().info("DEBUG: getting team links " + beaconLinks.get(getGameMgr().getGame(team)));
         int result = 0;
-        for (BeaconLink pair: beaconLinks.get(getGameMgr().getGame(team))) {
-            if (pair.getOwner().equals(team)) {
-                result++;
+        if (beaconLinks.containsKey(getGameMgr().getGame(team))) {
+            for (BeaconLink pair: beaconLinks.get(getGameMgr().getGame(team))) {
+                if (pair.getOwner().equals(team)) {
+                    result++;
+                }
             }
         }
         return result;
