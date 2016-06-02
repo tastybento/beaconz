@@ -400,7 +400,7 @@ public class Register extends BeaconzPluginDependent {
     public int getTeamLinks(Team team) {
         //getLogger().info("DEBUG: getting team links " + beaconLinks.get(getGameMgr().getGame(team)));
         int result = 0;
-        if (beaconLinks.containsKey(getGameMgr().getGame(team))) {
+        if (getGameMgr().getGame(team) != null && beaconLinks.containsKey(getGameMgr().getGame(team))) {
             for (BeaconLink pair: beaconLinks.get(getGameMgr().getGame(team))) {
                 if (pair.getOwner().equals(team)) {
                     result++;
@@ -914,9 +914,11 @@ public class Register extends BeaconzPluginDependent {
      */
     public Set<Line2D> getEnemyLinks(Team team) {
         Set<Line2D> result = new HashSet<Line2D>();
-        for (BeaconLink pair: beaconLinks.get(getGameMgr().getGame(team))) {
-            if (!pair.getOwner().equals(team)) {
-                result.add(pair.getLine());
+        if (getGameMgr().getGame(team) != null && beaconLinks.containsKey(getGameMgr().getGame(team))) {
+            for (BeaconLink pair: beaconLinks.get(getGameMgr().getGame(team))) {
+                if (!pair.getOwner().equals(team)) {
+                    result.add(pair.getLine());
+                }
             }
         }
         return result;
