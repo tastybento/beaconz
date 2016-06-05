@@ -126,6 +126,16 @@ public class BeaconPopulator extends BlockPopulator {
 
             int y = source.getChunkSnapshot().getHighestBlockYAt(x, z);
             Block b = source.getBlock(x, y, z);
+            if (b.getType().equals(Material.SNOW)) {
+                // There can be snow in trees, so need to move down to ground level
+                while (y > 0 && (source.getBlock(x, y, z).getType().equals(Material.SNOW) 
+                        || source.getBlock(x, y, z).getType().equals(Material.AIR)
+                        || source.getBlock(x, y, z).getType().equals(Material.LEAVES)
+                        || source.getBlock(x, y, z).getType().equals(Material.LEAVES_2))) {
+                    y--;
+                }
+                b = source.getBlock(x, y, z);
+            }      
             // Don't make in the ocean or deep ocean because they are too easy to find.
             // Frozen ocean okay for now.
             if (b.getBiome().equals(Biome.OCEAN) || b.getBiome().equals(Biome.DEEP_OCEAN)) {
