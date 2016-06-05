@@ -142,20 +142,19 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
             event.setCancelled(true);
             if (Settings.linkDistance >= 0 && Settings.expDistance > 0) {
                 // Check if the player has sufficient experience to link the beacons
-                double distance = beacon.getPoint().distance(mappedBeacon.getPoint());
-                distance -= Settings.linkDistance;
-                if (distance > 0) {
-                    if (!testForExp(player, (int)(distance/Settings.expDistance))) {
+                double expRequired = getReqExp(beacon.getPoint().distance(mappedBeacon.getPoint()));
+                if (expRequired > 0) {
+                    if (!testForExp(player, (int)(expRequired/Settings.expDistance))) {
                         player.sendMessage(ChatColor.RED + Lang.errorNotEnoughExperience);
                         player.sendMessage(ChatColor.RED + Lang.beaconYouCanLinkUpTo.replace("[number]", String.valueOf((int)(Settings.expDistance * getTotalExperience(player)))));
-                        player.sendMessage(ChatColor.RED + Lang.beaconThisBeaconIsBlocksAway.replace("[number]", String.valueOf((int)distance)));
+                        player.sendMessage(ChatColor.RED + Lang.beaconThisBeaconIsBlocksAway.replace("[number]", String.valueOf((int)expRequired)));
                         return;
                     }
                 }
                 if (linkBeacons(player, team, beacon, mappedBeacon)) {
                     player.sendMessage(ChatColor.GREEN + Lang.beaconTheMapDisintegrates);
                     player.setItemInHand(null);
-                    removeExp(player, (int)(distance/Settings.expDistance));
+                    removeExp(player, (int)(expRequired/Settings.expDistance));
                     // Save for safety
                     getRegister().saveRegister();
                 }
@@ -170,6 +169,15 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
             }
 
         }
+    }
+
+    /**
+     * Returns how much experience is required to make a link
+     * @param distance
+     * @return exp required
+     */
+    public double getReqExp(double distance) {
+         return (distance/Settings.expDistance) + (distance*distance/(Settings.expDistance* 1000));
     }
 
     /**
