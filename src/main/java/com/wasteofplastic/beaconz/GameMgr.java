@@ -328,16 +328,25 @@ public class GameMgr extends BeaconzPluginDependent {
         Double gradius = rup16(Settings.gameDistance / 2.0);
 
         // For each region already defined, try to find an empty area at "distance" blocks from its center
+        // Ignore the lobby as a seed
         // Leave a 16-block wide "safety zone" between regions
         // at this point the regions map should never be null, because the lobby region should always exist
         if (regions != null) {
-            for (Point2D[] key : regions.keySet()) {
-                Region region = regions.get(key);
-                //getLogger().info("GameMgr.nextRegionLocation - processing region at " + region.getCenter());
-                newregionctr = goodNeighbor(region.getCenter(), region.getRadius() + 16.0 + gradius);
-                if (newregionctr != null) {
-                    break;
-                }
+            if (regions.size() == 1 && regions.containsValue(lobby)) {
+                // There are no game regions yet, try to create one at the world center
+                Point2D rctr = new Point2D.Double(Settings.xCenter, Settings.zCenter);
+                newregionctr = goodNeighbor(rctr, gradius);
+            } else {
+                for (Point2D[] key : regions.keySet()) {
+                    Region region = regions.get(key);
+                    if (region != lobby) {
+                        //getLogger().info("GameMgr.nextRegionLocation - processing region at " + region.getCenter());
+                        newregionctr = goodNeighbor(region.getCenter(), region.getRadius() + 16.0 + gradius);
+                        if (newregionctr != null) {
+                            break;
+                        }                        
+                    }
+                }                
             }
         }
 
@@ -414,7 +423,7 @@ public class GameMgr extends BeaconzPluginDependent {
         Point2D upperright = pt2;
         Point2D lowerright = new Point2D.Double(pt2.getX(), pt1.getY());
         //getLogger().info("IsAreaFree - checking: [" + lowerleft.getX() + ":" + lowerleft.getY() + "] to [" + upperright.getX() + ":" + upperright.getY() + "]");
-        for (Point2D[] key : regions.keySet()) {
+        for (Point2D[] key : regions.keySet()) { 
             Region reg = regions.get(key);
             //getLogger().info("against region " + reg.displayCoords());
             if (reg.containsPoint(lowerleft) || reg.containsPoint(upperleft) || reg.containsPoint(lowerright) || reg.containsPoint(upperright)) {
@@ -434,31 +443,33 @@ public class GameMgr extends BeaconzPluginDependent {
      * a 256x256 region that's safe
      */
     public Boolean isAreaSafe (Point2D ctr, Double radius, Double percentage) {
-        if (radius > 128.0) radius = 128.0;
-        Integer totalblocks = 1;
-        Integer unsafeblocks = 0;
-        Integer minx = (int) (rup16(ctr.getX() - radius)/1);
-        Integer minz = (int) (rup16(ctr.getY() - radius)/1);
-        Integer maxx = (int) (rup16(ctr.getX() + radius)/1);
-        Integer maxz = (int) (rup16(ctr.getY() + radius)/1);
+            Integer totalblocks = 1;
+            Integer unsafeblocks = 0;
+            
+        if (radius <= 128.0) {            
+            Integer minx = (int) (rup16(ctr.getX() - radius)/1);
+            Integer minz = (int) (rup16(ctr.getY() - radius)/1);
+            Integer maxx = (int) (rup16(ctr.getX() + radius)/1);
+            Integer maxz = (int) (rup16(ctr.getY() + radius)/1);
 
-        //getLogger().info("GameMgr.isAreaSafe - at Ctr:Rad [" + ctr.getX() + ", " + ctr.getY() + "] : " + radius);
+            //getLogger().info("GameMgr.isAreaSafe - at Ctr:Rad [" + ctr.getX() + ", " + ctr.getY() + "] : " + radius);
 
-        for (Integer x = minx; x <= maxx; x++) {
-            for (Integer z = minz; z <= maxz; z++) {
-                //Settings.populate.add(new Pair(((x/16)-1) , ((z/16)-1)));
-                int y = getBeaconzWorld().getHighestBlockYAt(x, z);
-                Block block = getBeaconzWorld().getBlockAt(x, y, z);
-                Block bottomblock = getBeaconzWorld().getBlockAt(x, y-1, z);
-                //getLogger().info("GameMgr.isAreaSafe - checking blocks at " + cX + ":" + cY + ":" + cZ + " -- Type: " + block.getType() + " and " + bottomblock.getType());
-                totalblocks++;
-                if (block.isLiquid() || bottomblock.isLiquid()) {
-                    unsafeblocks++;
+            for (Integer x = minx; x <= maxx; x++) {
+                for (Integer z = minz; z <= maxz; z++) {
+                    //Settings.populate.add(new Pair(((x/16)-1) , ((z/16)-1)));
+                    int y = getBeaconzWorld().getHighestBlockYAt(x, z);
+                    Block block = getBeaconzWorld().getBlockAt(x, y, z);
+                    Block bottomblock = getBeaconzWorld().getBlockAt(x, y-1, z);
+                    //getLogger().info("GameMgr.isAreaSafe - checking blocks at " + cX + ":" + cY + ":" + cZ + " -- Type: " + block.getType() + " and " + bottomblock.getType());
+                    totalblocks++;
+                    if (block.isLiquid() || bottomblock.isLiquid()) {
+                        unsafeblocks++;
+                    }
                 }
-            }
+            }             
         }
 
-        Settings.populate.clear();;
+        Settings.populate.clear();
         //getLogger().info("GameMgr.isAreaSafe - totalblocks: " + totalblocks + " unsafe blocks: " + unsafeblocks + " (" + (unsafeblocks * 1.0) / (totalblocks * 1.0) + ")");
         return ((unsafeblocks * 1.0) / (totalblocks * 1.0)) < percentage;
 
