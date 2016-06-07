@@ -186,6 +186,8 @@ public class Beaconz extends JavaPlugin {
      * Clears all old settings
      */
     public void loadConfig() {
+        // Max number of links a beacon can have
+        Settings.maxLinks = getConfig().getInt("maxlinks", 6);
         // Load teleport delay
         Settings.teleportDelay = getConfig().getInt("teleportdelay",5);
         // get the lobby coords and size, adjust to match chunk size

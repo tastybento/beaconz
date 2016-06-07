@@ -56,7 +56,6 @@ import com.wasteofplastic.beaconz.map.TerritoryMapRenderer;
 public class BeaconLinkListener extends BeaconzPluginDependent implements Listener {
 
     private final static boolean DEBUG = false;
-    private final static int MAX_LINKS = 8;
 
     public BeaconLinkListener(Beaconz plugin) {
         super(plugin);
@@ -238,7 +237,7 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
     /**
      * Tries to link two beacons. Failure reasons could be:
      * 1. trying to link a beacon to itself
-     * 2. beacon having MAX_LINKS links already
+     * 2. beacon having Settings.maxLinks links already
      * 3. link already exists
      * 4.link crosses opposition team's links
      *
@@ -254,8 +253,8 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
             player.sendMessage(ChatColor.RED + Lang.beaconYouCannotLinkToSelf);
             return false;
         }
-        if (beacon.getNumberOfLinks() == MAX_LINKS) {
-            player.sendMessage(ChatColor.RED + Lang.beaconMaxLinks.replace("[number]", String.valueOf(MAX_LINKS)));
+        if (beacon.getNumberOfLinks() == Settings.maxLinks) {
+            player.sendMessage(ChatColor.RED + Lang.beaconMaxLinks.replace("[number]", String.valueOf(Settings.maxLinks)));
             return false;
         }
         // Check if this link already exists

@@ -190,5 +190,10 @@ public class Settings {
      * Number of seconds to wait until teleporting player
      */
     public static int teleportDelay;
+    
+    /**
+     * Maximum number of links that a beacon can have
+     */
+    public static int maxLinks;
 
 }

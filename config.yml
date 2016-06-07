@@ -42,6 +42,9 @@ world:
   # If zero, there is no exp cost to link beacons
   expdistance: 5
   
+  # Maximum number of links a beacon can have
+  maxlinks: 6
+  
   # Defense height - max height of blocks that can be placed around a beacon
   defenseheight: 8
   
