@@ -270,4 +270,24 @@ public class BeaconObj extends BeaconzPluginDependent {
         this.defenseBlocks = defenseBlocks;
     }
 
+    /**
+     * Removes the longest link. Used when a link block is removed.
+     * @return 
+     */
+    public boolean removeLongestLink() {
+        BeaconObj furthest = null;
+        double maxDistance = 0;
+        for (BeaconObj link: links) {
+            double distance = location.distanceSq(link.getPoint());
+            if (distance > maxDistance) {
+                maxDistance = distance;
+                furthest = link;
+            }
+        }
+        if (furthest != null) {
+            removeLink(furthest);
+            return true;
+        }
+        return false;
+    }
 }

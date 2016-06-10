@@ -39,6 +39,7 @@ import org.bukkit.WorldType;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.generator.BlockPopulator;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.material.MaterialData;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -121,7 +122,7 @@ public class Beaconz extends JavaPlugin {
 
                 // Load messages for players
                 messages = new Messages(plugin);
-                
+
                 /* Get dynmap */
                 PluginManager pm = getServer().getPluginManager();
                 Plugin dynmap = pm.getPlugin("dynmap");
@@ -186,6 +187,28 @@ public class Beaconz extends JavaPlugin {
      * Clears all old settings
      */
     public void loadConfig() {
+        // Link blocks enable links to reach futher for less experience
+        Settings.linkBlocks = new HashMap<MaterialData, Double>();
+        if (getConfig().contains("world.linkblocks")) {
+            for (String materialData: getConfig().getConfigurationSection("world.linkblocks").getKeys(false)) {
+                getLogger().info("DEBUG: reading " + materialData);
+                try {
+                    String[] split = materialData.split(":");
+                    MaterialData md = new MaterialData(Material.valueOf(split[0].toUpperCase()));
+                    
+                    if (split.length == 2) {
+                        int data = Integer.valueOf(split[1]);
+                        md.setData((byte)data);
+                    }
+                    getLogger().info("DEBUG: md = " + md);
+                    double value = getConfig().getDouble("world.linkblocks." + materialData);
+                    getLogger().info("DEBUG: value = " + value);
+                    Settings.linkBlocks.put(md, value);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
         // Max number of links a beacon can have
         Settings.maxLinks = getConfig().getInt("maxlinks", 6);
         // Load teleport delay
@@ -455,7 +478,7 @@ public class Beaconz extends JavaPlugin {
         for (Entry<Integer, ItemStack> ent : Settings.teamGoodies.entrySet()) {
             plugin.getLogger().info("DEBUG: " + ent.getKey() + " " + ent.getValue());
         }
-        */
+         */
         // Add initial inventory
         List<String> newbieKit = getConfig().getStringList("world.newbiekit");
         Settings.newbieKit.clear();

@@ -28,6 +28,7 @@ import java.util.Map.Entry;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -42,6 +43,7 @@ import org.bukkit.event.block.BlockPistonExtendEvent;
 import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.material.MaterialData;
 import org.bukkit.scoreboard.Team;
 
 import com.wasteofplastic.beaconz.BeaconObj;
@@ -261,6 +263,10 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
             levelPlaced = " [" + Lang.level + " " + levelRequired + "]";
         }
         // Check what type of block it is
+        MaterialData md = new MaterialData(event.getBlock().getType(), event.getBlock().getData());
+        if (Settings.linkBlocks.containsKey(md)) {
+            player.sendMessage(ChatColor.GREEN + Lang.linkBlockPlaced); 
+        }
         // Send message
         String message = Lang.defenseText.get(event.getBlock().getType());
         if (message == null) {
@@ -322,38 +328,47 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
             //getLogger().info("DEBUG: below beacon");
             return;
         }
-        // If same team, then do nothing
-        if (team.equals(beacon.getOwnership())) {
-            return;
-        }
         // Check if this block is a defense block
         if (!beacon.getDefenseBlocks().containsKey(event.getBlock())) {
             // No it is not
             return;
         }
-        // Get the level
-        int level = beacon.getDefenseBlocks().get(event.getBlock());
-        // Check all blocks in the defense
-        Iterator<Entry<Block, Integer>> it = beacon.getDefenseBlocks().entrySet().iterator();
-        int highestBlock = 0;
-        while (it.hasNext()) {
-            Entry<Block,Integer> ent = it.next();
-            if (player.getLevel() < ent.getValue()) {
+        // If not same team, then blocks have to be removed in a specific way
+        if (!team.equals(beacon.getOwnership())) {
+            // Get the level
+            int level = beacon.getDefenseBlocks().get(event.getBlock());
+            // Check all blocks in the defense
+            Iterator<Entry<Block, Integer>> it = beacon.getDefenseBlocks().entrySet().iterator();
+            int highestBlock = 0;
+            while (it.hasNext()) {
+                Entry<Block,Integer> ent = it.next();
+                if (player.getLevel() < ent.getValue()) {
                     player.sendMessage(ChatColor.RED + Lang.errorYouNeedToBeLevel.replace("[value]", String.valueOf(ent.getValue()))); 
                     event.setCancelled(true);
                     return;
+                }
+                highestBlock = Math.max(highestBlock, ent.getValue());
+            }        
+            // Check that breakage is being done top-down
+            if (level < highestBlock) {
+                event.getPlayer().sendMessage(ChatColor.RED + Lang.defenseRemoveTopDown);
+                event.setCancelled(true);
+                return;
             }
-            highestBlock = Math.max(highestBlock, ent.getValue());
-        }        
-        // Check that breakage is being done top-down
-        if (level < highestBlock) {
-            event.getPlayer().sendMessage(ChatColor.RED + Lang.defenseRemoveTopDown);
-            event.setCancelled(true);
-            return;
         }
         // The block is broken
         beacon.removeDefenseBlock(block);
-        // TODO : give exp? Rewards?
+         // Check if it was a link block
+        MaterialData md = new MaterialData(block.getType(), block.getData());
+        if (Settings.linkBlocks.containsKey(md)) {
+            player.sendMessage(ChatColor.GOLD + Lang.linkBlockBroken);
+            world.playSound(player.getLocation(), Sound.BLOCK_GLASS_BREAK, 1F, 1F);
+            // Remove the longest link
+            if (beacon.removeLongestLink()) {
+                player.sendMessage(ChatColor.GOLD + Lang.linkLost);
+            }
+        }
+
     }
 
     /**
@@ -413,7 +428,7 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
         for (Block b : beacon.getDefenseBlocks().keySet()) {
             //getLogger().info("DEBUG: block " + b.getType() + " at " + b.getLocation().toVector());
         }
-        */
+         */
         // Check if this block is a defense block
         if (!beacon.getDefenseBlocks().containsKey(event.getBlock())) {
             //getLogger().info("DEBUG: not a defense block");
@@ -430,9 +445,9 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
             Entry<Block,Integer> ent = it.next();
             //getLogger().info("DEBUG: Checking block " + ent.getKey().getType() + " level " + ent.getValue());
             if (player.getLevel() < ent.getValue()) {
-                    player.sendMessage(ChatColor.RED + Lang.errorYouNeedToBeLevel.replace("[value]", String.valueOf(ent.getValue()))); 
-                    event.setCancelled(true);
-                    return;
+                player.sendMessage(ChatColor.RED + Lang.errorYouNeedToBeLevel.replace("[value]", String.valueOf(ent.getValue()))); 
+                event.setCancelled(true);
+                return;
             }
             highestBlock = Math.max(highestBlock, ent.getValue());
         }  
@@ -459,7 +474,7 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
         //getLogger().info("DEBUG: highest block is at " + y);
         return y;
     }
-*/
+     */
     /**
      * Prevents the tipping of liquids over beacons
      * @param event

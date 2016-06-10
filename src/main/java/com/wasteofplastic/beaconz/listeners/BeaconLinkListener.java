@@ -42,6 +42,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
+import org.bukkit.material.MaterialData;
 import org.bukkit.scoreboard.Team;
 
 import com.wasteofplastic.beaconz.BeaconObj;
@@ -141,19 +142,19 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
             event.setCancelled(true);
             if (Settings.linkDistance >= 0 && Settings.expDistance > 0) {
                 // Check if the player has sufficient experience to link the beacons
-                double expRequired = getReqExp(beacon.getPoint().distance(mappedBeacon.getPoint()));
+                int expRequired = getReqExp(beacon, mappedBeacon); 
                 if (expRequired > 0) {
-                    if (!testForExp(player, (int)(expRequired/Settings.expDistance))) {
+                    if (!testForExp(player, (int)(expRequired))) {
                         player.sendMessage(ChatColor.RED + Lang.errorNotEnoughExperience);
-                        player.sendMessage(ChatColor.RED + Lang.beaconYouCanLinkUpTo.replace("[number]", String.valueOf((int)(Settings.expDistance * getTotalExperience(player)))));
-                        player.sendMessage(ChatColor.RED + Lang.beaconThisBeaconIsBlocksAway.replace("[number]", String.valueOf((int)expRequired)));
+                        player.sendMessage(ChatColor.RED + Lang.beaconYouNeedThisMuchExp.replace("[number]", String.format(Locale.US, "%,d",(int)(expRequired))));
+                        player.sendMessage(ChatColor.RED + Lang.beaconYouHaveThisMuchExp.replace("[number]", String.format(Locale.US, "%,d",getTotalExperience(player))));
                         return;
                     }
                 }
                 if (linkBeacons(player, team, beacon, mappedBeacon)) {
                     player.sendMessage(ChatColor.GREEN + Lang.beaconTheMapDisintegrates);
                     player.setItemInHand(null);
-                    removeExp(player, (int)(expRequired/Settings.expDistance));
+                    removeExp(player, expRequired);
                     // Save for safety
                     getRegister().saveRegister();
                 }
@@ -170,13 +171,39 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
         }
     }
 
+    public void checkLinks(BeaconObj beacon) {
+        for (BeaconObj linkedBeacon: beacon.getLinks()) {
+            
+        }
+    }
+    
     /**
      * Returns how much experience is required to make a link
-     * @param distance
+     * @param beacon
+     * @param mappedBeacon
      * @return exp required
      */
-    public double getReqExp(double distance) {
-         return (distance/Settings.expDistance) + (distance*distance/(Settings.expDistance* 1000));
+    public int getReqExp(BeaconObj beacon, BeaconObj mappedBeacon) {
+        double distance = beacon.getPoint().distance(mappedBeacon.getPoint());
+        double linkBlockScore = 1;
+        getLogger().info("DEBUG: linkBlocks = " + Settings.linkBlocks);
+        for (Block block :beacon.getDefenseBlocks().keySet()) {
+            //getLogger().info("DEBUG: Blocks on beacon = " + block);
+            MaterialData md = new MaterialData(block.getType(), block.getData());
+            if (Settings.linkBlocks.containsKey(md)) {
+                linkBlockScore += Settings.linkBlocks.get(md);
+            }
+        }
+        getLogger().info("DEBUG: linkBlockScore from beacon = " + linkBlockScore);
+        for (Block block :mappedBeacon.getDefenseBlocks().keySet()) {
+            //getLogger().info("DEBUG: Blocks on beacon = " + block);
+            MaterialData md = new MaterialData(block.getType(), block.getData());
+            if (Settings.linkBlocks.containsKey(md)) {
+                linkBlockScore += Settings.linkBlocks.get(md);
+            }
+        }
+        getLogger().info("DEBUG: linkBlockScore beacon and mapped beacon = " + linkBlockScore);
+        return (int) ((distance/Settings.expDistance) + ((distance*distance*distance)/(linkBlockScore * 400000)));
     }
 
     /**

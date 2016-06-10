@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.material.MaterialData;
 import org.bukkit.potion.PotionEffect;
 
 public class Settings {
@@ -196,4 +197,5 @@ public class Settings {
      */
     public static int maxLinks;
 
+    public static HashMap<MaterialData, Double> linkBlocks;
 }

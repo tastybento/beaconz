@@ -142,8 +142,8 @@ public class Lang {
     public static String beaconCannotPlaceLiquids = "You cannot place liquids above a beacon!";
     public static String beaconIsExhausted = "Beacon is exhausted. Try again in [minutes] minute(s)";
     public static String beaconOriginNotOwned = "Origin beacon is not owned by [team]!";
-    public static String beaconThisBeaconIsBlocksAway = "This beacon is [number] blocks away.";
-    public static String beaconYouCanLinkUpTo = "You can link up to [number] blocks away.";
+    public static String beaconYouHaveThisMuchExp = "You have [number] exp points.";
+    public static String beaconYouNeedThisMuchExp = "You need [number] exp points to link these beacons. Try adding link amplifiers to the beacon.";
     public static String beaconYouCanOnlyExtend = "You can only extend a captured beacon!";
     public static String beaconCannotBeExtended = "Cannot be extended any further in this direction!";
     public static String beaconExtended = "You extended the beacon!";
@@ -296,5 +296,8 @@ public class Lang {
     public static String doNotMove = "Do not move, teleporting in [number] seconds!";
     public static String youMoved = "You moved! Cancelling teleport!";
     public static String errorInventoryFull = "You inventory is full! Dropping items!";
+    public static String linkBlockPlaced = "Link amplifier placed!";
+    public static String linkBlockBroken = "Link amplifier broken!";
+    public static String linkLost = "The longest link was lost!";
     
 }
