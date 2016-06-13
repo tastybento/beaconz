@@ -42,7 +42,6 @@ import org.bukkit.inventory.ItemStack;
 import com.wasteofplastic.beaconz.BeaconObj;
 import com.wasteofplastic.beaconz.Beaconz;
 import com.wasteofplastic.beaconz.BeaconzPluginDependent;
-import com.wasteofplastic.particleeffect.ParticleEffect;
 
 /**
  * Handles actions on blocks surrounding a beacon.
@@ -107,7 +106,8 @@ public class BeaconSurroundListener extends BeaconzPluginDependent implements Li
         for (BeaconObj beacon : beacons) {
             lowestY = Math.min(lowestY, beacon.getY());
         }
-        if (event.getBlock().getY() >= lowestY || event.getBlock().getY() < lowestY - RANGE) {
+        // You're allowed to dig one below the height of the beacon
+        if (event.getBlock().getY() >= (lowestY-1) || event.getBlock().getY() < lowestY - RANGE) {
             // You can break below the range okay or above the beacon
             return;
         }
@@ -116,7 +116,7 @@ public class BeaconSurroundListener extends BeaconzPluginDependent implements Li
         if (rand.nextDouble() < PROBABILITY) {
             // Make it harder to break the blocks
             event.setCancelled(true);
-            ParticleEffect.PORTAL.display(0F, 0F, 0F, 1F, 10, event.getBlock().getLocation(), 10D);
+            //ParticleEffect.PORTAL.display(0F, 0F, 0F, 1F, 10, event.getBlock().getLocation(), 10D);
             // Reduce durability of tool
             ItemStack item = event.getPlayer().getInventory().getItemInMainHand();
             if (item != null && !item.getType().equals(Material.AIR)) {

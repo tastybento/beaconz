@@ -182,6 +182,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                         sender.sendMessage(ChatColor.RED + Lang.errorYouMustBeInAGame);
                         return true;
                     }
+                    
                     // Get the next team in this game
                     for (Team newTeam : game.getScorecard().getTeams()) {
                         if (!newTeam.equals(team)) {
