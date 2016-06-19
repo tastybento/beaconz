@@ -50,6 +50,7 @@ public class OurServerListener extends BeaconzPluginDependent implements Listene
     private boolean stop;
     private static final String DEF_INFOWINDOW = "<div class=\"infowindow\">Team <span style=\"font-weight:bold;\">%ownername%</span><br /></div>";
     private Set<TriangleField> trianglesToDo;
+    private Map<String, AreaMarker> newmap;
 
     private Map<String, AreaMarker> resareas = new HashMap<String, AreaMarker>();
     protected LinkedHashMap<String, Game> gamesToDo;
@@ -134,7 +135,10 @@ public class OurServerListener extends BeaconzPluginDependent implements Listene
             @Override
             public void run() {
                 //getLogger().info("DEBUG: running outer loop");
-
+                // Clear the map
+                for (AreaMarker am : resareas.values()) {
+                    am.deleteMarker();
+                }
                 for (Game game : getGameMgr().getGames().values()) {
                     handleGames(game);
                 }
@@ -143,11 +147,9 @@ public class OurServerListener extends BeaconzPluginDependent implements Listene
                     @Override
                     public void run() {
                         //getLogger().info("DEBUG: running inner loop");
-                        Map<String,AreaMarker> newmap = new HashMap<String,AreaMarker>(); /* Build new map */
-
                         // Clone triangle fields
                         if (trianglesToDo.isEmpty()) {
-                            //getLogger().info("DEBUG: cancelling inner loop");
+                            //getLogger().info("DEBUG: canceling inner loop");
                             this.cancel();
                             return;
                         }
@@ -160,7 +162,7 @@ public class OurServerListener extends BeaconzPluginDependent implements Listene
                         Iterator<TriangleField> it = trianglesToDo.iterator();
                         while (it.hasNext() && i < updatesPerTick) {
                             i++;
-                            handleTriangle(it.next(), newmap);
+                            handleTriangle(it.next());
                             it.remove();
                         }
                     }
@@ -208,7 +210,6 @@ public class OurServerListener extends BeaconzPluginDependent implements Listene
      * @param game
      */
     private void handleGames(Game game) {
-        // TODO Auto-generated method stub
         World world = getBeaconzWorld();
         String name = game.getName();
         double[] x = new double[4];
@@ -244,9 +245,9 @@ public class OurServerListener extends BeaconzPluginDependent implements Listene
 
         m.setDescription(desc); /* Set popup */
     }
-
+    
     /* Handle triangles */
-    private void handleTriangle(TriangleField triangle, Map<String, AreaMarker> newmap) {
+    private void handleTriangle(TriangleField triangle) {
         World world = getBeaconzWorld();
         if (triangle.getOwner() == null) {
             return;
@@ -280,7 +281,7 @@ public class OurServerListener extends BeaconzPluginDependent implements Listene
         m.setDescription(desc); /* Set popup */
 
         /* Add to map */
-        newmap.put(markerid, m);
+        resareas.put(markerid, m);
     }
 
     /**
