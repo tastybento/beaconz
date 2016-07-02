@@ -29,8 +29,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeMap;
 
+import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.material.MaterialData;
 import org.bukkit.potion.PotionEffect;
 
 public class Settings {
@@ -197,5 +197,13 @@ public class Settings {
      */
     public static int maxLinks;
 
-    public static HashMap<MaterialData, Double> linkBlocks;
+    /**
+     * Block type and value
+     */
+    public static HashMap<Material, Integer> linkBlocks;
+    
+    /**
+     * The maximum distance the beacon can link without extending link blocks
+     */
+    public static int linkLimit;
 }

@@ -143,7 +143,7 @@ public class Lang {
     public static String beaconIsExhausted = "Beacon is exhausted. Try again in [minutes] minute(s)";
     public static String beaconOriginNotOwned = "Origin beacon is not owned by [team]!";
     public static String beaconYouHaveThisMuchExp = "You have [number] exp points.";
-    public static String beaconYouNeedThisMuchExp = "You need [number] exp points to link these beacons. Try adding link amplifiers to the beacon.";
+    public static String beaconYouNeedThisMuchExp = "You need [number] exp points to link these beacons.";
     public static String beaconYouCanOnlyExtend = "You can only extend a captured beacon!";
     public static String beaconCannotBeExtended = "Cannot be extended any further in this direction!";
     public static String beaconExtended = "You extended the beacon!";
@@ -296,8 +296,9 @@ public class Lang {
     public static String doNotMove = "Do not move, teleporting in [number] seconds!";
     public static String youMoved = "You moved! Cancelling teleport!";
     public static String errorInventoryFull = "You inventory is full! Dropping items!";
-    public static String linkBlockPlaced = "Link amplifier placed!";
-    public static String linkBlockBroken = "Link amplifier broken!";
+    public static String linkBlockPlaced = "Link amplifier placed! Link range increased by [range]!";
+    public static String linkBlockBroken = "Link amplifier broken! Link range decreased by [range]!";
     public static String linkLost = "The longest link was lost!";
+    public static String errorTooFar = "That beacon is too far away. To link over [max] blocks, use gold or diamond range extender blocks.";
     
 }

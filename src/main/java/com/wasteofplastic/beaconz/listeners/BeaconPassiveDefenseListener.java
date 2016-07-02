@@ -263,9 +263,8 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
             levelPlaced = " [" + Lang.level + " " + levelRequired + "]";
         }
         // Check what type of block it is
-        MaterialData md = new MaterialData(event.getBlock().getType(), event.getBlock().getData());
-        if (Settings.linkBlocks.containsKey(md)) {
-            player.sendMessage(ChatColor.GREEN + Lang.linkBlockPlaced); 
+        if (Settings.linkBlocks.containsKey(event.getBlock().getType())) {
+            player.sendMessage(ChatColor.GREEN + Lang.linkBlockPlaced.replace("[range]", String.valueOf(Settings.linkBlocks.get(event.getBlock().getType())))); 
         }
         // Send message
         String message = Lang.defenseText.get(event.getBlock().getType());
@@ -359,9 +358,8 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
         // The block is broken
         beacon.removeDefenseBlock(block);
          // Check if it was a link block
-        MaterialData md = new MaterialData(block.getType(), block.getData());
-        if (Settings.linkBlocks.containsKey(md)) {
-            player.sendMessage(ChatColor.GOLD + Lang.linkBlockBroken);
+        if (Settings.linkBlocks.containsKey(block.getType())) {
+            player.sendMessage(ChatColor.RED + Lang.linkBlockBroken.replace("[range]", String.valueOf(Settings.linkBlocks.get(event.getBlock().getType())))); 
             world.playSound(player.getLocation(), Sound.BLOCK_GLASS_BREAK, 1F, 1F);
             // Remove the longest link
             if (beacon.removeLongestLink()) {

@@ -187,23 +187,20 @@ public class Beaconz extends JavaPlugin {
      * Clears all old settings
      */
     public void loadConfig() {
+        // The maximum distance the beacon can link without extending link blocks
+        Settings.linkLimit = getConfig().getInt("world.linklimit", 500);
         // Link blocks enable links to reach futher for less experience
-        Settings.linkBlocks = new HashMap<MaterialData, Double>();
+        Settings.linkBlocks = new HashMap<Material, Integer>();
         if (getConfig().contains("world.linkblocks")) {
-            for (String materialData: getConfig().getConfigurationSection("world.linkblocks").getKeys(false)) {
-                getLogger().info("DEBUG: reading " + materialData);
+            for (String material: getConfig().getConfigurationSection("world.linkblocks").getKeys(false)) {
+                getLogger().info("DEBUG: reading " + material);
                 try {
-                    String[] split = materialData.split(":");
-                    MaterialData md = new MaterialData(Material.valueOf(split[0].toUpperCase()));
-                    
-                    if (split.length == 2) {
-                        int data = Integer.valueOf(split[1]);
-                        md.setData((byte)data);
+                    Material mat = Material.getMaterial(material.toUpperCase());
+                    if (mat != null) {
+                        int value = getConfig().getInt("world.linkblocks." + material);
+                        getLogger().info("DEBUG: value = " + value);
+                        Settings.linkBlocks.put(mat, value);
                     }
-                    getLogger().info("DEBUG: md = " + md);
-                    double value = getConfig().getDouble("world.linkblocks." + materialData);
-                    getLogger().info("DEBUG: value = " + value);
-                    Settings.linkBlocks.put(md, value);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

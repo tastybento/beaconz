@@ -141,6 +141,12 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
             }
             event.setCancelled(true);
             if (Settings.linkDistance >= 0 && Settings.expDistance > 0) {
+                // Check if the beaconz can be linked.
+                int linkDistance = checkBeaconDistance(beacon, mappedBeacon);
+                if (linkDistance > Settings.linkLimit) {
+                    player.sendMessage(ChatColor.RED + Lang.errorTooFar.replace("[max]", String.valueOf(Settings.linkLimit)));
+                    return;
+                }
                 // Check if the player has sufficient experience to link the beacons
                 int expRequired = getReqExp(beacon, mappedBeacon); 
                 if (expRequired > 0) {
@@ -171,10 +177,26 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
         }
     }
 
-    public void checkLinks(BeaconObj beacon) {
-        for (BeaconObj linkedBeacon: beacon.getLinks()) {
-            
+    /**
+     * @param beacon
+     * @param mappedBeacon
+     * @return distance between the two beaconz less any link blocks (value could be negative)
+     */
+    private int checkBeaconDistance(BeaconObj beacon, BeaconObj mappedBeacon) {
+        int distance = (int)beacon.getPoint().distance(mappedBeacon.getPoint());
+        for (Block block :beacon.getDefenseBlocks().keySet()) {
+            //getLogger().info("DEBUG: Blocks on beacon = " + block);
+            if (Settings.linkBlocks.containsKey(block.getType())) {
+                distance -= Settings.linkBlocks.get(block.getType());
+            }
         }
+        for (Block block :mappedBeacon.getDefenseBlocks().keySet()) {
+            //getLogger().info("DEBUG: Blocks on beacon = " + block);
+            if (Settings.linkBlocks.containsKey(block.getType())) {
+                distance -= Settings.linkBlocks.get(block.getType());
+            }
+        }
+        return distance;
     }
     
     /**
@@ -185,25 +207,7 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
      */
     public int getReqExp(BeaconObj beacon, BeaconObj mappedBeacon) {
         double distance = beacon.getPoint().distance(mappedBeacon.getPoint());
-        double linkBlockScore = 1;
-        getLogger().info("DEBUG: linkBlocks = " + Settings.linkBlocks);
-        for (Block block :beacon.getDefenseBlocks().keySet()) {
-            //getLogger().info("DEBUG: Blocks on beacon = " + block);
-            MaterialData md = new MaterialData(block.getType(), block.getData());
-            if (Settings.linkBlocks.containsKey(md)) {
-                linkBlockScore += Settings.linkBlocks.get(md);
-            }
-        }
-        getLogger().info("DEBUG: linkBlockScore from beacon = " + linkBlockScore);
-        for (Block block :mappedBeacon.getDefenseBlocks().keySet()) {
-            //getLogger().info("DEBUG: Blocks on beacon = " + block);
-            MaterialData md = new MaterialData(block.getType(), block.getData());
-            if (Settings.linkBlocks.containsKey(md)) {
-                linkBlockScore += Settings.linkBlocks.get(md);
-            }
-        }
-        getLogger().info("DEBUG: linkBlockScore beacon and mapped beacon = " + linkBlockScore);
-        return (int) ((distance/Settings.expDistance) + ((distance*distance*distance)/(linkBlockScore * 400000)));
+        return (int) (distance/Settings.expDistance);
     }
 
     /**

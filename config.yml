@@ -42,12 +42,15 @@ world:
   # If zero, there is no exp cost to link beacons
   expdistance: 5
   
-  # Link blocks
-  # Having these blocks in your beacon will make links cost less
-  # TODO: The value needs explaining
+  # The maximum distance the beacon can link without extending link blocks
+  linklimit: 500
+  
+  # Link blocks that extend the link limit, and by how much. Once a link block is placed
+  # it cannot be removed without losing the longest link from the beacon
+  # Link blocks count from both ends of the link.
   linkblocks:
-     GOLD_BLOCK: 1
-     DIAMOND_BLOCK: 2
+     GOLD_BLOCK: 50
+     DIAMOND_BLOCK: 200
     
   # Maximum number of links a beacon can have
   maxlinks: 6
