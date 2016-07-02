@@ -300,5 +300,6 @@ public class Lang {
     public static String linkBlockBroken = "Link amplifier broken! Link range decreased by [range]!";
     public static String linkLost = "The longest link was lost!";
     public static String errorTooFar = "That beacon is too far away. To link over [max] blocks, use gold or diamond range extender blocks.";
+    public static String hitSign = "Hit sign to start game!";
     
 }

@@ -206,4 +206,21 @@ public class Settings {
      * The maximum distance the beacon can link without extending link blocks
      */
     public static int linkLimit;
+    
+    
+    /**
+     * Height for the lobby platform
+     */
+    public static int lobbyHeight;
+    
+    /**
+     * List of the blocks used for the lobby platform
+     */
+    public static List<String> lobbyBlocks;
+    
+    /**
+     * Default game name
+     */
+    public static String defaultGameName;
+    
 }

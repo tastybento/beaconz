@@ -150,9 +150,7 @@ public class Messages extends BeaconzPluginDependent {
         Scorecard sc = getGameMgr().getSC(player);
         if (sc != null) {
             Team team = sc.getTeam(player);
-            if (team == null) {
-                getLogger().info("DEBUG: A player who is not in a team did something that triggered a team message!");
-            } else {
+            if (team != null) {
                 tellTeam(player, team, message);
             }
         }

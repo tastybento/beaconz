@@ -409,13 +409,13 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                                     getGameMgr().setGameDefaultParms();      // restore the default parameters (just in case)
                                 } else {
                                     sender.sendMessage(ChatColor.GREEN + Lang.adminNewGameBuilding);
-                                    getGameMgr().newGame(args[1], sender);   // create the new game
+                                    getGameMgr().newGame(args[1]);   // create the new game
                                     getGameMgr().setGameDefaultParms();      // restore the default parameters
                                     sender.sendMessage(ChatColor.GREEN + Lang.success);
                                 }
                             } else {
                                 sender.sendMessage(ChatColor.GREEN + Lang.adminNewGameBuilding);
-                                getGameMgr().newGame(args[1], sender);
+                                getGameMgr().newGame(args[1]);
                                 sender.sendMessage(ChatColor.GREEN + Lang.success);
                             }
                         }

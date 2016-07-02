@@ -39,7 +39,6 @@ import org.bukkit.WorldType;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.generator.BlockPopulator;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.material.MaterialData;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -103,7 +102,7 @@ public class Beaconz extends JavaPlugin {
                 // Create the world
                 getBeaconzWorld();
 
-                // Create the store world
+                // Create the inventory store 
                 beaconzStore = new BeaconzStore(plugin);
                 // Register the listeners - block break etc. 
                 getServer().getPluginManager().registerEvents(new BeaconLinkListener(plugin), plugin);
@@ -129,6 +128,11 @@ public class Beaconz extends JavaPlugin {
                 if(dynmap != null) {
                     getLogger().info("Hooking into dynmap.");
                     getServer().getPluginManager().registerEvents(new OurServerListener(plugin, dynmap), plugin); 
+                }
+
+                // Make first game
+                if (gameMgr.getGames().isEmpty()) {
+                    gameMgr.newGame(Settings.defaultGameName);
                 }
             }
 
@@ -187,18 +191,26 @@ public class Beaconz extends JavaPlugin {
      * Clears all old settings
      */
     public void loadConfig() {
+        // Default game name
+        Settings.defaultGameName = getConfig().getString("world.defaultgamename", "Beaconz");
+        // Height for lobby platform
+        Settings.lobbyHeight = getConfig().getInt("world.lobbyheight", 200);
+        Settings.lobbyBlocks = getConfig().getStringList("world.lobbyblocks");
+        if (Settings.lobbyBlocks.isEmpty()) {
+            Settings.lobbyBlocks.add("GLASS");
+        }
         // The maximum distance the beacon can link without extending link blocks
         Settings.linkLimit = getConfig().getInt("world.linklimit", 500);
         // Link blocks enable links to reach futher for less experience
         Settings.linkBlocks = new HashMap<Material, Integer>();
         if (getConfig().contains("world.linkblocks")) {
             for (String material: getConfig().getConfigurationSection("world.linkblocks").getKeys(false)) {
-                getLogger().info("DEBUG: reading " + material);
+                //getLogger().info("DEBUG: reading " + material);
                 try {
                     Material mat = Material.getMaterial(material.toUpperCase());
                     if (mat != null) {
                         int value = getConfig().getInt("world.linkblocks." + material);
-                        getLogger().info("DEBUG: value = " + value);
+                        //getLogger().info("DEBUG: value = " + value);
                         Settings.linkBlocks.put(mat, value);
                     }
                 } catch (Exception e) {

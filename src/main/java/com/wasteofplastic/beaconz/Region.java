@@ -25,6 +25,7 @@ package com.wasteofplastic.beaconz;
 import java.awt.geom.Point2D;
 import java.util.HashSet;
 import java.util.Locale;
+import java.util.Random;
 import java.util.Set;
 
 import org.bukkit.Bukkit;
@@ -33,6 +34,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.block.Sign;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Monster;
@@ -57,7 +59,7 @@ public class Region extends BeaconzPluginDependent {
 
     private Beaconz plugin;
     private Point2D [] corners;
-    private Location spawnpoint;
+    private Location spawnPoint;
     private int loopcount;
     private int chX;
     private int chZ;
@@ -81,8 +83,8 @@ public class Region extends BeaconzPluginDependent {
 
         if (newGame) {
             // Set the region's default spawn point; start looking at the center of the region
-            double rad = getRadius();
-            setSpawnPoint(getCenter(), (int) rad);
+            int rad = getRadius();
+            setSpawnPoint(getCenter(), rad);
 
             // That's it. Regenerate() is called from GameMgr or Game
         }
@@ -176,7 +178,6 @@ public class Region extends BeaconzPluginDependent {
      * This is only for creating new regions. Existing regions have their corner beacons loaded with Register.loadRegister().
      */
     public void createCorners() {
-
         // Check corners
         Set<Point2D> fourcorners = new HashSet<Point2D>();
         int xMin = (int) corners[0].getX();
@@ -330,12 +331,12 @@ public class Region extends BeaconzPluginDependent {
         Double z = (corners[0].getY() + corners[1].getY()) / 2.0;
         return new Point2D.Double(x,z);
     }
-
+    
     /**
      * Returns the region's radius
      */
-    public Double getRadius() {
-        return (Math.abs(corners[0].getX()) + Math.abs(corners[1].getX())) / 2.0;
+    public int getRadius() {
+        return (int)((Math.abs(corners[0].getX()) + Math.abs(corners[1].getX())) / 2D);
     }
 
     /**
@@ -380,7 +381,7 @@ public class Region extends BeaconzPluginDependent {
      * Sets the region's spawn point
      */
     public void setSpawnPoint(Point2D point, Integer radius) {
-        Double y = getBeaconzWorld().getHighestBlockYAt((int) point.getX(), (int) point.getY()) * 1.0;
+        int y = getBeaconzWorld().getHighestBlockYAt((int) point.getX(), (int) point.getY());
         setSpawnPoint(new Location(getBeaconzWorld(), point.getX(), y, point.getY()), radius);
     }
 
@@ -390,7 +391,7 @@ public class Region extends BeaconzPluginDependent {
      * @param radius
      */
     public void setSpawnPoint(Location loc, Integer radius){
-        spawnpoint = findSafeSpot(loc, radius);
+        spawnPoint = findSafeSpot(loc, radius);
     }
 
     /**
@@ -398,14 +399,14 @@ public class Region extends BeaconzPluginDependent {
      * @param loc
      */
     public void setSpawnPoint(Location loc) {
-        spawnpoint = loc;
+        spawnPoint = loc;
     }
 
     /**
      * Returns the region's spawn point
      */
     public Location getSpawnPoint() {
-        return spawnpoint;
+        return spawnPoint;
     }
 
     /**
@@ -413,7 +414,7 @@ public class Region extends BeaconzPluginDependent {
      */
     public void tpToRegionSpawn(Player player) {
         //getLogger().info("DEBUG: tpToRegionSpawnPoint");
-        player.teleport(spawnpoint);
+        player.teleport(spawnPoint);
         /*
         if (this.equals(getGameMgr().getLobby())) {
             enterLobby(player);
@@ -485,7 +486,7 @@ public class Region extends BeaconzPluginDependent {
      */
     public void enter(Player player) {
         if (getGameMgr().isPlayerInLobby(player)) {
-            getLogger().info("DEBUG: enter - player is in lobby, enter lobby");
+            //getLogger().info("DEBUG: enter - player is in lobby, enter lobby");
             enterLobby(player);
         } else {
             Game game = getGameMgr().getGame(this);
@@ -506,10 +507,12 @@ public class Region extends BeaconzPluginDependent {
             }
 
             // Welcome player on screen
+            /*
             getServer().dispatchCommand(getServer().getConsoleSender(),
                     "title " + player.getName() + " title {\"text\":\"" + Lang.welcome + "\", \"color\":\"" + Lang.welcomeColor + "\"}");
             getServer().dispatchCommand(getServer().getConsoleSender(),
                     "title " + player.getName() + " subtitle {\"text\":\"" + Lang.subTitle + "\", \"color\":\"" + Lang.subTitleColor + "\"}");
+    */
         }
     }
 
@@ -552,7 +555,7 @@ public class Region extends BeaconzPluginDependent {
                 }
         }
         if (safeloc == null) {
-            getLogger().warning(ChatColor.RED + "Could not find a safe spot for region spawn point. Region at " + displayCoords() + ". Using default.");
+            //getLogger().warning(ChatColor.RED + "Could not find a safe spot for region spawn point. Region at " + displayCoords() + ". Using default.");
             safeloc = getBeaconzWorld().getHighestBlockAt((int) location.getX(), (int) location.getZ()).getLocation();
             safeloc = safeloc.add(0.5, 0.0, 0.5);
             if (safeloc.getBlock().isLiquid() || safeloc.getBlock().isEmpty()) {
@@ -650,4 +653,111 @@ public class Region extends BeaconzPluginDependent {
         this.game = game;
     }
 
+    /**
+     * Makes a platform in the sky
+     */
+    @SuppressWarnings("deprecation")
+    public void makePlatform() {
+        Random rand = new Random();
+        if (corners.length == 2) {
+            for (int x = (int)corners[0].getX(); x <= (int)corners[1].getX(); x++) {
+                for (int z = (int)corners[0].getY(); z <= (int)corners[1].getY(); z++) {
+                    Block block = getBeaconzWorld().getBlockAt(x, Settings.lobbyHeight, z);
+                    String matType = Settings.lobbyBlocks.get(rand.nextInt(Settings.lobbyBlocks.size()));
+                    //getLogger().info("DEBUG: mattype = " + matType);
+                    Material material = null;
+                    if (matType.contains(":")) {
+                        //getLogger().info("DEBUG: colon - " + matType.substring(0, matType.indexOf(":")));
+                        material = Material.getMaterial(matType.substring(0, matType.indexOf(":")).toUpperCase());
+                    } else {
+                        //getLogger().info("DEBUG: no colon");
+                        material = Material.getMaterial(matType);
+                    }
+                    //getLogger().info("DEBUG: material = " + material);
+                    if (material != null) {
+                        block.setType(material);
+                        if (matType.contains(":")) {
+                            // Set value
+                            //getLogger().info("DEBUG: colon - " + matType.substring(matType.indexOf(":")+1));
+                            try {
+                                block.setData(Byte.valueOf(matType.substring(matType.indexOf(":")+1)));
+                            } catch (Exception e) {
+                                getLogger().severe("Could not parse block data value for " + matType + ", using 0...");
+                            }
+                            
+                        }
+                    } else {
+                        getLogger().severe("Could not parse block material value for " + matType + ", skipping...");
+                    }
+                } 
+            }
+        }
+        // Set spawn
+        int x = (int)((corners[0].getX() + corners[1].getX()) / 2D);
+        int z = (int)((corners[0].getY() + corners[1].getY()) / 2D);
+        spawnPoint = new Location(getBeaconzWorld(),x,Settings.lobbyHeight+1,z+2);
+                // Place sign
+        Block sign = getBeaconzWorld().getBlockAt(spawnPoint.getBlockX(), spawnPoint.getBlockY(), spawnPoint.getBlockZ());
+        sign.setType(Material.SIGN_POST);
+        Sign realSign = (Sign)sign.getState();
+        realSign.setLine(0, "[beaconz]");
+        realSign.setLine(1, Settings.defaultGameName);
+        realSign.setLine(2, Lang.hitSign);
+        realSign.update();
+        // Set the spawn point to look at the new sign
+        org.bukkit.material.Sign s = (org.bukkit.material.Sign) realSign.getData();
+        BlockFace directionFacing = s.getFacing();
+        float yaw = blockFaceToFloat(directionFacing);
+        spawnPoint = sign.getRelative(directionFacing).getLocation();
+        spawnPoint = new Location(spawnPoint.getWorld(), spawnPoint.getBlockX() + 0.5D, spawnPoint.getBlockY(),
+                spawnPoint.getBlockZ() + 0.5D, yaw, 30F);
+        //getLogger().info("DEBUG: spawn point = " + spawnPoint);
+        getBeaconzWorld().setSpawnLocation(spawnPoint.getBlockX(), spawnPoint.getBlockY(), spawnPoint.getBlockZ());
+    }
+
+    /**
+     * Converts block face direction to radial degrees. Returns 0 if block face
+     * is not radial.
+     * 
+     * @param face
+     * @return degrees
+     */
+    public static float blockFaceToFloat(BlockFace face) {
+        switch (face) {
+        case EAST:
+            return 90F;
+        case EAST_NORTH_EAST:
+            return 67.5F;
+        case EAST_SOUTH_EAST:
+            return 0F;
+        case NORTH:
+            return 0F;
+        case NORTH_EAST:
+            return 45F;
+        case NORTH_NORTH_EAST:
+            return 22.5F;
+        case NORTH_NORTH_WEST:
+            return 337.5F;
+        case NORTH_WEST:
+            return 315F;
+        case SOUTH:
+            return 180F;
+        case SOUTH_EAST:
+            return 135F;
+        case SOUTH_SOUTH_EAST:
+            return 157.5F;
+        case SOUTH_SOUTH_WEST:
+            return 202.5F;
+        case SOUTH_WEST:
+            return 225F;
+        case WEST:
+            return 270F;
+        case WEST_NORTH_WEST:
+            return 292.5F;
+        case WEST_SOUTH_WEST:
+            return 247.5F;
+        default:
+            return 0F;
+        }
+    }
 }

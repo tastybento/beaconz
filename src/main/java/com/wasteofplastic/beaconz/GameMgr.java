@@ -240,11 +240,11 @@ public class GameMgr extends BeaconzPluginDependent {
         // If the user increased the radius of the lobby in config.yml, it might invade existing game regions
         // Just to be safe, let's check that and try smaller areas
         // Check that lobby area is FREE. Admin is responsible for making sure it is safe
-        if (!checkAreaFree(ctr, rad + 0.0)) {
+        if (!checkAreaFree(ctr, rad)) {
             getLogger().warning("Lobby area wasn't free. Trying smaller area.");
             for (int i = rad-16; i > 0; i =- 16) {
                 rad = i;
-                if (checkAreaFree(ctr, i + 0.0)) {
+                if (checkAreaFree(ctr, i)) {
                     getLogger().info("Found smaller area that is free. Radius = " + i);
                     break;
                 }
@@ -267,13 +267,15 @@ public class GameMgr extends BeaconzPluginDependent {
             lobby = new Region(plugin, corners);
             regions.put(corners, lobby);
         }
+        // Create a lobby platform
+        lobby.makePlatform();
         getLogger().info("Lobby area created.");
     }
 
     /**
      * Create a new game, in a new region
      */
-    public void newGame(String gameName, CommandSender sender) {
+    public void newGame(String gameName) {
         // Fire off *async* task to look for next game location
         // Upon completion, it will call newGame(gameName, location) to complete creating the new game
 
@@ -341,7 +343,7 @@ public class GameMgr extends BeaconzPluginDependent {
                     Region region = regions.get(key);
                     if (region != lobby) {
                         //getLogger().info("GameMgr.nextRegionLocation - processing region at " + region.getCenter());
-                        newregionctr = goodNeighbor(region.getCenter(), region.getRadius() + 16.0 + gradius);
+                        newregionctr = goodNeighbor(region.getCenter(), region.getRadius() + 16D + gradius);
                         if (newregionctr != null) {
                             break;
                         }                        
@@ -724,12 +726,12 @@ public class GameMgr extends BeaconzPluginDependent {
      * Check if an area is free
      * (not invading other areas)
      */
-    public Boolean checkAreaFree (Point2D center, Double radius) {
+    public Boolean checkAreaFree (Point2D center, Integer rad) {
         Boolean free = true;
-        Point2D lowerleft = new Point2D.Double(center.getX() - radius, center.getY() - radius);;
-        Point2D upperleft = new Point2D.Double(center.getX()  - radius, center.getY() + radius);
-        Point2D upperright = new Point2D.Double(center.getX()  + radius, center.getY() + radius);
-        Point2D lowerright = new Point2D.Double(center.getX()  + radius, center.getY() - radius);
+        Point2D lowerleft = new Point2D.Double(center.getX() - rad, center.getY() - rad);;
+        Point2D upperleft = new Point2D.Double(center.getX()  - rad, center.getY() + rad);
+        Point2D upperright = new Point2D.Double(center.getX()  + rad, center.getY() + rad);
+        Point2D lowerright = new Point2D.Double(center.getX()  + rad, center.getY() - rad);
 
         for (Point2D[] key : regions.keySet()) {
             Region reg = regions.get(key);

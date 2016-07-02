@@ -1008,7 +1008,7 @@ public class Scorecard extends BeaconzPluginDependent{
                             // Beacon timer ran out
                             countdownTimer = 0;
                             timertaskid.cancel();
-                            getLogger().info("DEBUG: countdown timer expired - ending game");
+                            //getLogger().info("DEBUG: countdown timer expired - ending game");
                             endGame();
                         }
                         seconds = countdownTimer + 0L;

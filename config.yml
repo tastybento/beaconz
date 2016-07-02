@@ -3,6 +3,9 @@ world:
   # Beaconz world
   name: beaconz   
   
+  # Default game name
+  defaultgamename: Beaconz
+  
   # Distribution of beacons the large the number, the more beacons are made
   distribution: 0.03
   
@@ -19,6 +22,14 @@ world:
   lobbyx: 0
   lobbyz: 0
   lobbyradius: 16 
+  # Lobby platform will be at this height
+  lobbyheight: 200
+  # Lobby platform will be made up randomly of these blocks. Tip: Mobs do not spawn on glass.
+  lobbyblocks:
+  - STAINED_GLASS:2
+  - STAINED_GLASS:3
+  - STAINED_GLASS:4
+  - STAINED_GLASS:5
   
   # Starting center point
   xcenter: 1000
@@ -250,7 +261,7 @@ sidebar:
 # a goal value = 0 means the timer counts down and when it reaches 0 the team with the greatest score for that goal wins   
 goals:
   minigame: links:0
-  strategy: area:100000
+  strategy: area:3000000
 # timer in seconds, for when the goal value is greater than zero 
 timer:
   minigame: 600
