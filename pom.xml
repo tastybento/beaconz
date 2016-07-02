@@ -104,5 +104,5 @@
 	</organization>
 	<name>Beaconz</name>
 	<url>https://github.com/tastybento/beaconz/wiki</url>
-	<description>Beaconz is a minecraft mod that adds area control and capture point features to default minecraft. It's runs on Spigot 1.8.8 and or Bukkit servers and runs server side with no client requirements.</description>
+	<description>Beaconz is a minecraft mod that adds area control and capture point features to default minecraft. It's runs on Spigot and or Bukkit servers and runs server side with no client requirements.</description>
 </project>
