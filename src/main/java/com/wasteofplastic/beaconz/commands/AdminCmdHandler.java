@@ -83,7 +83,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                 sender.sendMessage(cc1 + "/" + label + cc2 + " join <gamename> <team>" + cc3 + Lang.helpAdminJoin);
             }
             sender.sendMessage(cc1 + "/" + label + cc2 + " games" + cc3 + Lang.helpAdminGames);
-            sender.sendMessage(cc1 + "/" + label + cc2 + " kick <playername> <gamename>" + cc3 + Lang.helpAdminKick);
+            sender.sendMessage(cc1 + "/" + label + cc2 + " kick <online playername> <gamename>" + cc3 + Lang.helpAdminKick);
             sender.sendMessage(cc1 + "/" + label + cc2 + " restart <gamename>" + cc3 + Lang.helpAdminRestart);
             sender.sendMessage(cc1 + "/" + label + cc2 + " reset <gamename>" + cc3 + Lang.helpAdminReset);
             sender.sendMessage(cc1 + "/" + label + cc2 + " pause <gamename>" + cc3 + Lang.helpAdminPause);
@@ -102,6 +102,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                 sender.sendMessage(cc1 + "/" + label + cc2 + " setspawn " + cc3 + Lang.helpAdminSetLobbySpawn);
                 sender.sendMessage(cc1 + "/" + label + cc2 + " switch " + cc3 + Lang.helpAdminSwitch);
             }
+            sender.sendMessage(cc1 + "/" + label + cc2 + " switch <online playername> " + cc3 + Lang.helpAdminSwitch);
             sender.sendMessage(cc1 + "/" + label + cc2 + " teams [all | <gamename>]" + cc3 + Lang.helpAdminTeams);
             sender.sendMessage(cc1 + "/" + label + cc2 + " timertoggle [all | <gamename>]" + cc3 + Lang.helpAdminTimerToggle);
 
@@ -165,41 +166,76 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                     }
                 }
                 break;
-                */
+                 */
             case "switch":
                 // Switch teams within a game
-                if (!(sender instanceof Player)) {
-                    sender.sendMessage(Lang.errorOnlyPlayers);
-                    return true;
-                } else {
-                    player = (Player) sender;
-                    team = getGameMgr().getPlayerTeam(player);
-                    if (team == null) {
-                        sender.sendMessage(ChatColor.RED + Lang.errorYouMustBeInATeam);
+                if (args.length == 1) {
+                    if (!(sender instanceof Player)) {
+                        sender.sendMessage(Lang.errorOnlyPlayers);
                         return true;
-                    }
-                    game = getGameMgr().getGame(team);
-                    if (game == null) {
-                        sender.sendMessage(ChatColor.RED + Lang.errorYouMustBeInAGame);
-                        return true;
-                    }
-                    
-                    // Get the next team in this game
-                    for (Team newTeam : game.getScorecard().getTeams()) {
-                        if (!newTeam.equals(team)) {
-                            // Found an alternative
-                            game.getScorecard().addTeamPlayer(newTeam, player);
-                            sender.sendMessage(ChatColor.GREEN + Lang.switchedToTeam.replace("[team]", newTeam.getDisplayName()));
-                            // Remove any potion effects
-                            for (PotionEffect effect : player.getActivePotionEffects())
-                                player.removePotionEffect(effect.getType());
+                    } else {
+                        player = (Player) sender;
+                        team = getGameMgr().getPlayerTeam(player);
+                        if (team == null) {
+                            sender.sendMessage(ChatColor.RED + Lang.errorYouMustBeInATeam);
                             return true;
                         }
-                    }
-                    sender.sendMessage(ChatColor.RED + Lang.errorNoSuchTeam);
-                    return true;
-                }
+                        game = getGameMgr().getGame(team);
+                        if (game == null) {
+                            sender.sendMessage(ChatColor.RED + Lang.errorYouMustBeInAGame);
+                            return true;
+                        }
 
+                        // Get the next team in this game
+                        for (Team newTeam : game.getScorecard().getTeams()) {
+                            if (!newTeam.equals(team)) {
+                                // Found an alternative
+                                game.getScorecard().addTeamPlayer(newTeam, player);
+                                sender.sendMessage(ChatColor.GREEN + Lang.switchedToTeam.replace("[team]", newTeam.getDisplayName()));
+                                // Remove any potion effects
+                                for (PotionEffect effect : player.getActivePotionEffects())
+                                    player.removePotionEffect(effect.getType());
+                                return true;
+                            }
+                        }
+                        sender.sendMessage(ChatColor.RED + Lang.errorNoSuchTeam);
+                        return true;
+                    }
+                } else if (args.length == 2) {
+                    player = getServer().getPlayer(args[1]);
+                    if (player == null) {
+                        sender.sendMessage(Lang.errorUnknownPlayer);
+                        return true;
+                    } else {
+                        team = getGameMgr().getPlayerTeam(player);
+                        if (team == null) {
+                            sender.sendMessage(ChatColor.RED + Lang.errorNoSuchTeam);
+                            return true;
+                        }
+                        game = getGameMgr().getGame(team);
+                        if (game == null) {
+                            sender.sendMessage(ChatColor.RED + Lang.errorNoSuchGame);
+                            return true;
+                        }
+
+                        // Get the next team in this game
+                        for (Team newTeam : game.getScorecard().getTeams()) {
+                            if (!newTeam.equals(team)) {
+                                // Found an alternative
+                                game.getScorecard().addTeamPlayer(newTeam, player);
+                                sender.sendMessage(ChatColor.GREEN + player.getName() + ": " + Lang.switchedToTeam.replace("[team]", newTeam.getDisplayName()));
+                                player.sendMessage(ChatColor.GREEN + Lang.switchedToTeam.replace("[team]", newTeam.getDisplayName()));
+                                
+                                // Remove any potion effects
+                                for (PotionEffect effect : player.getActivePotionEffects())
+                                    player.removePotionEffect(effect.getType());
+                                return true;
+                            }
+                        }
+                        sender.sendMessage(ChatColor.RED + Lang.errorNoSuchTeam);
+                        return true;
+                    }
+                }
             case "join":
                 if (args.length < 3) {
                     sender.sendMessage(ChatColor.RED + "/" + label + " join <gamename> <team>" + Lang.helpAdminJoin);
@@ -347,7 +383,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                     }
                 }
                 break;
-                
+
             case "link":
                 if (args.length < 3) {
                     sender.sendMessage(ChatColor.RED + "/" + label + " link <x> <z> " + Lang.helpAdminLink);
@@ -874,7 +910,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
             }
             // Complete the options with the console-only options
             // Player names
-            if (args[0].equalsIgnoreCase("kick") ) {
+            if (args[0].equalsIgnoreCase("kick") || args[0].equalsIgnoreCase("switch")) {
                 for (Player p : getServer().getOnlinePlayers()) {
                     options.add(p.getName());
                 }

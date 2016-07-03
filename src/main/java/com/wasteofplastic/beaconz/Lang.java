@@ -56,7 +56,7 @@ public class Lang {
     public static String errorNoSuchTeam = "Could not find team!";
     public static String errorNoSuchGame = "No such game!";
     public static String errorNoGames = "Could not find any games.";
-    public static String errorUnknownPlayer = "Unknown player!";
+    public static String errorUnknownPlayer = "Unknown or offline player!";
     public static String errorUnknownCommand = "Unknown command!";
     public static String errorYouCannotBuildThere = "You cannot build there!";
     public static String errorClearAroundBeacon = "Clear around and above the beacon to capture!";
