@@ -70,13 +70,14 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
             switch (args[0].toLowerCase()) {
             case "help":
                 sender.sendMessage("/" + label + " help " + Lang.helpHelp);
-                sender.sendMessage("/" + label + " join <game> " + Lang.helpJoin);
-                sender.sendMessage("/" + label + " leave <game> " + Lang.helpLeave);
-                sender.sendMessage("/" + label + " lobby " + Lang.helpLobby);
-                sender.sendMessage("/" + label + " location " + Lang.helpLocation);
-                sender.sendMessage("/" + label + " score " + Lang.helpScore);
-                sender.sendMessage("/" + label + " scoreboard " + Lang.helpScoreboard);
+                //sender.sendMessage("/" + label + " join <game> " + Lang.helpJoin);
+                //sender.sendMessage("/" + label + " leave <game> " + Lang.helpLeave);
+                //sender.sendMessage("/" + label + " lobby " + Lang.helpLobby);
+                //sender.sendMessage("/" + label + " location " + Lang.helpLocation);
+                //sender.sendMessage("/" + label + " score " + Lang.helpScore);
+                sender.sendMessage("/" + label + " sb " + Lang.helpScoreboard);
                 break;
+            /*
             case "lobby":
                 player.setScoreboard(Bukkit.getServer().getScoreboardManager().getNewScoreboard());
                 getGameMgr().getLobby().tpToRegionSpawn(player);
@@ -130,7 +131,8 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
                 }
 
                 break;
-            case "scoreboard":
+                */
+            case "sb":
                 if (player.getScoreboard().getEntries().isEmpty()) {
                     Game game = getGameMgr().getGame(player.getLocation());
                     if (game != null) {
@@ -146,6 +148,7 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
                 break;
             }
             break;
+            /*
         case 2:
             Game game;
             switch (args[0].toLowerCase()) {
@@ -170,6 +173,7 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
                 break;
             }
             break;
+            */
         default:
             sender.sendMessage(ChatColor.RED + Lang.errorUnknownCommand);
             return false;

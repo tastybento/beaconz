@@ -78,7 +78,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                 sender.sendMessage(cc1 + "/" + label + cc2 + " claim [unowned | <team>]" + cc3 + Lang.helpAdminClaim);
             }
             sender.sendMessage(cc1 + "/" + label + cc2 + " delete <gamename>" + cc3 + Lang.helpAdminDelete);
-            sender.sendMessage(cc1 + "/" + label + cc2 + " distribution <decimal between 0 and 1>" + cc3 + Lang.helpAdminDistribution);
+            //sender.sendMessage(cc1 + "/" + label + cc2 + " distribution <decimal between 0 and 1>" + cc3 + Lang.helpAdminDistribution);
             if (sender instanceof Player) {
                 sender.sendMessage(cc1 + "/" + label + cc2 + " join <gamename> <team>" + cc3 + Lang.helpAdminJoin);
             }
@@ -148,7 +148,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                     }
                 }
                 break;
-
+                /*
             case "distribution":
                 if (args.length < 2) {
                     sender.sendMessage(ChatColor.RED + "/" + label + " distribution <fraction between 0 and 1> " + Lang.helpAdminDistribution);
@@ -165,6 +165,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                     }
                 }
                 break;
+                */
             case "switch":
                 // Switch teams within a game
                 if (!(sender instanceof Player)) {
@@ -346,7 +347,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                     }
                 }
                 break;
-
+                
             case "link":
                 if (args.length < 3) {
                     sender.sendMessage(ChatColor.RED + "/" + label + " link <x> <z> " + Lang.helpAdminLink);
