@@ -59,7 +59,7 @@ public class BeaconMap extends MapRenderer {
             //Bukkit.getLogger().info("DEBUG: render");
             // here's where you do your drawing - see the Javadocs for the MapCanvas class for
             // the methods you can use
-            canvas.drawText(10, 10, MinecraftFont.Font, Lang.mapBeaconMap + " #" + map.getId());
+            canvas.drawText(10, 10, MinecraftFont.Font, Lang.mapBeaconMap);
             // Get the text
             BeaconObj beacon = plugin.getRegister().getBeaconMap(map.getId());
             if (beacon != null) {
