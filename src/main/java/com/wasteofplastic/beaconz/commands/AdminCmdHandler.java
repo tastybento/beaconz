@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.UUID;
 
 import org.apache.commons.lang.math.NumberUtils;
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -59,9 +58,12 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         // TODO: Make this a permission
-        if (!sender.isOp()) {
-            sender.sendMessage(ChatColor.RED + Lang.errorYouMustBeOp);
-            return true;
+        if (sender instanceof Player) {
+            Player player = (Player)sender;
+            if (!player.hasPermission("beaconz.admin")) {
+                sender.sendMessage(ChatColor.RED + Lang.errorYouDoNotHavePermission);
+                return true;
+            }
         }
         Team team = null;
         Game game = null;
@@ -225,7 +227,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                                 game.getScorecard().addTeamPlayer(newTeam, player);
                                 sender.sendMessage(ChatColor.GREEN + player.getName() + ": " + Lang.switchedToTeam.replace("[team]", newTeam.getDisplayName()));
                                 player.sendMessage(ChatColor.GREEN + Lang.switchedToTeam.replace("[team]", newTeam.getDisplayName()));
-                                
+
                                 // Remove any potion effects
                                 for (PotionEffect effect : player.getActivePotionEffects())
                                     player.removePotionEffect(effect.getType());
@@ -278,7 +280,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                 if (args.length < 3) {
                     sender.sendMessage(ChatColor.RED + "/" + label + Lang.helpAdminKick);
                 } else {
-                    player = Bukkit.getPlayer(args[1]);
+                    player = getServer().getPlayer(args[1]);
                     if (player == null && args[1] != "all") {
                         sender.sendMessage(Lang.errorUnknownPlayer);
                     } else {
@@ -582,7 +584,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                                     sender.sendMessage("==== " + t.getDisplayName() + " ====");
                                     String memberlist = "";
                                     for (String uuid : teamMembers.get(t)) {
-                                        memberlist = memberlist + "[" + Bukkit.getServer().getOfflinePlayer(UUID.fromString(uuid)).getName() + "] ";
+                                        memberlist = memberlist + "[" + getServer().getOfflinePlayer(UUID.fromString(uuid)).getName() + "] ";
                                     }
                                     sender.sendMessage(ChatColor.WHITE + Lang.members + ": " + memberlist);
                                 }

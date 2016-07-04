@@ -20,3 +20,9 @@ permissions:
   beaconz.map.unclaimed:
     description: Can see all unclaimed beacons on a map
     default: op
+  beaconz.admin:
+    description: Can use admin commands
+    default: false
+  beaconz.player:
+    description: Can player beaconz
+    default: true

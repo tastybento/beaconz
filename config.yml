@@ -9,14 +9,14 @@ world:
   # Distribution of beacons the large the number, the more beacons are made
   distribution: 0.03
   
-  # Size of the world - a barrier will be created using worldborder if size > 0
-  size: 2000
-  
   # Distance between new game regions. Must be at least size of the barrier
   # This is the default size for the sides of each new (square) game region
   distance: 2000
   
-  # 
+  # Number of seconds a player must be stationary before they will be teleported
+  teleportdelay: 5 
+
+  # Lobby settings
   # Coordinates for the lobby area
   # These coordinates must be divisible by 16, otherwise they will be adjusted
   lobbyx: 0
@@ -31,29 +31,19 @@ world:
   - STAINED_GLASS:4
   - STAINED_GLASS:5
   
-  # Starting center point
-  xcenter: 1000
-  zcenter: 1000
+  # Starting point for first game
+  xcenter: 2000
+  zcenter: 2000
   
   # Team chat
-  # If true, players can only converse with same team players in the beaconz world
+  # If true, players can only converse with their team players in the beaconz world
   teamchat: false
   
-  # Random spawn - if true, players will spawn randomly (within the world border if set)
-  randomspawn: false
-  
-  # Seed adjustment
-  seedadjustment: 0
-  
-  # The base distance in blocks that players can link beacons without experience points
-  # If set to -1, beacons can be any distance apart
-  linkdistance: 0
-  
-  # The distance that each exp point will go when linking a beacon
+  # Number of blocks that each exp point will link when linking a beacon
   # If zero, there is no exp cost to link beacons
   expdistance: 5
   
-  # The maximum distance the beacon can link without extending link blocks
+  # The maximum distance a beacon can link without extending link blocks
   linklimit: 500
   
   # Link blocks that extend the link limit, and by how much. Once a link block is placed
@@ -63,16 +53,16 @@ world:
      GOLD_BLOCK: 50
      DIAMOND_BLOCK: 200
     
-  # Maximum number of links a beacon can have
+  # Maximum number of links a beacon can have. Note teams cannot remove their own links
+  # except by sacrificing link extender blocks.
   maxlinks: 6
   
-  # Defense height - max height of blocks that can be placed around a beacon
+  # Defense height - max height of blocks that can be placed around a beacon to defend it
   defenseheight: 8
   
   # Defense levels
-  # Defines what levels are required to place a block at the height around the beacon
-  # The numbers listed should correspond to their defenseheight. If a number is missing
-  # the previous level will be used. A level of 0 means any level can place.
+  # Defines what exp levels is required to place a block at that height around the beacon
+  # Height: Exp level
   defenselevel:
      1: 0
      2: 2
@@ -84,10 +74,8 @@ world:
      8: 30
      
   # Attack levels
-  # Defines what level an attack must be to be able to mine the block at that level
-  # above the beacon. 
-  # The numbers listed should correspond to their defenseheight. If a number is missing
-  # the previous level will be used. A level of 0 means any level can place.
+  # Defines what exp level an attacker must be to be able to mine the block at that height
+  # Height: Exp level 
   attacklevel:
      1: 0
      2: 2
@@ -100,20 +88,25 @@ world:
   
   # Starter inventory
   # Format Material:Qty or Material:Data:Qty
+  # Note that any type of pickaxe can eventually break obsidian.
   newbiekit:
   - "DIAMOND_PICKAXE:1"
-  #- "SUGAR_CANE:1"
+  - "BREAD:2"
   
   # Beacon mine settings
-  # Chance that mining a beacon will result in it becoming exhausted and enter
-  # a cool down period
+  # Cost in experience points to mine a beacon
+  beaconmineexp: 10
+  
+  # Chance % that mining a beacon will result in it becoming exhausted and enter
+  # a cool down period.
   beaconmineexhaustchance: 10
   
-  # Mine cool down - how long a player has to wait until they can try to mine a beacon
-  # in minutes
+  # Mine cool down period in minutes
   minecooldown: 1
   
-  # Effect if you mine a beacon during the cooldown period. Format is Effect:Amplifier
+  # Cooldown period penalty
+  # Players get this if they mine during the cooldown until the cooldown finishes.
+  # Format is Effect:Amplifier
   # Options are: Blindness, Confusion, Harm, Hunger, Slow, Slow_digging, Weakness, Wither
   # Amplifier is a number, .e.g, 0, 1
   minepenalty:
@@ -138,11 +131,11 @@ world:
   - "CHORUS_FLOWER:1=5"
   # Mining your own beacon should give you the chance of obtaining a map
   teamgoodies:
-  # The map is a beacon map
+  # The map is a beacon map. Give empty map if you want to give a normal map
   - "MAP:1=100"
 
   # Effects from going into enemy triangle fields
-  # Effects are cumulative
+  # Effects are cumulative, i.e., level 2 includes level 1 effects.
   enemyfieldeffects:
     # When in 1 field
     1:
@@ -184,6 +177,7 @@ world:
 # Team configuration
 default_teams: 2
 # Teams have glass colors that can be picked from these. They must be different.
+# Team names can be anything you like, but must be a single word
 # 0: White Stained Glass
 # 1: Orange Stained Glass
 # 2: Magenta Stained Glass
@@ -248,23 +242,26 @@ teams:
     glasscolor: 2
   pink:
     displayname: "Pink"
-    glasscolor: 6           
+    glasscolor: 6   
+        
 # gamemode is strategy or minigame
 gamemode: strategy
-# possible scores to display on sidebar, for either game mode, are area, beacons, links, triangles
-# remember that the sidebar only has 15 lines, if there are many teams there may not be enough room to display all scores
+
+# Sidebar scoreboard options: area, beacons, links, triangles
+# remember that the sidebar only has 15 lines, if there are many teams there will not be enough room to display everything
 sidebar:
   minigame: area:beacons:links:triangles
   strategy: area:beacons:links:triangles
-# the goal must be one of the scores displayed on the sidebar
+
+# Goal to win the game
+# The goal must be one of the scores displayed on the sidebar
 # a goal value > 0 means the game ends when a team reaches that score; the timer is open-ended and counts up
 # a goal value = 0 means the timer counts down and when it reaches 0 the team with the greatest score for that goal wins   
 goals:
   minigame: links:0
   strategy: area:3000000
-# timer in seconds, for when the goal value is greater than zero 
+
+# Timer in seconds, for when the goal value is greater than zero 
 timer:
   minigame: 600
   strategy: 0 
-# Number of seconds a player must be stationary before they will be teleported
-teleportdelay: 5 

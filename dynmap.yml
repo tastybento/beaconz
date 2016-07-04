@@ -1,5 +1,8 @@
 # Dynmap-Beaconz configuration
 #
+# Allowing anyone to view the dynmap can give valuable information away to players
+# It is recommended only for use by admins, to to take screenshots of end-games.
+
 update:
   # Seconds between checks for updates
   period: 300
@@ -41,10 +44,77 @@ ownerstyle:
     fillColor: "#FF0000"
     fillOpacity: 0.3
   green:
+    strokeColor: "#008000"
+    strokeOpacity: 0.8
+    fillColor: "#008000"
+    fillOpacity: 0.3
+  white:
+    strokeColor: "#FFFFFF"
+    strokeOpacity: 0.8
+    fillColor: "#FFFFFF"
+    fillOpacity: 0.3
+  lightblue:
+    strokeColor: "#ADD8E6"
+    strokeOpacity: 0.8
+    fillColor: "#ADD8E6"
+    fillOpacity: 0.3
+  yellow:
+    strokeColor: "#FFFF00"
+    strokeOpacity: 0.8
+    fillColor: "#FFFF00"
+    fillOpacity: 0.3
+  lime:
     strokeColor: "#00FF00"
     strokeOpacity: 0.8
     fillColor: "#00FF00"
     fillOpacity: 0.3
-    
+  gray:
+    strokeColor: "#808080"
+    strokeOpacity: 0.8
+    fillColor: "#808080"
+    fillOpacity: 0.3
+  lightgray:
+    strokeColor: "#C0C0C0"
+    strokeOpacity: 0.8
+    fillColor: "#C0C0C0"
+    fillOpacity: 0.3    
+  cyan:
+    strokeColor: "#00FFFF"
+    strokeOpacity: 0.8
+    fillColor: "#00FFFF"
+    fillOpacity: 0.3 
+  purple:
+    strokeColor: "#800080"
+    strokeOpacity: 0.8
+    fillColor: "#800080"
+    fillOpacity: 0.3     
+  brown:
+    strokeColor: "#CD853F"
+    strokeOpacity: 0.8
+    fillColor: "#CD853F"
+    fillOpacity: 0.3     
+  black:
+    strokeColor: "#404040"
+    strokeOpacity: 0.8
+    fillColor: "#404040"
+    fillOpacity: 0.3     
+  orange:
+    strokeColor: "#FFA500"
+    strokeOpacity: 0.8
+    fillColor: "#FFA500"
+    fillOpacity: 0.3 
+  magenta:
+    strokeColor: "#FF00FF"
+    strokeOpacity: 0.8
+    fillColor: "#FF00FF"
+    fillOpacity: 0.3    
+  pink:
+    strokeColor: "#FFB6C1"
+    strokeOpacity: 0.8
+    fillColor: "#FFB6C1"
+    fillOpacity: 0.3     
+
+
+
 # Limit number of triangles processed per tick (avoid lag spikes on servers with lots of triangles)
 updates-per-tick: 300

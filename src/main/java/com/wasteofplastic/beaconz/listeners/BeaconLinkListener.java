@@ -139,7 +139,7 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
                 return;
             }
             event.setCancelled(true);
-            if (Settings.linkDistance >= 0 && Settings.expDistance > 0) {
+            if (Settings.expDistance > 0) {
                 // Check if the beaconz can be linked.
                 int linkDistance = checkBeaconDistance(beacon, mappedBeacon);
                 if (linkDistance > Settings.linkLimit) {

@@ -24,7 +24,6 @@ package com.wasteofplastic.beaconz.commands;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -37,7 +36,6 @@ import com.wasteofplastic.beaconz.Beaconz;
 import com.wasteofplastic.beaconz.BeaconzPluginDependent;
 import com.wasteofplastic.beaconz.Game;
 import com.wasteofplastic.beaconz.Lang;
-import com.wasteofplastic.beaconz.Scorecard;
 
 public class CmdHandler extends BeaconzPluginDependent implements CommandExecutor, TabCompleter {
 
@@ -53,11 +51,14 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
             return true;
         }
         Player player = (Player)sender;
-
+        if (!player.hasPermission("beaconz.player")) {
+            sender.sendMessage(ChatColor.RED + Lang.errorYouDoNotHavePermission);
+            return true;
+        }
         switch (args.length) {
         // Just the beaconz command
         case 0:
-            player.setScoreboard(Bukkit.getServer().getScoreboardManager().getNewScoreboard());
+            player.setScoreboard(getServer().getScoreboardManager().getNewScoreboard());
             if (getGameMgr().getLobby() == null) {
                 player.sendMessage(ChatColor.RED + "Hmm, there is no lobby yet...");
                 return true;
@@ -138,10 +139,10 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
                     if (game != null) {
                         player.setScoreboard(game.getScorecard().getScoreboard());
                     } else {
-                        player.setScoreboard(Bukkit.getServer().getScoreboardManager().getNewScoreboard());
+                        player.setScoreboard(getServer().getScoreboardManager().getNewScoreboard());
                     }
                 } else {
-                    player.setScoreboard(Bukkit.getServer().getScoreboardManager().getNewScoreboard());
+                    player.setScoreboard(getServer().getScoreboardManager().getNewScoreboard());
                 }
                 break;
             default:

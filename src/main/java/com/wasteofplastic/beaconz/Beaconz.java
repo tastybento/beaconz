@@ -219,9 +219,9 @@ public class Beaconz extends JavaPlugin {
             }
         }
         // Max number of links a beacon can have
-        Settings.maxLinks = getConfig().getInt("maxlinks", 6);
+        Settings.maxLinks = getConfig().getInt("world.maxlinks", 6);
         // Load teleport delay
-        Settings.teleportDelay = getConfig().getInt("teleportdelay",5);
+        Settings.teleportDelay = getConfig().getInt("world.teleportdelay",5);
         // get the lobby coords and size, adjust to match chunk size
         Settings.lobbyx = (getConfig().getInt("world.lobbyx", 0) / 16) * 16;
         Settings.lobbyz = (getConfig().getInt("world.lobbyz", 0) / 16) * 16;
@@ -272,8 +272,7 @@ public class Beaconz extends JavaPlugin {
         Settings.minigameTimer = getConfig().getInt("timer.minigame", 600);
         Settings.strategyTimer = getConfig().getInt("timer.strategy", 60000);
 
-        Settings.linkDistance = getConfig().getDouble("world.linkdistance", 0);
-        Settings.expDistance = getConfig().getDouble("world.expdistance", 10);
+        Settings.expDistance = getConfig().getDouble("world.expdistance", 5);
         Settings.beaconMineExhaustChance = getConfig().getInt("world.beaconmineexhaustchance", 10);
         if (Settings.beaconMineExhaustChance < 0) {
             Settings.beaconMineExhaustChance = 0;
@@ -306,10 +305,10 @@ public class Beaconz extends JavaPlugin {
                         int levelReq = getConfig().getInt("world.defenselevel." + level, 0);
                         Settings.defenseLevels.add(index, levelReq);
                     } else {
-                        getLogger().severe("Level in world.deferencelevel must be an integer value or 1 or more");
+                        getLogger().severe("Level in world.defenselevel must be an integer value or 1 or more");
                     }
                 } catch (Exception e) {
-                    getLogger().warning("Level in world.deferencelevel must be an integer value. This is not valid:" + level);
+                    getLogger().warning("Level in world.defenselevel must be an integer value. This is not valid:" + level);
                 }
 
             }
@@ -350,14 +349,13 @@ public class Beaconz extends JavaPlugin {
         }
         Settings.teamChat = getConfig().getBoolean("world.teamchat", false);
         Settings.worldName = getConfig().getString("world.name", "beaconz");
-        Settings.distribution = getConfig().getDouble("world.distribution", 0.05D);
+        Settings.distribution = getConfig().getDouble("world.distribution", 0.03D);
         if (Settings.distribution < 0.001D) {
             Settings.distribution = 0.001D;
         }
-        Settings.gameDistance = getConfig().getInt("world.distance", 400);
-        Settings.xCenter = getConfig().getInt("world.xcenter",0);
-        Settings.zCenter = getConfig().getInt("world.zcenter",0);
-        Settings.randomSpawn = getConfig().getBoolean("world.randomspawn", true);
+        Settings.gameDistance = getConfig().getInt("world.distance", 2000);
+        Settings.xCenter = getConfig().getInt("world.xcenter",2000);
+        Settings.zCenter = getConfig().getInt("world.zcenter",2000);
         Settings.seedAdjustment = getConfig().getLong("world.seedadjustment", 0);
         Settings.mineCoolDown = getConfig().getInt("world.minecooldown", 1) * 60000; // Minutes in millis
         ConfigurationSection enemyFieldSection = getConfig().getConfigurationSection("world.enemyfieldeffects");

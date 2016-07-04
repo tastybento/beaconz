@@ -46,7 +46,7 @@ public class Lang {
 
     public static String error = "Error: ";
     public static String errorYouCannotDoThat = "You cannot do that!";
-    public static String errorYouMustBeOp = "You must be Op to use this command";
+    public static String errorYouDoNotHavePermission = "You do not have permission to use this command!";
     public static String errorOnlyPlayers = "Only players can do that!";
     public static String errorYouHaveToBeStandingOnABeacon = "You have to be standing on a beacon";
     public static String errorNotInRegister = "Error: block isBeacon() but is not in the Register: ";
@@ -150,9 +150,9 @@ public class Lang {
 
     public static String regionLimit = "That's the limit of the game region, you can't go any further that way.";
 
-    public static String triangleLeaving = "Leaving [team]'s control area";
-    public static String triangleEntering = ChatColor.GRAY + "Now entering [team]'s control area level [level]";
-    public static String triangleDroppingToLevel = ChatColor.GRAY + "[team]'s control level dropping to [level]";
+    public static String triangleLeaving = "Leaving [team]'s triangle area";
+    public static String triangleEntering = ChatColor.GRAY + "Now entering [team]'s triangle area level [level]";
+    public static String triangleDroppingToLevel = ChatColor.GRAY + "[team]'s triangle area level dropping to [level]";
     public static String triangleCouldNotMake = "One triangle could not be created because of overlapping enemy elements!";
     public static String trianglesCouldNotMake = "[number] triangles could not be created because of overlapping enemy elements!";
     public static String triangleThisBelongsTo = "This belongs to [team]!";
