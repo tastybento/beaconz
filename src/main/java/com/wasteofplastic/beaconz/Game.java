@@ -26,6 +26,7 @@ import java.awt.geom.Point2D;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Iterator;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -34,6 +35,11 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.map.MapRenderer;
+import org.bukkit.map.MapView;
+
+import com.wasteofplastic.beaconz.map.BeaconMap;
+import com.wasteofplastic.beaconz.map.TerritoryMapRenderer;
 
 public class Game extends BeaconzPluginDependent {
 
@@ -48,6 +54,7 @@ public class Game extends BeaconzPluginDependent {
     private int countdowntimer;
     private Long startTime;
     private String scoretypes;
+    private boolean gameRestart;
 
 
     /**
@@ -94,19 +101,58 @@ public class Game extends BeaconzPluginDependent {
      * @param sender
      */
     public void reset(CommandSender sender) {
-        sendToLobby();
+     // Set restart flag as true
+        gameRestart = true;
+        // Move all players in game to lobby
+        for (Player player : getServer().getOnlinePlayers()) {
+            if (getRegion().isPlayerInRegion(player)) {
+                // Clear inventories
+                player.getInventory().clear();
+                sendToLobby(player);
+            }
+        }
+        // Handle maps 
+        Iterator<Short> it = getRegister().getBeaconMapIndex().iterator();
+        while (it.hasNext()) {
+            short index = it.next();
+            MapView map = Bukkit.getMap(index);
+            if (map != null && (map.getWorld().equals(getBeaconzWorld()) && getRegion().containsPoint(map.getCenterX(), map.getCenterZ()))) {
+                for (MapRenderer renderer : map.getRenderers()) {
+                    if (renderer instanceof TerritoryMapRenderer || renderer instanceof BeaconMap) {
+                        map.removeRenderer(renderer);
+                    }
+                }
+                it.remove();
+            }
+        }
+        // set all beacons to "unowned"
+        for (BeaconObj beacon : getRegister().getBeaconRegister().values()) {
+            if (this.getRegion().containsBeacon(beacon)) {
+                getRegister().removeBeaconOwnership(beacon);
+            }
+        }
         region.regenerate(sender);
         startTime = ((System.currentTimeMillis()+500)/1000)*1000;
         scorecard.reload();
         getBeaconzStore().removeGame(gameName);
         save();
+        // Set restart flag as true
+        gameRestart = false;
     }
 
     /**
      * Restarts the game
      */
     public void restart() {
-        // first set all beacons to "unowned"
+        // Set restart flag as true
+        gameRestart = true;
+        // Move all players in game to lobby
+        for (Player player : getServer().getOnlinePlayers()) {
+            if (getRegion().isPlayerInRegion(player)) {
+                sendToLobby(player);
+            }
+        }
+        // set all beacons to "unowned"
         for (BeaconObj beacon : getRegister().getBeaconRegister().values()) {
             if (this.getRegion().containsBeacon(beacon)) {
                 getRegister().removeBeaconOwnership(beacon);
@@ -115,7 +161,16 @@ public class Game extends BeaconzPluginDependent {
         // then restart the scoreboard
         startTime = ((System.currentTimeMillis()+500)/1000)*1000;
         scorecard.reload();
+        gameRestart = false;
     }
+
+    /**
+     * @return the gameRestart
+     */
+    public boolean isGameRestart() {
+        return gameRestart;
+    }
+
     /**
      * Pauses the game
      */
@@ -236,7 +291,7 @@ public class Game extends BeaconzPluginDependent {
 
         // Process region enter
         region.enter(player);
-        
+
         // Update scores
         scorecard.refreshScores();
 

@@ -309,7 +309,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                         sender.sendMessage(ChatColor.RED + Lang.errorNoSuchGame + "'" + args[1] + "'");
                     } else {
                         game.restart();
-                        sender.sendMessage(ChatColor.GREEN + Lang.helpAdminRestart.replace("[name]", game.getName()));
+                        sender.sendMessage(ChatColor.GREEN + Lang.adminRestart.replace("[name]", game.getName()));
                     }
                 }
                 break;
@@ -965,8 +965,8 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                 options.add("unowned");
             }
         default:
-            // For length > 2 setgameparms only
-            if (args.length > 2 && args[0].equalsIgnoreCase("setgameparms")) {
+            // For length > 2 setgameparms and newgame only
+            if (args.length > 2 && (args[0].equalsIgnoreCase("setgameparms") || args[0].equalsIgnoreCase("newgame"))) {
                 options.add("gamemode:strategy");
                 options.add("gamemode:minigame");
                 options.add("teams:");

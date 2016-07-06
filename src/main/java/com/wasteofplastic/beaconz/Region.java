@@ -144,6 +144,7 @@ public class Region extends BeaconzPluginDependent {
                                     loopcount++;
                                 }
                                 totalregen++;
+                                chZ = chZ + 16;
                                 if (loopcount >= step) {
                                     //getLogger().info("Region.regenerate() -- loop break at chunks: " + (chX/16) + ":" + (chZ/16) + "----- or blocks: " + chX + ":" + chZ);
                                     long temp = Math.round((totalregen/chunksToDo) * 100);
@@ -152,8 +153,7 @@ public class Region extends BeaconzPluginDependent {
                                         getLogger().info(progress + "% complete");
                                     }
                                     break outerloop;
-                                }
-                                chZ = chZ + 16;
+                                }   
                             }
                             chZ = zMin;
                             chX = chX + 16;

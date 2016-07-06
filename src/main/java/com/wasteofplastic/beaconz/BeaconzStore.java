@@ -59,7 +59,7 @@ public class BeaconzStore extends BeaconzPluginDependent {
     }
 
     /**
-     * Saves the location of all the chests to a file
+     * Saves to a file
      */
     public void saveInventories() {
         try {
@@ -137,7 +137,7 @@ public class BeaconzStore extends BeaconzPluginDependent {
     }
 
     /**
-     * Marks all the chests related to a particular game as empty. Chests are not actually emptied until they are reused.
+     * Removes all inventories for this game
      * @param gameName
      */
     public void removeGame(String gameName) {

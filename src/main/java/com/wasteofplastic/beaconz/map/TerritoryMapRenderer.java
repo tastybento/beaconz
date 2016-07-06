@@ -194,7 +194,7 @@ public class TerritoryMapRenderer extends MapRenderer {
                 int color = 16;
                 if (team != null) {
                     Scorecard sc = beaconz.getGameMgr().getSC(point);
-                    if (sc != null) {
+                    if (sc != null && sc.getBlockID(team) != null) {
                         color = sc.getBlockID(team).getData();
                     }
                 }

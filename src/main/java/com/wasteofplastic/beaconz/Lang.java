@@ -69,7 +69,7 @@ public class Lang {
     public static String errorCanOnlyPlaceBlocksUpTo = "You can only place blocks up to [value] high around the beacon!";
     public static String errorYouNeedToBeLevel = "You need to be level [value] to do that!";
 
-    public static String helpLine = "======================================================";
+    public static String helpLine = "==================================================";
 
     public static String helpHelp = "- this help";
     public static String helpJoin = "- join an ongoing game";

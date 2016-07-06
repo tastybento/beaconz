@@ -59,7 +59,7 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
 
     private Set<UUID> barrierPlayers = new HashSet<UUID>();
     private HashMap<UUID, Vector> teleportingPlayers = new HashMap<UUID,Vector>();
-    private final static boolean DEBUG = false;
+    private final static boolean DEBUG = true;
     private static final String LOBBY = "Lobby";
 
     /**
@@ -77,7 +77,7 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
     public void onWorldEnter(final PlayerChangedWorldEvent event) {
         // Entering Beaconz world
         if (event.getPlayer().getWorld().equals((getBeaconzWorld()))) {
-            getLogger().info("DEBUG: entering world");
+            //getLogger().info("DEBUG: entering world");
             if (!getGameMgr().isPlayerInLobby(event.getPlayer())) {                
                 // Send player to lobby
                 getGameMgr().getLobby().tpToRegionSpawn(event.getPlayer());
@@ -137,8 +137,6 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
         }
 
     }    
-
-    // These next methods are taken from Essentials code
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onTeleport(final PlayerTeleportEvent event) {
@@ -209,8 +207,10 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
             if (toLobby && fromGame != null) {
                 if (DEBUG)
                     getLogger().info("DEBUG: Teleporting to lobby from game " + fromGame.getName());
-                delayTeleport(event.getPlayer(), event.getFrom(), event.getTo(), fromGame.getName(), LOBBY);
-                event.setCancelled(true);
+                if (!fromGame.isGameRestart()) {
+                    delayTeleport(event.getPlayer(), event.getFrom(), event.getTo(), fromGame.getName(), LOBBY);
+                    event.setCancelled(true);
+                }
                 /*
                 // Store
                 getBeaconzStore().storeInventory(event.getPlayer(), fromGame.getName(), event.getFrom());
@@ -317,5 +317,5 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
             }}, Settings.teleportDelay * 20L);
     }
 
-    
+
 }

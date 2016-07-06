@@ -858,6 +858,21 @@ public class Register extends BeaconzPluginDependent {
     }
 
     /**
+     * @param index the map index to remove
+     */
+    public void removeBeaconMap(Short index) {  
+        getLogger().info("DEBUG: removing beacon map # " + index );
+        this.beaconMaps.remove(index);
+    }
+
+    /**
+     * @return set of all the beacon maps
+     */
+    public Set<Short> getBeaconMapIndex() {
+        return beaconMaps.keySet();
+    }
+    
+    /**
      * Gets a set of all the control triangles at this location. Can be overlapping triangles.
      * @param x
      * @param y
@@ -1030,6 +1045,8 @@ public class Register extends BeaconzPluginDependent {
             }
         }
     }
+    
+    
 
     /**
      * Recalculates the score for game. Used when a beacon is lost because that could enable the opposition to

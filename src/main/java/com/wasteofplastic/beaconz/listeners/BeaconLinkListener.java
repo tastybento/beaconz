@@ -65,7 +65,6 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
      * Handles the event of hitting a beacon with paper or a map
      * @param event
      */
-    @SuppressWarnings("deprecation")
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onPaperMapUse(final PlayerInteractEvent event) {
         if (DEBUG)
@@ -158,18 +157,24 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
                 }
                 if (linkBeacons(player, team, beacon, mappedBeacon)) {
                     player.sendMessage(ChatColor.GREEN + Lang.beaconTheMapDisintegrates);
-                    player.setItemInHand(null);
+                    player.getInventory().setItemInMainHand(null);
                     removeExp(player, expRequired);
                     // Save for safety
                     getRegister().saveRegister();
+                    // Update score
+                    getGameMgr().getGame(team).getScorecard().refreshScores(team);
+                    getGameMgr().getGame(team).getScorecard().refreshSBdisplay(team);
                 }
             } else {
                 // No exp required
                 if (linkBeacons(player, team, beacon, mappedBeacon)) {
                     player.sendMessage(ChatColor.GREEN + Lang.beaconTheMapDisintegrates);
-                    player.setItemInHand(null);
+                    player.getInventory().setItemInMainHand(null);
                     // Save for safety
                     getRegister().saveRegister();
+                    // Update score
+                    getGameMgr().getGame(team).getScorecard().refreshScores(team);
+                    getGameMgr().getGame(team).getScorecard().refreshSBdisplay(team);
                 }
             }
 

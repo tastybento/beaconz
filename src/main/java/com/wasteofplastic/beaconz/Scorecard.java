@@ -1048,8 +1048,10 @@ public class Scorecard extends BeaconzPluginDependent{
         teamsYml.set(gameName, null);
         for (Team team: scoreboard.getTeams()) {
             // Remove the team members
-            for (String name : teamMembers.get(team)) {
-                team.removeEntry(name);
+            if (teamMembers.containsKey(team)) {
+                for (String name : teamMembers.get(team)) {
+                    team.removeEntry(name);
+                }
             }
         }
         try {
