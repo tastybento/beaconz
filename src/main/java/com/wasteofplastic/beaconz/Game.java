@@ -128,9 +128,10 @@ public class Game extends BeaconzPluginDependent {
         // set all beacons to "unowned"
         for (BeaconObj beacon : getRegister().getBeaconRegister().values()) {
             if (this.getRegion().containsBeacon(beacon)) {
-                getRegister().removeBeaconOwnership(beacon);
+                getRegister().removeBeaconOwnership(beacon, true);
             }
         }
+        getRegister().saveRegister();
         region.regenerate(sender);
         startTime = ((System.currentTimeMillis()+500)/1000)*1000;
         scorecard.reload();
@@ -155,7 +156,7 @@ public class Game extends BeaconzPluginDependent {
         // set all beacons to "unowned"
         for (BeaconObj beacon : getRegister().getBeaconRegister().values()) {
             if (this.getRegion().containsBeacon(beacon)) {
-                getRegister().removeBeaconOwnership(beacon);
+                getRegister().removeBeaconOwnership(beacon, true);
             }
         }
         // then restart the scoreboard
@@ -192,7 +193,7 @@ public class Game extends BeaconzPluginDependent {
     }
 
     /**
-     * Saves the game to file
+     * Saves the game to file.
      * Game loading is handled by the GameMgr
      */
     public void save() {

@@ -88,6 +88,9 @@ public class BeaconPopulator extends BlockPopulator {
             if (plugin.getGameMgr().getLobby().containsPoint(source.getX() * 16, source.getZ() * 16)) {
                 return;
             }
+            if (plugin.getGameMgr().getLobby().containsPoint(source.getX() * 16 + 15, source.getZ() * 16 + 15)) {
+                return;
+            }
             // Don't do anything unless inside a region
             // Check min coords
             Region region = plugin.getGameMgr().getRegion(source.getX() * 16, source.getZ() * 16);
@@ -116,12 +119,12 @@ public class BeaconPopulator extends BlockPopulator {
             int x = gen.nextInt(16);
             int z = gen.nextInt(16);
             // Check if there is already a beacon here, if so, don't make it again
-
-            if (plugin.getRegister().getBeaconAt((source.getX() * 16 + x), (source.getZ()*16 + z)) != null) {
-                //plugin.getLogger().info("DEBUG: Beacon already at " + (source.getX() * 16 + x) + "," + (source.getZ()*16 + z));
-                return;
+            if (plugin.getRegister() != null) {
+                if (plugin.getRegister().getBeaconAt((source.getX() * 16 + x), (source.getZ()*16 + z)) != null) {
+                    //plugin.getLogger().info("DEBUG: Beacon already at " + (source.getX() * 16 + x) + "," + (source.getZ()*16 + z));
+                    return;
+                }
             }
-
             //plugin.getLogger().info("DEBUG: Creating beacon at " + (source.getX() * 16 + x) + "," + (source.getZ()*16 + z));
 
             int y = source.getChunkSnapshot().getHighestBlockYAt(x, z);
