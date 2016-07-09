@@ -223,7 +223,7 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
                 //player.getLocation().setPitch(yaw);
                 player.getLocation().setDirection(direction);
                 player.setVelocity(new Vector(0,0,0));
-                player.sendMessage(ChatColor.YELLOW + Lang.regionLimit);
+                player.sendMessage(ChatColor.YELLOW + Lang.errorRegionLimit);
                 return true;
             }
         }

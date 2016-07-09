@@ -31,7 +31,9 @@ import java.util.TreeMap;
 
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.material.MaterialData;
 import org.bukkit.potion.PotionEffect;
+import org.bukkit.scoreboard.Team;
 
 public class Settings {
     /**
@@ -212,5 +214,10 @@ public class Settings {
      * Default game name
      */
     public static String defaultGameName;
+    
+    /**
+     * Team colors
+     */
+    public static HashMap<Team, MaterialData> teamBlock;
     
 }

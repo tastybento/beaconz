@@ -106,6 +106,8 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
         if (beacon == null) {
             return;
         }
+        // Check that the integrity of the beacon is sound
+        beacon.checkIntegrity();
         // Check for obsidian/glass breakage - i.e., capture
         if (block.getRelative(BlockFace.DOWN).getType().equals(Material.BEACON)) {
             // Check if this is a real beacon
@@ -284,17 +286,17 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
                                 player.getWorld().dropItem(event.getPlayer().getLocation(), en.getValue());
                                 if (rand.nextInt(100) < Settings.beaconMineExhaustChance) {
                                     beacon.resetHackTimer();
-                                    player.sendMessage(ChatColor.GREEN + Lang.success + " " + Lang.beaconIsExhausted.replace("[minutes]", String.valueOf(Settings.mineCoolDown/60000)));
+                                    player.sendMessage(ChatColor.GREEN + Lang.generalSuccess + " " + Lang.beaconIsExhausted.replace("[minutes]", String.valueOf(Settings.mineCoolDown/60000)));
                                     player.getWorld().playSound(player.getLocation(), Sound.BLOCK_ENDERCHEST_CLOSE, 1F, 1F);
                                 } else {
-                                    player.sendMessage(ChatColor.GREEN + Lang.success);
+                                    player.sendMessage(ChatColor.GREEN + Lang.generalSuccess);
                                     player.getWorld().playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 1F, 1F);
                                 }
                             }
                             // Remove exp
                             BeaconLinkListener.removeExp(player, Settings.beaconMineExpRequired);
                         } else {
-                            player.sendMessage(ChatColor.RED + Lang.failure);
+                            player.sendMessage(ChatColor.RED + Lang.generalFailure);
                         }
                     } else {
                         // Enemy
@@ -304,10 +306,10 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
                             player.getWorld().dropItemNaturally(event.getBlock().getLocation(), en.getValue());
                             if (rand.nextInt(100) < Settings.beaconMineExhaustChance) {
                                 beacon.resetHackTimer();
-                                player.sendMessage(ChatColor.GREEN + Lang.success + Lang.beaconIsExhausted.replace("[minutes]", String.valueOf(Settings.mineCoolDown/60000)));
+                                player.sendMessage(ChatColor.GREEN + Lang.generalSuccess + Lang.beaconIsExhausted.replace("[minutes]", String.valueOf(Settings.mineCoolDown/60000)));
                                 player.getWorld().playSound(player.getLocation(), Sound.BLOCK_ENDERCHEST_CLOSE, 1F, 1F);
                             } else {
-                                player.sendMessage(ChatColor.GREEN + Lang.success);
+                                player.sendMessage(ChatColor.GREEN + Lang.generalSuccess);
                                 player.getWorld().playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 1F, 1F);
                             }
                             // Remove exp
@@ -315,7 +317,7 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
                         } else {
                             player.getWorld().spawnEntity(player.getLocation(),EntityType.ENDERMITE);
                             player.getWorld().playSound(player.getLocation(), Sound.ENTITY_ENDERMITE_AMBIENT, 1F, 1F);
-                            player.sendMessage(ChatColor.RED + Lang.failure + " Watch out!");
+                            player.sendMessage(ChatColor.RED + Lang.generalFailure + " Watch out!");
                         }
                     }
                 } else {

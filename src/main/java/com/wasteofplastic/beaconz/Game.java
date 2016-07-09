@@ -276,9 +276,9 @@ public class Game extends BeaconzPluginDependent {
         //getLogger().info("DEBUG: player join home = " + goHome);
         boolean newPlayer = !scorecard.inTeam(player);
         if (newPlayer) {
-            player.sendMessage(ChatColor.GREEN + Lang.welcomeToGame.replace("[name]", ChatColor.YELLOW + gameName));
+            player.sendMessage(ChatColor.GREEN + Lang.titleWelcomeToGame.replace("[name]", ChatColor.YELLOW + gameName));
         } else {
-            player.sendMessage(ChatColor.GREEN + Lang.welcomeBackToGame.replace("[name]", ChatColor.YELLOW + gameName));
+            player.sendMessage(ChatColor.GREEN + Lang.titleWelcomeBackToGame.replace("[name]", ChatColor.YELLOW + gameName));
         }
 
         // Assign a team if player doesn't have one

@@ -1,4 +1,6 @@
 # Config file for Beaconz
+defaultlocale: en-US
+
 world:
   # Beaconz world
   name: beaconz   

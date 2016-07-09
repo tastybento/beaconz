@@ -125,7 +125,7 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
                             }
                         }
                         if (!foundgame) {
-                            event.getPlayer().sendMessage(Lang.notReady);
+                            event.getPlayer().sendMessage(Lang.errorNotReady);
                         }
                     }
                 }
@@ -290,7 +290,7 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
      * @param fromGame
      */
     private void delayTeleport(final Player player, final Location from, final Location to, final String fromGame, final String toGame) {
-        player.sendMessage(ChatColor.RED + Lang.doNotMove.replace("[number]", String.valueOf(Settings.teleportDelay)));
+        player.sendMessage(ChatColor.RED + Lang.teleportDoNotMove.replace("[number]", String.valueOf(Settings.teleportDelay)));
         teleportingPlayers.put(player.getUniqueId(), player.getLocation().toVector());
         getServer().getScheduler().runTaskLater(getBeaconzPlugin(), new Runnable() {
 
@@ -310,7 +310,7 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
                             getGameMgr().getLobby().enterLobby(player);
                         }
                     } else {
-                        player.sendMessage(ChatColor.RED + Lang.youMoved);
+                        player.sendMessage(ChatColor.RED + Lang.teleportYouMoved);
                     }
                 }
                 teleportingPlayers.remove(player.getUniqueId());

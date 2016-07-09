@@ -56,7 +56,7 @@ public class PlayerJoinLeaveListener extends BeaconzPluginDependent implements L
                 getServer().getScheduler().runTaskLater(getBeaconzPlugin(), new Runnable() {
                     @Override
                     public void run() {
-                        player.sendMessage(ChatColor.AQUA + Lang.beaconzNews);
+                        player.sendMessage(ChatColor.AQUA + Lang.titleBeaconzNews);
                         int i = 1;
                         for (String message : messages) {
                             player.sendMessage(i++ + ": " + message);

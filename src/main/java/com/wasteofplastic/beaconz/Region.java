@@ -432,14 +432,14 @@ public class Region extends BeaconzPluginDependent {
      */
     public void enterLobby(final Player player) {
         // Welcome player in chat
-        player.sendMessage(ChatColor.GREEN + Lang.welcome);
-        player.sendMessage(ChatColor.AQUA + Lang.subTitle);
+        player.sendMessage(ChatColor.GREEN + Lang.titleWelcome);
+        player.sendMessage(ChatColor.AQUA + Lang.titleSubTitle);
 
         // Welcome player on screen
         getServer().dispatchCommand(getServer().getConsoleSender(),
-                "title " + player.getName() + " title {\"text\":\"" + Lang.welcome + "\", \"color\":\"" + Lang.welcomeColor + "\"}");
+                "title " + player.getName() + " title {\"text\":\"" + Lang.titleWelcome + "\", \"color\":\"" + Lang.titleWelcomeColor + "\"}");
         getServer().dispatchCommand(getServer().getConsoleSender(),
-                "title " + player.getName() + " subtitle {\"text\":\"" + Lang.subTitle + "\", \"color\":\"" + Lang.subTitleColor + "\"}");
+                "title " + player.getName() + " subtitle {\"text\":\"" + Lang.titleSubTitle + "\", \"color\":\"" + Lang.titleSubTitleColor + "\"}");
         // Show the lobby scoreboard - wait for title message to disappear
         if (this.equals(getGameMgr().getLobby())) {
 
@@ -460,7 +460,7 @@ public class Region extends BeaconzPluginDependent {
 
                         sbobj = sb.registerNewObjective("text", "dummy");
                         sbobj.setDisplaySlot(DisplaySlot.SIDEBAR);
-                        String[] lobbyInfo = Lang.lobbyInfo.split("\\|");
+                        String[] lobbyInfo = Lang.titleLobbyInfo.split("\\|");
                         sbobj.setDisplayName(ChatColor.GREEN + lobbyInfo[0]);
                         for (int line = 1; line < lobbyInfo.length; line++) {
                             scoreline = sbobj.getScore(lobbyInfo[line]);
@@ -497,7 +497,7 @@ public class Region extends BeaconzPluginDependent {
             //game.getScorecard().sendPlayersHome(player, true);
 
             // Welcome player in chat
-            player.sendMessage(ChatColor.GREEN + Lang.welcome);
+            player.sendMessage(ChatColor.GREEN + Lang.titleWelcome);
             player.sendMessage(ChatColor.AQUA + (Lang.startYourePlaying.replace("[name]", game.getName())).replace("[mode]", game.getGamemode()));
             player.sendMessage(ChatColor.AQUA + Lang.startYoureAMember.replace("[name]", teamname));
             if (game.getGamegoalvalue() > 0) {
@@ -702,7 +702,7 @@ public class Region extends BeaconzPluginDependent {
         Sign realSign = (Sign)sign.getState();
         realSign.setLine(0, "[beaconz]");
         realSign.setLine(1, Settings.defaultGameName);
-        realSign.setLine(2, Lang.hitSign);
+        realSign.setLine(2, Lang.actionsHitSign);
         realSign.update();
         // Set the spawn point to look at the new sign
         org.bukkit.material.Sign s = (org.bukkit.material.Sign) realSign.getData();

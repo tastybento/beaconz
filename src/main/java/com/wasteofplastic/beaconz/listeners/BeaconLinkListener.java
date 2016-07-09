@@ -340,9 +340,9 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
         }
         if (result.getFieldsFailedToMake() > 0) {
             if (result.getFieldsFailedToMake() == 1) {
-                player.sendMessage(ChatColor.RED + Lang.triangleCouldNotMake);
+                player.sendMessage(ChatColor.RED + Lang.triangleCouldNotMakeTriangle);
             } else {
-                player.sendMessage(ChatColor.RED + Lang.trianglesCouldNotMake.replace("[number]", String.valueOf(result.getFieldsFailedToMake())));
+                player.sendMessage(ChatColor.RED + Lang.triangleCouldNotMakeTriangles.replace("[number]", String.valueOf(result.getFieldsFailedToMake())));
             }
         }
         return true;

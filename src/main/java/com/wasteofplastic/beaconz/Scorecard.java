@@ -78,7 +78,6 @@ public class Scorecard extends BeaconzPluginDependent{
     private String goalstr;
     private Long starttimemilis;
     private BukkitTask timertaskid;
-    private HashMap<Team, MaterialData> teamBlock = new HashMap<Team, MaterialData>();
     private HashMap<Team, Location> teamSpawnPoint = new HashMap<Team, Location>();
     private HashMap<Team, HashMap<String,Integer>> score = new HashMap<Team, HashMap<String,Integer>>();
     private HashMap<Team, List<String>> teamMembers = new HashMap<Team, List<String>>();
@@ -144,7 +143,7 @@ public class Scorecard extends BeaconzPluginDependent{
 
         // Set up the scoreboard with the goal
         //getLogger().info("GameMode: " + game.getGamemode());
-        scoreobjective.setDisplayName(ChatColor.GREEN + Lang.beaconz + " " + game.getGamemode() + "! 00d 00:00:00");
+        scoreobjective.setDisplayName(ChatColor.GREEN + Lang.titleBeaconz + " " + game.getGamemode() + "! 00d 00:00:00");
         goalstr = "";
         if (game.getGamegoalvalue() == 0) {
             goalstr = Lang.scoreGetTheMostGoal.replace("[goal]", game.getGamegoal());
@@ -162,7 +161,7 @@ public class Scorecard extends BeaconzPluginDependent{
         score.clear();
 
         // Create the teams and enable scoreboards
-        teamBlock = new HashMap<Team, MaterialData>();
+        Settings.teamBlock = new HashMap<Team, MaterialData>();
         addTeams();
         loadTeamMembers();
 
@@ -313,7 +312,7 @@ public class Scorecard extends BeaconzPluginDependent{
             team.setPrefix(ChatColor.valueOf(teamChatColor(team)) + "[" + teamDisplayName +"] " + ChatColor.RESET);
             team.setDisplayName(teamDisplayName);
             // Store the block for the team
-            this.teamBlock.put(team, teamBlock);
+            Settings.teamBlock.put(team, teamBlock);
             // Get a new spawnpoint for the new team
             Location loc = makeTeamSpawnPoint(team);
             teamSpawnPoint.put(team, loc);
@@ -514,7 +513,7 @@ public class Scorecard extends BeaconzPluginDependent{
      * @return block type or null if it does not exist
      */
     public MaterialData getBlockID(Team team) {
-        return teamBlock.get(team);
+        return Settings.teamBlock.get(team);
     }
 
     /**
@@ -523,7 +522,7 @@ public class Scorecard extends BeaconzPluginDependent{
      * @return Team, or null if it doesn't exist
      */
     public Team getTeamFromBlock(Block b) {
-        for (Entry<Team, MaterialData> md: teamBlock.entrySet()) {
+        for (Entry<Team, MaterialData> md: Settings.teamBlock.entrySet()) {
             //if (md.getValue().getItemType().equals(b.getType()) && md.getValue().getData() == b.getData()) {
             //    return md.getKey();
             //}

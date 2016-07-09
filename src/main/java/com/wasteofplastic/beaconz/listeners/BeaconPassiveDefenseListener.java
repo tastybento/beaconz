@@ -137,7 +137,6 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
      * Handles placing of blocks around a beacon
      * @param event
      */
-    @SuppressWarnings("deprecation")
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onBlockPlace(BlockPlaceEvent event) {
         //getLogger().info("DEBUG: " + event.getEventName());
@@ -259,16 +258,16 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
         }
         String levelPlaced = "";
         if (levelRequired > 0) {
-            levelPlaced = " [" + Lang.level + " " + levelRequired + "]";
+            levelPlaced = " [" + Lang.generalLevel + " " + levelRequired + "]";
         }
         // Check what type of block it is
         if (Settings.linkBlocks.containsKey(event.getBlock().getType())) {
-            player.sendMessage(ChatColor.GREEN + Lang.linkBlockPlaced.replace("[range]", String.valueOf(Settings.linkBlocks.get(event.getBlock().getType())))); 
+            player.sendMessage(ChatColor.GREEN + Lang.beaconLinkBlockPlaced.replace("[range]", String.valueOf(Settings.linkBlocks.get(event.getBlock().getType())))); 
         }
         // Send message
         String message = Lang.defenseText.get(event.getBlock().getType());
         if (message == null) {
-            player.sendMessage(ChatColor.GREEN + Lang.defensePlaced + levelPlaced);
+            player.sendMessage(ChatColor.GREEN + Lang.beaconDefensePlaced + levelPlaced);
         } else {
             player.sendMessage(ChatColor.GREEN + message + levelPlaced);
         }
@@ -349,7 +348,7 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
             }        
             // Check that breakage is being done top-down
             if (level < highestBlock) {
-                event.getPlayer().sendMessage(ChatColor.RED + Lang.defenseRemoveTopDown);
+                event.getPlayer().sendMessage(ChatColor.RED + Lang.beaconDefenseRemoveTopDown);
                 event.setCancelled(true);
                 return;
             }
@@ -358,11 +357,11 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
         beacon.removeDefenseBlock(block);
          // Check if it was a link block
         if (Settings.linkBlocks.containsKey(block.getType())) {
-            player.sendMessage(ChatColor.RED + Lang.linkBlockBroken.replace("[range]", String.valueOf(Settings.linkBlocks.get(event.getBlock().getType())))); 
+            player.sendMessage(ChatColor.RED + Lang.beaconLinkBlockBroken.replace("[range]", String.valueOf(Settings.linkBlocks.get(event.getBlock().getType())))); 
             world.playSound(player.getLocation(), Sound.BLOCK_GLASS_BREAK, 1F, 1F);
             // Remove the longest link
             if (beacon.removeLongestLink()) {
-                player.sendMessage(ChatColor.GOLD + Lang.linkLost);
+                player.sendMessage(ChatColor.GOLD + Lang.beaconLinkLost);
             }
         }
 
@@ -451,7 +450,7 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
         //getLogger().info("DEBUG: highest block is " + highestBlock);
         // Check that breakage is being done top-down
         if (level < highestBlock) {
-            event.getPlayer().sendMessage(ChatColor.RED + Lang.defenseRemoveTopDown);
+            event.getPlayer().sendMessage(ChatColor.RED + Lang.beaconDefenseRemoveTopDown);
             event.setCancelled(true);
             return;
         }

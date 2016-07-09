@@ -130,7 +130,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                                 sender.sendMessage(Lang.errorYouHaveToBeStandingOnABeacon);
                             } else {
                                 Point2D newClaim = new Point2D.Double(block.getX(), block.getZ());
-                                player.sendMessage(Lang.claimingBeaconAt.replace("[location]", newClaim.toString()));
+                                player.sendMessage(Lang.beaconClaimingBeaconAt.replace("[location]", newClaim.toString()));
                                 if (!getRegister().getBeaconRegister().containsKey(newClaim)) {
                                     player.sendMessage(ChatColor.RED + Lang.errorNotInRegister + newClaim);
                                 } else {
@@ -193,7 +193,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                             if (!newTeam.equals(team)) {
                                 // Found an alternative
                                 game.getScorecard().addTeamPlayer(newTeam, player);
-                                sender.sendMessage(ChatColor.GREEN + Lang.switchedToTeam.replace("[team]", newTeam.getDisplayName()));
+                                sender.sendMessage(ChatColor.GREEN + Lang.actionsSwitchedToTeam.replace("[team]", newTeam.getDisplayName()));
                                 // Remove any potion effects
                                 for (PotionEffect effect : player.getActivePotionEffects())
                                     player.removePotionEffect(effect.getType());
@@ -225,8 +225,8 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                             if (!newTeam.equals(team)) {
                                 // Found an alternative
                                 game.getScorecard().addTeamPlayer(newTeam, player);
-                                sender.sendMessage(ChatColor.GREEN + player.getName() + ": " + Lang.switchedToTeam.replace("[team]", newTeam.getDisplayName()));
-                                player.sendMessage(ChatColor.GREEN + Lang.switchedToTeam.replace("[team]", newTeam.getDisplayName()));
+                                sender.sendMessage(ChatColor.GREEN + player.getName() + ": " + Lang.actionsSwitchedToTeam.replace("[team]", newTeam.getDisplayName()));
+                                player.sendMessage(ChatColor.GREEN + Lang.actionsSwitchedToTeam.replace("[team]", newTeam.getDisplayName()));
 
                                 // Remove any potion effects
                                 for (PotionEffect effect : player.getActivePotionEffects())
@@ -254,7 +254,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                                 game.getScorecard().addTeamPlayer(team, player);
                                 player.setScoreboard(game.getScorecard().getScoreboard());
                                 game.getScorecard().sendPlayersHome(player, false);
-                                sender.sendMessage(ChatColor.GREEN + Lang.youAreInTeam.replace("[team]", team.getDisplayName()));
+                                sender.sendMessage(ChatColor.GREEN + Lang.actionsYouAreInTeam.replace("[team]", team.getDisplayName()));
                             } else {
                                 sender.sendMessage(ChatColor.RED + "/" + label + " join " + args[1] + " [" + game.getScorecard().getTeamListString() + "]");
                             }
@@ -444,18 +444,18 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                             if (parmargs.length > 0) {
                                 String errormsg = setDefaultParms(parmargs);  // temporarily set up the given parameters as default
                                 if (!errormsg.isEmpty()) {
-                                    sender.sendMessage(ChatColor.RED + Lang.error + errormsg);
+                                    sender.sendMessage(ChatColor.RED + Lang.errorError + errormsg);
                                     getGameMgr().setGameDefaultParms();      // restore the default parameters (just in case)
                                 } else {
                                     sender.sendMessage(ChatColor.GREEN + Lang.adminNewGameBuilding);
                                     getGameMgr().newGame(args[1]);   // create the new game
                                     getGameMgr().setGameDefaultParms();      // restore the default parameters
-                                    sender.sendMessage(ChatColor.GREEN + Lang.success);
+                                    sender.sendMessage(ChatColor.GREEN + Lang.generalSuccess);
                                 }
                             } else {
                                 sender.sendMessage(ChatColor.GREEN + Lang.adminNewGameBuilding);
                                 getGameMgr().newGame(args[1]);
-                                sender.sendMessage(ChatColor.GREEN + Lang.success);
+                                sender.sendMessage(ChatColor.GREEN + Lang.generalSuccess);
                             }
                         }
                     }
@@ -515,7 +515,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                         } else {
                             String errormsg = this.setGameParms(game, parmargs);
                             if (!errormsg.isEmpty()) {
-                                sender.sendMessage(ChatColor.RED + Lang.error + errormsg);
+                                sender.sendMessage(ChatColor.RED + Lang.errorError + errormsg);
                             } else {
                                 sender.sendMessage(ChatColor.GREEN + "Game parameters set.");
                                 if (!(sender instanceof Player)) {
@@ -545,7 +545,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                     player = (Player) sender;
                     if (args.length == 1 && getGameMgr().getLobby().isPlayerInRegion(player)) {
                         getGameMgr().getLobby().setSpawnPoint(player.getLocation());
-                        sender.sendMessage(ChatColor.GREEN + Lang.success + " (" + player.getLocation().getBlockX() + ","
+                        sender.sendMessage(ChatColor.GREEN + Lang.generalSuccess + " (" + player.getLocation().getBlockX() + ","
                                 + player.getLocation().getBlockY() + "," + player.getLocation().getBlockZ() + ")");
                         return true;
                     }
@@ -560,7 +560,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                             return true;
                         }
                         game.getScorecard().setTeamSpawnPoint(team, (player.getLocation()));
-                        sender.sendMessage(ChatColor.GREEN + Lang.success);
+                        sender.sendMessage(ChatColor.GREEN + Lang.generalSuccess);
                     }
                 }
                 break;
@@ -574,7 +574,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                         if (args[1].toLowerCase().equals("all") || gname.equals(args[1])) {
                             foundgame = true;
                             game = getGameMgr().getGames().get(gname);
-                            sender.sendMessage(ChatColor.GREEN + Lang.teams + " - " + gname);
+                            sender.sendMessage(ChatColor.GREEN + Lang.generalTeams + " - " + gname);
                             Scoreboard sb = game.getScorecard().getScoreboard();
                             if (sb == null) {
                                 sender.sendMessage(ChatColor.RED + Lang.errorNoSuchGame + "'" + args[1] + "'");
@@ -586,7 +586,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                                     for (String uuid : teamMembers.get(t)) {
                                         memberlist = memberlist + "[" + getServer().getOfflinePlayer(UUID.fromString(uuid)).getName() + "] ";
                                     }
-                                    sender.sendMessage(ChatColor.WHITE + Lang.members + ": " + memberlist);
+                                    sender.sendMessage(ChatColor.WHITE + Lang.generalMembers + ": " + memberlist);
                                 }
                             }
                         }
@@ -658,13 +658,13 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                 // Find the team
                 if (search.isEmpty() || (search.equalsIgnoreCase("unowned") && b.getOwnership() == null) || (b.getOwnership() != null && b.getOwnership().getName().equalsIgnoreCase(search))) {
                     none = false;
-                    sender.sendMessage(game.getName() + ": " + b.getLocation().getBlockX() + "," + b.getLocation().getBlockY() + "," + b.getLocation().getBlockZ() + " >> " + Lang.team + ": " 
-                            + (b.getOwnership() == null ? Lang.unowned :b.getOwnership().getDisplayName()) + " >> " + Lang.links + ": " + b.getLinks().size());
+                    sender.sendMessage(game.getName() + ": " + b.getLocation().getBlockX() + "," + b.getLocation().getBlockY() + "," + b.getLocation().getBlockZ() + " >> " + Lang.generalTeam + ": " 
+                            + (b.getOwnership() == null ? Lang.generalUnowned :b.getOwnership().getDisplayName()) + " >> " + Lang.generalLinks + ": " + b.getLinks().size());
                 }
             }
         }
         if (none) {
-            sender.sendMessage(Lang.none);  
+            sender.sendMessage(Lang.generalNone);  
         }
         if (noGame) {
             if (name.equals("all")) {

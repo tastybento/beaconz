@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.scoreboard.Team;
@@ -44,7 +45,7 @@ public class BeaconObj extends BeaconzPluginDependent {
     private Point2D location;
     private int x;
     private int z;
-    private int height;
+    private int y;
     private long hackTimer;
     private Team ownership;
     //private Set<BeaconObj> links;
@@ -67,7 +68,7 @@ public class BeaconObj extends BeaconzPluginDependent {
         this.location = new Point2D.Double(x,z);
         this.x = x;
         this.z = z;
-        this.height = y;
+        this.y = y;
         this.hackTimer = System.currentTimeMillis();
         this.ownership = owner;
         this.links.clear();
@@ -78,7 +79,7 @@ public class BeaconObj extends BeaconzPluginDependent {
         return x;
     }
     public int getY() {
-        return height;
+        return y;
     }
     public int getZ() {
         return z;
@@ -95,7 +96,7 @@ public class BeaconObj extends BeaconzPluginDependent {
      * @return the Bukkit location of this beacon
      */
     public Location getLocation() {
-        return new Location(getBeaconzWorld(),location.getX(),height,location.getY());
+        return new Location(getBeaconzWorld(),location.getX(),y,location.getY());
     }
 
     /**
@@ -205,7 +206,7 @@ public class BeaconObj extends BeaconzPluginDependent {
      * @return the height
      */
     public int getHeight() {
-        return height;
+        return y;
     }
 
     /**
@@ -220,7 +221,7 @@ public class BeaconObj extends BeaconzPluginDependent {
      * @return true if clear, false if not
      */
     public boolean isClear() {
-        Block beacon = getBeaconzWorld().getBlockAt((int)location.getX(), height, (int)location.getY());
+        Block beacon = getBeaconzWorld().getBlockAt((int)location.getX(), y, (int)location.getY());
         //getLogger().info("DEBUG: block y = " + beacon.getY() + " " + beacon.getLocation());
         for (BlockFace face: FACES) {
             Block block = beacon.getRelative(face);
@@ -231,7 +232,7 @@ public class BeaconObj extends BeaconzPluginDependent {
         }
         // Check all the defense blocks too
         for (Point2D point: getRegister().getDefensesAtBeacon(this)) {
-            beacon = getBeaconzWorld().getBlockAt((int)point.getX(), height, (int)point.getY());
+            beacon = getBeaconzWorld().getBlockAt((int)point.getX(), y, (int)point.getY());
             if (beacon.getY() != getHighestBlockYAt((int)point.getX(), (int)point.getY())) {
                 return false;
             }
@@ -290,4 +291,68 @@ public class BeaconObj extends BeaconzPluginDependent {
         }
         return false;
     }
+
+    /**
+     * Checks the integrity of the beacon and fixes it if required
+     */
+    public void checkIntegrity() {
+        //Bukkit.getLogger().info("DEBUG: made beacon at " + (source.getX() * 16 + x) + " " + y + " " + (source.getZ()*16 + z) );
+        Block b = getBeaconzWorld().getBlockAt(x, y, z);
+        if (!b.getType().equals(Material.BEACON)) {
+            getLogger().severe("Beacon at " + x + " " + y + " " + z + " missing beacon block!");
+            b.setType(Material.BEACON);
+        }
+        // Check the capstone
+        if (ownership == null && !b.getRelative(BlockFace.UP).getType().equals(Material.OBSIDIAN)) {
+            getLogger().severe("Beacon at " + x + " " + y + " " + z + " missing capstone block!");
+            b.getRelative(BlockFace.UP).setType(Material.OBSIDIAN);
+        }
+        
+        if (ownership != null && (!b.getRelative(BlockFace.UP).getType().equals(Material.STAINED_GLASS) && b.getRelative(BlockFace.UP).getData() != Settings.teamBlock.get(ownership).getData())) {
+            getLogger().severe("Beacon at " + x + " " + y + " " + z + " missing team glass block!");
+            b.getRelative(BlockFace.UP).setType(Material.STAINED_GLASS);
+            b.getRelative(BlockFace.UP).setData(Settings.teamBlock.get(ownership).getData());
+        }
+        // Create the pyramid
+        b = b.getRelative(BlockFace.DOWN);
+
+        // All diamond blocks for now
+        if (!b.getType().equals(Material.DIAMOND_BLOCK)) {
+            getLogger().severe("Beacon at " + x + " " + y + " " + z + " missing diamond block!");
+            b.setType(Material.DIAMOND_BLOCK);
+        }
+        if (!b.getRelative(BlockFace.SOUTH).getType().equals(Material.DIAMOND_BLOCK)) {
+            getLogger().severe("Beacon at " + x + " " + y + " " + z + " missing S diamond block!");
+            b.getRelative(BlockFace.SOUTH).setType(Material.DIAMOND_BLOCK);
+        }
+        if (!b.getRelative(BlockFace.SOUTH_EAST).getType().equals(Material.DIAMOND_BLOCK)) {
+            getLogger().severe("Beacon at " + x + " " + y + " " + z + " missing SE diamond block!");
+            b.getRelative(BlockFace.SOUTH_EAST).setType(Material.DIAMOND_BLOCK);
+        }
+        if (!b.getRelative(BlockFace.SOUTH_WEST).getType().equals(Material.DIAMOND_BLOCK)) {
+            getLogger().severe("Beacon at " + x + " " + y + " " + z + " missing SW diamond block!");
+            b.getRelative(BlockFace.SOUTH_WEST).setType(Material.DIAMOND_BLOCK);
+        }
+        if (!b.getRelative(BlockFace.EAST).getType().equals(Material.DIAMOND_BLOCK)) {
+            getLogger().severe("Beacon at " + x + " " + y + " " + z + " missing E diamond block!");
+            b.getRelative(BlockFace.EAST).setType(Material.DIAMOND_BLOCK);
+        }
+        if (!b.getRelative(BlockFace.WEST).getType().equals(Material.DIAMOND_BLOCK)) {
+            getLogger().severe("Beacon at " + x + " " + y + " " + z + " missing W diamond block!");
+            b.getRelative(BlockFace.WEST).setType(Material.DIAMOND_BLOCK);
+        }
+        if (!b.getRelative(BlockFace.NORTH).getType().equals(Material.DIAMOND_BLOCK)) {
+            getLogger().severe("Beacon at " + x + " " + y + " " + z + " missing N diamond block!");
+            b.getRelative(BlockFace.NORTH).setType(Material.DIAMOND_BLOCK);
+        }
+        if (!b.getRelative(BlockFace.NORTH_EAST).getType().equals(Material.DIAMOND_BLOCK)) {
+            getLogger().severe("Beacon at " + x + " " + y + " " + z + " missing NE diamond block!");
+            b.getRelative(BlockFace.NORTH_EAST).setType(Material.DIAMOND_BLOCK);
+        }
+        if (!b.getRelative(BlockFace.NORTH_WEST).getType().equals(Material.DIAMOND_BLOCK)) {
+            getLogger().severe("Beacon at " + x + " " + y + " " + z + " missing SW diamond block!");
+            b.getRelative(BlockFace.NORTH_WEST).setType(Material.DIAMOND_BLOCK);
+        }
+    }
+
 }

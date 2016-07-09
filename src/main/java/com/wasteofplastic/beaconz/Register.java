@@ -1090,6 +1090,4 @@ public class Register extends BeaconzPluginDependent {
 
         }
     }
-
-
 }

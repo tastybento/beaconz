@@ -70,6 +70,7 @@ public class Beaconz extends JavaPlugin {
     private GameMgr gameMgr;
     private Messages messages;
     private BeaconzStore beaconzStore;
+    private Lang locale;
 
 
     @Override
@@ -191,6 +192,9 @@ public class Beaconz extends JavaPlugin {
      * Clears all old settings
      */
     public void loadConfig() {
+        // Default language
+        locale = new Lang(this);
+        locale.loadLocale(getConfig().getString("defaultlocale","en-US"));
         // Default game name
         Settings.defaultGameName = getConfig().getString("world.defaultgamename", "Beaconz");
         // Height for lobby platform
