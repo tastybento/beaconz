@@ -170,7 +170,7 @@ public class Region extends BeaconzPluginDependent {
     public void finishRegenerating(CommandSender sender) {
         // Wrap things up
         createCorners();
-        sender.sendMessage(ChatColor.GREEN + Lang.adminResetComplete.replace("[number]", String.valueOf(totalregen)));
+        sender.sendMessage(ChatColor.GREEN + Lang.adminRegenComplete.replace("[number]", String.valueOf(totalregen)));
     }
 
     /**

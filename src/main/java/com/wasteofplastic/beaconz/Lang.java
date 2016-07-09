@@ -90,7 +90,7 @@ public class Lang {
     public static String helpAdminGames = " - list existing games";
     public static String helpAdminKick = "- kicks a player from the game";
     public static String helpAdminRestart = " - restarts the game with currently defined parameters - clears scoreboard, cleans out all beacons, restarts timer; teams aren't changed";
-    public static String helpAdminReset = " - resets score, teams, and repopulates the beacons!";
+    public static String helpAdminRegenerate = " - regenerates the game area and resets everything";
     public static String helpAdminPause = " - pauses the timer and scoreboard in a game";
     public static String helpAdminResume = " - resume a paused game";
     public static String helpAdminForceEnd = " - forces a game to end immediately";
@@ -168,7 +168,7 @@ public class Lang {
 
     public static String adminDeletingGame = "Deleting game [name]... (This may take some time)";
     public static String adminDeletedGame = "Deleted [name].";
-    public static String adminResettingGame = "Resetting game [name]. This may take several minutes. Please wait for the 'reset complete' message.";
+    public static String adminRegeneratingGame = "Regenerating game [name]. This may take several minutes. Please wait for the 'regeneration complete' message.";
 
     public static String adminPaused = "Paused the game [name]. To restart, use /[label] resume <game>";
 
@@ -195,7 +195,7 @@ public class Lang {
 
     public static String adminListBeaconsInGame = "Known beacons in game [name]:";
 
-    public static String adminResetComplete = "Reset complete. Regenerated [number] chunks.";
+    public static String adminRegenComplete = "Regenetation complete. Regenerated [number] chunks.";
 
     public static HashMap<Material, String> defenseText = new HashMap<Material,String>();
     static {

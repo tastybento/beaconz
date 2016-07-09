@@ -87,7 +87,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
             sender.sendMessage(cc1 + "/" + label + cc2 + " games" + cc3 + Lang.helpAdminGames);
             sender.sendMessage(cc1 + "/" + label + cc2 + " kick <online playername> <gamename>" + cc3 + Lang.helpAdminKick);
             sender.sendMessage(cc1 + "/" + label + cc2 + " restart <gamename>" + cc3 + Lang.helpAdminRestart);
-            sender.sendMessage(cc1 + "/" + label + cc2 + " reset <gamename>" + cc3 + Lang.helpAdminReset);
+            sender.sendMessage(cc1 + "/" + label + cc2 + " reset <gamename>" + cc3 + Lang.helpAdminRegenerate);
             sender.sendMessage(cc1 + "/" + label + cc2 + " pause <gamename>" + cc3 + Lang.helpAdminPause);
             sender.sendMessage(cc1 + "/" + label + cc2 + " resume <gamename>" + cc3 + Lang.helpAdminResume);
             sender.sendMessage(cc1 + "/" + label + cc2 + " force_end <gamename>" + cc3 + Lang.helpAdminForceEnd);
@@ -316,7 +316,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
 
             case "delete":
                 if (args.length < 2) {
-                    sender.sendMessage(ChatColor.RED + "/" + label + " delete <gamename>" + Lang.helpAdminDelete);
+                    sender.sendMessage(ChatColor.RED + "/" + label + " delete <gamename> - " + Lang.helpAdminDelete);
                 } else {
                     game = getGameMgr().getGames().get(args[1]);
                     if (game == null) {
@@ -329,15 +329,15 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                 }
                 break;
 
-            case "reset":
+            case "regenerate":
                 if (args.length < 2) {
-                    sender.sendMessage(ChatColor.RED + "/" + label + " reset <gamename> - resets score, teams, and repopulates the beacons!");
+                    sender.sendMessage(ChatColor.RED + "/" + label + " regenerates <gamename> - " + Lang.helpAdminRegenerate);
                 } else {
                     game = getGameMgr().getGames().get(args[1]);
                     if (game == null) {
                         sender.sendMessage(ChatColor.RED + Lang.errorNoSuchGame + "'" + args[1] + "'");
                     } else {
-                        sender.sendMessage(ChatColor.GREEN + Lang.adminResettingGame.replace("[name]", game.getName()));
+                        sender.sendMessage(ChatColor.GREEN + Lang.adminRegeneratingGame.replace("[name]", game.getName()));
                         game.reset(sender);
                     }
                 }
@@ -884,7 +884,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
             options.add("games");
             options.add("kick");
             options.add("restart");
-            options.add("reset");
+            options.add("regenerate");
             options.add("pause");
             options.add("resume");
             options.add("force_end");
@@ -919,7 +919,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
             }
             // Game name options
             if (args[0].equalsIgnoreCase("delete")
-                    || args[0].equalsIgnoreCase("reset") || args[0].equalsIgnoreCase("restart")
+                    || args[0].equalsIgnoreCase("regenerate") || args[0].equalsIgnoreCase("restart")
                     || args[0].equalsIgnoreCase("pause") || args[0].equalsIgnoreCase("resume")
                     || args[0].equalsIgnoreCase("force_end") || args[0].equalsIgnoreCase("listparms")
                     || args[0].equalsIgnoreCase("setgameparms")
