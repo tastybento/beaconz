@@ -75,6 +75,7 @@ beacon:
   YouHaveThisMuchExp: "You have [number] exp points."
   YouMustCapturedBeacon: "You must capture the beacon first!"
   YouNeedThisMuchExp: "You need [number] exp points to link these beacons."
+  YouReceivedAReward: "You received a reward!"
 defenseText: 
   BEDROCK: "Ultimate defense! Hope you didn't make a mistake!"
   BED_BLOCK: "Sleep, sleep, sleep"

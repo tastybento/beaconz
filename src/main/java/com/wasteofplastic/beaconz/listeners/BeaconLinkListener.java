@@ -23,6 +23,7 @@
 package com.wasteofplastic.beaconz.listeners;
 
 import java.awt.geom.Line2D;
+import java.util.List;
 import java.util.Locale;
 
 import org.bukkit.Bukkit;
@@ -345,6 +346,13 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
                 player.sendMessage(ChatColor.RED + Lang.triangleCouldNotMakeTriangles.replace("[number]", String.valueOf(result.getFieldsFailedToMake())));
             }
         }
+        // Give rewards
+        List<ItemStack> rewards = giveItems(player, Settings.linkRewards);
+        if (!rewards.isEmpty()) {
+            player.sendMessage(ChatColor.GREEN + Lang.beaconYouReceivedAReward);
+        }
+        // Run commands
+        runCommands(player,Settings.linkCommands);
         return true;
     }
 

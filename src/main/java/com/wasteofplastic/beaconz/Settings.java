@@ -220,4 +220,14 @@ public class Settings {
      */
     public static HashMap<Team, MaterialData> teamBlock;
     
+    /**
+     * Commands to run when a player makes a link
+     */
+    public static List<String> linkCommands;
+    
+    /**
+     * Rewards given to player when making a link
+     */
+    public static List<String> linkRewards;
+    
 }

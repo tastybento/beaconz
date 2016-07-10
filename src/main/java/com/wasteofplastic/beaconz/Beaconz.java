@@ -29,21 +29,28 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
 import org.bukkit.WorldType;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.Player;
 import org.bukkit.generator.BlockPopulator;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.potion.PotionData;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.potion.PotionType;
 
 import com.wasteofplastic.beaconz.commands.AdminCmdHandler;
 import com.wasteofplastic.beaconz.commands.CmdHandler;
@@ -192,6 +199,10 @@ public class Beaconz extends JavaPlugin {
      * Clears all old settings
      */
     public void loadConfig() {
+        // Link rewards
+        Settings.linkRewards = getConfig().getStringList("world.linkrewards");
+        // Link commands
+        Settings.linkCommands = getConfig().getStringList("world.linkcommands");
         // Default language
         locale = new Lang(this);
         locale.loadLocale(getConfig().getString("defaultlocale","en-US"));
@@ -686,4 +697,248 @@ public class Beaconz extends JavaPlugin {
         return null;
     }
 
+    /**
+     * Runs commands for a player or on a player
+     * @param player
+     * @param commands
+     */
+    public void runCommands(Player player, List<String> commands) {
+        for (String cmd : commands) {
+            if (cmd.startsWith("[SELF]")) {
+                getLogger().info("Running command '" + cmd + "' as " + player.getName());
+                cmd = cmd.substring(6,cmd.length()).replace("[player]", player.getName()).trim();
+                try {
+                    player.performCommand(cmd);
+                } catch (Exception e) {
+                    getLogger().severe("Problem executing island command executed by player - skipping!");
+                    getLogger().severe("Command was : " + cmd);
+                    getLogger().severe("Error was: " + e.getMessage());
+                    e.printStackTrace();
+                }
+
+                continue;
+            }
+            // Substitute in any references to player
+            try {
+                if (!getServer().dispatchCommand(plugin.getServer().getConsoleSender(), cmd.replace("[player]", player.getName()))) {
+                    getLogger().severe("Problem executing challenge reward commands - skipping!");
+                    getLogger().severe("Command was : " + cmd);
+                }
+            } catch (Exception e) {
+                getLogger().severe("Problem executing challenge reward commands - skipping!");
+                getLogger().severe("Command was : " + cmd);
+                getLogger().severe("Error was: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /**
+     * Gives player item rewards
+     * @param player
+     * @param itemRewards
+     * @return a list of what was given to the player
+     */
+    public List<ItemStack> giveItems(Player player, List<String> itemRewards) {
+        List<ItemStack> rewardedItems = new ArrayList<ItemStack>();
+        Material rewardItem;
+        int rewardQty;
+        // Build the item stack of rewards to give the player
+        for (final String s : itemRewards) {
+            final String[] element = s.split(":");
+            if (element.length == 2) {
+                try {
+                    if (StringUtils.isNumeric(element[0])) {
+                        rewardItem = Material.getMaterial(Integer.parseInt(element[0]));
+                    } else {
+                        rewardItem = Material.getMaterial(element[0].toUpperCase());
+                    }
+                    rewardQty = Integer.parseInt(element[1]);
+                    ItemStack item = new ItemStack(rewardItem, rewardQty);
+                    rewardedItems.add(item);
+                    final HashMap<Integer, ItemStack> leftOvers = player.getInventory().addItem(new ItemStack[] { item });
+                    if (!leftOvers.isEmpty()) {
+                        player.getWorld().dropItemNaturally(player.getLocation(), leftOvers.get(0));
+                    }                  
+                    player.getWorld().playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 1F, 1F);                    
+                } catch (Exception e) {
+                    player.sendMessage(ChatColor.RED + Lang.errorError);
+                    plugin.getLogger().severe("Could not give " + element[0] + ":" + element[1] + " to " + player.getName() + " as reward!");
+                    String materialList = "";
+                    boolean hint = false;
+                    for (Material m : Material.values()) {
+                        materialList += m.toString() + ",";
+                        if (element[0].length() > 3) {
+                            if (m.toString().startsWith(element[0].substring(0, 3))) {
+                                plugin.getLogger().severe("Did you mean " + m.toString() + "?");
+                                hint = true;
+                            }
+                        }
+                    }
+                    if (!hint) {
+                        plugin.getLogger().severe("Sorry, I have no idea what " + element[0] + " is. Pick from one of these:");
+                        plugin.getLogger().severe(materialList.substring(0, materialList.length() - 1));
+                    }
+                }
+            } else if (element.length == 3) {
+                try {
+                    if (StringUtils.isNumeric(element[0])) {
+                        rewardItem = Material.getMaterial(Integer.parseInt(element[0]));
+                    } else {
+                        rewardItem = Material.getMaterial(element[0].toUpperCase());
+                    }
+                    rewardQty = Integer.parseInt(element[2]);                    
+                    // Check for POTION
+                    if (rewardItem.equals(Material.POTION)) {
+                        givePotion(player, rewardedItems, element, rewardQty);
+                    } else {
+                        ItemStack item = null;
+                        int rewMod = Integer.parseInt(element[1]);
+                        item = new ItemStack(rewardItem, rewardQty, (short) rewMod);
+                        if (item != null) {
+                            rewardedItems.add(item);
+                            final HashMap<Integer, ItemStack> leftOvers = player.getInventory().addItem(
+                                    new ItemStack[] { item });
+                            if (!leftOvers.isEmpty()) {
+                                player.getWorld().dropItemNaturally(player.getLocation(), leftOvers.get(0));
+                            }
+                        }
+                    }
+                    player.getWorld().playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 1F, 1F);
+                } catch (Exception e) {
+                    player.sendMessage(ChatColor.RED + "There was a problem giving your reward. Ask Admin to check log!");
+                    plugin.getLogger().severe("Could not give " + element[0] + ":" + element[1] + " to " + player.getName() + " for challenge reward!");
+                    String materialList = "";
+                    boolean hint = false;
+                    for (Material m : Material.values()) {
+                        materialList += m.toString() + ",";
+                        if (m.toString().startsWith(element[0].substring(0, 3))) {
+                            plugin.getLogger().severe("Did you mean " + m.toString() + "? If so, put that in challenges.yml.");
+                            hint = true;
+                        }
+                    }
+                    if (!hint) {
+                        plugin.getLogger().severe("Sorry, I have no idea what " + element[0] + " is. Pick from one of these:");
+                        plugin.getLogger().severe(materialList.substring(0, materialList.length() - 1));
+                    }
+                    //}
+                    return null;
+                }
+            } else if (element.length == 6) {
+                //plugin.getLogger().info("DEBUG: 6 element reward");
+                // Potion format = POTION:name:level:extended:splash:qty
+                try {
+                    if (StringUtils.isNumeric(element[0])) {
+                        rewardItem = Material.getMaterial(Integer.parseInt(element[0]));
+                    } else {
+                        rewardItem = Material.getMaterial(element[0].toUpperCase());
+                    }
+                    rewardQty = Integer.parseInt(element[5]);
+                    // Check for POTION
+                    if (rewardItem.equals(Material.POTION)) {
+                        givePotion(player, rewardedItems, element, rewardQty);
+                    }
+                } catch (Exception e) {
+                    player.sendMessage(ChatColor.RED + "There was a problem giving your reward. Ask Admin to check log!");
+                    plugin.getLogger().severe("Problem with reward potion: " + s);
+                    plugin.getLogger().severe("Format POTION:NAME:<LEVEL>:<EXTENDED>:<SPLASH/LINGER>:QTY");
+                    plugin.getLogger().severe("LEVEL, EXTENDED and SPLASH are optional");
+                    plugin.getLogger().severe("LEVEL is a number");
+                    plugin.getLogger().severe("Examples:");
+                    plugin.getLogger().severe("POTION:STRENGTH:1:EXTENDED:SPLASH:1");
+                    plugin.getLogger().severe("POTION:JUMP:2:NOTEXTENDED:NOSPLASH:1");
+                    plugin.getLogger().severe("POTION:WEAKNESS:::::1   -  any weakness potion");
+                    plugin.getLogger().severe("Available names are:");
+                    String potionNames = "";
+                    for (PotionType p : PotionType.values()) {
+                        potionNames += p.toString() + ", ";
+                    }
+                    plugin.getLogger().severe(potionNames.substring(0, potionNames.length()-2));
+                    return null;
+                }
+            }
+        }
+        return rewardedItems;
+    }
+
+    private void givePotion(Player player, List<ItemStack> rewardedItems, String[] element, int rewardQty) {
+        ItemStack item = getPotion(element, rewardQty);
+        rewardedItems.add(item);
+        final HashMap<Integer, ItemStack> leftOvers = player.getInventory().addItem(item);
+        if (!leftOvers.isEmpty()) {
+            player.getWorld().dropItemNaturally(player.getLocation(), leftOvers.get(0));
+        }
+    }
+
+    /**
+     * Converts a serialized potion to a ItemStack of that potion
+     * @param element
+     * @param rewardQty
+     * @param configFile that is being used
+     * @return ItemStack of the potion
+     */
+    public static ItemStack getPotion(String[] element, int rewardQty) {
+        // Check for potion aspects
+        boolean splash = false;
+        boolean extended = false;
+        boolean linger = false;
+        int level = 1;
+
+        if (element.length > 2) {
+            // Add level etc.
+            if (!element[2].isEmpty()) {
+                try {
+                    level = Integer.valueOf(element[2]);
+                } catch (Exception e) {
+                    level = 1;
+                }
+            }
+        }
+        if (element.length > 3) {
+            //plugin.getLogger().info("DEBUG: level = " + Integer.valueOf(element[2]));
+            if (element[3].equalsIgnoreCase("EXTENDED")) {
+                //plugin.getLogger().info("DEBUG: Extended");
+                extended = true;
+            }
+        }
+        if (element.length > 4) {
+            if (element[4].equalsIgnoreCase("SPLASH")) {
+                //plugin.getLogger().info("DEBUG: splash");
+                splash = true;                
+            }
+            if (element[4].equalsIgnoreCase("LINGER")) {
+                //plugin.getLogger().info("DEBUG: linger");
+                linger = true;
+            } 
+        }
+
+        // 1.9
+        try {
+            ItemStack result = new ItemStack(Material.POTION, rewardQty);
+            if (splash) {
+                result = new ItemStack(Material.SPLASH_POTION, rewardQty);
+            }
+            if (linger) {
+                result = new ItemStack(Material.LINGERING_POTION, rewardQty);
+            }
+            PotionMeta potionMeta = (PotionMeta) result.getItemMeta();
+            try {
+                PotionData potionData = new PotionData(PotionType.valueOf(element[1].toUpperCase()), extended, level > 1 ? true: false);
+                potionMeta.setBasePotionData(potionData); 
+            } catch (IllegalArgumentException iae) {
+                Bukkit.getLogger().severe("Potion parsing problem with " + element[1] +": " + iae.getMessage());
+                potionMeta.setBasePotionData(new PotionData(PotionType.WATER));
+            }
+            result.setItemMeta(potionMeta);
+            return result;
+        } catch (Exception e) {
+            e.printStackTrace();
+            Bukkit.getLogger().severe("Potion effect '" + element[1] + "' is unknown - skipping!");
+            Bukkit.getLogger().severe("Use one of the following:");
+            for (PotionType name : PotionType.values()) {
+                Bukkit.getLogger().severe(name.name());
+            }
+            return new ItemStack(Material.POTION, rewardQty);
+        } 
+    }
 }

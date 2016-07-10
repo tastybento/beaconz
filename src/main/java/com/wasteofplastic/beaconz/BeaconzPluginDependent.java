@@ -23,11 +23,14 @@
 package com.wasteofplastic.beaconz;
 
 import java.io.File;
+import java.util.List;
 import java.util.logging.Logger;
 
 import org.bukkit.Server;
 import org.bukkit.World;
+import org.bukkit.entity.Player;
 import org.bukkit.generator.BlockPopulator;
+import org.bukkit.inventory.ItemStack;
 
 /**
  * Base class for classes that depend on a {@link org.bukkit.plugin.Plugin}.
@@ -91,7 +94,29 @@ public abstract class BeaconzPluginDependent {
         return this.beaconzPlugin.getHighestBlockYAt(x, z);
     }
 
+    /**
+     * @return the inventory swap object
+     */
     public final BeaconzStore getBeaconzStore() {
         return this.beaconzPlugin.getBeaconzStore();
+    }
+    
+    /**
+     * Runs commands for a player or on a player
+     * @param player
+     * @param commands
+     */
+    public void runCommands(Player player, List<String> commands) {
+        this.beaconzPlugin.runCommands(player, commands);
+    }
+    
+    /**
+     * Gives player item rewards
+     * @param player
+     * @param itemRewards
+     * @return a list of what was given to the player
+     */
+    public List<ItemStack> giveItems(Player player, List<String> itemRewards) {
+        return this.beaconzPlugin.giveItems(player, itemRewards);
     }
 }

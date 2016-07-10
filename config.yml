@@ -54,7 +54,24 @@ world:
   linkblocks:
      GOLD_BLOCK: 50
      DIAMOND_BLOCK: 200
-    
+  
+  # What will be given to the player when they make a link 
+  # Material:Durability:Quantity - all three are mandatory
+  # For potions, POTION:NAME:<LEVEL>:<EXTENDED>:<SPLASH/LINGER>:QTY
+  linkrewards:
+  - EMERALD:0:1
+  
+  # Link commands
+  # Commands that will be run when the player makes a link. Command is run as console.
+  # [player] is the linking player
+  # If the command is proceeded by [SELF] the command will be run as that player
+  # E.g., - "[SELF] kit tools"
+  linkcommands:
+  #- "give [player] emerald 1"
+  #- "some other command"
+
+  
+   
   # Maximum number of links a beacon can have. Note teams cannot remove their own links
   # except by sacrificing link extender blocks.
   maxlinks: 6

@@ -89,6 +89,7 @@ public class Lang extends BeaconzPluginDependent {
     public static String beaconYouHaveThisMuchExp;
     public static String beaconYouMustCapturedBeacon;
     public static String beaconYouNeedThisMuchExp;
+    public static String beaconYouReceivedAReward;
     public static String errorAlreadyExists;
     public static String errorCanOnlyPlaceBlocks;
     public static String errorCanOnlyPlaceBlocksUpTo;
@@ -292,6 +293,7 @@ public class Lang extends BeaconzPluginDependent {
         beaconYouHaveThisMuchExp = ChatColor.translateAlternateColorCodes('&', locale.getString("beacon.YouHaveThisMuchExp", "You have [number] exp points."));
         beaconYouMustCapturedBeacon = ChatColor.translateAlternateColorCodes('&', locale.getString("beacon.YouMustCapturedBeacon", "You must capture the beacon first!"));
         beaconYouNeedThisMuchExp = ChatColor.translateAlternateColorCodes('&', locale.getString("beacon.YouNeedThisMuchExp", "You need [number] exp points to link these beacons."));
+        beaconYouReceivedAReward = ChatColor.translateAlternateColorCodes('&', locale.getString("beacon.YouReceivedAReward", "You received a reward!"));
         beaconClaimingBeaconAt = ChatColor.translateAlternateColorCodes('&', locale.getString("beacon.ClaimingBeaconAt", "Claiming beacon at [loction]"));
         errorAlreadyExists = ChatColor.translateAlternateColorCodes('&', locale.getString("error.AlreadyExists", "[name] already exists!"));
         errorCanOnlyPlaceBlocks = ChatColor.translateAlternateColorCodes('&', locale.getString("error.CanOnlyPlaceBlocks", "You can only place blocks on a captured beacon!"));
