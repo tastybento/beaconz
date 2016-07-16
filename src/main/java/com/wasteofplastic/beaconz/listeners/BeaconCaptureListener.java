@@ -114,7 +114,7 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
             if (getRegister().isBeacon(block.getRelative(BlockFace.DOWN))) {
                 // It is a real beacon
                 // Check that the beacon is clear of blocks
-                if (!beacon.isClear()) {
+                if (!beacon.isClear() && (beacon.getOwnership() == null || !beacon.getOwnership().equals(team))) {
                     // You can't capture an uncleared beacon
                     player.sendMessage(ChatColor.GOLD + Lang.errorClearAroundBeacon);
                     event.setCancelled(true);
