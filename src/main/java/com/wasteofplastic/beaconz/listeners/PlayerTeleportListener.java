@@ -59,7 +59,7 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
 
     private Set<UUID> barrierPlayers = new HashSet<UUID>();
     private HashMap<UUID, Vector> teleportingPlayers = new HashMap<UUID,Vector>();
-    private final static boolean DEBUG = true;
+    private final static boolean DEBUG = false;
     private static final String LOBBY = "Lobby";
 
     /**
