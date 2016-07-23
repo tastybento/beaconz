@@ -91,7 +91,15 @@ world:
      6: 20
      7: 25
      8: 30
-     
+   
+  # Removal level delta  
+  # Players can only remove defense blocks they place unless they are this many levels
+  # higher than the defense level. For example, if this is 5, then level 35 players can
+  # remove any block placed level 30 or below.
+  # If zero, players can remove any defense block on the beacon
+  # If -1, players can only remove defense blocks they placed
+  removaldelta: -1
+
   # Attack levels
   # Defines what exp level an attacker must be to be able to mine the block at that height
   # Height: Exp level 
@@ -104,6 +112,9 @@ world:
      6: 20
      7: 25
      8: 30  
+
+
+  
   
   # Starter inventory
   # Format Material:Qty or Material:Data:Qty

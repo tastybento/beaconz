@@ -48,6 +48,7 @@ import org.bukkit.scoreboard.Team;
 import com.wasteofplastic.beaconz.BeaconObj;
 import com.wasteofplastic.beaconz.Beaconz;
 import com.wasteofplastic.beaconz.BeaconzPluginDependent;
+import com.wasteofplastic.beaconz.DefenseBlock;
 import com.wasteofplastic.beaconz.Lang;
 import com.wasteofplastic.beaconz.LinkResult;
 import com.wasteofplastic.beaconz.Settings;
@@ -189,16 +190,16 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
      */
     private int checkBeaconDistance(BeaconObj beacon, BeaconObj mappedBeacon) {
         int distance = (int)beacon.getPoint().distance(mappedBeacon.getPoint());
-        for (Block block :beacon.getDefenseBlocks().keySet()) {
+        for (DefenseBlock block :beacon.getDefenseBlocks().values()) {
             //getLogger().info("DEBUG: Blocks on beacon = " + block);
-            if (Settings.linkBlocks.containsKey(block.getType())) {
-                distance -= Settings.linkBlocks.get(block.getType());
+            if (Settings.linkBlocks.containsKey(block.getBlock())) {
+                distance -= Settings.linkBlocks.get(block.getBlock());
             }
         }
-        for (Block block :mappedBeacon.getDefenseBlocks().keySet()) {
+        for (DefenseBlock block :mappedBeacon.getDefenseBlocks().values()) {
             //getLogger().info("DEBUG: Blocks on beacon = " + block);
-            if (Settings.linkBlocks.containsKey(block.getType())) {
-                distance -= Settings.linkBlocks.get(block.getType());
+            if (Settings.linkBlocks.containsKey(block.getBlock())) {
+                distance -= Settings.linkBlocks.get(block.getBlock());
             }
         }
         return distance;

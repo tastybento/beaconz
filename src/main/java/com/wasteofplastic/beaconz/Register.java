@@ -124,9 +124,13 @@ public class Register extends BeaconzPluginDependent {
             }
             beaconzYml.set("beacon." + count + ".defenseblocks", plinthBlocksString);
             // Save the defenses
-            for (Entry<Block, Integer> defensiveBlock : beacon.getDefenseBlocks().entrySet()) {
+            for (DefenseBlock defensiveBlock : beacon.getDefenseBlocks().values()) {
                 beaconzYml.set("beacon." + count + ".defensiveblocks."
-                        + Beaconz.getStringLocation(defensiveBlock.getKey().getLocation()).replace('.', '_'), defensiveBlock.getValue());
+                        + Beaconz.getStringLocation(defensiveBlock.getBlock().getLocation()).replace('.', '_'), defensiveBlock.getLevel());
+                if (defensiveBlock.getPlacer() != null) {
+                    beaconzYml.set("beacon." + count + ".defensiveblocksowner."
+                            + Beaconz.getStringLocation(defensiveBlock.getBlock().getLocation()).replace('.', '_'), defensiveBlock.getPlacer().toString());
+                }
             }
             // Save maps
             List<String> maps = new ArrayList<String>();
@@ -216,7 +220,12 @@ public class Register extends BeaconzPluginDependent {
                             ConfigurationSection defBlocks = configSec.getConfigurationSection(beacon + ".defensiveblocks");
                             if (defBlocks != null) {
                                 for (String defenseBlock : defBlocks.getKeys(false)) {
-                                    newBeacon.addDefenseBlock(Beaconz.getLocationString(defenseBlock.replace('_', '.')).getBlock(), defBlocks.getInt(defenseBlock));
+                                    // Get Block
+                                    Block b = Beaconz.getLocationString(defenseBlock.replace('_', '.')).getBlock();
+                                    int level = defBlocks.getInt(defenseBlock);
+                                    // Try to get owner
+                                    String owner = configSec.getString(beacon + ".defensiveblocksowner." + defenseBlock);
+                                    newBeacon.addDefenseBlock(b,level,owner);
                                 }
                             }
                             // Load map id's
@@ -871,7 +880,7 @@ public class Register extends BeaconzPluginDependent {
     public Set<Short> getBeaconMapIndex() {
         return beaconMaps.keySet();
     }
-    
+
     /**
      * Gets a set of all the control triangles at this location. Can be overlapping triangles.
      * @param x
@@ -1045,8 +1054,8 @@ public class Register extends BeaconzPluginDependent {
             }
         }
     }
-    
-    
+
+
 
     /**
      * Recalculates the score for game. Used when a beacon is lost because that could enable the opposition to

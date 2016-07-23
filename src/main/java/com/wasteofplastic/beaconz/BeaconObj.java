@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -52,7 +53,7 @@ public class BeaconObj extends BeaconzPluginDependent {
     private Integer id = null;
     private boolean newBeacon = true;
     private static final List<BlockFace> FACES = new ArrayList<BlockFace>(Arrays.asList(BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST, BlockFace.NORTH_EAST, BlockFace.NORTH_WEST, BlockFace.SOUTH_EAST, BlockFace.SOUTH_WEST));
-    private HashMap<Block, Integer> defenseBlocks = new HashMap<Block, Integer>();
+    private HashMap<Block, DefenseBlock> defenseBlocks = new HashMap<Block,DefenseBlock>();
     private Set<BeaconObj> links = new HashSet<BeaconObj>();
 
     /**
@@ -244,9 +245,20 @@ public class BeaconObj extends BeaconzPluginDependent {
      * Tracks important defense blocks
      * @param block
      * @param levelRequired
+     * @param uuid 
      */
-    public void addDefenseBlock(Block block, int levelRequired) {
-        defenseBlocks.put(block, levelRequired);
+    public void addDefenseBlock(Block block, int levelRequired, UUID uuid) {
+        defenseBlocks.put(block, new DefenseBlock(block, levelRequired, uuid));
+    }
+    
+    /**
+     * Tracks important defense blocks
+     * @param block
+     * @param levelRequired
+     * @param uuid 
+     */
+    public void addDefenseBlock(Block block, int levelRequired, String uuid) {
+        defenseBlocks.put(block, new DefenseBlock(block, levelRequired, uuid)); 
     }
 
     /**
@@ -260,14 +272,14 @@ public class BeaconObj extends BeaconzPluginDependent {
     /**
      * @return the defenseBlocks
      */
-    public HashMap<Block, Integer> getDefenseBlocks() {
+    public HashMap<Block, DefenseBlock> getDefenseBlocks() {
         return defenseBlocks;
     }
 
     /**
      * @param defenseBlocks the defenseBlocks to set
      */
-    public void setDefenseBlocks(HashMap<Block, Integer> defenseBlocks) {
+    public void setDefenseBlocks(HashMap<Block,DefenseBlock> defenseBlocks) {
         this.defenseBlocks = defenseBlocks;
     }
 

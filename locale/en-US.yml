@@ -187,6 +187,7 @@ error:
   UnknownPlayer: "Unknown or offline player!"
   YouCannotBuildThere: "You cannot build there!"
   YouCannotDoThat: "You cannot do that!"
+  YouCannotRemoveOtherPlayersBlocks: "You cannot remove other player's blocks!"
   YouDoNotHavePermission: "You do not have permission to use this command!"
   YouHaveToBeStandingOnABeacon: "You have to be standing on a beacon"
   YouMustBeInAGame: "You must be in a game to do that!"

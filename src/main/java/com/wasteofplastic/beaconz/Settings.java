@@ -230,4 +230,9 @@ public class Settings {
      */
     public static List<String> linkRewards;
     
+    /**
+     * Number of levels a player must be above a defense block to be able to remove blocks they did not place
+     */
+    public static int removaldelta;
+    
 }

@@ -302,6 +302,7 @@ public class Beaconz extends JavaPlugin {
         if (Settings.defenseHeight < 1) {
             Settings.defenseHeight = 1;
         }
+        Settings.removaldelta = getConfig().getInt("world.removaldelta", -1);
         // Load the defense and attack levels
         // The end result is a list of what levels are required for a player to have to build or attack at that
         // height above a beacon.

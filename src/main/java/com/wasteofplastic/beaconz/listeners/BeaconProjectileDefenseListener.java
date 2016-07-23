@@ -57,6 +57,7 @@ import org.bukkit.util.Vector;
 import com.wasteofplastic.beaconz.BeaconObj;
 import com.wasteofplastic.beaconz.Beaconz;
 import com.wasteofplastic.beaconz.BeaconzPluginDependent;
+import com.wasteofplastic.beaconz.DefenseBlock;
 
 /**
  * Handles projectile beacon defenses
@@ -157,7 +158,14 @@ public class BeaconProjectileDefenseListener extends BeaconzPluginDependent impl
         fireOnPlayer(player, event.getFrom(), event.getTo());
     }
 
-    private void fireProjectile(Block block, Integer value, Location target, Vector adjust, Team team) {
+    /**
+     * Fires a projectile from block at target in the direction of aim from the team.
+     * @param block
+     * @param target
+     * @param aim
+     * @param team
+     */
+    private void fireProjectile(Block block, Location target, Vector aim, Team team) {
         // Check line of sight
         Vector playerLoc = target.toVector().add(new Vector(0.5D,1.75D,0.5D));
         // Get start location
@@ -268,22 +276,22 @@ public class BeaconProjectileDefenseListener extends BeaconzPluginDependent impl
             org.bukkit.block.Dispenser ih = (org.bukkit.block.Dispenser)block.getState();
             if (ih.getInventory().contains(Material.ARROW)) {
                 //getLogger().info("DEBUG: regular arrow");
-                projectile = block.getWorld().spawnArrow(from, direction.add(adjust), 1F, 10F);
+                projectile = block.getWorld().spawnArrow(from, direction.add(aim), 1F, 10F);
                 ((Arrow)projectile).setKnockbackStrength(1);
             } else if (ih.getInventory().contains(Material.TIPPED_ARROW)) {
                 //getLogger().info("DEBUG: tipped arrow");
-                projectile = block.getWorld().spawnArrow(from, direction.add(adjust), 1F, 10F, TippedArrow.class);
+                projectile = block.getWorld().spawnArrow(from, direction.add(aim), 1F, 10F, TippedArrow.class);
                 ItemStack item = ih.getInventory().getItem(ih.getInventory().first(Material.TIPPED_ARROW));
                 PotionMeta meta = (PotionMeta) item.getItemMeta();
                 ((TippedArrow)projectile).setBasePotionData(meta.getBasePotionData());
             } else if (ih.getInventory().contains(Material.SPECTRAL_ARROW)) {
                 //getLogger().info("DEBUG: spectral arrow");
-                projectile = block.getWorld().spawnArrow(from, direction.add(adjust), 1F, 10F, SpectralArrow.class);
+                projectile = block.getWorld().spawnArrow(from, direction.add(aim), 1F, 10F, SpectralArrow.class);
                 ((SpectralArrow)projectile).setKnockbackStrength(1);
             } else if (ih.getInventory().contains(Material.FIREBALL)) {
                 //getLogger().info("DEBUG: fireball");
                 projectile = (Projectile)block.getWorld().spawnEntity(from, EntityType.FIREBALL);
-                ((Fireball)projectile).setDirection(direction.add(adjust));
+                ((Fireball)projectile).setDirection(direction.add(aim));
             } else {
                 return;
             }
@@ -334,9 +342,9 @@ public class BeaconProjectileDefenseListener extends BeaconzPluginDependent impl
                 // Offensive beacon
                 //getLogger().info("DEBUG: enemy beacon");
                 // TODO: check if beacon has active defenses
-                for (Entry<Block, Integer> defense : beacon.getDefenseBlocks().entrySet()) {
+                for (DefenseBlock defense : beacon.getDefenseBlocks().values()) {
                     // Do different things depending on the type
-                    Block block = defense.getKey();
+                    Block block = defense.getBlock();
                     //getLogger().info("DEBUG: defense block = " + block.getType());
                     switch (block.getType()) {
                     case AIR:
@@ -350,7 +358,7 @@ public class BeaconProjectileDefenseListener extends BeaconzPluginDependent impl
                                 || ih.getInventory().contains(Material.SPECTRAL_ARROW) || ih.getInventory().contains(Material.FIREBALL)) {
                             //getLogger().info("DEBUG: contains arrow");
                             Vector adjust = (to.toVector().subtract(from.toVector()));
-                            fireProjectile(block, defense.getValue(), to, adjust, beacon.getOwnership());
+                            fireProjectile(block, to, adjust, beacon.getOwnership());
                             //getLogger().info("DEBUG: velocity = " + adjust);
                         }
                         //getLogger().info("DEBUG: dispenser");

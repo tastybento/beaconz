@@ -551,6 +551,7 @@ public class GameMgr extends BeaconzPluginDependent {
         // Returns the region that contains a point
         Region region = null;
         if (regions != null) {
+            getLogger().info("DEBUG: regions does not = null and is of size " + regions.size());
             for (Region reg : regions.values()) {
                 if (reg.containsPoint(x, z)) {
                     region = reg;

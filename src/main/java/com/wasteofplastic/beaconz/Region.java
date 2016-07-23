@@ -365,9 +365,9 @@ public class Region extends BeaconzPluginDependent {
         int zMin = (int)corners[0].getY();
         int xMax = (int)corners[1].getX();
         int zMax = (int)corners[1].getY();
+        getLogger().info("Contains: x: " + x + " z: " + z + " corner1: " + corners[0].getX() + ":" + corners[0].getY() + " corner2: " + corners[1].getX() + ":" + corners[1].getY());
         return (xMin <= x && xMax >= x && zMin <= z && zMax >= z);
-        //getLogger().info("Contains: " + contains + " == x: " + x + " z: " + z + " corner1: " + corners[0].getX() + ":" + corners[0].getY() + " corner2: " + corners[1].getX() + ":" + corners[1].getY());
-        //return contains;
+                //return contains;
     }
 
     /**

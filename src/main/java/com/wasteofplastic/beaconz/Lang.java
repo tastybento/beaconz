@@ -113,6 +113,7 @@ public class Lang extends BeaconzPluginDependent {
     public static String errorUnknownPlayer;
     public static String errorYouCannotBuildThere;
     public static String errorYouCannotDoThat;
+    public static String errorYouCannotRemoveOtherPlayersBlocks;
     public static String errorYouDoNotHavePermission;
     public static String errorYouHaveToBeStandingOnABeacon;
     public static String errorYouMustBeInAGame;
@@ -318,6 +319,7 @@ public class Lang extends BeaconzPluginDependent {
         errorUnknownPlayer = ChatColor.translateAlternateColorCodes('&', locale.getString("error.UnknownPlayer", "Unknown or offline player!"));
         errorYouCannotBuildThere = ChatColor.translateAlternateColorCodes('&', locale.getString("error.YouCannotBuildThere", "You cannot build there!"));
         errorYouCannotDoThat = ChatColor.translateAlternateColorCodes('&', locale.getString("error.YouCannotDoThat", "You cannot do that!"));
+        errorYouCannotRemoveOtherPlayersBlocks = ChatColor.translateAlternateColorCodes('&', locale.getString("error.YouCannotRemoveOtherPlayersBlocks", "You cannot remove other player's blocks!"));
         errorYouDoNotHavePermission = ChatColor.translateAlternateColorCodes('&', locale.getString("error.YouDoNotHavePermission", "You do not have permission to use this command!"));
         errorYouHaveToBeStandingOnABeacon = ChatColor.translateAlternateColorCodes('&', locale.getString("error.YouHaveToBeStandingOnABeacon", "You have to be standing on a beacon"));
         errorYouMustBeInAGame = ChatColor.translateAlternateColorCodes('&', locale.getString("error.YouMustBeInAGame", "You must be in a game to do that!"  ));
@@ -401,7 +403,7 @@ public class Lang extends BeaconzPluginDependent {
         for (String material : locale.getConfigurationSection("defenseText").getKeys(false)) {
             try {
                 Material mat = Material.valueOf(material.toUpperCase());
-                defenseText.put(mat,locale.getString("defenseText." + material,""));
+                defenseText.put(mat,ChatColor.translateAlternateColorCodes('&', locale.getString("defenseText." + material,"")));
             } catch (Exception e) {
                 getLogger().severe("No not know what defenseText." + material + " is in locale file " + localeName + ".yml, skipping...");
             }
