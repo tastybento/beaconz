@@ -192,14 +192,14 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
         int distance = (int)beacon.getPoint().distance(mappedBeacon.getPoint());
         for (DefenseBlock block :beacon.getDefenseBlocks().values()) {
             //getLogger().info("DEBUG: Blocks on beacon = " + block);
-            if (Settings.linkBlocks.containsKey(block.getBlock())) {
-                distance -= Settings.linkBlocks.get(block.getBlock());
+            if (Settings.linkBlocks.containsKey(block.getBlock().getType())) {
+                distance -= Settings.linkBlocks.get(block.getBlock().getType());
             }
         }
         for (DefenseBlock block :mappedBeacon.getDefenseBlocks().values()) {
             //getLogger().info("DEBUG: Blocks on beacon = " + block);
-            if (Settings.linkBlocks.containsKey(block.getBlock())) {
-                distance -= Settings.linkBlocks.get(block.getBlock());
+            if (Settings.linkBlocks.containsKey(block.getBlock().getType())) {
+                distance -= Settings.linkBlocks.get(block.getBlock().getType());
             }
         }
         return distance;
