@@ -78,6 +78,7 @@ public class Beaconz extends JavaPlugin {
     private Messages messages;
     private BeaconzStore beaconzStore;
     private Lang locale;
+    protected PlayerMovementListener pml;
 
 
     @Override
@@ -121,7 +122,8 @@ public class Beaconz extends JavaPlugin {
                 getServer().getPluginManager().registerEvents(new BeaconProtectionListener(plugin), plugin);
                 getServer().getPluginManager().registerEvents(new PlayerDeathListener(plugin), plugin);
                 getServer().getPluginManager().registerEvents(new PlayerJoinLeaveListener(plugin), plugin);
-                getServer().getPluginManager().registerEvents(new PlayerMovementListener(plugin), plugin);
+                pml = new PlayerMovementListener(plugin);
+                getServer().getPluginManager().registerEvents(pml, plugin);
                 getServer().getPluginManager().registerEvents(new PlayerTeleportListener(plugin), plugin);
                 getServer().getPluginManager().registerEvents(new SkyListeners(plugin), plugin);
                 getServer().getPluginManager().registerEvents(new WorldListener(plugin), plugin);
@@ -193,6 +195,14 @@ public class Beaconz extends JavaPlugin {
         }
         return beaconPopulator;
     }
+
+    /**
+     * @return the pml
+     */
+    public PlayerMovementListener getPml() {
+        return pml;
+    }
+
 
     /**
      * Loads settings from config.yml

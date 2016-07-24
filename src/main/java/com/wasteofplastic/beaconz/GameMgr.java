@@ -150,6 +150,7 @@ public class GameMgr extends BeaconzPluginDependent {
      */
     public void loadAllGames() {
         //getLogger().info("DEBUG: loading all games");
+        regions.clear();
         games.clear();
         loadGames(null);
     }
@@ -551,7 +552,7 @@ public class GameMgr extends BeaconzPluginDependent {
         // Returns the region that contains a point
         Region region = null;
         if (regions != null) {
-            getLogger().info("DEBUG: regions does not = null and is of size " + regions.size());
+            //getLogger().info("DEBUG: regions does not = null and is of size " + regions.size());
             for (Region reg : regions.values()) {
                 if (reg.containsPoint(x, z)) {
                     region = reg;
@@ -797,10 +798,10 @@ public class GameMgr extends BeaconzPluginDependent {
      * @param game
      */
     public void delete(CommandSender sender, Game game) {
-        game.getRegion().regenerate(sender);
+        //game.getRegion().regenerate(sender);
         // Remove region
         regions.remove(game.getRegion().getCorners());
-        // Remove chests
+        // Remove inventories
         getBeaconzStore().removeGame(game.getName());
         // Remove game
         games.remove(game.getName());

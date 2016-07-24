@@ -12,7 +12,7 @@ import java.util.Set;
 import org.bukkit.scoreboard.Team;
 
 /**
- * Scores triangles
+ * Scores triangles. Calculates the overall area covered. Accounts for overlapping triangles and islands of triangles.
  * @author tastybento
  *
  */

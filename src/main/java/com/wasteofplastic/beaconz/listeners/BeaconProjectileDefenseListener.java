@@ -23,6 +23,7 @@
 package com.wasteofplastic.beaconz.listeners;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.UUID;
 
@@ -341,24 +342,27 @@ public class BeaconProjectileDefenseListener extends BeaconzPluginDependent impl
             if (beacon.getOwnership() != null && !beacon.getOwnership().equals(team)) {
                 // Offensive beacon
                 //getLogger().info("DEBUG: enemy beacon");
-                // TODO: check if beacon has active defenses
-                for (DefenseBlock defense : beacon.getDefenseBlocks().values()) {
+                Iterator<Entry<Block, DefenseBlock>> it = beacon.getDefenseBlocks().entrySet().iterator();
+                while (it.hasNext()) {
+                    Entry<Block, DefenseBlock> block = it.next();
                     // Do different things depending on the type
-                    Block block = defense.getBlock();
-                    //getLogger().info("DEBUG: defense block = " + block.getType());
-                    switch (block.getType()) {
+                    //getLogger().info("DEBUG: defense block = " + block);
+                    //getLogger().info("DEBUG: defense block type = " + block.getKey().getType());
+                    //getLogger().info("DEBUG: defense block location = " + block.getKey().getLocation());
+                    switch (block.getKey().getType()) {
                     case AIR:
-                        // Remove defense
-                        beacon.removeDefenseBlock(block);
+                        // Remove defense - cleans up defenses that have been removed for some reason, like creative mode
+                        // deletion, or gravity falling
+                        it.remove();
                         //getLogger().info("DEBUG: removed");
                         break;
                     case DISPENSER:
-                        InventoryHolder ih = (InventoryHolder)block.getState();
+                        InventoryHolder ih = (InventoryHolder)block.getKey().getState();
                         if (ih.getInventory().contains(Material.ARROW) || ih.getInventory().contains(Material.TIPPED_ARROW)
                                 || ih.getInventory().contains(Material.SPECTRAL_ARROW) || ih.getInventory().contains(Material.FIREBALL)) {
                             //getLogger().info("DEBUG: contains arrow");
                             Vector adjust = (to.toVector().subtract(from.toVector()));
-                            fireProjectile(block, to, adjust, beacon.getOwnership());
+                            fireProjectile(block.getKey(), to, adjust, beacon.getOwnership());
                             //getLogger().info("DEBUG: velocity = " + adjust);
                         }
                         //getLogger().info("DEBUG: dispenser");
@@ -368,6 +372,6 @@ public class BeaconProjectileDefenseListener extends BeaconzPluginDependent impl
                 }
             }
         }
-        
+
     }
 }

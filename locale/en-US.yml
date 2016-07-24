@@ -275,3 +275,5 @@ triangle:
   Entering: "&7Now entering [team]'s triangle area level [level]"
   Leaving: "Leaving [team]'s triangle area"
   ThisBelongsTo: "This belongs to [team]!"
+  YourTeamLostATriangle: "Your team lost a triangle!"
+  TeamLostATriangle: "[team] lost a triangle!"

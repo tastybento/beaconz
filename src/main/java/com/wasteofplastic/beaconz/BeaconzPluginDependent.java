@@ -32,6 +32,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.generator.BlockPopulator;
 import org.bukkit.inventory.ItemStack;
 
+import com.wasteofplastic.beaconz.listeners.PlayerMovementListener;
+
 /**
  * Base class for classes that depend on a {@link org.bukkit.plugin.Plugin}.
  *
@@ -118,5 +120,13 @@ public abstract class BeaconzPluginDependent {
      */
     public List<ItemStack> giveItems(Player player, List<String> itemRewards) {
         return this.beaconzPlugin.giveItems(player, itemRewards);
+    }
+    
+    /**
+     * Get the PlayerMovementListener object
+     * @return PlayerMovementListner object
+     */
+    public PlayerMovementListener getPml() {
+        return this.beaconzPlugin.getPml();
     }
 }

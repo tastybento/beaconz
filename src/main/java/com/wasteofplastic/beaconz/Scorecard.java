@@ -206,7 +206,7 @@ public class Scorecard extends BeaconzPluginDependent{
     }
 
     /**
-     * Updates the Scoreboard values
+     * Updates the Scoreboard values for all teams
      *
      */
     public void refreshScores() {
@@ -214,6 +214,11 @@ public class Scorecard extends BeaconzPluginDependent{
             refreshScores(team);
         }
     }
+    
+    /**
+     * Updates the Scoreboard values for team
+     * @param team
+     */
     public void refreshScores(Team team) {
         Integer defaultvalue = null;
         if (score.get(team) == null) defaultvalue = 0;   // if team doesn't have score, create it and set to 0
@@ -225,6 +230,13 @@ public class Scorecard extends BeaconzPluginDependent{
     public void refreshScores(Team team, String scoretype) {
         refreshScores(team, scoretype, null);
     }
+    
+    /**
+     * Refresh a specific score type for team.
+     * @param team
+     * @param scoretype - can be area, beacons, links, triangles
+     * @param value - default value
+     */
     public void refreshScores(Team team, String scoretype, Integer value) {
         if (gameON) {
             if (value == null) {

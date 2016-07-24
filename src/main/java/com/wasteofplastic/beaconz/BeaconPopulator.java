@@ -57,6 +57,10 @@ public class BeaconPopulator extends BlockPopulator {
 
     @Override
     public void populate(World world, Random unused, Chunk source) {
+        if (plugin.getRegister() == null) {
+            // Not ready!
+            return;
+        }
         //Bukkit.getLogger().info("DEBUG: populator called. ");
 
         // If we're regenerating this chunk from within the game (e.g. a "reset" command), don't do anything

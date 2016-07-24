@@ -45,8 +45,10 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
 import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
+import org.bukkit.potion.PotionEffect;
 import org.bukkit.scoreboard.Team;
 
 import com.wasteofplastic.beaconz.map.BeaconMap;
@@ -761,42 +763,20 @@ public class Register extends BeaconzPluginDependent {
         while (beaconIterator.hasNext()) {
             beaconIterator.next().removeLink(beacon);
         }
-
-        // Remove links from this register
-        Iterator<BeaconLink> beaconPairIterator = beaconLinks.get(getGameMgr().getGame(oldOwner)).iterator();
-        while (beaconPairIterator.hasNext()) {
-            BeaconLink beaconPair = beaconPairIterator.next();
-            if (beaconPair.getBeacon1().equals(beacon) || beaconPair.getBeacon2().equals(beacon)) {
-                beaconPairIterator.remove();
+        if (!beaconLinks.isEmpty()) {
+            // Remove links from this register
+            Iterator<BeaconLink> beaconPairIterator = beaconLinks.get(getGameMgr().getGame(oldOwner)).iterator();
+            while (beaconPairIterator.hasNext()) {
+                BeaconLink beaconPair = beaconPairIterator.next();
+                if (beaconPair.getBeacon1().equals(beacon) || beaconPair.getBeacon2().equals(beacon)) {
+                    beaconPairIterator.remove();
+                }
             }
-        }
-        Iterator<BeaconLink> linkIterator = beaconLinks.get(getGameMgr().getGame(oldOwner)).iterator();
-        int linkLossCount = 0;
-        while (linkIterator.hasNext()) {
-            BeaconLink pair = linkIterator.next();
-            if (pair.getBeacon1().equals(beacon) || pair.getBeacon2().equals(beacon)) {
-                linkLossCount++;
-                linkIterator.remove();
-            }
-        }
-        // linkLossCount should always be a multiple of 2 because links go both ways
-        // so divide it by two
-        linkLossCount /= 2;
-        // Tell folks what's going on
-        if (linkLossCount == 1 && !quiet) {
-            getMessages().tellTeam(oldOwner, ChatColor.RED + "Your team lost a link!");
-            getMessages().tellOtherTeams(oldOwner, ChatColor.GREEN + oldOwner.getDisplayName() + ChatColor.GREEN + " lost a link!");
-        } else if (linkLossCount > 1) {
-            getMessages().tellTeam(oldOwner, ChatColor.RED + "Your team lost " + linkLossCount + " links!");
-            getMessages().tellOtherTeams(oldOwner, ChatColor.GREEN + oldOwner.getDisplayName() + ChatColor.GREEN + " lost " + linkLossCount + " links!");
-        }
-        /*
-        if (links.get(oldOwner) != null) {
-            Iterator<Line2D> linkIterator = links.get(oldOwner).iterator();
+            Iterator<BeaconLink> linkIterator = beaconLinks.get(getGameMgr().getGame(oldOwner)).iterator();
             int linkLossCount = 0;
             while (linkIterator.hasNext()) {
-                Line2D link = linkIterator.next();
-                if (link.getP1().equals(beacon.getPoint()) || link.getP2().equals(beacon.getPoint())) {
+                BeaconLink pair = linkIterator.next();
+                if (pair.getBeacon1().equals(beacon) || pair.getBeacon2().equals(beacon)) {
                     linkLossCount++;
                     linkIterator.remove();
                 }
@@ -812,11 +792,11 @@ public class Register extends BeaconzPluginDependent {
                 getMessages().tellTeam(oldOwner, ChatColor.RED + "Your team lost " + linkLossCount + " links!");
                 getMessages().tellOtherTeams(oldOwner, ChatColor.GREEN + oldOwner.getDisplayName() + ChatColor.GREEN + " lost " + linkLossCount + " links!");
             }
-        }*/
-
+        }
         beacon.removeLinks();
 
         // Get any control triangles that have been removed because of this
+        HashMap<Player, List<TriangleField>> players = new HashMap<Player, List<TriangleField>>();
         Iterator<TriangleField> it = triangleFields.iterator();
         while (it.hasNext()) {
             TriangleField triangle = it.next();
@@ -824,14 +804,24 @@ public class Register extends BeaconzPluginDependent {
                 //getLogger().info("DEBUG: this beacon was part of a triangle");
                 // Tell folks what's going on
                 if (!quiet) {
-                    getMessages().tellTeam(triangle.getOwner(), ChatColor.RED + "Your team lost a triangle worth " + triangle.getArea() + "!");
-                    getMessages().tellOtherTeams(triangle.getOwner(), ChatColor.GREEN + triangle.getOwner().getDisplayName() + ChatColor.GREEN + " lost a triangle worth " + triangle.getArea() + "!");
+                    getMessages().tellTeam(triangle.getOwner(), ChatColor.RED + Lang.triangleYourTeamLostATriangle);
+                    getMessages().tellOtherTeams(triangle.getOwner(), ChatColor.GREEN + Lang.triangleTeamLostATriangle.replace("[team]", triangle.getOwner().getDisplayName()));
+                }
+                // Find any players in the triangle being removed
+                for (Player player: getServer().getOnlinePlayers()) {
+                    if (getBeaconzWorld().equals(player.getWorld())) {
+                        if (triangle.contains(new Point2D.Double(player.getLocation().getX(), player.getLocation().getZ()))) {
+                            // Player is in triangle, remove effects
+                            for (PotionEffect effect : getPml().getTriangleEffects(player.getUniqueId()))
+                                player.removePotionEffect(effect.getType());
+                        }
+                    }
                 }
                 // Remove triangle
                 it.remove();
             }
         }
-
+        
         // Cap the beacon with obsidian
         getBeaconzWorld().getBlockAt(beacon.getX(), beacon.getHeight() + 1, beacon.getZ()).setType(Material.OBSIDIAN);
 
@@ -1065,38 +1055,39 @@ public class Register extends BeaconzPluginDependent {
     public void recalculateScore(Game game) {
         //getLogger().info("DEBUG: recalc score for " + game.getName());
         // Run through the beacon pairs
-        // Sort in order of age
-        Collections.sort(beaconLinks.get(game));
-        // Build the score
-        // Go through all the links in this game
-        for (BeaconLink firstPoint: beaconLinks.get(game)) {
-            //getLogger().info("DEBUG: Checking links from " + firstPoint.getBeacon1().getPoint());
-            // Go to all the beacons this beacon is linked to
-            for (BeaconObj secondPoint : firstPoint.getBeacon1().getLinks()) {
-                //getLogger().info("DEBUG: Linked to " + secondPoint.getPoint());
-                //getLogger().info("DEBUG: This beacon has " + secondPoint.getLinks().size() + " links (one of which should be back)");
-                // Check the next set of links
-                for (BeaconObj thirdPoint : secondPoint.getLinks()) {
-                    // Run through the 3rd point's links and see if they include the 1st point
-                    if (!thirdPoint.equals(firstPoint)) {
-                        //getLogger().info("DEBUG: " + secondPoint.getPoint() + " => " + thirdPoint.getPoint());
-                        if (thirdPoint.equals(firstPoint.getBeacon2())) {
-                            //getLogger().info("DEBUG: Triangle found! ");
-                            // We have a winner
-                            try {
-                                // Result is true if the triangle is made okay, otherwise, don't make the link and return false
-                                getRegister().addTriangle(firstPoint.getBeacon1().getPoint(), secondPoint.getPoint(),
-                                        thirdPoint.getPoint(), firstPoint.getOwner());
-                            } catch (IllegalArgumentException e) {
-                                // TODO Auto-generated catch block
-                                e.printStackTrace();
+        if (!beaconLinks.isEmpty()) {
+            // Sort in order of age
+            Collections.sort(beaconLinks.get(game));
+            // Build the score
+            // Go through all the links in this game
+            for (BeaconLink firstPoint: beaconLinks.get(game)) {
+                //getLogger().info("DEBUG: Checking links from " + firstPoint.getBeacon1().getPoint());
+                // Go to all the beacons this beacon is linked to
+                for (BeaconObj secondPoint : firstPoint.getBeacon1().getLinks()) {
+                    //getLogger().info("DEBUG: Linked to " + secondPoint.getPoint());
+                    //getLogger().info("DEBUG: This beacon has " + secondPoint.getLinks().size() + " links (one of which should be back)");
+                    // Check the next set of links
+                    for (BeaconObj thirdPoint : secondPoint.getLinks()) {
+                        // Run through the 3rd point's links and see if they include the 1st point
+                        if (!thirdPoint.equals(firstPoint)) {
+                            //getLogger().info("DEBUG: " + secondPoint.getPoint() + " => " + thirdPoint.getPoint());
+                            if (thirdPoint.equals(firstPoint.getBeacon2())) {
+                                //getLogger().info("DEBUG: Triangle found! ");
+                                // We have a winner
+                                try {
+                                    // Result is true if the triangle is made okay, otherwise, don't make the link and return false
+                                    getRegister().addTriangle(firstPoint.getBeacon1().getPoint(), secondPoint.getPoint(),
+                                            thirdPoint.getPoint(), firstPoint.getOwner());
+                                } catch (IllegalArgumentException e) {
+                                    // TODO Auto-generated catch block
+                                    e.printStackTrace();
+                                }
+                                // There could be more than one, so continue
                             }
-                            // There could be more than one, so continue
                         }
                     }
                 }
             }
-
         }
     }
 }

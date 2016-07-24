@@ -192,6 +192,8 @@ public class Lang extends BeaconzPluginDependent {
     public static String triangleEntering;
     public static String triangleLeaving;
     public static String triangleThisBelongsTo;
+    public static String triangleYourTeamLostATriangle;
+    public static String triangleTeamLostATriangle;
    
     public void loadLocale(String localeName) {
         File localeDir = new File(getBeaconzPlugin().getDataFolder() + File.separator + "locale");
@@ -398,6 +400,9 @@ public class Lang extends BeaconzPluginDependent {
         triangleEntering = ChatColor.translateAlternateColorCodes('&', locale.getString("triangle.Entering ",  ChatColor.GRAY + "Now entering [team]'s triangle area level [level]"));
         triangleLeaving = ChatColor.translateAlternateColorCodes('&', locale.getString("triangle.Leaving", "Leaving [team]'s triangle area"));
         triangleThisBelongsTo = ChatColor.translateAlternateColorCodes('&', locale.getString("triangle.ThisBelongsTo", "This belongs to [team]!"));
+        triangleYourTeamLostATriangle = ChatColor.translateAlternateColorCodes('&', locale.getString("triangle.YourTeamLostATriangle", "Your team lost a triangle!"));
+        triangleTeamLostATriangle = ChatColor.translateAlternateColorCodes('&', locale.getString("triangle.TeamLostATriangle", "[team] lost a triangle!"));
+
         // Defense text
         defenseText = new HashMap<Material,String>();
         for (String material : locale.getConfigurationSection("defenseText").getKeys(false)) {

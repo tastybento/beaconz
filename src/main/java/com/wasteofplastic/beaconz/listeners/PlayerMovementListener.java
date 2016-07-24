@@ -24,6 +24,7 @@ package com.wasteofplastic.beaconz.listeners;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -49,7 +50,6 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.scoreboard.Team;
 import org.bukkit.util.Vector;
 
-import com.wasteofplastic.beaconz.BeaconObj;
 import com.wasteofplastic.beaconz.Beaconz;
 import com.wasteofplastic.beaconz.BeaconzPluginDependent;
 import com.wasteofplastic.beaconz.Lang;
@@ -254,6 +254,30 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
             triangleEffects.remove(player.getUniqueId());
             return false;
         }
+        // Check if a player is standing on an enemy beacon
+        /*
+        BeaconObj beacon = getRegister().getBeaconAt(to.getBlockX(), to.getBlockZ());
+        if (beacon != null && beacon.getOwnership() != null) {
+            BeaconProtectionListener.getStandingOn().put(player.getUniqueId(), beacon);
+        } else {
+            BeaconProtectionListener.getStandingOn().remove(player.getUniqueId());
+        }*/
+        // Check the From
+        List<TriangleField> fromTriangle = getRegister().getTriangle(from.getBlockX(), from.getBlockZ());
+        // Check the To
+        List<TriangleField> toTriangle = getRegister().getTriangle(to.getBlockX(), to.getBlockZ());
+        return applyTriangleEffects(player, fromTriangle, toTriangle);
+    }
+
+    /**
+     * Correctly affect a player with potions
+     * @param player
+     * @param fromTriangles - list of triangles player is covered by
+     * @param toTriangles - list of new triangles player is covered by
+     * @return true if the event should be canceled
+     */
+    public boolean applyTriangleEffects(Player player,
+            List<TriangleField> fromTriangles, List<TriangleField> toTriangles) {
         // Get the player's team
         Team team = getGameMgr().getPlayerTeam(player);
         if (team == null) {
@@ -263,28 +287,17 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
                 return true;
             }
         }
-        // Check if a player is standing on an enemy beacon
-        BeaconObj beacon = getRegister().getBeaconAt(to.getBlockX(), to.getBlockZ());
-        if (beacon != null && beacon.getOwnership() != null) {
-            BeaconProtectionListener.getStandingOn().put(player.getUniqueId(), beacon);
-        } else {
-            BeaconProtectionListener.getStandingOn().remove(player.getUniqueId());
-        }
-        // Check the From
-        List<TriangleField> fromTriangle = getRegister().getTriangle(from.getBlockX(), from.getBlockZ());
-        // Check the To
-        List<TriangleField> toTriangle = getRegister().getTriangle(to.getBlockX(), to.getBlockZ());
         // Outside any field
-        if (fromTriangle.isEmpty() && toTriangle.isEmpty()) {
+        if (fromTriangles.isEmpty() && toTriangles.isEmpty()) {
             for (PotionEffect effect : player.getActivePotionEffects())
                 player.removePotionEffect(effect.getType());
             triangleEffects.remove(player.getUniqueId());
             return false;
         }
         // Check if to is not a triangle
-        if (toTriangle.size() == 0) {
+        if (toTriangles.size() == 0) {
             // Leaving a control triangle
-            player.sendMessage(Lang.triangleLeaving.replace("[team]", fromTriangle.get(0).getOwner().getDisplayName()));
+            player.sendMessage(Lang.triangleLeaving.replace("[team]", fromTriangles.get(0).getOwner().getDisplayName()));
             if (triangleEffects.containsKey(player.getUniqueId())) {
                 for (PotionEffect effect : triangleEffects.get(player.getUniqueId()))
                     player.removePotionEffect(effect.getType());
@@ -293,20 +306,19 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
             return false;
         }
         // Entering a field, or moving to a stronger field
-        if (fromTriangle.size() < toTriangle.size()) {
-            player.sendMessage((Lang.triangleEntering.replace("[team]", toTriangle.get(0).getOwner().getDisplayName())).replace("[level]",String.valueOf(toTriangle.size())));
-        } else if (toTriangle.size() < fromTriangle.size()) {
+        if (fromTriangles.size() < toTriangles.size()) {
+            player.sendMessage((Lang.triangleEntering.replace("[team]", toTriangles.get(0).getOwner().getDisplayName())).replace("[level]",String.valueOf(toTriangles.size())));
+        } else if (toTriangles.size() < fromTriangles.size()) {
             // Remove all current effects - the lower set will be applied below
             if (triangleEffects.containsKey(player.getUniqueId())) {
                 for (PotionEffect effect : triangleEffects.get(player.getUniqueId()))
                     player.removePotionEffect(effect.getType());
             }
-            player.sendMessage((Lang.triangleDroppingToLevel.replace("[team]", toTriangle.get(0).getOwner().getDisplayName())).replace("[level]",String.valueOf(toTriangle.size())));
+            player.sendMessage((Lang.triangleDroppingToLevel.replace("[team]", toTriangles.get(0).getOwner().getDisplayName())).replace("[level]",String.valueOf(toTriangles.size())));
         }
 
         // Apply triangle effects
-        applyEffects(player, toTriangle, team);
-
+        applyEffects(player, toTriangles, team);
         return false;
     }
 
@@ -349,6 +361,17 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
             player.addPotionEffects(effects);
         }
         triangleEffects.put(player.getUniqueId(), effects);
+    }
+
+    /**
+     * @return the triangleEffects or an empty list if there is none
+     */
+    public Collection<PotionEffect> getTriangleEffects(UUID playerUUID) {
+        if (triangleEffects.containsKey(playerUUID)) {
+            return triangleEffects.get(playerUUID);
+        } else {
+            return Collections.emptyList();
+        }
     }
 
 }

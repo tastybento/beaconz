@@ -242,7 +242,7 @@ public class BeaconObj extends BeaconzPluginDependent {
     }
 
     /**
-     * Tracks important defense blocks
+     * Tracks defense blocks
      * @param block
      * @param levelRequired
      * @param uuid 
@@ -252,7 +252,7 @@ public class BeaconObj extends BeaconzPluginDependent {
     }
     
     /**
-     * Tracks important defense blocks
+     * Tracks defense blocks
      * @param block
      * @param levelRequired
      * @param uuid 
