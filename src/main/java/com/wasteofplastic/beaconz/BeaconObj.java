@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -35,6 +36,8 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.entity.Player;
+import org.bukkit.potion.PotionEffect;
 import org.bukkit.scoreboard.Team;
 
 /**
@@ -298,7 +301,27 @@ public class BeaconObj extends BeaconzPluginDependent {
             }
         }
         if (furthest != null) {
+            // Remove link from both ends
+            furthest.removeLink(this);
             removeLink(furthest);
+            // Remove any triangles related to these two beaconz
+            Iterator<TriangleField> it = getRegister().getTriangleFields().iterator();
+            while (it.hasNext()) {
+                TriangleField triangle = it.next();
+                if (triangle.hasVertex(this.location) && triangle.hasVertex(furthest.location)) {
+                 // Find any players in the triangle being removed
+                    for (Player player: getServer().getOnlinePlayers()) {
+                        if (getBeaconzWorld().equals(player.getWorld())) {
+                            if (triangle.contains(new Point2D.Double(player.getLocation().getX(), player.getLocation().getZ()))) {
+                                // Player is in triangle, remove effects
+                                for (PotionEffect effect : getPml().getTriangleEffects(player.getUniqueId()))
+                                    player.removePotionEffect(effect.getType());
+                            }
+                        }
+                    }                    
+                    it.remove();
+                }
+            }
             return true;
         }
         return false;
