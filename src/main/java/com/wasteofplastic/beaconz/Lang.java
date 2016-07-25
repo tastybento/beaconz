@@ -60,6 +60,7 @@ public class Lang extends BeaconzPluginDependent {
     public static String beaconDefensePlaced;
     public static String beaconDefenseRemoveTopDown;
     public static String beaconExtended;
+    public static String beaconAmplifierBlocksCannotBeRecovered;
     public static String beaconIsExhausted;
     public static String beaconLinkAlreadyExists;
     public static String beaconLinkBlockBroken;
@@ -194,6 +195,7 @@ public class Lang extends BeaconzPluginDependent {
     public static String triangleThisBelongsTo;
     public static String triangleYourTeamLostATriangle;
     public static String triangleTeamLostATriangle;
+    
    
     public void loadLocale(String localeName) {
         File localeDir = new File(getBeaconzPlugin().getDataFolder() + File.separator + "locale");
@@ -261,6 +263,7 @@ public class Lang extends BeaconzPluginDependent {
         adminRestart = ChatColor.translateAlternateColorCodes('&', locale.getString("admin.Restart", "Restarted game [name]"));
         adminResume = ChatColor.translateAlternateColorCodes('&', locale.getString("admin.Resume", "Game [name] is back ON!!"));
         adminSetSpawnNeedToBeInGame = ChatColor.translateAlternateColorCodes('&', locale.getString("admin.SetSpawnNeedToBeInGame", "You need to be in the region of an active game"));
+        beaconAmplifierBlocksCannotBeRecovered = ChatColor.translateAlternateColorCodes('&', locale.getString("beacon.AmplifierBlocksCannotBeRecovered", "Link amplifier blocks cannot be recovered!"));
         beaconCannotBeExtended = ChatColor.translateAlternateColorCodes('&', locale.getString("beacon.CannotBeExtended", "Cannot be extended any further in this direction!"));
         beaconCannotPlaceLiquids = ChatColor.translateAlternateColorCodes('&', locale.getString("beacon.CannotPlaceLiquids", "You cannot place liquids above a beacon!"));
         beaconClaimedForTeam = ChatColor.translateAlternateColorCodes('&', locale.getString("beacon.ClaimedForTeam", "Beacon claimed for team [team]"));

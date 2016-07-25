@@ -54,6 +54,18 @@ world:
   linkblocks:
      GOLD_BLOCK: 50
      DIAMOND_BLOCK: 200
+     
+  # Remove the longest link if a range extender block is removed.
+  # This is a penalty for breaking link blocks, but can be used by the owning team
+  # to remove links so they can be make elsewhere at the cost of gold blocks and
+  # losing links in order of length (quite a cost!)
+  # Default is not to lose a link.
+  removelongestlink: false
+  
+  # Destroy link blocks completely when they are removed
+  # Default is true. This is not recommended to be false otherwise players can reuse
+  # blocks between beaconz. Essentially, extending a beacon link length consumes blocks.
+  destroylinkblocks: true
   
   # What will be given to the player when they make a link 
   # Material:Durability:Quantity - all three are mandatory

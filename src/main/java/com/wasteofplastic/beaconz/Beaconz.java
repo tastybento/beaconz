@@ -209,6 +209,10 @@ public class Beaconz extends JavaPlugin {
      * Clears all old settings
      */
     public void loadConfig() {
+        // Destroy link blocks when they are removed
+        Settings.destroyLinkBlocks = getConfig().getBoolean("world.destroylinkblocks",true);
+        // Remove longest link if range extender block removed
+        Settings.removeLongestLink = getConfig().getBoolean("world.removelongestlink");
         // Link rewards
         Settings.linkRewards = getConfig().getStringList("world.linkrewards");
         // Link commands

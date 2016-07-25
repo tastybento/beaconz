@@ -38,7 +38,8 @@ admin:
   Restart: "Restarted game [name]"
   Resume: "Game [name] is back ON!!"
   SetSpawnNeedToBeInGame: "You need to be in the region of an active game"
-beacon: 
+beacon:
+  AmplifierBlocksCannotBeRecovered: "Link amplifier blocks cannot be recovered!" 
   CannotBeExtended: "Cannot be extended any further in this direction!"
   CannotPlaceLiquids: "You cannot place liquids above a beacon!"
   ClaimedForTeam: "Beacon claimed for team [team]"

@@ -235,4 +235,16 @@ public class Settings {
      */
     public static int removaldelta;
     
+    
+    /**
+     * Remove the longest link from a beacon when a range extender block is broken. If this is false, then the only loss is the range block
+     * itself.
+     */
+    public static boolean removeLongestLink;
+    
+    /**
+     * Destroy link blocks when they are removed
+     */
+    public static boolean destroyLinkBlocks;
+    
 }

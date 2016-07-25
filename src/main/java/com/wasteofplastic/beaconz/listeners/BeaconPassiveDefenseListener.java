@@ -377,15 +377,17 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
         // Check if it was a link block
         if (Settings.linkBlocks.containsKey(block.getType())) {
             player.sendMessage(ChatColor.RED + Lang.beaconLinkBlockBroken.replace("[range]", String.valueOf(Settings.linkBlocks.get(event.getBlock().getType())))); 
-            world.playSound(player.getLocation(), Sound.BLOCK_GLASS_BREAK, 1F, 1F);
-            block.setType(Material.AIR);
-            // Remove the longest link
-            if (beacon.removeLongestLink()) {
-                player.sendMessage(ChatColor.GOLD + Lang.beaconLinkLost);
+            if (Settings.destroyLinkBlocks) {
+                world.playSound(player.getLocation(), Sound.BLOCK_GLASS_BREAK, 1F, 1F);
+                block.setType(Material.AIR);
             }
-            // Update score
-            getGameMgr().getGame(team).getScorecard().refreshScores(team);
-            getGameMgr().getGame(team).getScorecard().refreshSBdisplay(team);
+            // Remove the longest link
+            if (Settings.removeLongestLink && beacon.removeLongestLink()) {
+                player.sendMessage(ChatColor.GOLD + Lang.beaconLinkLost);
+                // Update score
+                getGameMgr().getGame(team).getScorecard().refreshScores(team);
+                getGameMgr().getGame(team).getScorecard().refreshSBdisplay(team);
+            }
         }
 
     }
@@ -455,6 +457,13 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
             // No it is not
             return;
         }
+        // Check if it's a range extender that could be broken
+        if (Settings.destroyLinkBlocks && Settings.linkBlocks.containsKey(event.getBlock().getType())) {
+            // Player glass breaking sound
+            world.playSound(event.getBlock().getLocation(), Sound.BLOCK_GLASS_BREAK, 1F, 2F);
+            player.sendMessage(ChatColor.RED + Lang.beaconAmplifierBlocksCannotBeRecovered);
+        }
+          
         DefenseBlock dBlock = beacon.getDefenseBlocks().get(event.getBlock());
         if (team.equals(beacon.getOwnership())) {
             // Check ownership
