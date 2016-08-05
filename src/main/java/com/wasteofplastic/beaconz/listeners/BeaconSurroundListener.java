@@ -32,11 +32,13 @@ import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockDamageEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.world.StructureGrowEvent;
 import org.bukkit.inventory.ItemStack;
 
 import com.wasteofplastic.beaconz.BeaconObj;
@@ -175,6 +177,27 @@ public class BeaconSurroundListener extends BeaconzPluginDependent implements Li
                     // Else no effect
                     it.remove();
                 }
+            }
+        }
+    }
+    
+    /**
+     * Prevent trees from growing above beacons
+     * 
+     * @param e
+     */
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    public void onTreeGrow(final StructureGrowEvent e) {
+        if (DEBUG)
+            getLogger().info("DEBUG: " + e.getEventName());
+        World world = e.getLocation().getWorld();
+        if (!world.equals(getBeaconzWorld())) {
+            return;
+        }
+        for (BlockState b : e.getBlocks()) {
+            if (getRegister().isAboveBeacon(b.getLocation())) {
+                e.setCancelled(true);
+                break;
             }
         }
     }

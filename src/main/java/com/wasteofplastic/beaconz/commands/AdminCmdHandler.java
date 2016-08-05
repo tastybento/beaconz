@@ -60,7 +60,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
         // TODO: Make this a permission
         if (sender instanceof Player) {
             Player player = (Player)sender;
-            if (!player.hasPermission("beaconz.admin")) {
+            if (!player.isOp() && !player.hasPermission("beaconz.admin")) {
                 sender.sendMessage(ChatColor.RED + Lang.errorYouDoNotHavePermission);
                 return true;
             }
