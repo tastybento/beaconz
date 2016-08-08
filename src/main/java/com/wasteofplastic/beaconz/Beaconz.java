@@ -23,6 +23,7 @@
 package com.wasteofplastic.beaconz;
 
 
+import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -92,6 +93,12 @@ public class Beaconz extends JavaPlugin {
         getCommand("beaconz").setExecutor(new CmdHandler(this));
         getCommand("badmin").setExecutor(new AdminCmdHandler(this));
 
+        // Metrics
+        try {
+            final Metrics metrics = new Metrics(this);
+            metrics.start();
+        } catch (final IOException localIOException) {}
+        
         // Run commands that need to be run 1 tick after start
         getServer().getScheduler().runTask(this, new Runnable() {
 
