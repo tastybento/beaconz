@@ -268,7 +268,7 @@ public class Beaconz extends JavaPlugin {
         Settings.default_teams = getConfig().getInt("default_teams", 2);
 
         // Get the default game mode
-        Settings.gamemode = getConfig().getString("gamemode", "minigame");
+        Settings.gamemode = getConfig().getString("gamemode", "strategy");
         Settings.gamemode = cleanString(Settings.gamemode, "minigame:strategy", "strategy");
 
         // Get the default score types to show

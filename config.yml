@@ -141,7 +141,7 @@ world:
   
   # Chance % that mining a beacon will result in it becoming exhausted and enter
   # a cool down period.
-  beaconmineexhaustchance: 10
+  beaconmineexhaustchance: 50
   
   # Mine cool down period in minutes
   minecooldown: 1
@@ -160,17 +160,18 @@ world:
   # incentive to find enemy beaconz and even if they cannot attack them, to mine them
   # Goodies are items not normally available because they are from the nether or end or rare.
   enemygoodies:
-  - "EMERALD_BLOCK:1=5"
-  - "OBSIDIAN:1=5"
+  - "EMERALD_BLOCK:1=1"
   - "NETHER_STALK:1=5"
-  - "SOUL_SAND:1=5"
-  - "GHAST_TEAR:1=5"
-  - "BLAZE_ROD:1=5"
+  - "SOUL_SAND:1=10"
+  - "GHAST_TEAR:1=1"
+  - "BLAZE_ROD:1=2"
   - "GLOWSTONE:1=5"
-  - "NETHERRACK:4=5"
-  - "SPECTRAL_ARROW:1=5"
-  - "ENDER_STONE:1=5"
-  - "CHORUS_FLOWER:1=5"
+  - "NETHERRACK:4=20"
+  - "SPECTRAL_ARROW:1=10"
+  - "ENDER_STONE:1=1"
+  - "CHORUS_FLOWER:1=1"
+  - "QUARTZ_ORE:1=8"
+  
   # Mining your own beacon should give you the chance of obtaining a map
   teamgoodies:
   # The map is a beacon map. Give empty map if you want to give a normal map
@@ -182,14 +183,14 @@ world:
     # When in 1 field
     1:
     # Format is "Effect:Amplifier"
-    - "HUNGER:1"
+    - "SLOW:1"
     # When in 2 fields
     2:
     - "SLOW_DIGGING:1"
     3:
     - "WEAKNESS:1"
     4:
-    - "SLOW:1"
+    - "HUNGER:2"
     5:
     - "CONFUSION:1"
     6:
@@ -247,7 +248,7 @@ teams:
     displayname: "White"
     glasscolor: 0
   lightblue:
-    displayname: "Lightblue"
+    displayname: "Aqua"
     glasscolor: 3
   yellow:
     displayname: "Yellow"
@@ -259,7 +260,7 @@ teams:
     displayname: "Gray"
     glasscolor: 7
   lightgray:
-    displayname: "Lightgray"
+    displayname: "Mist"
     glasscolor: 8
   cyan:
     displayname: "Cyan"
@@ -290,7 +291,7 @@ teams:
 gamemode: strategy
 
 # Sidebar scoreboard options: area, beacons, links, triangles
-# remember that the sidebar only has 15 lines, if there are many teams there will not be enough room to display everything
+# remember that the sidebar only has 15 lines, if there are too many teams there will not be enough room to display everything
 sidebar:
   minigame: area:beacons:links:triangles
   strategy: area:beacons:links:triangles

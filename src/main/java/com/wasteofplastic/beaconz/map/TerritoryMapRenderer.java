@@ -53,6 +53,12 @@ public class TerritoryMapRenderer extends MapRenderer {
 
     @Override
     public void render(MapView map, MapCanvas canvas, Player player) {
+        if (map == null) {
+            return;
+        }
+        if (map.getWorld() == null) {
+            return;
+        }
         // Only render when on this world
         if (!map.getWorld().equals(beaconz.getBeaconzWorld())) {
             return;
