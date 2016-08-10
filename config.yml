@@ -27,6 +27,7 @@ world:
   # Lobby platform will be at this height
   lobbyheight: 200
   # Lobby platform will be made up randomly of these blocks. Tip: Mobs do not spawn on glass.
+  # You can replace the lobby after it is made.
   lobbyblocks:
   - STAINED_GLASS:2
   - STAINED_GLASS:3
@@ -81,9 +82,7 @@ world:
   linkcommands:
   #- "give [player] emerald 1"
   #- "some other command"
-
   
-   
   # Maximum number of links a beacon can have. Note teams cannot remove their own links
   # except by sacrificing link extender blocks.
   maxlinks: 6
@@ -125,9 +124,6 @@ world:
      7: 25
      8: 30  
 
-
-  
-  
   # Starter inventory
   # Format Material:Qty or Material:Data:Qty
   # Note that any type of pickaxe can eventually break obsidian.
@@ -160,17 +156,17 @@ world:
   # incentive to find enemy beaconz and even if they cannot attack them, to mine them
   # Goodies are items not normally available because they are from the nether or end or rare.
   enemygoodies:
-  - "EMERALD_BLOCK:1=1"
+  - "EMERALD:1=1"
   - "NETHER_STALK:1=5"
   - "SOUL_SAND:1=10"
   - "GHAST_TEAR:1=1"
   - "BLAZE_ROD:1=2"
   - "GLOWSTONE:1=5"
   - "NETHERRACK:4=20"
-  - "SPECTRAL_ARROW:1=10"
+  - "SPECTRAL_ARROW:1=5"
   - "ENDER_STONE:1=1"
   - "CHORUS_FLOWER:1=1"
-  - "QUARTZ_ORE:1=8"
+  - "QUARTZ_ORE:1=10"
   
   # Mining your own beacon should give you the chance of obtaining a map
   teamgoodies:
@@ -288,6 +284,8 @@ teams:
     glasscolor: 6   
         
 # gamemode is strategy or minigame
+# Strategy is a long running game, maybe infinitely running
+# minigame is meant to run for a few minutes and then reset
 gamemode: strategy
 
 # Sidebar scoreboard options: area, beacons, links, triangles
@@ -301,10 +299,15 @@ sidebar:
 # a goal value > 0 means the game ends when a team reaches that score; the timer is open-ended and counts up
 # a goal value = 0 means the timer counts down and when it reaches 0 the team with the greatest score for that goal wins   
 goals:
-  minigame: links:0
+  minigame: area:20000
   strategy: area:3000000
 
 # Timer in seconds, for when the goal value is greater than zero 
 timer:
   minigame: 600
   strategy: 0 
+
+# Use dynmap overlay (require dynmap plugin)
+# This is useful and cool for admins, but gives too much info to players.
+# See dynmap.yml for settings.
+usedynmap: false

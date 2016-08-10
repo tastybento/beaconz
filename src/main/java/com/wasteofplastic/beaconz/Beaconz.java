@@ -98,7 +98,7 @@ public class Beaconz extends JavaPlugin {
             final Metrics metrics = new Metrics(this);
             metrics.start();
         } catch (final IOException localIOException) {}
-        
+
         // Run commands that need to be run 1 tick after start
         getServer().getScheduler().runTask(this, new Runnable() {
 
@@ -140,13 +140,14 @@ public class Beaconz extends JavaPlugin {
                 messages = new Messages(plugin);
 
                 /* Get dynmap */
-                PluginManager pm = getServer().getPluginManager();
-                Plugin dynmap = pm.getPlugin("dynmap");
-                if(dynmap != null) {
-                    getLogger().info("Hooking into dynmap.");
-                    getServer().getPluginManager().registerEvents(new OurServerListener(plugin, dynmap), plugin); 
+                if (Settings.useDynmap) {
+                    PluginManager pm = getServer().getPluginManager();
+                    Plugin dynmap = pm.getPlugin("dynmap");
+                    if(dynmap != null) {
+                        getLogger().info("Hooking into dynmap.");
+                        getServer().getPluginManager().registerEvents(new OurServerListener(plugin, dynmap), plugin); 
+                    }
                 }
-
                 // Make first game
                 if (gameMgr.getGames().isEmpty()) {
                     gameMgr.newGame(Settings.defaultGameName);
@@ -216,6 +217,8 @@ public class Beaconz extends JavaPlugin {
      * Clears all old settings
      */
     public void loadConfig() {
+        // Dynmap
+        Settings.useDynmap = getConfig().getBoolean("usedynmap");
         // Destroy link blocks when they are removed
         Settings.destroyLinkBlocks = getConfig().getBoolean("world.destroylinkblocks",true);
         // Remove longest link if range extender block removed

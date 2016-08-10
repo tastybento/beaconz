@@ -43,13 +43,10 @@ public class OurServerListener extends BeaconzPluginDependent implements Listene
     private boolean use3d;
     private String infowindow;
     private AreaStyle defstyle;
-    private Map<String, AreaStyle> cusstyle;
-    private Map<String, AreaStyle> cuswildstyle;
-    private Map<String, AreaStyle> ownerstyle;
+    private Map<String, AreaStyle> teamstyle;
     private boolean stop;
-    private static final String DEF_INFOWINDOW = "<div class=\"infowindow\">Team <span style=\"font-weight:bold;\">%ownername%</span><br /></div>";
+    private static final String DEF_INFOWINDOW = "<div class=\"infowindow\">Team <span style=\"font-weight:bold;\">%teamname%</span><br /></div>";
     private Set<TriangleField> trianglesToDo;
-    private Map<String, AreaMarker> newmap;
 
     private Map<String, AreaMarker> resareas = new HashMap<String, AreaMarker>();
     protected LinkedHashMap<String, Game> gamesToDo;
@@ -112,15 +109,13 @@ public class OurServerListener extends BeaconzPluginDependent implements Listene
 
         /* Get style information */
         defstyle = new AreaStyle(cfg, "trianglestyle");
-        cusstyle = new HashMap<String, AreaStyle>();
-        ownerstyle = new HashMap<String, AreaStyle>();
-        cuswildstyle = new HashMap<String, AreaStyle>();
-        ConfigurationSection sect = cfg.getConfigurationSection("ownerstyle");
+        teamstyle = new HashMap<String, AreaStyle>();
+        ConfigurationSection sect = cfg.getConfigurationSection("teamstyle");
         if(sect != null) {
             Set<String> ids = sect.getKeys(false);
 
             for(String id : ids) {
-                ownerstyle.put(id, new AreaStyle(cfg, "ownerstyle." + id, defstyle));
+                teamstyle.put(id, new AreaStyle(cfg, "teamstyle." + id, defstyle));
             }
         }
         /* Set up update job - based on period */
@@ -292,9 +287,9 @@ public class OurServerListener extends BeaconzPluginDependent implements Listene
      */
     private void addStyle(String resid, String worldid, AreaMarker m, String name) {
         AreaStyle as = null;
-        if(!ownerstyle.isEmpty()) {
+        if(!teamstyle.isEmpty()) {
             //info("DEBUG: ownerstyle is not empty " + getServer().getOfflinePlayer(island.getOwner()).getName());
-            as = ownerstyle.get(name);
+            as = teamstyle.get(name);
             /*
         if (as != null) {
         info("DEBUG: fill color = " + as.fillcolor);
@@ -327,7 +322,7 @@ public class OurServerListener extends BeaconzPluginDependent implements Listene
 
     private String formatInfoWindow(String name, AreaMarker m) {
         String v = "<div class=\"infowindow\">"+infowindow+"</div>";
-        v = v.replace("%ownername%", name);
+        v = v.replace("%teamname%", name);
         return v;
     }
 }

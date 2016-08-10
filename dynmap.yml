@@ -1,11 +1,14 @@
 # Dynmap-Beaconz configuration
 #
 # Allowing anyone to view the dynmap can give valuable information away to players
-# It is recommended only for use by admins, to to take screenshots of end-games.
+# It is recommended only for use by admins or to take screenshots of end-games.
 
 update:
   # Seconds between checks for updates
   period: 300
+
+# Limit number of triangles processed per tick (avoid lag spikes on servers with lots of triangles)
+updates-per-tick: 300
 
 layer:
   name: "Beaconz"
@@ -19,10 +22,10 @@ use3dregions: false
 
 # Format for popup - substitute values for macros
 # Macros are:
-# %ownername% - team name
-infowindow: '<div class=\"infowindow\"><span style="font-weight:bold;">%ownername%<br/></span><br/></div>'
+# %teamname% - team name
+infowindow: '<div class=\"infowindow\"><span style="font-weight:bold;">%teamname%<br/></span><br/></div>'
 
-# Game colors
+# Default triangle style
 trianglestyle:
   strokeColor: "#FFFF00"
   strokeOpacity: 0.8
@@ -31,7 +34,7 @@ trianglestyle:
   fillOpacity: 0.0
   
 # Team colors
-ownerstyle:
+teamstyle:
   # Team colors
   blue:
     strokeColor: "#0000FF"
@@ -113,8 +116,3 @@ ownerstyle:
     strokeOpacity: 0.8
     fillColor: "#FFB6C1"
     fillOpacity: 0.3     
-
-
-
-# Limit number of triangles processed per tick (avoid lag spikes on servers with lots of triangles)
-updates-per-tick: 300

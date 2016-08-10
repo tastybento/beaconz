@@ -247,4 +247,9 @@ public class Settings {
      */
     public static boolean destroyLinkBlocks;
     
+    /**
+     * Use dynmap or not
+     */
+    public static boolean useDynmap;
+    
 }

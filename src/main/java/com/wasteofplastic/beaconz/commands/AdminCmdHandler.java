@@ -610,18 +610,21 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                         for (Game g : getGameMgr().getGames().values()) {
                             g.getScorecard().toggleTimer();
                         }
+                        sender.sendMessage(ChatColor.GREEN + Lang.generalSuccess);
                     } else {
                         game = getGameMgr().getGames().get(args[1]);
                         if (game == null) {
                             sender.sendMessage(ChatColor.RED + Lang.errorNoSuchGame + "'" + args[1] + "'");
                         } else {
                             game.getScorecard().toggleTimer();
+                            sender.sendMessage(ChatColor.GREEN + Lang.generalSuccess);
                         }
                     }
                 }
                 break;
 
             default:
+                sender.sendMessage(ChatColor.RED + Lang.errorUnknownCommand);
                 break;
             }
 
