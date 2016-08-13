@@ -37,9 +37,12 @@ public class PlayerJoinLeaveListener extends BeaconzPluginDependent implements L
         if (event.getPlayer().getWorld().equals(getBeaconzWorld())) {
             final Player player = event.getPlayer();
             final UUID playerUUID = player.getUniqueId();
+            // Write this player's name to the database
+            getBeaconzPlugin().getNameStore().savePlayerName(player.getName(), player.getUniqueId());
+            
             // Check if game is still in progress
             Game game = getGameMgr().getGame(event.getPlayer().getLocation());
-            if (game == null) {
+            if (game == null || game.isOver()) {
                 // Send player to BeaconzWorld lobby area
                 getGameMgr().getLobby().tpToRegionSpawn(player);
             } else {

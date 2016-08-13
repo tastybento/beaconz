@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Team;
@@ -184,9 +185,9 @@ public class Messages extends BeaconzPluginDependent {
                         Player member = Bukkit.getPlayer(UUID.fromString(uuid));
                         if (player == null || !player.getUniqueId().equals(UUID.fromString(uuid))) {
                             if (member != null) {
-                                member.sendMessage(message);
+                                member.sendMessage(ChatColor.GOLD + "[" + game.getName() + "] " + message);
                             } else {
-                                setMessage(UUID.fromString(uuid), message);
+                                setMessage(UUID.fromString(uuid), ChatColor.GOLD + "[" + game.getName() + "] " + message);
                             }
                         }
                     }

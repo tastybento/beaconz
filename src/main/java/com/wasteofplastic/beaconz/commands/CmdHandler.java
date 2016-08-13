@@ -72,13 +72,15 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
             case "help":
                 sender.sendMessage("/" + label + " help " + Lang.helpHelp);
                 //sender.sendMessage("/" + label + " join <game> " + Lang.helpJoin);
-                //sender.sendMessage("/" + label + " leave <game> " + Lang.helpLeave);
+                if (player.hasPermission("beaconz.player.leave")) {
+                    sender.sendMessage("/" + label + " leave <game> " + Lang.helpLeave);
+                }
                 //sender.sendMessage("/" + label + " lobby " + Lang.helpLobby);
                 //sender.sendMessage("/" + label + " location " + Lang.helpLocation);
-                //sender.sendMessage("/" + label + " score " + Lang.helpScore);
+                sender.sendMessage("/" + label + " score " + Lang.helpScore);
                 sender.sendMessage("/" + label + " sb " + Lang.helpScoreboard);
                 break;
-            /*
+                /*
             case "lobby":
                 player.setScoreboard(Bukkit.getServer().getScoreboardManager().getNewScoreboard());
                 getGameMgr().getLobby().tpToRegionSpawn(player);
@@ -104,7 +106,9 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
                     }
                 }
                 break;
+                 */
             case "score":
+                /*
                 if (sender.isOp()) {
                     int gamecnt = 0;
                     for (Game game : getGameMgr().getGames().values()) {
@@ -115,27 +119,24 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
                     if (gamecnt ==0 ) {
                         sender.sendMessage(ChatColor.GREEN + "No games are currently defined.");
                     }
+                } else {*/
+                Game game = getGameMgr().getGame(player.getLocation());
+                if (game == null || game.getScorecard() == null || game.getScorecard().getTeam(player) == null) {
+                    sender.sendMessage(ChatColor.GREEN + Lang.errorYouMustBeInAGame);
                 } else {
-                    Game game = getGameMgr().getGame(player.getLocation());
-                    if (game == null || game.getScorecard() == null || game.getScorecard().getTeam(player) == null) {
-                        sender.sendMessage(ChatColor.GREEN + Lang.errorYouMustBeInAGame);
-                    } else {
-                        sender.sendMessage(ChatColor.GREEN + "Game: " + game.getName());
-                        Team team = game.getScorecard().getTeam(player);
-                        if (team != null){
-                            sender.sendMessage(ChatColor.GREEN + Lang.youAreInTeam.replace("[team]", team.getDisplayName()));
-                        } else {
-                            sender.sendMessage(ChatColor.GREEN + Lang.errorYouMustBeInAGame);
-                        }
-                        showGameScores(sender, game);
+                    sender.sendMessage(ChatColor.GREEN + Lang.generalGame + ": " + ChatColor.YELLOW + game.getName());
+                    Team team = game.getScorecard().getTeam(player);
+                    if (team != null){
+                        sender.sendMessage(ChatColor.GREEN + Lang.actionsYouAreInTeam.replace("[team]", team.getDisplayName()));
                     }
+                    showGameScores(sender, game);
                 }
+                //}
 
                 break;
-                */
             case "sb":
                 if (player.getScoreboard().getEntries().isEmpty()) {
-                    Game game = getGameMgr().getGame(player.getLocation());
+                    game = getGameMgr().getGame(player.getLocation());
                     if (game != null) {
                         player.setScoreboard(game.getScorecard().getScoreboard());
                     } else {
@@ -145,14 +146,21 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
                     player.setScoreboard(getServer().getScoreboardManager().getNewScoreboard());
                 }
                 break;
+            case "leave":
+                if (player.hasPermission("beaconz.player.leave")) {
+                    sender.sendMessage("/" + label + " leave <game> " + Lang.helpLeave);
+                } else {
+                    player.sendMessage(ChatColor.RED +  Lang.errorYouDoNotHavePermission);
+                }
+                break;
             default:
                 break;
             }
             break;
-            /*
         case 2:
             Game game;
             switch (args[0].toLowerCase()) {
+            /*
             case "join":
                 String gamename = args[1];
                 game = getGameMgr().getGame(gamename);
@@ -162,19 +170,23 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
                     game.join(player);
                 }
                 break;
+             */
             case "leave":
-                game = getGameMgr().getGame(player.getLocation());
-                if (game == null) {
-                    sender.sendMessage(ChatColor.AQUA + Lang.errorYouMustBeInAGame);
+                if (player.hasPermission("beaconz.player.leave")) {
+                    game = getGameMgr().getGame(args[1]);
+                    if (game == null) {
+                        sender.sendMessage(ChatColor.AQUA + Lang.errorNoSuchGame + " '" + args[1] + "'");
+                    } else {
+                        game.leave(player);
+                    }
                 } else {
-                    game.leave(player);
+                    player.sendMessage(ChatColor.RED +  Lang.errorYouDoNotHavePermission);
                 }
                 break;
             default:
                 break;
             }
             break;
-            */
         default:
             sender.sendMessage(ChatColor.RED + Lang.errorUnknownCommand);
             return false;
@@ -186,9 +198,11 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
      * Displays the scores for a game
      */
     public void showGameScores(CommandSender sender, Game game) {
-        sender.sendMessage(ChatColor.AQUA + "Game mode: " + game.getGamemode());
-        sender.sendMessage(ChatColor.AQUA + "Game time: " + game.getScorecard().getDisplayTime("long"));
-        sender.sendMessage(ChatColor.AQUA + "Scores:");
+        //sender.sendMessage(ChatColor.AQUA + "Game mode: " + game.getGamemode());
+        //sender.sendMessage(ChatColor.AQUA + "Game time: " + game.getScorecard().getDisplayTime("long"));
+        // Referesh scores
+        game.getScorecard().refreshScores();
+        sender.sendMessage(ChatColor.AQUA + Lang.scoreScores);
         for (Team t : game.getScorecard().getScoreboard().getTeams()) {
             sender.sendMessage(ChatColor.AQUA + "  " + t.getDisplayName() + ChatColor.AQUA + ": " + game.getScorecard().getScore(t, "beacons") + " beacons");
             sender.sendMessage(ChatColor.AQUA + "  " + t.getDisplayName() + ChatColor.AQUA + ": " + game.getScorecard().getScore(t, "links") + " links");
@@ -210,17 +224,26 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
         case 0:
         case 1:
             options.add("help");
-            options.add("join");
-            options.add("leave");
-            options.add("lobby");
-            options.add("location");
+            //options.add("join");
+            if (sender.hasPermission("beaconz.player.leave")) {
+                options.add("leave");
+            }
+            //options.add("lobby");
+            //options.add("location");
             options.add("score");
             options.add("scoreboard");
             break;
         case 2:
-            if (args[0].equalsIgnoreCase("join") || args[0].equalsIgnoreCase("leave")) {
-                // List all the games
-                options.addAll(getGameMgr().getGames().keySet());
+            //if (args[0].equalsIgnoreCase("join") || args[0].equalsIgnoreCase("leave")) {
+            if (sender.hasPermission("beaconz.player.leave") && args[0].equalsIgnoreCase("leave")) {
+                // List all the games this player is in
+                List<String> inGames = new ArrayList<String>();
+                for (Game game : getGameMgr().getGames().values()) {
+                    if (game.getScorecard().getTeam((Player)sender) != null) {
+                        inGames.add(game.getName());
+                    }
+                }
+                options.addAll(inGames);
             }
             break;
         }

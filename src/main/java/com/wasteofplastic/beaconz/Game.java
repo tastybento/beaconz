@@ -31,12 +31,14 @@ import java.util.Iterator;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
+import org.bukkit.scoreboard.Team;
 
 import com.wasteofplastic.beaconz.map.BeaconMap;
 import com.wasteofplastic.beaconz.map.TerritoryMapRenderer;
@@ -55,6 +57,7 @@ public class Game extends BeaconzPluginDependent {
     private Long startTime;
     private String scoretypes;
     private boolean gameRestart;
+    private boolean isOver;
 
 
     /**
@@ -70,8 +73,6 @@ public class Game extends BeaconzPluginDependent {
         this.gameName = gameName;
         this.startTime = ((System.currentTimeMillis()+500)/1000)*1000;
         setGameParms(gamemode, nbr_teams, gamegoal, gamegoalvalue, countdowntimer, startTime, scoretypes);
-
-
         // Now create the scorecard
         scorecard = new Scorecard(plugin, this);
     }
@@ -101,7 +102,7 @@ public class Game extends BeaconzPluginDependent {
      * @param sender
      */
     public void reset(CommandSender sender) {
-     // Set restart flag as true
+        // Set restart flag as true
         gameRestart = true;
         // Move all players in game to lobby
         for (Player player : getServer().getOnlinePlayers()) {
@@ -132,13 +133,15 @@ public class Game extends BeaconzPluginDependent {
             }
         }
         getRegister().saveRegister();
-        region.regenerate(sender);
+        region.regenerate(sender, "");
         startTime = ((System.currentTimeMillis()+500)/1000)*1000;
         scorecard.reload();
         getBeaconzStore().removeGame(gameName);
         save();
         // Set restart flag as true
         gameRestart = false;
+        // It's not over
+        isOver = false;
     }
 
     /**
@@ -163,6 +166,7 @@ public class Game extends BeaconzPluginDependent {
         startTime = ((System.currentTimeMillis()+500)/1000)*1000;
         scorecard.reload();
         gameRestart = false;
+        isOver = false;
     }
 
     /**
@@ -201,11 +205,12 @@ public class Game extends BeaconzPluginDependent {
         YamlConfiguration gamesYml = YamlConfiguration.loadConfiguration(gamesFile);
 
         // Backup the games file just in case
+        /*
         if (gamesFile.exists()) {
             File backup = new File(getBeaconzPlugin().getDataFolder(),"games.old");
             gamesFile.renameTo(backup);
         }
-
+         */
         // Save game name, region and all parameters
         String path = "game." + gameName;
         gamesYml.set(path + ".region", ptsToStrCoord(region.corners()));
@@ -216,12 +221,13 @@ public class Game extends BeaconzPluginDependent {
         gamesYml.set(path + ".starttime", startTime);
         gamesYml.set(path + ".countdowntimer", scorecard.getCountdownTimer());
         gamesYml.set(path + ".scoretypes", scoretypes);
+        gamesYml.set(path + ".gameOver", isOver);
 
         // Now save to file
         try {
             gamesYml.save(gamesFile);
         } catch (IOException e) {
-            getLogger().severe("Problem saving games file!");
+            getLogger().severe("Problem saving games file for " + gameName + "!");
             e.printStackTrace();
         }
 
@@ -313,33 +319,54 @@ public class Game extends BeaconzPluginDependent {
     /**
      * Kicks a player from a game
      */
-    public void kick() {
+    public void kick(CommandSender sender) {
         for (Player player : Bukkit.getOnlinePlayers()) {
-            kick(player);
+            leave(sender, player);
         }
     }
-    public void kick(Player player) {
-        scorecard.removeTeamPlayer(player);
-        player.setScoreboard(scorecard.getManager().getNewScoreboard());
-        sendToLobby(player);
-    }
-
-    public void leave(Player player) {
-        // Player will no longer be a part of the game (not just exiting the region)
-        scorecard.removeTeamPlayer(player);
-        player.setScoreboard(scorecard.getManager().getNewScoreboard());
-        sendToLobby(player);
+    public void kick(CommandSender sender, Player player) {
+        leave(sender, player);
     }
 
     /**
-     * Sends player back to lobby
+     * Removes player from this game
+     * @param player
      */
-    public void sendToLobby() {
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            sendToLobby(player);
+    public void leave(CommandSender sender, Player player) {
+        Team team = scorecard.getTeam(player);
+        if (team != null) {
+            // Player will no longer be a part of the game (not just exiting the region)
+            scorecard.removeTeamPlayer(player);
+            player.setScoreboard(scorecard.getManager().getNewScoreboard());
+            // Remove any maps
+            for (ItemStack item: player.getInventory()) {
+                if (item != null && item.getType().equals(Material.MAP)) {
+                    if (getRegister().getBeaconMap(item.getDurability()) != null) {
+                        getRegister().removeBeaconMap(item.getDurability());
+                    }
+                }
+            }
+            player.getInventory().clear();
+            if (this.getRegion().contains(player.getLocation())) {
+                sendToLobby(player);
+                getBeaconzStore().clearItems(player, this.gameName, null);
+            }
+            sender.sendMessage(ChatColor.GREEN + Lang.generalSuccess);
+        } else {
+            sender.sendMessage(ChatColor.RED + Lang.errorNotInGame.replace("[game]", this.gameName));
+            if (this.getRegion().contains(player.getLocation())) {
+                sendToLobby(player);
+                getBeaconzStore().clearItems(player, this.gameName, null);
+            }
         }
     }
+
+    /**
+     * Sends player to lobby, do not pass go, do not collect $200
+     * @param player
+     */
     public void sendToLobby(Player player) {
+        getBeaconzPlugin().getTeleportListener().setDirectTeleportPlayer(player.getUniqueId());
         getGameMgr().getLobby().tpToRegionSpawn(player);
     }
 
@@ -426,6 +453,25 @@ public class Game extends BeaconzPluginDependent {
      */
     public boolean hasPlayer(Player player) {
         return scorecard.inTeam(player);
+    }
+
+    /**
+     * @return true if game is over
+     */
+    public boolean isOver() {
+        return isOver;
+    }
+
+    /**
+     * @param Set when the game is over
+     */
+    public void setOver(boolean isOver) {
+        //getLogger().info("DEBUG: game setOver = " + isOver);
+        this.isOver = isOver;
+    }
+
+    public void leave(Player player) {
+        leave(player, player);      
     }
 
 }

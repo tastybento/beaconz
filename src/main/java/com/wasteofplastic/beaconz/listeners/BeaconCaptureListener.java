@@ -155,15 +155,20 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
         }
         // Prevent breakage of blocks outside the game area
         Game game = getGameMgr().getGame(event.getBlock().getLocation());
-        if (DEBUG)
-            getLogger().info("DEBUG: game = " + game);
+        if (DEBUG) {
+            if (game == null) {
+                getLogger().info("DEBUG: game = null");
+            } else {
+                getLogger().info("DEBUG: game name = " + game.getName());
+            }
+        }
         if (game == null) {
             event.setCancelled(true);
             player.sendMessage(ChatColor.RED + Lang.errorYouCannotDoThat);
             return;
         }
         // Get the player's team
-        Team team = getGameMgr().getPlayerTeam(player);
+        Team team = game.getScorecard().getTeam(player);
         if (team == null) {
             if (player.isOp()) {
                 return;
@@ -198,11 +203,14 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
                         event.setCancelled(true);
                         return;
                     }
-                    if (DEBUG)
+                    if (DEBUG) {
                         getLogger().info("DEBUG: obsidian");
-                    //Claiming unowned beacon
-                    block.setType(getGameMgr().getSC(player).getBlockID(team).getItemType());
-                    block.setData(getGameMgr().getSC(player).getBlockID(team).getData());
+                        //Claiming unowned beacon
+                        getLogger().info("DEBUG: team = " + team.getDisplayName());
+                        getLogger().info("DEBUG: block ID = " + game.getScorecard().getBlockID(team));
+                    }
+                    block.setType(game.getScorecard().getBlockID(team).getItemType());
+                    block.setData(game.getScorecard().getBlockID(team).getData());
                     // Register the beacon to this team
                     getRegister().setBeaconOwner(beacon,team);
                     player.sendMessage(ChatColor.GREEN + Lang.beaconYouCapturedABeacon);

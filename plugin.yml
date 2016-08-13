@@ -26,3 +26,6 @@ permissions:
   beaconz.player:
     description: Can player beaconz
     default: true
+  beaconz.player.leave:
+    description: Player can leave a beaconz game before it finishes
+    default: false

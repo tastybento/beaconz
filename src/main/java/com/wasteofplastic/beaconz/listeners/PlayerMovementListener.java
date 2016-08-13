@@ -39,9 +39,11 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.PlayerLeashEntityEvent;
 import org.bukkit.event.hanging.HangingPlaceEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerShearEntityEvent;
 import org.bukkit.event.vehicle.VehicleDamageEvent;
@@ -71,6 +73,16 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
         super(plugin);
     }
 
+    /*
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
+    public void onInteractBlock(final PlayerInteractEvent event) {
+        if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK) && event.getClickedBlock().getWorld().equals(getBeaconzWorld())
+                && getGameMgr().getGame(event.getClickedBlock().getLocation()) == null) {
+            event.setCancelled(true);
+            event.getPlayer().sendMessage(ChatColor.RED + Lang.errorYouCannotDoThat);
+        }
+    }
+    */
     /**
      * Prevents use of leashes outside the game area
      * @param event

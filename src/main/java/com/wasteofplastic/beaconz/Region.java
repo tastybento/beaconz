@@ -32,6 +32,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
@@ -95,8 +96,10 @@ public class Region extends BeaconzPluginDependent {
      * Cleans up the game area so it can be played again
      * Remember that regions are created so their limits match full chunks
      * Since the BeaconPopulator is registered with the World, it is used automatically when regenerating the chunks
+     * @param sender
+     * @param delete - true if this is a deletion only.
      */
-    public void regenerate(final CommandSender sender) {
+    public void regenerate(final CommandSender sender, final String delete) {
         if (this != getGameMgr().getLobby()) {
 
             getLogger().info("Regenerating region at Ctr:Rad [" + this.getCenter().getX() + ", " + this.getCenter().getY() + "] : " + this.getRadius() + " ==> xMin: " + corners[0].getX() + " zMin: " +  corners[1].getX() + " xMax: " + corners[0].getY() + " zMax: " + corners[1].getY());
@@ -122,7 +125,7 @@ public class Region extends BeaconzPluginDependent {
             final int step = 25;
             final double chunksToDo = ((double)((xMax - xMin)/16) * (double)((xMax - xMin)/16));
             Settings.populate.clear();
-
+            getLogger().info("0% complete");
             // Regenerate the chunks in spurts of 25
             // Can't do this asynchronously, as it relies on API calls
             task = getServer().getScheduler().runTaskTimer(plugin, new Runnable() {
@@ -160,17 +163,22 @@ public class Region extends BeaconzPluginDependent {
                         }
                     if (chX > xMax) {
                         task.cancel();
-                        finishRegenerating(sender);
+                        finishRegenerating(sender, delete);
                     }
                 }
             }, 5L, 1L);
         }
     }
 
-    public void finishRegenerating(CommandSender sender) {
+    private void finishRegenerating(CommandSender sender, String delete) {
         // Wrap things up
-        createCorners();
-        sender.sendMessage(ChatColor.GREEN + Lang.adminRegenComplete.replace("[number]", String.valueOf(totalregen)));
+        getLogger().info("100% complete");
+        if (delete.isEmpty()) {
+            createCorners();
+            sender.sendMessage(ChatColor.GREEN + Lang.adminRegenComplete.replace("[number]", String.valueOf(totalregen)));
+        } else {
+            sender.sendMessage(ChatColor.GREEN + Lang.adminDeletedGame.replace("[name]", delete));
+        }
     }
 
     /**
@@ -331,7 +339,7 @@ public class Region extends BeaconzPluginDependent {
         Double z = (corners[0].getY() + corners[1].getY()) / 2.0;
         return new Point2D.Double(x,z);
     }
-    
+
     /**
      * Returns the region's radius
      */
@@ -367,7 +375,7 @@ public class Region extends BeaconzPluginDependent {
         int zMax = (int)corners[1].getY();
         //getLogger().info("Contains: x: " + x + " z: " + z + " corner1: " + corners[0].getX() + ":" + corners[0].getY() + " corner2: " + corners[1].getX() + ":" + corners[1].getY());
         return (xMin <= x && xMax >= x && zMin <= z && zMax >= z);
-                //return contains;
+        //return contains;
     }
 
     /**
@@ -478,7 +486,7 @@ public class Region extends BeaconzPluginDependent {
      * Handles player Exit event
      */
     public void exit(Player player) {
-        player.setScoreboard(Bukkit.getServer().getScoreboardManager().getNewScoreboard());
+        player.setScoreboard(getServer().getScoreboardManager().getNewScoreboard());
     }
 
     /**
@@ -493,12 +501,16 @@ public class Region extends BeaconzPluginDependent {
             String teamname = "no";
             Team team = game.getScorecard().getTeam(player);
             if (team != null) teamname = team.getDisplayName();
-            player.setScoreboard(game.getScorecard().getScoreboard());
+            if (Settings.useScoreboard) {
+                player.setScoreboard(game.getScorecard().getScoreboard());
+            } else {
+                player.setScoreboard(getServer().getScoreboardManager().getNewScoreboard());
+            }
             //game.getScorecard().sendPlayersHome(player, true);
 
             // Welcome player in chat
             player.sendMessage(ChatColor.GREEN + Lang.titleWelcome);
-            player.sendMessage(ChatColor.AQUA + (Lang.startYourePlaying.replace("[name]", game.getName())).replace("[mode]", game.getGamemode()));
+            //player.sendMessage(ChatColor.AQUA + (Lang.startYourePlaying.replace("[name]", game.getName())).replace("[mode]", game.getGamemode()));
             player.sendMessage(ChatColor.AQUA + Lang.startYoureAMember.replace("[name]", teamname));
             if (game.getGamegoalvalue() > 0) {
                 player.sendMessage(ChatColor.AQUA + (Lang.startObjective.replace("[value]", String.format(Locale.US, "%,d",game.getGamegoalvalue())).replace("[goal]", game.getGamegoal())));
@@ -512,7 +524,7 @@ public class Region extends BeaconzPluginDependent {
                     "title " + player.getName() + " title {\"text\":\"" + Lang.welcome + "\", \"color\":\"" + Lang.welcomeColor + "\"}");
             getServer().dispatchCommand(getServer().getConsoleSender(),
                     "title " + player.getName() + " subtitle {\"text\":\"" + Lang.subTitle + "\", \"color\":\"" + Lang.subTitleColor + "\"}");
-    */
+             */
         }
     }
 
@@ -684,7 +696,7 @@ public class Region extends BeaconzPluginDependent {
                             } catch (Exception e) {
                                 getLogger().severe("Could not parse block data value for " + matType + ", using 0...");
                             }
-                            
+
                         }
                     } else {
                         getLogger().severe("Could not parse block material value for " + matType + ", skipping...");
@@ -696,7 +708,7 @@ public class Region extends BeaconzPluginDependent {
         int x = (int)((corners[0].getX() + corners[1].getX()) / 2D);
         int z = (int)((corners[0].getY() + corners[1].getY()) / 2D);
         spawnPoint = new Location(getBeaconzWorld(),x,Settings.lobbyHeight+1,z+2);
-                // Place sign
+        // Place sign
         Block sign = getBeaconzWorld().getBlockAt(spawnPoint.getBlockX(), spawnPoint.getBlockY(), spawnPoint.getBlockZ());
         sign.setType(Material.SIGN_POST);
         Sign realSign = (Sign)sign.getState();
@@ -759,5 +771,18 @@ public class Region extends BeaconzPluginDependent {
         default:
             return 0F;
         }
+    }
+
+    /**
+     * Check if location is in this region
+     * @param location
+     * @return true or false
+     */
+    public boolean contains(Location location) {
+        World world = location.getWorld();
+        if (world == null || !world.equals(getBeaconzWorld())) {
+            return false;
+        }
+        return containsPoint(location.getBlockX(), location.getBlockZ());
     }
 }

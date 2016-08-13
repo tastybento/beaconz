@@ -75,7 +75,7 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
         if (!event.hasItem()) {
             return;
         }
-        if (!event.getItem().getType().equals(Material.PAPER) && !event.getItem().getType().equals(Material.MAP)) {
+        if (!event.getItem().getType().equals(Material.MAP)) {
             return;
         }
         if (!event.getAction().equals(Action.RIGHT_CLICK_BLOCK)) {
@@ -119,6 +119,7 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
             event.setCancelled(true);
             return;
         }
+        /*
         if (event.getItem().getType().equals(Material.PAPER)) {
             // Give map to player
             // Remove one paper
@@ -127,60 +128,61 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
             // Stop the beacon inventory opening
             event.setCancelled(true);
             return;
-        } else {
-            // Map!
-            BeaconObj mappedBeacon = getRegister().getBeaconMap(event.getItem().getDurability());
-            if (mappedBeacon == null) {
-                // This is not a beacon map
+        } else {*/
+        // Map!
+        BeaconObj mappedBeacon = getRegister().getBeaconMap(event.getItem().getDurability());
+        if (mappedBeacon == null) {
+            // This is not a beacon map
+            return;
+        }
+        // Check the team
+        if (mappedBeacon.getOwnership() == null || !mappedBeacon.getOwnership().equals(team)) {
+            player.sendMessage(ChatColor.RED + Lang.beaconOriginNotOwned.replace("[team]",team.getDisplayName()));
+            return;
+        }
+        event.setCancelled(true);
+        if (Settings.expDistance > 0) {
+            // Check if the beaconz can be linked.
+            int linkDistance = checkBeaconDistance(beacon, mappedBeacon);
+            if (linkDistance > Settings.linkLimit) {
+                player.sendMessage(ChatColor.RED + Lang.errorTooFar.replace("[max]", String.valueOf(Settings.linkLimit)));
                 return;
             }
-            // Check the team
-            if (mappedBeacon.getOwnership() == null || !mappedBeacon.getOwnership().equals(team)) {
-                player.sendMessage(ChatColor.RED + Lang.beaconOriginNotOwned.replace("[team]",team.getDisplayName()));
-                return;
-            }
-            event.setCancelled(true);
-            if (Settings.expDistance > 0) {
-                // Check if the beaconz can be linked.
-                int linkDistance = checkBeaconDistance(beacon, mappedBeacon);
-                if (linkDistance > Settings.linkLimit) {
-                    player.sendMessage(ChatColor.RED + Lang.errorTooFar.replace("[max]", String.valueOf(Settings.linkLimit)));
+            // Check if the player has sufficient experience to link the beacons
+            int expRequired = getReqExp(beacon, mappedBeacon); 
+            if (expRequired > 0) {
+                if (!testForExp(player, (int)(expRequired))) {
+                    player.sendMessage(ChatColor.RED + Lang.errorNotEnoughExperience);
+                    player.sendMessage(ChatColor.RED + Lang.beaconYouNeedThisMuchExp.replace("[number]", String.format(Locale.US, "%,d",(int)(expRequired))));
+                    player.sendMessage(ChatColor.RED + Lang.beaconYouHaveThisMuchExp.replace("[number]", String.format(Locale.US, "%,d",getTotalExperience(player))));
                     return;
                 }
-                // Check if the player has sufficient experience to link the beacons
-                int expRequired = getReqExp(beacon, mappedBeacon); 
-                if (expRequired > 0) {
-                    if (!testForExp(player, (int)(expRequired))) {
-                        player.sendMessage(ChatColor.RED + Lang.errorNotEnoughExperience);
-                        player.sendMessage(ChatColor.RED + Lang.beaconYouNeedThisMuchExp.replace("[number]", String.format(Locale.US, "%,d",(int)(expRequired))));
-                        player.sendMessage(ChatColor.RED + Lang.beaconYouHaveThisMuchExp.replace("[number]", String.format(Locale.US, "%,d",getTotalExperience(player))));
-                        return;
-                    }
-                }
-                if (linkBeacons(player, team, beacon, mappedBeacon)) {
-                    player.sendMessage(ChatColor.GREEN + Lang.beaconTheMapDisintegrates);
-                    player.getInventory().setItemInMainHand(null);
-                    removeExp(player, expRequired);
-                    // Save for safety
-                    getRegister().saveRegister();
-                    // Update score
-                    getGameMgr().getGame(team).getScorecard().refreshScores(team);
-                    getGameMgr().getGame(team).getScorecard().refreshSBdisplay(team);
-                }
-            } else {
-                // No exp required
-                if (linkBeacons(player, team, beacon, mappedBeacon)) {
-                    player.sendMessage(ChatColor.GREEN + Lang.beaconTheMapDisintegrates);
-                    player.getInventory().setItemInMainHand(null);
-                    // Save for safety
-                    getRegister().saveRegister();
-                    // Update score
-                    getGameMgr().getGame(team).getScorecard().refreshScores(team);
-                    getGameMgr().getGame(team).getScorecard().refreshSBdisplay(team);
-                }
             }
-
+            if (linkBeacons(player, team, beacon, mappedBeacon)) {
+                player.sendMessage(ChatColor.GREEN + Lang.beaconTheMapDisintegrates);
+                player.getInventory().setItemInMainHand(null);
+                removeExp(player, expRequired);
+                // Save for safety
+                getRegister().saveRegister();
+                // Update score
+                getGameMgr().getGame(team).getScorecard().refreshScores(team);
+                getGameMgr().getGame(team).getScorecard().refreshSBdisplay(team);
+            }
+        } else {
+            // No exp required
+            if (linkBeacons(player, team, beacon, mappedBeacon)) {
+                player.sendMessage(ChatColor.GREEN + Lang.beaconTheMapDisintegrates);
+                getRegister().removeBeaconMap(event.getItem().getDurability());
+                player.getInventory().setItemInMainHand(null);
+                // Save for safety
+                getRegister().saveRegister();
+                // Update score
+                getGameMgr().getGame(team).getScorecard().refreshScores(team);
+                getGameMgr().getGame(team).getScorecard().refreshSBdisplay(team);
+            }
         }
+
+        //}
     }
 
     /**
@@ -204,7 +206,7 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
         }
         return distance;
     }
-    
+
     /**
      * Returns how much experience is required to make a link
      * @param beacon

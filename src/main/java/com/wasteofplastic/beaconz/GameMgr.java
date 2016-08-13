@@ -110,9 +110,18 @@ public class GameMgr extends BeaconzPluginDependent {
             gamesYml.set("lobby.region", ptsToStrCoord(lobby.corners()));
             gamesYml.set("lobby.spawn", Beaconz.getStringLocation(lobby.getSpawnPoint()));
         }
+        // Now save to file
+        try {
+            gamesYml.save(gamesFile);
+        } catch (IOException e) {
+            getLogger().severe("Problem saving lobby in games file!");
+            e.printStackTrace();
+        }
         // Save the games
         for (Game game: games.values()) {
+            game.save();
             // Save game name, region and all parameters
+            /*
             String path = "game." + game.getName();
             gamesYml.set(path + ".region", ptsToStrCoord(game.getRegion().getCorners()));
             gamesYml.set(path + ".gamemode", game.getGamemode());
@@ -122,13 +131,8 @@ public class GameMgr extends BeaconzPluginDependent {
             gamesYml.set(path + ".starttime", game.getStartTime());
             gamesYml.set(path + ".countdowntimer", game.getScorecard().getCountdownTimer());
             gamesYml.set(path + ".scoretypes", game.getScoretypes());
-        }
-        // Now save to file
-        try {
-            gamesYml.save(gamesFile);
-        } catch (IOException e) {
-            getLogger().severe("Problem saving games file!");
-            e.printStackTrace();
+            gamesYml.set(path + ".gameOver", game.isOver());
+            */
         }
     }
 
@@ -205,17 +209,20 @@ public class GameMgr extends BeaconzPluginDependent {
                         Long st  = csec.getLong(gname + ".starttime");
                         int gt  = csec.getInt(gname + ".countdowntimer");
                         String gs   = csec.getString(gname + ".scoretypes");
+                        boolean isOver = csec.getBoolean(gname + ".gameOver");
 
                         Game game = games.get(gameName);
                         if (game != null && gameName != null) {
                             // We're loading an active game, reset the game parms and reload it
                             game.setGameParms(gm, nt, gg, gv,gt, st, gs);
+                            game.setOver(isOver);
                             region.setGame(game);
                             game.reload();
                         } else {
                             // We're loading an existing game from file that's not currently active
                             regions.put(corners, region);
                             game = new Game(plugin, region, gname, gm, nt, gg, gv, gt, gs);
+                            game.setOver(isOver);
                             region.setGame(game);
                             games.put(gname, game);
                         }
@@ -277,9 +284,6 @@ public class GameMgr extends BeaconzPluginDependent {
      * Create a new game, in a new region
      */
     public void newGame(String gameName) {
-        // Fire off *async* task to look for next game location
-        // Upon completion, it will call newGame(gameName, location) to complete creating the new game
-
         Point2D ctr = nextRegionLocation();
 
         Double radius = rup16(Settings.gameDistance / 2.0);
@@ -446,9 +450,9 @@ public class GameMgr extends BeaconzPluginDependent {
      * a 256x256 region that's safe
      */
     public Boolean isAreaSafe (Point2D ctr, Double radius, Double percentage) {
-            Integer totalblocks = 1;
-            Integer unsafeblocks = 0;
-            
+        Integer totalblocks = 1;
+        Integer unsafeblocks = 0;
+
         if (radius <= 128.0) {            
             Integer minx = (int) (rup16(ctr.getX() - radius)/1);
             Integer minz = (int) (rup16(ctr.getY() - radius)/1);
@@ -488,7 +492,7 @@ public class GameMgr extends BeaconzPluginDependent {
     }
     public void setGameDefaultParms(String mode, Integer nteams, String ggoal, Integer gvalue, Integer gtimer, String stypes) {
         gamemode = mode != null ? mode : Settings.gamemode;
-        nbr_teams = nteams != null ? nteams : Settings.default_teams;
+        nbr_teams = nteams != null ? nteams : Settings.defaultTeamNumber;
         String defaultgoal = Settings.minigameGoal;
         if(gamemode.equals("strategy")) defaultgoal = Settings.strategyGoal;
         gamegoal = ggoal != null ? ggoal : defaultgoal;
@@ -798,11 +802,11 @@ public class GameMgr extends BeaconzPluginDependent {
      * @param game
      */
     public void delete(CommandSender sender, Game game) {
-        //game.getRegion().regenerate(sender);
         // Remove region
         regions.remove(game.getRegion().getCorners());
         // Remove inventories
         getBeaconzStore().removeGame(game.getName());
+        game.getRegion().regenerate(sender, game.getName());
         // Remove game
         games.remove(game.getName());
         game.delete();

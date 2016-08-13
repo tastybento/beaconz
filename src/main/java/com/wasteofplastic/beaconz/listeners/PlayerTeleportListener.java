@@ -22,7 +22,6 @@
 
 package com.wasteofplastic.beaconz.listeners;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
@@ -31,14 +30,11 @@ import java.util.UUID;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
-import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.util.Vector;
@@ -59,6 +55,7 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
 
     private Set<UUID> barrierPlayers = new HashSet<UUID>();
     private HashMap<UUID, Vector> teleportingPlayers = new HashMap<UUID,Vector>();
+    private Set<UUID> directTeleportPlayers = new HashSet<UUID>();
     private final static boolean DEBUG = false;
     private static final String LOBBY = "Lobby";
 
@@ -103,40 +100,6 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
                 event.getPlayer().removePotionEffect(effect.getType());
         }
     }
-
-    /**
-     * Handles using signs in the lobby to join games
-     */
-    @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
-    public void onSignClick(final PlayerInteractEvent event) {
-        //getLogger().info("DEBUG: click sign");
-        if (getGameMgr().getLobby().isPlayerInRegion(event.getPlayer())) {
-            if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK) || (event.getAction().equals(Action.LEFT_CLICK_BLOCK) && !event.getPlayer().isOp())) {
-                if (event.getClickedBlock().getState() instanceof Sign) {
-                    Sign sign = (Sign) event.getClickedBlock().getState();
-                    if (Arrays.toString(sign.getLines()).toLowerCase().contains("beaconz")) {
-                        Boolean foundgame = false;
-                        for (int i = 1; i < 3; i++) {
-                            String gamename = sign.getLine(i);
-                            if (getGameMgr().getGame(gamename) != null) {
-                                getGameMgr().getGame(gamename).join(event.getPlayer());
-                                foundgame = true;
-                                break;
-                            }
-                        }
-                        if (!foundgame) {
-                            event.getPlayer().sendMessage(Lang.errorNotReady);
-                        }
-                    }
-                }
-            }
-        } else if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK) && event.getClickedBlock().getWorld().equals(getBeaconzWorld())
-                && getGameMgr().getGame(event.getClickedBlock().getLocation()) == null) {
-            event.setCancelled(true);
-            event.getPlayer().sendMessage(ChatColor.RED + Lang.errorYouCannotDoThat);
-        }
-
-    }    
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onTeleport(final PlayerTeleportEvent event) {
@@ -207,16 +170,17 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
             if (toLobby && fromGame != null) {
                 if (DEBUG)
                     getLogger().info("DEBUG: Teleporting to lobby from game " + fromGame.getName());
-                if (!fromGame.isGameRestart()) {
+                if (!fromGame.isGameRestart() && !fromGame.isOver() && !directTeleportPlayers.contains(event.getPlayer().getUniqueId())) {
                     delayTeleport(event.getPlayer(), event.getFrom(), event.getTo(), fromGame.getName(), LOBBY);
                     event.setCancelled(true);
-                }
-                /*
+                    return;
+                } 
+                // Remove now that they have teleported to the lobby
+                directTeleportPlayers.remove(event.getPlayer().getUniqueId());
                 // Store
                 getBeaconzStore().storeInventory(event.getPlayer(), fromGame.getName(), event.getFrom());
                 // Get from store
-                getBeaconzStore().getInventory(event.getPlayer(), LOBBY);
-                 */
+                getBeaconzStore().getInventory(event.getPlayer(), LOBBY);                 
                 return;
             }
 
@@ -261,6 +225,7 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
                             getLogger().info("DEBUG: Teleporting player to last location" + newTo);
                         newTo = toGame.getRegion().findSafeSpot(newTo, 10);
                         event.setTo(newTo);
+                        return;
                     }
                     /*
                     getBeaconzPlugin().getServer().getScheduler().runTaskLater(getBeaconzPlugin(), new Runnable() {
@@ -315,6 +280,13 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
                 }
                 teleportingPlayers.remove(player.getUniqueId());
             }}, Settings.teleportDelay * 20L);
+    }
+
+    /**
+     * @param directTeleportPlayers the directTeleportPlayers to set
+     */
+    public void setDirectTeleportPlayer(UUID directTeleportPlayer) {
+        this.directTeleportPlayers.add(directTeleportPlayer);
     }
 
 

@@ -82,6 +82,8 @@ public class Scorecard extends BeaconzPluginDependent{
     private HashMap<Team, HashMap<String,Integer>> score = new HashMap<Team, HashMap<String,Integer>>();
     private HashMap<Team, List<String>> teamMembers = new HashMap<Team, List<String>>();
     private HashMap<UUID, Team> teamLookup = new HashMap<UUID, Team>();
+    private HashMap<Team, MaterialData> teamBlocks = new HashMap<Team, MaterialData>();
+    private enum Scoretypes {area, links, triangles, beacons};
 
     /**
      * Scorecard controls all aspects of
@@ -143,7 +145,9 @@ public class Scorecard extends BeaconzPluginDependent{
 
         // Set up the scoreboard with the goal
         //getLogger().info("GameMode: " + game.getGamemode());
-        scoreobjective.setDisplayName(ChatColor.GREEN + Lang.titleBeaconz + " " + game.getGamemode() + "! 00d 00:00:00");
+        //scoreobjective.setDisplayName(ChatColor.GREEN + Lang.titleBeaconz + " " + game.getGamemode() + "! 00d 00:00:00");
+        scoreobjective.setDisplayName(ChatColor.GREEN + Lang.titleBeaconz + " " + game.getGamemode() + "!");
+
         goalstr = "";
         if (game.getGamegoalvalue() == 0) {
             goalstr = Lang.scoreGetTheMostGoal.replace("[goal]", game.getGamegoal());
@@ -161,7 +165,7 @@ public class Scorecard extends BeaconzPluginDependent{
         score.clear();
 
         // Create the teams and enable scoreboards
-        Settings.teamBlock = new HashMap<Team, MaterialData>();
+        teamBlocks = new HashMap<Team, MaterialData>();
         addTeams();
         loadTeamMembers();
 
@@ -188,13 +192,19 @@ public class Scorecard extends BeaconzPluginDependent{
      */
     @SuppressWarnings("deprecation")
     protected void addTeams() {
-        ConfigurationSection csect = getBeaconzPlugin().getConfig().getConfigurationSection("teams");
+        ConfigurationSection csect = getBeaconzPlugin().getConfig().getConfigurationSection("teams.names");
         Integer teamcnt = 0;
         if (csect != null) {
             for (String teamName: csect.getValues(false).keySet()) {
-                MaterialData teamBlock = new MaterialData(Material.STAINED_GLASS,(byte) getBeaconzPlugin().getConfig().getInt("teams." + teamName + ".glasscolor"));
+                MaterialData teamBlock = new MaterialData(Material.STAINED_GLASS,(byte) csect.getInt(teamName + ".glasscolor"));
                 //IMPORTANT: The a team's display name must ALWAYS be the team's name, PRECEEDED BY the ChatColor
-                String teamDisplayName = ChatColor.translateAlternateColorCodes('&', getBeaconzPlugin().getConfig().getString("teams." + teamName + ".displayname", teamName));
+                String teamDisplayName = ChatColor.translateAlternateColorCodes('&', csect.getString(teamName + ".displayname", teamName));
+                if (teamName.length() > 16) {
+                    teamName = teamName.substring(0, 16);
+                }
+                if (teamDisplayName.length() > 16) {
+                    teamDisplayName = teamDisplayName.substring(0, 16);
+                }
                 addTeam(teamName, teamDisplayName, teamBlock, false);
                 teamcnt ++;
                 if (teamcnt == game.getNbrTeams()) {
@@ -214,23 +224,22 @@ public class Scorecard extends BeaconzPluginDependent{
             refreshScores(team);
         }
     }
-    
+
     /**
      * Updates the Scoreboard values for team
      * @param team
      */
     public void refreshScores(Team team) {
-        Integer defaultvalue = null;
-        if (score.get(team) == null) defaultvalue = 0;   // if team doesn't have score, create it and set to 0
-        for (String st : game.getScoretypes().split(":")) {
-            refreshScores(team, st, defaultvalue);
+        if (team != null) {
+            Integer defaultvalue = null;
+            if (score.get(team) == null) defaultvalue = 0;   // if team doesn't have score, create it and set to 0
+            //for (String st : game.getScoretypes().split(":")) {
+            for (Scoretypes st : Scoretypes.values()) {
+                refreshScores(team, st.name(), defaultvalue);
+            }
         }
+    }
 
-    }
-    public void refreshScores(Team team, String scoretype) {
-        refreshScores(team, scoretype, null);
-    }
-    
     /**
      * Refresh a specific score type for team.
      * @param team
@@ -324,7 +333,8 @@ public class Scorecard extends BeaconzPluginDependent{
             team.setPrefix(ChatColor.valueOf(teamChatColor(team)) + "[" + teamDisplayName +"] " + ChatColor.RESET);
             team.setDisplayName(teamDisplayName);
             // Store the block for the team
-            Settings.teamBlock.put(team, teamBlock);
+            //getLogger().info("DEBUG: [" +game.getName() + "] Adding team " + team.getDisplayName() + " team block = " + teamBlock);
+            teamBlocks.put(team, teamBlock);
             // Get a new spawnpoint for the new team
             Location loc = makeTeamSpawnPoint(team);
             teamSpawnPoint.put(team, loc);
@@ -403,13 +413,12 @@ public class Scorecard extends BeaconzPluginDependent{
      * Removes a player from all teams (there should be only one)
      */
     public void removeTeamPlayer(Player player) {
-        String uuid = player.getUniqueId().toString();
         // Remove player from the teamLookup index
-        teamLookup.remove(uuid);
+        teamLookup.remove(player.getUniqueId());
         // Go through all the team and remove the player if he exists
         for (Entry<Team, List<String>> team : teamMembers.entrySet()) {
             if (team.getValue() != null) {
-                team.getValue().remove(uuid);
+                team.getValue().remove(player.getUniqueId().toString());
                 teamMembers.put(team.getKey(), team.getValue());
             }
         }
@@ -472,7 +481,7 @@ public class Scorecard extends BeaconzPluginDependent{
      * Returns a player's team (even if the player is offline)
      * If the player does not have a team, he is NO LONGER put in one - use assignTeam(player) for that
      * @param player
-     * @return Team
+     * @return Team or null if none
      */
     public Team getTeam(Player player) {
         return teamLookup.get(player.getUniqueId());
@@ -525,7 +534,7 @@ public class Scorecard extends BeaconzPluginDependent{
      * @return block type or null if it does not exist
      */
     public MaterialData getBlockID(Team team) {
-        return Settings.teamBlock.get(team);
+        return teamBlocks.get(team);
     }
 
     /**
@@ -534,7 +543,7 @@ public class Scorecard extends BeaconzPluginDependent{
      * @return Team, or null if it doesn't exist
      */
     public Team getTeamFromBlock(Block b) {
-        for (Entry<Team, MaterialData> md: Settings.teamBlock.entrySet()) {
+        for (Entry<Team, MaterialData> md: teamBlocks.entrySet()) {
             //if (md.getValue().getItemType().equals(b.getType()) && md.getValue().getData() == b.getData()) {
             //    return md.getKey();
             //}
@@ -958,12 +967,21 @@ public class Scorecard extends BeaconzPluginDependent{
         if (timertaskid != null) timertaskid.cancel();
         // Stop keeping score
         gameON = false;
+        // Set game over to true
+        game.setOver(true);
         // Change the objective line in the scoreboard
         scoreboard.resetScores(goalstr);
         scoreline = scoreobjective.getScore(ChatColor.GREEN + Lang.scoreGameOver);
         scoreline.setScore(15);
+        // Teleport any players in the game to the lobby
+        for (Player player: getServer().getOnlinePlayers()) {
+            if (game.getRegion().contains(player.getLocation())) {
+                // Send to Lobby
+                game.sendToLobby(player);
+            }
+        }
         // Wait a second to let all other messages display first
-        getBeaconzPlugin().getServer().getScheduler().runTaskLaterAsynchronously(getBeaconzPlugin(), new Runnable() {
+        getBeaconzPlugin().getServer().getScheduler().runTaskLater(getBeaconzPlugin(), new Runnable() {
             @Override
             public void run() {
                 // Announce winner to all players
@@ -974,18 +992,31 @@ public class Scorecard extends BeaconzPluginDependent{
                     titleline = Lang.scoreTeamWins.replace("[team]", winner.getDisplayName().toUpperCase());
                     subtitleline = Lang.scoreCongratulations;
                 }
+                getLogger().info("DEBUG: telling team results");
                 for (Team team : scoreboard.getTeams()) {
+                    getLogger().info("DEBUG: team = " + team.getDisplayName());
                     for (String entry : team.getEntries()) {
-                        Player player = Bukkit.getServer().getPlayer(entry);
-                        if (player != null && player.getWorld().equals(getBeaconzWorld())) {
-                            getServer().dispatchCommand(getServer().getConsoleSender(),
-                                    "title " + player.getName() + " title {\"text\":\"" + titleline + "\", \"color\":\"" + "gold" + "\"}");
-                            getServer().dispatchCommand(getServer().getConsoleSender(),
-                                    "title " + player.getName() + " subtitle {\"text\":\"" + subtitleline + "\", \"color\":\"" + "gold" + "\"}");
-                            player.sendMessage(ChatColor.GREEN + Lang.helpLine);
-                            player.sendMessage(ChatColor.YELLOW + titleline);
-                            player.sendMessage(ChatColor.YELLOW + subtitleline);
-                            player.sendMessage(ChatColor.GREEN + Lang.helpLine);
+                        getLogger().info("DEBUG: entry = " + entry);
+                        UUID uuid = getBeaconzPlugin().getNameStore().getPlayerUUID(entry);
+                        getLogger().info("DEBUG: uuid = " + uuid);
+                        if (uuid != null) {
+                            Player player = Bukkit.getServer().getPlayer(uuid);
+                            if (player != null) {
+                                if (player.getWorld().equals(getBeaconzWorld())) {
+                                    getServer().dispatchCommand(getServer().getConsoleSender(),
+                                            "title " + player.getName() + " title {\"text\":\"" + titleline + "\", \"color\":\"" + "gold" + "\"}");
+                                    getServer().dispatchCommand(getServer().getConsoleSender(),
+                                            "title " + player.getName() + " subtitle {\"text\":\"" + subtitleline + "\", \"color\":\"" + "gold" + "\"}");
+                                    player.sendMessage(ChatColor.GREEN + Lang.helpLine);
+                                    player.sendMessage(ChatColor.YELLOW + titleline);
+                                    player.sendMessage(ChatColor.YELLOW + subtitleline);
+                                    player.sendMessage(ChatColor.GREEN + Lang.helpLine);                                
+                                }
+                            } else {
+                                // Offline player
+                                getMessages().setMessage(uuid, titleline);
+                                getMessages().setMessage(uuid, subtitleline);
+                            }
                         }
                     }
                 }

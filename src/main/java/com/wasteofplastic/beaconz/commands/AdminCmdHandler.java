@@ -26,6 +26,7 @@ import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 import org.apache.commons.lang.math.NumberUtils;
@@ -57,7 +58,6 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
     @SuppressWarnings("deprecation")
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        // TODO: Make this a permission
         if (sender instanceof Player) {
             Player player = (Player)sender;
             if (!player.isOp() && !player.hasPermission("beaconz.admin")) {
@@ -85,28 +85,29 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                 sender.sendMessage(cc1 + "/" + label + cc2 + " join <gamename> <team>" + cc3 + Lang.helpAdminJoin);
             }
             sender.sendMessage(cc1 + "/" + label + cc2 + " games" + cc3 + Lang.helpAdminGames);
-            sender.sendMessage(cc1 + "/" + label + cc2 + " kick <online playername> <gamename>" + cc3 + Lang.helpAdminKick);
-            sender.sendMessage(cc1 + "/" + label + cc2 + " restart <gamename>" + cc3 + Lang.helpAdminRestart);
-            sender.sendMessage(cc1 + "/" + label + cc2 + " reset <gamename>" + cc3 + Lang.helpAdminRegenerate);
-            sender.sendMessage(cc1 + "/" + label + cc2 + " pause <gamename>" + cc3 + Lang.helpAdminPause);
-            sender.sendMessage(cc1 + "/" + label + cc2 + " resume <gamename>" + cc3 + Lang.helpAdminResume);
+            //sender.sendMessage(cc1 + "/" + label + cc2 + " kick <online playername> <gamename>" + cc3 + Lang.helpAdminKick);
+            //sender.sendMessage(cc1 + "/" + label + cc2 + " restart <gamename>" + cc3 + Lang.helpAdminRestart);
+            sender.sendMessage(cc1 + "/" + label + cc2 + " regenerate <gamename>" + cc3 + Lang.helpAdminRegenerate);
+            //sender.sendMessage(cc1 + "/" + label + cc2 + " pause <gamename>" + cc3 + Lang.helpAdminPause);
+            //sender.sendMessage(cc1 + "/" + label + cc2 + " resume <gamename>" + cc3 + Lang.helpAdminResume);
             sender.sendMessage(cc1 + "/" + label + cc2 + " force_end <gamename>" + cc3 + Lang.helpAdminForceEnd);
+            /*
             if (sender instanceof Player) {
                 sender.sendMessage(cc1 + "/" + label + cc2 + " link <x> <z>" + cc3 + Lang.helpAdminLink);
-            }
+            }*/
             sender.sendMessage(cc1 + "/" + label + cc2 + " list [all |<gamename>] [team]" + cc3 + Lang.helpAdminList);
             sender.sendMessage(cc1 + "/" + label + cc2 + " listparms <gamename>" + cc3 + Lang.helpAdminListParms);
             sender.sendMessage(cc1 + "/" + label + cc2 + " newgame <gamename> [<parm1:value> <parm2:value>...]" + cc3 + Lang.helpAdminNewGame.replace("[label]", label));
             sender.sendMessage(cc1 + "/" + label + cc2 + " reload" + cc3 + Lang.helpAdminReload);
-            sender.sendMessage(cc1 + "/" + label + cc2 + " setgameparms <gamename> <parm1:value> <parm2:value>... " + cc3 + Lang.helpAdminSetGameParms.replace("[label]", label));
+            //sender.sendMessage(cc1 + "/" + label + cc2 + " setgameparms <gamename> <parm1:value> <parm2:value>... " + cc3 + Lang.helpAdminSetGameParms.replace("[label]", label));
             if (sender instanceof Player) {
-                sender.sendMessage(cc1 + "/" + label + cc2 + " setspawn <team>" + cc3 + Lang.helpAdminSetTeamSpawn);
+                //sender.sendMessage(cc1 + "/" + label + cc2 + " setspawn <team>" + cc3 + Lang.helpAdminSetTeamSpawn);
                 sender.sendMessage(cc1 + "/" + label + cc2 + " setspawn " + cc3 + Lang.helpAdminSetLobbySpawn);
                 sender.sendMessage(cc1 + "/" + label + cc2 + " switch " + cc3 + Lang.helpAdminSwitch);
             }
             sender.sendMessage(cc1 + "/" + label + cc2 + " switch <online playername> " + cc3 + Lang.helpAdminSwitch);
             sender.sendMessage(cc1 + "/" + label + cc2 + " teams [all | <gamename>]" + cc3 + Lang.helpAdminTeams);
-            sender.sendMessage(cc1 + "/" + label + cc2 + " timertoggle [all | <gamename>]" + cc3 + Lang.helpAdminTimerToggle);
+            //sender.sendMessage(cc1 + "/" + label + cc2 + " timertoggle [all | <gamename>]" + cc3 + Lang.helpAdminTimerToggle);
 
         } else {
             switch (args[0].toLowerCase()) {
@@ -275,7 +276,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                 }
                 if (cnt == 0) sender.sendMessage(ChatColor.AQUA + Lang.adminGamesNoOthers);
                 break;
-
+                
             case "kick":
                 if (args.length < 3) {
                     sender.sendMessage(ChatColor.RED + "/" + label + Lang.helpAdminKick);
@@ -289,10 +290,10 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                             sender.sendMessage(Lang.errorNoSuchGame);
                         } else {
                             if (args[2].equals("all")) {
-                                game.kick();
+                                game.kick(sender);
                                 sender.sendMessage(Lang.adminKickAllPlayers.replace("[name]", game.getName()));
                             } else {
-                                game.kick(player);
+                                game.kick(sender, player);
                                 sender.sendMessage((Lang.adminKickPlayer.replace("[player]", player.getName()).replace("[name]", game.getName())));
                             }
                         }
@@ -300,6 +301,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                 }
                 break;
 
+                /*
             case "restart":
                 if (args.length < 2) {
                     sender.sendMessage(ChatColor.RED + "/" + label + " restart <gamename> - " + Lang.helpAdminRestart);
@@ -313,7 +315,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                     }
                 }
                 break;
-
+                 */
             case "delete":
                 if (args.length < 2) {
                     sender.sendMessage(ChatColor.RED + "/" + label + " delete <gamename> - " + Lang.helpAdminDelete);
@@ -324,7 +326,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                     } else {
                         sender.sendMessage(ChatColor.GREEN + Lang.adminDeletingGame.replace("[name]", game.getName()));
                         getGameMgr().delete(sender, game);
-                        sender.sendMessage(ChatColor.GREEN + Lang.adminDeletedGame.replace("[name]", game.getName()));
+                        //sender.sendMessage(ChatColor.GREEN + Lang.adminDeletedGame.replace("[name]", game.getName()));
                     }
                 }
                 break;
@@ -342,7 +344,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                     }
                 }
                 break;
-
+                /*
             case "pause":
                 if (args.length < 2) {
                     sender.sendMessage(ChatColor.RED + "/" + label + " pause <gamename> " + Lang.helpAdminPause);
@@ -370,7 +372,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                     }
                 }
                 break;
-
+                 */
             case "force_end":
                 if (args.length < 2) {
                     sender.sendMessage(ChatColor.RED + "/" + label + " force_end <gamename>" + Lang.helpAdminForceEnd);
@@ -385,7 +387,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                     }
                 }
                 break;
-
+                /*
             case "link":
                 if (args.length < 3) {
                     sender.sendMessage(ChatColor.RED + "/" + label + " link <x> <z> " + Lang.helpAdminLink);
@@ -408,7 +410,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                     }
                 }
                 break;
-
+                 */
             case "list":
                 if (args.length < 2) {
                     sender.sendMessage(ChatColor.RED + "/" + label + " list [all |<gamename>] [team] " + Lang.helpAdminList);
@@ -427,11 +429,11 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                     if (args[1].toLowerCase().equals("help")) {
                         sender.sendMessage("/" + label + " newgame <gamename> [<parm1:value> <parm2:value>...]");
                         sender.sendMessage(ChatColor.GREEN  + "The optional parameters and their values are:");
-                        sender.sendMessage(ChatColor.YELLOW  + "gamemode -  " + ChatColor.AQUA + " values can be either 'minigame' or 'strategy' - e.g gamemode:strategy");
-                        sender.sendMessage(ChatColor.YELLOW  + "teams -  " + ChatColor.AQUA + " the number of teams in the game - e.g. teams:3");
+                        //sender.sendMessage(ChatColor.YELLOW  + "gamemode -  " + ChatColor.AQUA + " values can be either 'minigame' or 'strategy' - e.g gamemode:strategy");
+                        sender.sendMessage(ChatColor.YELLOW  + "teams -  " + ChatColor.AQUA + " the number of teams in the game - e.g. teams:2");
                         sender.sendMessage(ChatColor.YELLOW  + "goal -  " + ChatColor.AQUA + "  one of 'area', 'beacons', 'links', 'triangles' - e.g. goal:links");
-                        sender.sendMessage(ChatColor.YELLOW  + "goalvalue -  " + ChatColor.AQUA + "  the number objective for the goal - e.g goalvalue:100 - if it is 0, the winner is the team with the most of 'goal' when the countdown timer runs out.");
-                        sender.sendMessage(ChatColor.YELLOW  + "countdown -  " + ChatColor.AQUA + "  the game's timer, in seconds. 0 means the timer runs up, open-ended; any other value meands the timer runs a countdown from that time. - e.g. countdown:600");
+                        sender.sendMessage(ChatColor.YELLOW  + "goalvalue -  " + ChatColor.AQUA + "  the number objective for the goal - e.g goalvalue:100");
+                        //sender.sendMessage(ChatColor.YELLOW  + "countdown -  " + ChatColor.AQUA + "  the game's timer, in seconds. 0 means the timer runs up, open-ended; any other value meands the timer runs a countdown from that time. - e.g. countdown:600");
                         sender.sendMessage(ChatColor.YELLOW  + "scoretypes -  " + ChatColor.AQUA + "  the scores to be displayed on the sidebar. Can be any combination of goal names separated by '-' e.g scoretypes:area-triangles-beacons-links");
                     } else {
                         String [] parmargs = new String [args.length-2];
@@ -480,16 +482,16 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                     if (game == null) {
                         sender.sendMessage(Lang.errorNoSuchGame + "'" + args[1] + "'");
                     } else {
-                        sender.sendMessage(ChatColor.YELLOW + Lang.adminParmsMode + ": " + ChatColor.AQUA + game.getGamemode());
+                        //sender.sendMessage(ChatColor.YELLOW + Lang.adminParmsMode + ": " + ChatColor.AQUA + game.getGamemode());
                         sender.sendMessage(ChatColor.YELLOW + Lang.adminParmsTeams + ": " + ChatColor.AQUA + game.getNbrTeams());
                         sender.sendMessage(ChatColor.YELLOW + Lang.adminParmsGoal + ": " + ChatColor.AQUA  + game.getGamegoal());
-                        sender.sendMessage(ChatColor.YELLOW + Lang.adminParmsGoalValue + ": " + ChatColor.AQUA + (game.getGamegoalvalue() == 0 ? Lang.adminParmsUnlimited : game.getGamegoalvalue()));
-                        sender.sendMessage(ChatColor.YELLOW + Lang.adminParmsCountdown + ": " + ChatColor.AQUA + (game.getCountdownTimer() == 0 ? Lang.adminParmsUnlimited : game.getCountdownTimer()));
+                        sender.sendMessage(ChatColor.YELLOW + Lang.adminParmsGoalValue + ": " + ChatColor.AQUA + (game.getGamegoalvalue() == 0 ? Lang.adminParmsUnlimited : String.format(Locale.US, "%,d", game.getGamegoalvalue())));
+                        //sender.sendMessage(ChatColor.YELLOW + Lang.adminParmsCountdown + ": " + ChatColor.AQUA + (game.getCountdownTimer() == 0 ? Lang.adminParmsUnlimited : game.getCountdownTimer()));
                         sender.sendMessage(ChatColor.YELLOW + Lang.adminParmsScoreTypes + ": " + ChatColor.AQUA + game.getScoretypes());
                     }
                 }
                 return true;
-
+                /*
             case "setgameparms":
                 if (args.length < 2) {
                     sender.sendMessage("/" + label + " setgameparms <gamename> <parm1:value> <parm2:value>");
@@ -500,11 +502,11 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                     if (args[1].toLowerCase().equals("help")) {
                         sender.sendMessage(ChatColor.RED  + "/" + label + " setgameparms <gamename> <parm1:value> <parm2:value>... ");
                         sender.sendMessage(ChatColor.GREEN  + "The possible parameters and their values are:");
-                        sender.sendMessage(ChatColor.YELLOW  + "gamemode -  " + ChatColor.AQUA + " values can be either 'minigame' or 'strategy' - e.g gamemode:strategy");
+                        //sender.sendMessage(ChatColor.YELLOW  + "gamemode -  " + ChatColor.AQUA + " values can be either 'minigame' or 'strategy' - e.g gamemode:strategy");
                         sender.sendMessage(ChatColor.YELLOW  + "teams -  " + ChatColor.AQUA + " the number of teams in the game - e.g. teams:3");
                         sender.sendMessage(ChatColor.YELLOW  + "goal -  " + ChatColor.AQUA + "  one of 'area', 'beacons', 'links', 'triangles' - e.g. goal:links");
-                        sender.sendMessage(ChatColor.YELLOW  + "goalvalue -  " + ChatColor.AQUA + "  the number objective for the goal - e.g goalvalue:100 - if it is 0, the winner is the team with the most of 'goal' when the countdown timer runs out.");
-                        sender.sendMessage(ChatColor.YELLOW  + "countdown -  " + ChatColor.AQUA + "  the game's timer, in seconds. 0 means the timer runs up, open-ended; any other value meands the timer runs a countdown from that time. - e.g. countdown:600");
+                        sender.sendMessage(ChatColor.YELLOW  + "goalvalue -  " + ChatColor.AQUA + "  the number objective for the goal - e.g goalvalue:100");
+                        //sender.sendMessage(ChatColor.YELLOW  + "countdown -  " + ChatColor.AQUA + "  the game's timer, in seconds. 0 means the timer runs up, open-ended; any other value meands the timer runs a countdown from that time. - e.g. countdown:600");
                         sender.sendMessage(ChatColor.YELLOW  + "scoretypes -  " + ChatColor.AQUA + "  the scores to be displayed on the sidebar. Can be any combination of goal names separated by '-' e.g scoretypes:area-triangles-beacons-links");
                     } else {
                         String [] parmargs = new String [args.length-2];
@@ -530,10 +532,10 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
 
                 }
                 break;
-
+                 */
             case "setspawn":
                 if (args.length > 2) {
-                    sender.sendMessage(ChatColor.RED + "/" + label + " setspawn <team> " + Lang.helpAdminSetTeamSpawn);
+                    //sender.sendMessage(ChatColor.RED + "/" + label + " setspawn <team> " + Lang.helpAdminSetTeamSpawn);
                     sender.sendMessage(ChatColor.RED + "/" + label + " setspawn " + Lang.helpAdminSetLobbySpawn);
                 } else {
                     // Admin set team spawn
@@ -548,8 +550,12 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                         sender.sendMessage(ChatColor.GREEN + Lang.generalSuccess + " (" + player.getLocation().getBlockX() + ","
                                 + player.getLocation().getBlockY() + "," + player.getLocation().getBlockZ() + ")");
                         return true;
+                    } else {
+                        sender.sendMessage(ChatColor.RED + Lang.helpAdminSetLobbySpawn);
+                        return true;
                     }
                     // Check team name given exists
+                    /*
                     game = getGameMgr().getGame(player.getLocation());
                     if (game == null) {
                         sender.sendMessage(Lang.adminSetSpawnNeedToBeInGame);
@@ -561,7 +567,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                         }
                         game.getScorecard().setTeamSpawnPoint(team, (player.getLocation()));
                         sender.sendMessage(ChatColor.GREEN + Lang.generalSuccess);
-                    }
+                    }*/
                 }
                 break;
 
@@ -600,7 +606,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                     }
                 }
                 break;
-
+                /*
             case "timertoggle":
                 if (args.length < 2) {
                     sender.sendMessage(ChatColor.RED + "/" + label + " timertoggle [all | <gamename>] " + Lang.helpAdminTimerToggle);
@@ -622,7 +628,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                     }
                 }
                 break;
-
+                 */
             default:
                 sender.sendMessage(ChatColor.RED + Lang.errorUnknownCommand);
                 break;
@@ -741,7 +747,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
 
         // Get default parameters
         String mode = Settings.gamemode;
-        int nteams = Settings.default_teams;
+        int nteams = Settings.defaultTeamNumber;
         String ggoal = mode.toLowerCase().equals("strategy") ? Settings.strategyGoal: Settings.minigameGoal;
         int gvalue = mode.toLowerCase().equals("strategy") ? Settings.strategyGoalValue : Settings.minigameGoalValue;
         int timer = mode.toLowerCase().equals("strategy") ? Settings.strategyTimer : Settings.minigameTimer;
@@ -821,6 +827,10 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                     if (!NumberUtils.isNumber(value)) {
                         errormsg = "<< 'team:' value must be a number >>";
                     }
+                    int number = NumberUtils.toInt(value);
+                    if (number < 2 || number > 14) {
+                        errormsg = "<< 'team:' value must be between 2 and 14 >>";
+                    }
                     break;
                 case "goal":
                     if (!value.equals("area") && !value.equals("beacons") &&
@@ -831,6 +841,10 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                 case "goalvalue":
                     if (!NumberUtils.isNumber(value)) {
                         errormsg = "<< 'goalvalue:' value must be a number >>";
+                    }
+                    int number2 = NumberUtils.toInt(value);
+                    if (number2 < 0) {
+                        errormsg = "<< 'goalvalue:' value cannot be negative >>";
                     }
                     break;
                 case "countdown":
@@ -867,8 +881,14 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         final List<String> options = new ArrayList<String>();
-        String lastArg = (args.length != 0 ? args[args.length - 1] : "");
         Player player = null;
+        if (sender instanceof Player) {
+            player = (Player)sender;
+            if (!player.isOp() && !player.hasPermission("beaconz.admin")) {
+                return options;
+            }
+        }
+        String lastArg = (args.length != 0 ? args[args.length - 1] : "");
         Game game = null;
         switch (args.length) {
         case 0:
@@ -877,32 +897,31 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                 // Player options
                 options.add("claim");
                 options.add("join");
-                options.add("link");
+                //options.add("link");
                 options.add("setspawn");
                 options.add("switch");
             }
             // Console options
             options.add("delete");
-            options.add("distribution");
+            //options.add("distribution");
             options.add("games");
-            options.add("kick");
-            options.add("restart");
+            //options.add("kick");
+            //options.add("restart");
             options.add("regenerate");
-            options.add("pause");
-            options.add("resume");
+            //options.add("pause");
+            //options.add("resume");
             options.add("force_end");
             options.add("list");
             options.add("listparms");
             options.add("newgame");
             options.add("reload");
-            options.add("setgameparms");
+            //options.add("setgameparms");
             options.add("teams");
-            options.add("timertoggle");
+            //options.add("timertoggle");
             break;
         case 2:
             if (sender instanceof Player) {
                 // Add the player options
-                player = (Player)sender;
                 game = getGameMgr().getGame(player.getLocation());
                 if (args[0].equalsIgnoreCase("claim")) {
                     options.add("unowned");
@@ -915,23 +934,26 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
             }
             // Complete the options with the console-only options
             // Player names
-            if (args[0].equalsIgnoreCase("kick") || args[0].equalsIgnoreCase("switch")) {
+            //if (args[0].equalsIgnoreCase("kick") || args[0].equalsIgnoreCase("switch")) {
+            if (args[0].equalsIgnoreCase("switch")) {
                 for (Player p : getServer().getOnlinePlayers()) {
                     options.add(p.getName());
                 }
             }
             // Game name options
             if (args[0].equalsIgnoreCase("delete")
-                    || args[0].equalsIgnoreCase("regenerate") || args[0].equalsIgnoreCase("restart")
-                    || args[0].equalsIgnoreCase("pause") || args[0].equalsIgnoreCase("resume")
+                    || args[0].equalsIgnoreCase("regenerate") //|| args[0].equalsIgnoreCase("restart")
+                    //|| args[0].equalsIgnoreCase("pause") || args[0].equalsIgnoreCase("resume")
                     || args[0].equalsIgnoreCase("force_end") || args[0].equalsIgnoreCase("listparms")
-                    || args[0].equalsIgnoreCase("setgameparms")
+                    //|| args[0].equalsIgnoreCase("setgameparms")
                     || args[0].equalsIgnoreCase("list") || args[0].equalsIgnoreCase("teams")
-                    || args[0].equalsIgnoreCase("timertoggle")) {
+                    //|| args[0].equalsIgnoreCase("timertoggle")
+                    ) {
                 // List all the games
                 options.addAll(getGameMgr().getGames().keySet());
             }
-            if (args[0].equalsIgnoreCase("setgameparms")) {
+
+            if (args[0].equalsIgnoreCase("newgame")) {
                 options.add("help");
             }
             // Options with "all"
@@ -946,7 +968,6 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
             break;
         case 3:
             if (sender instanceof Player) {
-                player = (Player)sender;           
                 if (args[0].equalsIgnoreCase("join")) {
                     // List all the teams
                     game = getGameMgr().getGame(args[1]);
@@ -955,10 +976,11 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                     }
                 }
             }
+            /*
             if (args[0].equalsIgnoreCase("kick") ) {
                 // List all the games
                 options.addAll(getGameMgr().getGames().keySet());
-            }
+            }*/
             if (args[0].equalsIgnoreCase("list") && !args[1].equalsIgnoreCase("all")) {
                 // List all the teams in the game
                 game = getGameMgr().getGame(args[1]);
@@ -969,16 +991,16 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
             }
         default:
             // For length > 2 setgameparms and newgame only
-            if (args.length > 2 && (args[0].equalsIgnoreCase("setgameparms") || args[0].equalsIgnoreCase("newgame"))) {
-                options.add("gamemode:strategy");
-                options.add("gamemode:minigame");
+            if (args.length > 2 && args[0].equalsIgnoreCase("newgame")) {
+                //options.add("gamemode:strategy");
+                //options.add("gamemode:minigame");
                 options.add("teams:");
                 options.add("goal:area");
                 options.add("goal:beacons");
                 options.add("goal:links");
                 options.add("goal:triangles");
                 options.add("goalvalue:");
-                options.add("countdown:");
+                //options.add("countdown:");
                 options.add("scoretypes:area");
                 options.add("scoretypes:beacons");
                 options.add("scoretypes:links");

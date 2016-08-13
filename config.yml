@@ -1,79 +1,96 @@
 # Config file for Beaconz
-defaultlocale: en-US
 
 world:
-  # Beaconz world
-  name: beaconz   
-  
-  # Default game name
-  defaultgamename: Beaconz
-  
-  # Distribution of beacons the large the number, the more beacons are made
-  distribution: 0.03
-  
-  # Distance between new game regions. Must be at least size of the barrier
-  # This is the default size for the sides of each new (square) game region
-  distance: 2000
-  
-  # Number of seconds a player must be stationary before they will be teleported
-  teleportdelay: 5 
+  # Beaconz world name
+  name: beaconz_world  
 
-  # Lobby settings
-  # Coordinates for the lobby area
+  # Default name for first game created when the plugin starts for the first time.
+  defaultgamename: Beaconz
+
+  # Random distribution of beacons. The large the number, the more beacons are made.
+  distribution: 0.03
+
+  # Starting point for first game. Do not put this at 0,0 because that is where the
+  # lobby is.
+  xcenter: 2000
+  zcenter: 2000
+
+  # Length for the sides of each new (square) game region
+  distance: 2000
+
+  # Number of seconds a player must be stationary before they will be teleported
+  # As this is a PVP game, this will prevent escapes using teleporting.
+  teleportdelay: 5
+
+  # Starter inventory. What players get when they start a game.
+  # Format Material:Qty or Material:Data:Qty
+  # Note that any type of pickaxe can eventually break the obsidian capstones.
+  newbiekit:
+  - "DIAMOND_PICKAXE:1"
+  - "BREAD:2"
+
+# Lobby settings
+lobby:
+  # Coordinates for the lobby area - a square.
   # These coordinates must be divisible by 16, otherwise they will be adjusted
   lobbyx: 0
   lobbyz: 0
   lobbyradius: 16 
+
   # Lobby platform will be at this height
   lobbyheight: 200
-  # Lobby platform will be made up randomly of these blocks. Tip: Mobs do not spawn on glass.
+
+  # Lobby platform will be made up randomly of these blocks.
   # You can replace the lobby after it is made.
   lobbyblocks:
   - STAINED_GLASS:2
   - STAINED_GLASS:3
   - STAINED_GLASS:4
   - STAINED_GLASS:5
-  
-  # Starting point for first game
-  xcenter: 2000
-  zcenter: 2000
-  
-  # Team chat
-  # If true, players can only converse with their team players in the beaconz world
-  teamchat: false
-  
-  # Number of blocks that each exp point will link when linking a beacon
-  # If zero, there is no exp cost to link beacons
+
+  # Lobby animal/mob spawning
+  allowMobSpawn: false
+  allowAnimalSpawn: false
+  # Eggs or spawn eggs
+  allowEggUse: false
+      
+#### LINKING SETTINGS
+links:
+  # Maximum number of links a beacon can have. Note, teams cannot remove their own links
+  # except by sacrificing link extender blocks, if the option is enabled below.
+  maxlinks: 6
+
+  # Number of blocks that each exp point will link when linking a beacon. Experience is
+  # lost when linking.
+  # If zero, there is no exp cost to link beacons.
   expdistance: 5
-  
-  # The maximum distance a beacon can link without extending link blocks
+
+  # The maximum distance a beacon can link without the use of extending link blocks.
   linklimit: 500
-  
-  # Link blocks that extend the link limit, and by how much. Once a link block is placed
-  # it cannot be removed without losing the longest link from the beacon
-  # Link blocks count from both ends of the link.
+
+  # Link blocks that extend the link limit, and by how much.
+  # Link blocks work at either end of the link.
   linkblocks:
-     GOLD_BLOCK: 50
-     DIAMOND_BLOCK: 200
-     
+    GOLD_BLOCK: 50
+    DIAMOND_BLOCK: 200
+
+  # Destroy link blocks completely when they are removed.
+  # Default is true. This is recommended otherwise players can cheat by reusing
+  # blocks between beaconz.
+  destroylinkblocks: true
+
   # Remove the longest link if a range extender block is removed.
-  # This is a penalty for breaking link blocks, but can be used by the owning team
-  # to remove links so they can be make elsewhere at the cost of gold blocks and
-  # losing links in order of length (quite a cost!)
+  # This is a penalty for breaking link blocks, but can also be used by the owning team
+  # to remove links so they can go elsewhere, at the cost of blocks.
   # Default is not to lose a link.
   removelongestlink: false
-  
-  # Destroy link blocks completely when they are removed
-  # Default is true. This is not recommended to be false otherwise players can reuse
-  # blocks between beaconz. Essentially, extending a beacon link length consumes blocks.
-  destroylinkblocks: true
-  
+
   # What will be given to the player when they make a link 
   # Material:Durability:Quantity - all three are mandatory
   # For potions, POTION:NAME:<LEVEL>:<EXTENDED>:<SPLASH/LINGER>:QTY
   linkrewards:
   - EMERALD:0:1
-  
+
   # Link commands
   # Commands that will be run when the player makes a link. Command is run as console.
   # [player] is the linking player
@@ -82,66 +99,60 @@ world:
   linkcommands:
   #- "give [player] emerald 1"
   #- "some other command"
-  
-  # Maximum number of links a beacon can have. Note teams cannot remove their own links
-  # except by sacrificing link extender blocks.
-  maxlinks: 6
-  
+
+### DEFENSE SETTINGS
+defense:
   # Defense height - max height of blocks that can be placed around a beacon to defend it
   defenseheight: 8
-  
+
   # Defense levels
   # Defines what exp levels is required to place a block at that height around the beacon
+  # Format is:
   # Height: Exp level
   defenselevel:
-     1: 0
-     2: 2
-     3: 5
-     4: 10
-     5: 15
-     6: 20
-     7: 25
-     8: 30
-   
+    1: 0
+    2: 2
+    3: 5
+    4: 10
+    5: 15
+    6: 20
+    7: 25
+    8: 30
+
   # Removal level delta  
-  # Players can only remove defense blocks they place unless they are this many levels
-  # higher than the defense level. For example, if this is 5, then level 35 players can
-  # remove any block placed level 30 or below.
-  # If zero, players can remove any defense block on the beacon
-  # If -1, players can only remove defense blocks they placed
+  # Players can always remove defense blocks they place.
+  # To remove blocks placed by other team members, they must be a higher level
+  # For example, if this value is 5, then level 30 blocks can only be removed
+  # by level 35 players.
+  # If this value is zero, players can remove any defense block on the beacon.
+  # If -1, players can only remove their own defense blocks (default)
   removaldelta: -1
 
   # Attack levels
   # Defines what exp level an attacker must be to be able to mine the block at that height
   # Height: Exp level 
   attacklevel:
-     1: 0
-     2: 2
-     3: 5
-     4: 10
-     5: 15
-     6: 20
-     7: 25
-     8: 30  
-
-  # Starter inventory
-  # Format Material:Qty or Material:Data:Qty
-  # Note that any type of pickaxe can eventually break obsidian.
-  newbiekit:
-  - "DIAMOND_PICKAXE:1"
-  - "BREAD:2"
+    1: 0
+    2: 2
+    3: 5
+    4: 10
+    5: 15
+    6: 20
+    7: 25
+    8: 30  
   
-  # Beacon mine settings
-  # Cost in experience points to mine a beacon
+### BEACON BASE MINING SETTINGS
+mining:
+  # Cost in experience points to mine a beacon base
   beaconmineexp: 10
-  
+
   # Chance % that mining a beacon will result in it becoming exhausted and enter
   # a cool down period.
-  beaconmineexhaustchance: 50
-  
+  beaconmineexhaustchance: 60
+
   # Mine cool down period in minutes
   minecooldown: 1
-  
+
   # Cooldown period penalty
   # Players get this if they mine during the cooldown until the cooldown finishes.
   # Format is Effect:Amplifier
@@ -167,12 +178,14 @@ world:
   - "ENDER_STONE:1=1"
   - "CHORUS_FLOWER:1=1"
   - "QUARTZ_ORE:1=10"
-  
+
   # Mining your own beacon should give you the chance of obtaining a map
   teamgoodies:
   # The map is a beacon map. Give empty map if you want to give a normal map
   - "MAP:1=100"
 
+### TRIANGLE POWER SETTINGS
+triangles:
   # Effects from going into enemy triangle fields
   # Effects are cumulative, i.e., level 2 includes level 1 effects.
   enemyfieldeffects:
@@ -213,101 +226,106 @@ world:
     8:
     - "INVISIBILITY:1"
 
-# Team configuration
-default_teams: 2
-# Teams have glass colors that can be picked from these. They must be different.
-# Team names can be anything you like, but must be a single word
-# 0: White Stained Glass
-# 1: Orange Stained Glass
-# 2: Magenta Stained Glass
-# 3: Light Blue Stained Glass
-# 4: Yellow Stained Glass
-# 5: Lime Stained Glass
-# 6: Pink Stained Glass
-# 7: Gray Stained Glass
-# 8: Light Gray Stained Glass
-# 9: Cyan Stained Glass
-# 10: Purple Stained Glass
-# 11: Blue Stained Glass
-# 12: Brown Stained Glass
-# 13: Green Stained Glass
-# 14: Red Stained Glass
-# 15: Black Stained Glass
+### TEAM CONFIGURATION SETTINGS
 teams:
-  red:
-    displayname: "Red"
-    glasscolor: 14
-  blue:
-    displayname: "Blue"
-    glasscolor: 11
-  white:
-    displayname: "White"
-    glasscolor: 0
-  lightblue:
-    displayname: "Aqua"
-    glasscolor: 3
-  yellow:
-    displayname: "Yellow"
-    glasscolor: 4
-  lime:
-    displayname: "Lime"
-    glasscolor: 5
-  gray:
-    displayname: "Gray"
-    glasscolor: 7
-  lightgray:
-    displayname: "Mist"
-    glasscolor: 8
-  cyan:
-    displayname: "Cyan"
-    glasscolor: 9       
-  purple:
-    displayname: "Purple"
-    glasscolor: 10
-  brown:
-    displayname: "Brown"
-    glasscolor: 12
-  green:
-    displayname: "Green"
-    glasscolor: 13
-  black:
-    displayname: "Black"
-    glasscolor: 15
-  orange:
-    displayname: "Orange"
-    glasscolor: 1
-  magenta:
-    displayname: "Magenta"
-    glasscolor: 2
-  pink:
-    displayname: "Pink"
-    glasscolor: 6   
-        
-# gamemode is strategy or minigame
-# Strategy is a long running game, maybe infinitely running
-# minigame is meant to run for a few minutes and then reset
-gamemode: strategy
+  # Number of teams. There can only be up to 14 teams. You can pick from the 16 possible
+  # colors below.
+  defaultNumber: 2
 
-# Sidebar scoreboard options: area, beacons, links, triangles
-# remember that the sidebar only has 15 lines, if there are too many teams there will not be enough room to display everything
-sidebar:
-  minigame: area:beacons:links:triangles
-  strategy: area:beacons:links:triangles
+  # Teams have glass colors that can be picked from these. They must be different.
+  # Team names can be anything you like, but must be a single word. They are taken in
+  # the order listed.
+  # 0: White Stained Glass
+  # 1: Orange Stained Glass
+  # 2: Magenta Stained Glass
+  # 3: Light Blue Stained Glass
+  # 4: Yellow Stained Glass
+  # 5: Lime Stained Glass
+  # 6: Pink Stained Glass
+  # 7: Gray Stained Glass
+  # 8: Light Gray Stained Glass
+  # 9: Cyan Stained Glass
+  # 10: Purple Stained Glass
+  # 11: Blue Stained Glass
+  # 12: Brown Stained Glass
+  # 13: Green Stained Glass
+  # 14: Red Stained Glass
+  # 15: Black Stained Glass
+  names:
+    red:
+      displayname: "Red"
+      glasscolor: 14
+    blue:
+      displayname: "Blue"
+      glasscolor: 11
+    white:
+      displayname: "White"
+      glasscolor: 0
+    aqua:
+      displayname: "Aqua"
+      glasscolor: 3
+    yellow:
+      displayname: "Yellow"
+      glasscolor: 4
+    lime:
+      displayname: "Lime"
+      glasscolor: 5
+    gray:
+      displayname: "Gray"
+      glasscolor: 7
+    dust:
+      displayname: "Dust"
+      glasscolor: 8
+    cyan:
+      displayname: "Cyan"
+      glasscolor: 9
+    purple:
+      displayname: "Purple"
+      glasscolor: 10
+    brown:
+      displayname: "Brown"
+      glasscolor: 12
+    green:
+      displayname: "Green"
+      glasscolor: 13
+    black:
+      displayname: "Black"
+      glasscolor: 15
+    orange:
+      displayname: "Orange"
+      glasscolor: 1
+    magenta:
+      displayname: "Magenta"
+      glasscolor: 2
+    pink:
+      displayname: "Pink"
+      glasscolor: 6   
 
-# Goal to win the game
-# The goal must be one of the scores displayed on the sidebar
-# a goal value > 0 means the game ends when a team reaches that score; the timer is open-ended and counts up
-# a goal value = 0 means the timer counts down and when it reaches 0 the team with the greatest score for that goal wins   
-goals:
-  minigame: area:20000
-  strategy: area:3000000
+### SCOREBOARD SETTINGS
+scoreboard:
+  # Settings can be changed in game, per game using the admin commands.   
+  # Sidebar scoreboard options: area, beacons, links, triangles
+  # remember that the sidebar only has 15 lines, if there are too many teams
+  # there will not be enough room to display everything
+  sidebar:
+    strategy: "area:beacons:links:triangles"
+    # Default goal to win the game
+    # The goal must be one of the scores displayed on the sidebar
+  goal:
+    strategy: "area:3000000"
 
-# Timer in seconds, for when the goal value is greater than zero 
-timer:
-  minigame: 600
-  strategy: 0 
+general:
+  # Use dynmap overlay (requires dynmap plugin)
+  # This is useful and cool for admins, but gives too much info to players.
+  # See dynmap.yml for settings.
+  usedynmap: false
 
-# Use dynmap overlay (require dynmap plugin)
-# This is useful and cool for admins, but gives too much info to players.
-# See dynmap.yml for settings.
-usedynmap: false
+  # Team chat
+  # If true, players can only converse with their team players in the beaconz world
+  teamchat: false
+  
+  # This is the name of the yml file in the locale folder that will be used.
+  defaultlocale: en-US
+
+  # Show scoreboard by default
+  usescoreboard: true

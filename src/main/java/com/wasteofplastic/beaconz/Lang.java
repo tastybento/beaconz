@@ -32,6 +32,7 @@ public class Lang extends BeaconzPluginDependent {
     public static String adminForceRestart;
     public static String adminGamesDefined;
     public static String adminGamesNoOthers;
+    public static String adminGameSignPlaced;
     public static String adminGamesTheLobby;
     public static String adminKickAllPlayers;
     public static String adminKickPlayer;
@@ -53,6 +54,8 @@ public class Lang extends BeaconzPluginDependent {
     public static String adminRestart;
     public static String adminResume;
     public static String adminSetSpawnNeedToBeInGame;
+    public static String adminSignKeyword;
+    public static String adminUseSurvival;
     public static String beaconCannotBeExtended;
     public static String beaconCannotPlaceLiquids;
     public static String beaconClaimedForTeam;
@@ -169,6 +172,7 @@ public class Lang extends BeaconzPluginDependent {
     public static String scoreGetValueGoal;
     public static String scoreNewScore;
     public static String scoreNoWinners;
+    public static String scoreScores;
     public static String scoreTeamWins;
     public static String startMostObjective;
     public static String startObjective;
@@ -239,9 +243,10 @@ public class Lang extends BeaconzPluginDependent {
         adminDeletedGame = ChatColor.translateAlternateColorCodes('&', locale.getString("admin.DeletedGame", "Deleted [name]."));
         adminDeletingGame = ChatColor.translateAlternateColorCodes('&', locale.getString("admin.DeletingGame", "Deleting game [name]... (This may take some time)"));
         adminForceEnd = ChatColor.translateAlternateColorCodes('&', locale.getString("admin.ForceEnd", "Game [name] has ended."));
-        adminForceRestart = ChatColor.translateAlternateColorCodes('&', locale.getString("admin.ForceRestart", "To restart the game, use " +  "/[label] game restart <gamename>"));
+        adminForceRestart = ChatColor.translateAlternateColorCodes('&', locale.getString("admin.ForceRestart", "To restart the game, use " +  "/[label] restart <gamename>"));
         adminGamesDefined = ChatColor.translateAlternateColorCodes('&', locale.getString("admin.GamesDefined", "The following games/regions are defined:"));
         adminGamesNoOthers = ChatColor.translateAlternateColorCodes('&', locale.getString("admin.GamesNoOthers", "...and no others."));
+        adminGameSignPlaced = ChatColor.translateAlternateColorCodes('&', locale.getString("admin.GamesSignPlaced", "Game sign placed successfully."));
         adminGamesTheLobby = ChatColor.translateAlternateColorCodes('&', locale.getString("admin.GamesTheLobby", "The Lobby"));
         adminKickAllPlayers = ChatColor.translateAlternateColorCodes('&', locale.getString("admin.KickAllPlayers", "All players were kicked from game [name]"));
         adminKickPlayer = ChatColor.translateAlternateColorCodes('&', locale.getString("admin.KickPlayer", "[player] was kicked from game [name]"));
@@ -263,6 +268,8 @@ public class Lang extends BeaconzPluginDependent {
         adminRestart = ChatColor.translateAlternateColorCodes('&', locale.getString("admin.Restart", "Restarted game [name]"));
         adminResume = ChatColor.translateAlternateColorCodes('&', locale.getString("admin.Resume", "Game [name] is back ON!!"));
         adminSetSpawnNeedToBeInGame = ChatColor.translateAlternateColorCodes('&', locale.getString("admin.SetSpawnNeedToBeInGame", "You need to be in the region of an active game"));
+        adminSignKeyword = ChatColor.translateAlternateColorCodes('&', locale.getString("admin.SignKeyword", "[beaconz]"));
+        adminUseSurvival = ChatColor.translateAlternateColorCodes('&', locale.getString("admin.UseSurvival", "Use Survival mode to break signs in lobby."));
         beaconAmplifierBlocksCannotBeRecovered = ChatColor.translateAlternateColorCodes('&', locale.getString("beacon.AmplifierBlocksCannotBeRecovered", "Link amplifier blocks cannot be recovered!"));
         beaconCannotBeExtended = ChatColor.translateAlternateColorCodes('&', locale.getString("beacon.CannotBeExtended", "Cannot be extended any further in this direction!"));
         beaconCannotPlaceLiquids = ChatColor.translateAlternateColorCodes('&', locale.getString("beacon.CannotPlaceLiquids", "You cannot place liquids above a beacon!"));
@@ -343,7 +350,7 @@ public class Lang extends BeaconzPluginDependent {
         generalTeams = ChatColor.translateAlternateColorCodes('&', locale.getString("general.Teams", "Teams"));
         generalUnowned = ChatColor.translateAlternateColorCodes('&', locale.getString("general.Unowned", "Unowned"));
         helpAdminClaim = ChatColor.translateAlternateColorCodes('&', locale.getString("help.AdminClaim", " - force-claims a beacon in a game"));
-        helpAdminDelete = ChatColor.translateAlternateColorCodes('&', locale.getString("help.AdminDelete", " - deletes the game"));
+        helpAdminDelete = ChatColor.translateAlternateColorCodes('&', locale.getString("help.AdminDelete", " - deletes the game and regenerates chunks"));
         helpAdminDistribution = ChatColor.translateAlternateColorCodes('&', locale.getString("help.AdminDistribution", " - sets global beacon distribution temporarily"));
         helpAdminForceEnd = ChatColor.translateAlternateColorCodes('&', locale.getString("help.AdminForceEnd", " - forces a game to end immediately"));
         helpAdminGames = ChatColor.translateAlternateColorCodes('&', locale.getString("help.AdminGames", " - list existing games"));
@@ -354,14 +361,14 @@ public class Lang extends BeaconzPluginDependent {
         helpAdminListParms = ChatColor.translateAlternateColorCodes('&', locale.getString("help.AdminListParms", " - lists game parameters"));
         helpAdminNewGame = ChatColor.translateAlternateColorCodes('&', locale.getString("help.AdminNewGame", " - creates a new game in an empty region; parameters are optional - do /[label] newgame help for a list of the possible parameters"));
         helpAdminPause = ChatColor.translateAlternateColorCodes('&', locale.getString("help.AdminPause", " - pauses the timer and scoreboard in a game"));
-        helpAdminRegenerate = ChatColor.translateAlternateColorCodes('&', locale.getString("help.AdminRegenerate", " - regenerates the game area and resets everything"));
+        helpAdminRegenerate = ChatColor.translateAlternateColorCodes('&', locale.getString("help.AdminRegenerate", " - regenerates game area chunks and resets game"));
         helpAdminReload = ChatColor.translateAlternateColorCodes('&', locale.getString("help.AdminReload", " - reloads the plugin, preserving existing games"));
         helpAdminRestart = ChatColor.translateAlternateColorCodes('&', locale.getString("help.AdminRestart", " - restarts the game with currently defined parameters - clears scoreboard, cleans out all beacons, restarts timer; teams aren't changed"));
         helpAdminResume = ChatColor.translateAlternateColorCodes('&', locale.getString("help.AdminResume", " - resume a paused game"));
         helpAdminSetGameParms = ChatColor.translateAlternateColorCodes('&', locale.getString("help.AdminSetGameParms", " - defines a game's parameters - DOES NOT restart the game (use restart for that) - do /[label] setgameparms help for a list of the possible parameters"));
         helpAdminSetLobbySpawn = ChatColor.translateAlternateColorCodes('&', locale.getString("help.AdminSetLobbySpawn", " - sets the lobby spawn point when in the lobby area"));
         helpAdminSetTeamSpawn = ChatColor.translateAlternateColorCodes('&', locale.getString("help.AdminSetTeamSpawn", " - sets the spawn point for team"));
-        helpAdminSwitch = ChatColor.translateAlternateColorCodes('&', locale.getString("help.AdminSwitch", " - switches your team when in a game"));
+        helpAdminSwitch = ChatColor.translateAlternateColorCodes('&', locale.getString("help.AdminSwitch", " - switches team when in a game"));
         helpAdminTeams = ChatColor.translateAlternateColorCodes('&', locale.getString("help.AdminTeams", " - shows teams and team members for a game"));
         helpAdminTimerToggle = ChatColor.translateAlternateColorCodes('&', locale.getString("help.AdminTimerToggle", " - toggles the scoreboard timer on and off"));
         helpAdminTitle = ChatColor.translateAlternateColorCodes('&', locale.getString("help.AdminTitle", "beacon.z Admin Commands"));
@@ -379,6 +386,7 @@ public class Lang extends BeaconzPluginDependent {
         scoreGetValueGoal = ChatColor.translateAlternateColorCodes('&', locale.getString("score.GetValueGoal", "<< Get [value] [goal]!! >>"));
         scoreNewScore = ChatColor.translateAlternateColorCodes('&', locale.getString("score.NewScore", "New score"));
         scoreNoWinners = ChatColor.translateAlternateColorCodes('&', locale.getString("score.NoWinners", "There were no winners!"));
+        scoreScores = ChatColor.translateAlternateColorCodes('&', locale.getString("score.Scores", "Scores:"));
         scoreTeamWins = ChatColor.translateAlternateColorCodes('&', locale.getString("score.TeamWins", "[team] TEAM WINS!!!"));
         startMostObjective = ChatColor.translateAlternateColorCodes('&', locale.getString("start.MostObjective", "Your team's objective is to capture the most [goal]!"));
         startObjective = ChatColor.translateAlternateColorCodes('&', locale.getString("start.Objective", "Your team's objective is to capture [value] [goal]!"));

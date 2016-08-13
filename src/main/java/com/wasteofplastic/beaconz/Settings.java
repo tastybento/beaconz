@@ -58,14 +58,14 @@ public class Settings {
     /**
      * The default number of teams for a new game
      */
-    public static Integer default_teams;
+    public static Integer defaultTeamNumber;
     /**
      * The default timers for the two game modes
      * 0 means no limit; any other number is a countdown
      */
     public static Integer minigameTimer;
     public static Integer strategyTimer;
-    public static Boolean showTimer = true;
+    public static Boolean showTimer = false;
     /**
      * The default sidebar options for the two game modes
      */
@@ -251,5 +251,25 @@ public class Settings {
      * Use dynmap or not
      */
     public static boolean useDynmap;
+    
+    /**
+     * Allow eggs of any kind to be used in the lobby
+     */
+    public static boolean allowLobbyEggs;
+    
+    /**
+     * Allow mobs to spawn in the lobby
+     */
+    public static boolean allowLobbyMobSpawn;
+    
+    /**
+     * Allow animals to spawn in the lobby
+     */
+    public static boolean allowLobbyAnimalSpawn;
+    
+    /**
+     * Show the scoreboard by default
+     */
+    public static boolean useScoreboard;
     
 }
