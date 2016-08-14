@@ -329,13 +329,13 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
         }
         if (result.getFieldsMade() > 0) {
             if (result.getFieldsMade() == 1) {
-                player.sendMessage(ChatColor.GOLD + Lang.beaconTriangleCreated + " " + Lang.scoreNewScore + " = " + String.format(Locale.US, "%,d",getGameMgr().getSC(player).getScore(team, "area")));
-                getMessages().tellTeam(player, ChatColor.GREEN + Lang.beaconNameCreateATriangle.replace("[name]", player.getDisplayName()) + " " + Lang.scoreNewScore + " = " + String.format(Locale.US, "%,d", getGameMgr().getSC(player).getScore(team, "area")));
+                player.sendMessage(ChatColor.GOLD + Lang.beaconTriangleCreated + " " + Lang.scoreNewScore + " = " + String.format(Locale.US, "%,d",getGameMgr().getSC(team).getScore(team, "area")));
+                getMessages().tellTeam(player, ChatColor.GREEN + Lang.beaconNameCreateATriangle.replace("[name]", player.getDisplayName()) + " " + Lang.scoreNewScore + " = " + String.format(Locale.US, "%,d", getGameMgr().getSC(team).getScore(team, "area")));
                 // Taunt other teams
                 getMessages().tellOtherTeams(team, ChatColor.RED + Lang.beaconNameCreateATriangle.replace("[name]", team.getDisplayName()));
             } else {
                 String message = (Lang.beaconNameCreateTriangles.replace("[name]", player.getDisplayName())).replace("[number]", String.valueOf(result.getFieldsMade()));
-                String newScore = Lang.scoreNewScore + " " + String.format(Locale.US, "%,d", getGameMgr().getSC(player).getScore(team, "area"));
+                String newScore = Lang.scoreNewScore + " " + String.format(Locale.US, "%,d", getGameMgr().getSC(team).getScore(team, "area"));
                 player.sendMessage(ChatColor.GOLD + message + " " + newScore);
                 getMessages().tellTeam(player, ChatColor.GREEN + message + " " + newScore);
                 // Taunt other teams

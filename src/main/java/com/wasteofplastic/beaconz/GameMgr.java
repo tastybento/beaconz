@@ -685,6 +685,19 @@ public class GameMgr extends BeaconzPluginDependent {
     }
 
     /**
+     * Get scorecard for this team
+     * @param team
+     * @return scorecard or null if team isn't known
+     */
+    public Scorecard getSC(Team team) {
+        Game game = getGame(team);
+        if (game != null) {
+            return game.getScorecard();
+        }
+        return null;
+    }
+    
+    /**
      * @param location
      * @return Scorecard or null if none
      */

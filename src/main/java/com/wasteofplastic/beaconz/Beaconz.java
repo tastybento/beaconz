@@ -294,7 +294,7 @@ public class Beaconz extends JavaPlugin {
 
         // Get the default goals for each game mode
         String mgGoal = getConfig().getString("scoreboard.goal.minigame", "triangles:0");
-        String sgGoal = getConfig().getString("scoreboard.goal.strategy", "area:10000");
+        String sgGoal = getConfig().getString("scoreboard.goal.strategy", "area:3000000");
         Settings.minigameGoal = mgGoal.split(":")[0];
         Settings.strategyGoal = sgGoal.split(":")[0];
         try{
@@ -321,7 +321,7 @@ public class Beaconz extends JavaPlugin {
 
         // Get the default timers for each game mode
         Settings.minigameTimer = getConfig().getInt("scoreboard.timer.minigame", 600);
-        Settings.strategyTimer = getConfig().getInt("scoreboard.timer.strategy", 60000);
+        Settings.strategyTimer = getConfig().getInt("scoreboard.timer.strategy", 0);
 
         Settings.expDistance = getConfig().getDouble("links.expdistance", 5);
         Settings.beaconMineExhaustChance = getConfig().getInt("mining.beaconmineexhaustchance", 10);

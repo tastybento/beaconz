@@ -142,7 +142,7 @@ public class Messages extends BeaconzPluginDependent {
     }
 
     /**
-     * Tells all of a player's team members (online or offline) that something happened
+     * Tells all of a player's team members (online or offline) that something happened. Only works if the player is in the game area.
      *
      * @param playerUUID - the originating player, always an online player
      * @param message

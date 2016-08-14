@@ -38,6 +38,7 @@ import org.bukkit.scoreboard.Team;
 
 import com.wasteofplastic.beaconz.Beaconz;
 import com.wasteofplastic.beaconz.BeaconzPluginDependent;
+import com.wasteofplastic.beaconz.Scorecard;
 import com.wasteofplastic.beaconz.Settings;
 
 
@@ -91,7 +92,11 @@ public class ChatListener extends BeaconzPluginDependent implements Listener {
     private void teamChat(final AsyncPlayerChatEvent event, String message) {
         Player player = event.getPlayer();
         // Only act if the player is in a team
-        Team team = getGameMgr().getSC(player).getTeam(player);
+        Scorecard sc = getGameMgr().getSC(player);
+        if (sc == null) {
+            return;
+        }
+        Team team = sc.getTeam(player);
         if (team != null) {
             @SuppressWarnings("deprecation")
             Set<OfflinePlayer> teamMembers = team.getPlayers();

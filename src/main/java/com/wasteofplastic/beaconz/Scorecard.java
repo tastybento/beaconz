@@ -40,6 +40,7 @@ import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -129,7 +130,7 @@ public class Scorecard extends BeaconzPluginDependent{
         starttimemilis = game.getStartTime();
         countdownTimer = game.getCountdownTimer();
         timertype = countdownTimer == 0 ? "openended" : "countdown";
-        //getLogger().info("DEBUG: countdownTimer = " + countdownTimer + " timertype = " + timertype);
+        getLogger().info("DEBUG: countdownTimer = " + countdownTimer + " timertype = " + timertype);
         // Define the scoreboard
         try {
             scoreboard.clearSlot(DisplaySlot.SIDEBAR);
@@ -275,8 +276,10 @@ public class Scorecard extends BeaconzPluginDependent{
 
             // See if we have a winner
             // If the gamegoal value is zero, then the game is never ending
+            getLogger().info("DEBUG: ending game goal = " + game.getGamegoal() + " required value = " + game.getGamegoalvalue() + " actual value = " + value);
+            getLogger().info("DEBUG: timertype = " + timertype + " scoretype = " + scoretype);
             if (game.getGamegoalvalue() > 0 && timertype.equals("openended") && scoretype.equals(game.getGamegoal()) && value >= game.getGamegoalvalue()) {
-                //getLogger().info("DEBUG: ending game goal = " + game.getGamegoal() + " required value = " + game.getGamegoalvalue() + " actual value = " + value);
+                getLogger().info("DEBUG: ending game");
                 endGame();
             }
         }
@@ -973,13 +976,6 @@ public class Scorecard extends BeaconzPluginDependent{
         scoreboard.resetScores(goalstr);
         scoreline = scoreobjective.getScore(ChatColor.GREEN + Lang.scoreGameOver);
         scoreline.setScore(15);
-        // Teleport any players in the game to the lobby
-        for (Player player: getServer().getOnlinePlayers()) {
-            if (game.getRegion().contains(player.getLocation())) {
-                // Send to Lobby
-                game.sendToLobby(player);
-            }
-        }
         // Wait a second to let all other messages display first
         getBeaconzPlugin().getServer().getScheduler().runTaskLater(getBeaconzPlugin(), new Runnable() {
             @Override
@@ -992,17 +988,18 @@ public class Scorecard extends BeaconzPluginDependent{
                     titleline = Lang.scoreTeamWins.replace("[team]", winner.getDisplayName().toUpperCase());
                     subtitleline = Lang.scoreCongratulations;
                 }
-                getLogger().info("DEBUG: telling team results");
+                //getLogger().info("DEBUG: telling team results");
                 for (Team team : scoreboard.getTeams()) {
-                    getLogger().info("DEBUG: team = " + team.getDisplayName());
+                    //getLogger().info("DEBUG: team = " + team.getDisplayName());
                     for (String entry : team.getEntries()) {
-                        getLogger().info("DEBUG: entry = " + entry);
+                        //getLogger().info("DEBUG: entry = " + entry);
                         UUID uuid = getBeaconzPlugin().getNameStore().getPlayerUUID(entry);
-                        getLogger().info("DEBUG: uuid = " + uuid);
+                        //getLogger().info("DEBUG: uuid = " + uuid);
                         if (uuid != null) {
                             Player player = Bukkit.getServer().getPlayer(uuid);
                             if (player != null) {
-                                if (player.getWorld().equals(getBeaconzWorld())) {
+                                // Tell players in the game
+                                if (game.getRegion().isPlayerInRegion(player)) {
                                     getServer().dispatchCommand(getServer().getConsoleSender(),
                                             "title " + player.getName() + " title {\"text\":\"" + titleline + "\", \"color\":\"" + "gold" + "\"}");
                                     getServer().dispatchCommand(getServer().getConsoleSender(),
@@ -1011,17 +1008,27 @@ public class Scorecard extends BeaconzPluginDependent{
                                     player.sendMessage(ChatColor.YELLOW + titleline);
                                     player.sendMessage(ChatColor.YELLOW + subtitleline);
                                     player.sendMessage(ChatColor.GREEN + Lang.helpLine);                                
+                                } else {
+                                    player.sendMessage(ChatColor.GREEN + "[" + game.getName() + "] " + ChatColor.YELLOW + titleline);                        
                                 }
+                                player.getWorld().playSound(player.getLocation(), Sound.ENTITY_FIREWORK_LARGE_BLAST, 1F, 1F);
+                                player.getWorld().playSound(player.getLocation(), Sound.ENTITY_FIREWORK_TWINKLE, 1F, 1F);
                             } else {
                                 // Offline player
-                                getMessages().setMessage(uuid, titleline);
-                                getMessages().setMessage(uuid, subtitleline);
+                                getMessages().setMessage(uuid, "[" + game.getName() + "] " + titleline);
                             }
                         }
                     }
                 }
+                // Teleport any players in the game to the lobby
+                for (Player player: getServer().getOnlinePlayers()) {
+                    if (game.getRegion().contains(player.getLocation())) {
+                        // Send to Lobby
+                        game.sendToLobby(player);
+                    }
+                }
             }
-        }, 20);
+        }, 30);
     }
 
     /**
