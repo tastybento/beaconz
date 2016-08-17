@@ -5,6 +5,7 @@
 	<version>1.0</version>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<server.jars>${project.basedir}</server.jars>
 	</properties>
 	<build>
 		<defaultGoal>clean package install</defaultGoal>
@@ -72,7 +73,14 @@
 			<artifactId>dynmap-api</artifactId>
 			<version>1.9</version>
 		</dependency>
-
+		<!--  
+        <dependency>
+            <groupId>spigotmc.org</groupId>
+            <artifactId>spigot-1.10.2</artifactId>
+            <scope>system</scope>
+            <systemPath>${server.jars}/spigot-1.10.2.jar</systemPath>
+            <version>1.10.2</version>
+        </dependency>-->
 		<!-- <dependency> <groupId>org.powermock</groupId> <artifactId>powermock-api-mockito</artifactId> 
 			<version>1.4.9</version> <type>jar</type> <scope>test</scope> </dependency> 
 			<dependency> <groupId>junit</groupId> <artifactId>junit-dep</artifactId> 

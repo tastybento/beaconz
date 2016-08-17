@@ -23,12 +23,12 @@
 package com.wasteofplastic.beaconz;
 
 import java.awt.geom.Point2D;
+import java.io.File;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Random;
 import java.util.Set;
 
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -43,12 +43,12 @@ import org.bukkit.entity.Player;
 import org.bukkit.material.MaterialData;
 import org.bukkit.material.SimpleAttachableMaterialData;
 import org.bukkit.material.TrapDoor;
-import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Score;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
+import org.bukkit.util.FileUtil;
 
 /**
  * Region instantiates the various regions in the world
@@ -61,12 +61,12 @@ public class Region extends BeaconzPluginDependent {
     private Beaconz plugin;
     private Point2D [] corners;
     private Location spawnPoint;
-    private int loopcount;
+    //private int loopcount;
     private int chX;
     private int chZ;
-    private BukkitTask task = null;
+    //private BukkitTask task = null;
     private int totalregen;
-    private long progress;
+    //private long progress;
     private Game game = null;
 
 
@@ -101,19 +101,15 @@ public class Region extends BeaconzPluginDependent {
      */
     public void regenerate(final CommandSender sender, final String delete) {
         if (this != getGameMgr().getLobby()) {
-
+            if (!getBeaconzWorld().getPlayers().isEmpty()) {
+                sender.sendMessage(ChatColor.RED + "Regeneration can only occur when there are no players in the world");
+                return;
+            }
             getLogger().info("Regenerating region at Ctr:Rad [" + this.getCenter().getX() + ", " + this.getCenter().getY() + "] : " + this.getRadius() + " ==> xMin: " + corners[0].getX() + " zMin: " +  corners[1].getX() + " xMax: " + corners[0].getY() + " zMax: " + corners[1].getY());
-
-            // ************************************************************
-            // TODO:
-            // WE SHOULD DISPLAY A "% DONE" MESSAGE
-            // AND BLOCK THE RESET COMMAND IF A RESET IS ALREADY RUNNING
-            // **********************************************************
 
             // First clear the current register for the region
             getRegister().clear(this);
 
-            // Then regenerate, in spurts of 25 chunks
             final int xMin = (int) corners[0].getX() -16;
             final int xMax = (int) corners[1].getX() +16;
             final int zMin = (int) corners[0].getY() -16;
@@ -122,60 +118,58 @@ public class Region extends BeaconzPluginDependent {
             totalregen = 0;
             chX = xMin;
             chZ = zMin;
-            final int step = 25;
-            final double chunksToDo = ((double)((xMax - xMin)/16) * (double)((xMax - xMin)/16));
             Settings.populate.clear();
-            getLogger().info("0% complete");
-            // Regenerate the chunks in spurts of 25
-            // Can't do this asynchronously, as it relies on API calls
-            task = getServer().getScheduler().runTaskTimer(plugin, new Runnable() {
-                @Override
-                public void run() {
-                    loopcount = 0;
-                    Settings.populate.clear();
-                    outerloop:
-                        while (chX <= xMax) {
-                            while (chZ <= zMax) {
-                                // Settings.dontpopulate is used to abort the populator - there's no need to repopulate the chunks, they'll get populated when loaded in-game
-                                // Only regen if the chunk has been populated so far
-                                if (getBeaconzWorld().loadChunk(chX/16, chZ/16, false) == true) {
-                                    //Settings.populate.add(new Pair((chX/16),(chZ/16)));
-                                    getBeaconzWorld().regenerateChunk(chX/16, chZ/16);
-                                    getBeaconzWorld().unloadChunkRequest(chX/16, chZ/16);
-                                    //getLogger().info("Regenerating chunk: " + (chX/16) + ":" + (chZ/16) + " regen = " + getBeaconzWorld().regenerateChunk(chX/16, chZ/16));
-                                    //getLogger().info("Unload queued: " + getBeaconzWorld().unloadChunkRequest(chX/16, chZ/16));
-                                    loopcount++;
-                                }
-                                totalregen++;
-                                chZ = chZ + 16;
-                                if (loopcount >= step) {
-                                    //getLogger().info("Region.regenerate() -- loop break at chunks: " + (chX/16) + ":" + (chZ/16) + "----- or blocks: " + chX + ":" + chZ);
-                                    long temp = Math.round((totalregen/chunksToDo) * 100);
-                                    if (progress != temp) {
-                                        progress = temp;
-                                        getLogger().info(progress + "% complete");
-                                    }
-                                    break outerloop;
-                                }   
-                            }
-                            chZ = zMin;
-                            chX = chX + 16;
-                        }
-                    if (chX > xMax) {
-                        task.cancel();
-                        finishRegenerating(sender, delete);
+            //getLogger().info("0% complete");
+            getBeaconzWorld().setKeepSpawnInMemory(false);
+
+            Set<Pair> delReg = new HashSet<Pair>();
+            while (chX <= xMax) {
+                while (chZ <= zMax) {
+                    int regionX = (int)Math.floor(chX / 16.0 / 32.0);
+                    int regionZ = (int)Math.floor(chZ / 16.0 / 32.0);
+                    getBeaconzWorld().unloadChunk(chX/16, chZ/16);
+                    delReg.add(new Pair(regionX,regionZ));
+                    totalregen++;
+                    chZ = chZ + 16;
+                }
+                chZ = zMin;
+                chX = chX + 16;
+            }
+            if (chX > xMax) {
+                //RegionFileCache.a();
+                //getLogger().info("DEBUG: " + getServer().getWorldContainer().getAbsolutePath());
+                for (Pair pair : delReg) {                   
+                    //getLogger().info("DEBUG: " + getServer().getWorldContainer().getAbsolutePath() + "beaconz_world/region/r." + pair.getLeft() + "." + pair.getRight() + ".mca");
+                    File df = new File(getServer().getWorldContainer().getAbsolutePath(), getBeaconzWorld().getName() + File.separator +"region" + File.separator + "r." + pair.getLeft() + "." + pair.getRight() + ".mca");
+                    //File dfback = new File(getServer().getWorldContainer().getAbsolutePath(), "beaconz_world/region/r." + pair.getLeft() + "." + pair.getRight() + ".bak");
+                    if (df.exists()) {
+                        //FileDeleteStrategy.FORCE.deleteQuietly(df);
+                        df.delete();
+                        //getLogger().info("DEBUG: exists");
+                        //getLogger().info("DEBUG: delete = " + FileDeleteStrategy.FORCE.deleteQuietly(df));
                     }
                 }
-            }, 5L, 1L);
+                // Delete the .dat files so that Villages are remade
+                File dataFolder = new File(getServer().getWorldContainer().getAbsolutePath() + File.separator + getBeaconzWorld().getName() + File.separator + "data");                
+                getLogger().info("DEBUG: checking " + dataFolder.getAbsolutePath());
+                for (File file: dataFolder.listFiles()) {
+                    getLogger().info("DEBUG: found " + file.getName());
+                    if (!file.isDirectory() && file.getName().endsWith(".dat") && !file.getName().startsWith("level")) { 
+                        getLogger().info("DEBUG: deleting " + file.getName());
+                        file.delete();
+                    }
+                }
+                finishRegenerating(sender, delete);
+            }
         }
     }
 
     private void finishRegenerating(CommandSender sender, String delete) {
         // Wrap things up
-        getLogger().info("100% complete");
+        //getLogger().info("100% complete");
         if (delete.isEmpty()) {
             createCorners();
-            sender.sendMessage(ChatColor.GREEN + Lang.adminRegenComplete.replace("[number]", String.valueOf(totalregen)));
+            sender.sendMessage(ChatColor.GREEN + Lang.adminRegenComplete);
         } else {
             sender.sendMessage(ChatColor.GREEN + Lang.adminDeletedGame.replace("[name]", delete));
         }

@@ -262,8 +262,8 @@ public class Lang extends BeaconzPluginDependent {
         adminParmsTeams = ChatColor.translateAlternateColorCodes('&', locale.getString("admin.ParmsTeams", "# of Teams"));
         adminParmsUnlimited = ChatColor.translateAlternateColorCodes('&', locale.getString("admin.ParmsUnlimited", "Unlimited"));
         adminPaused = ChatColor.translateAlternateColorCodes('&', locale.getString("admin.Paused", "Paused the game [name]. To restart, use /[label] resume <game>"));
-        adminRegenComplete = ChatColor.translateAlternateColorCodes('&', locale.getString("admin.RegenComplete", "Regenetation complete. Regenerated [number] chunks."));
-        adminRegeneratingGame = ChatColor.translateAlternateColorCodes('&', locale.getString("admin.RegeneratingGame", "Regenerating game [name]. This may take several minutes. Please wait for the 'regeneration complete' message."));
+        adminRegenComplete = ChatColor.translateAlternateColorCodes('&', locale.getString("admin.RegenComplete", "Regenetation complete."));
+        adminRegeneratingGame = ChatColor.translateAlternateColorCodes('&', locale.getString("admin.RegeneratingGame", "Regenerating game [name]."));
         adminReload = ChatColor.translateAlternateColorCodes('&', locale.getString("admin.Reload", "Beaconz plugin reloaded. All existing games were preserved."));
         adminRestart = ChatColor.translateAlternateColorCodes('&', locale.getString("admin.Restart", "Restarted game [name]"));
         adminResume = ChatColor.translateAlternateColorCodes('&', locale.getString("admin.Resume", "Game [name] is back ON!!"));

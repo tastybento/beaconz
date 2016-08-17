@@ -333,14 +333,14 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
 
             case "regenerate":
                 if (args.length < 2) {
-                    sender.sendMessage(ChatColor.RED + "/" + label + " regenerates <gamename> - " + Lang.helpAdminRegenerate);
+                    sender.sendMessage(ChatColor.RED + "/" + label + " regenerate <gamename> - " + Lang.helpAdminRegenerate);
                 } else {
                     game = getGameMgr().getGames().get(args[1]);
                     if (game == null) {
                         sender.sendMessage(ChatColor.RED + Lang.errorNoSuchGame + "'" + args[1] + "'");
                     } else {
                         sender.sendMessage(ChatColor.GREEN + Lang.adminRegeneratingGame.replace("[name]", game.getName()));
-                        game.reset(sender);
+                        game.regenerate(sender);
                     }
                 }
                 break;
@@ -383,7 +383,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                     } else {
                         game.forceEnd();
                         sender.sendMessage(ChatColor.GREEN + Lang.adminForceEnd.replace("[name]", game.getName()));
-                        sender.sendMessage(ChatColor.GREEN + Lang.adminForceRestart.replace("[label]", label));
+                        //sender.sendMessage(ChatColor.GREEN + Lang.adminForceRestart.replace("[label]", label));
                     }
                 }
                 break;

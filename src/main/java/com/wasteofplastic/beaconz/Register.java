@@ -316,6 +316,11 @@ public class Register extends BeaconzPluginDependent {
     public void clear() {
         clear(null);
     }
+    
+    /**
+     * Clears data for a region
+     * @param region
+     */
     public void clear(Region region) {
         if (region == null) {
             beaconMaps.clear();
@@ -324,25 +329,39 @@ public class Register extends BeaconzPluginDependent {
             //links.clear();
             beaconLinks.clear();
         } else {
+            //getLogger().info("DEBUG: clearing region " + region.displayCoords());
             Iterator<Entry<Short, BeaconObj>> bmit = beaconMaps.entrySet().iterator();
             while (bmit.hasNext()) {
-                if (region.containsBeacon(bmit.next().getValue())) {
+                Entry<Short, BeaconObj> en = bmit.next();
+                //getLogger().info("DEBUG: Checking map " + en.getKey());
+                if (region.containsBeacon(en.getValue())) {
+                    //getLogger().info("DEBUG: Removing map " + en.getKey());
                     bmit.remove();
                 }
             }
+            //getLogger().info("DEBUG: beacon maps done");
             Iterator<Entry<Point2D, BeaconObj>> brit = beaconRegister.entrySet().iterator();
             while (brit.hasNext()) {
-                if (region.containsBeacon(brit.next().getValue())) {
+                Entry<Point2D, BeaconObj> en = brit.next();
+                //getLogger().info("DEBUG: checking " + en.getKey());
+                if (region.containsPoint(en.getKey())) {
+                    //getLogger().info("DEBUG: Removing beacon at " + en.getKey());
                     brit.remove();
                 }
             }
+            //getLogger().info("DEBUG: beacons done");
             Iterator<TriangleField> trit = triangleFields.iterator();
             while (trit.hasNext()) {
-                if (region.containsPoint(trit.next().a)) {
+                TriangleField tri = trit.next();
+                //getLogger().info("DEBUG: Checking triange with corner at " + tri.a);
+                if (region.containsPoint(tri.a)) {
+                    //getLogger().info("DEBUG: Removing triangle!");
                     trit.remove();
                 }
             }
-            beaconLinks.remove(region.getGame());         
+            //getLogger().info("DEBUG: triangles done");
+            beaconLinks.remove(region.getGame());
+           // getLogger().info("DEBUG: links done");
         }
     }
 

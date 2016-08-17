@@ -70,6 +70,7 @@ import com.wasteofplastic.beaconz.listeners.PlayerMovementListener;
 import com.wasteofplastic.beaconz.listeners.PlayerTeleportListener;
 import com.wasteofplastic.beaconz.listeners.SkyListeners;
 import com.wasteofplastic.beaconz.listeners.WorldListener;
+import com.wasteofplastic.include.it.unimi.dsi.util.XorShift;
 
 public class Beaconz extends JavaPlugin {
     private Register register;

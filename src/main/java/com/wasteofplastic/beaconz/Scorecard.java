@@ -130,7 +130,7 @@ public class Scorecard extends BeaconzPluginDependent{
         starttimemilis = game.getStartTime();
         countdownTimer = game.getCountdownTimer();
         timertype = countdownTimer == 0 ? "openended" : "countdown";
-        getLogger().info("DEBUG: countdownTimer = " + countdownTimer + " timertype = " + timertype);
+        //getLogger().info("DEBUG: countdownTimer = " + countdownTimer + " timertype = " + timertype);
         // Define the scoreboard
         try {
             scoreboard.clearSlot(DisplaySlot.SIDEBAR);
@@ -276,10 +276,10 @@ public class Scorecard extends BeaconzPluginDependent{
 
             // See if we have a winner
             // If the gamegoal value is zero, then the game is never ending
-            getLogger().info("DEBUG: ending game goal = " + game.getGamegoal() + " required value = " + game.getGamegoalvalue() + " actual value = " + value);
-            getLogger().info("DEBUG: timertype = " + timertype + " scoretype = " + scoretype);
+            //getLogger().info("DEBUG: ending game goal = " + game.getGamegoal() + " required value = " + game.getGamegoalvalue() + " actual value = " + value);
+            //getLogger().info("DEBUG: timertype = " + timertype + " scoretype = " + scoretype);
             if (game.getGamegoalvalue() > 0 && timertype.equals("openended") && scoretype.equals(game.getGamegoal()) && value >= game.getGamegoalvalue()) {
-                getLogger().info("DEBUG: ending game");
+                //getLogger().info("DEBUG: ending game");
                 endGame();
             }
         }

@@ -336,7 +336,8 @@ public class GameMgr extends BeaconzPluginDependent {
 
         // For each region already defined, try to find an empty area at "distance" blocks from its center
         // Ignore the lobby as a seed
-        // Leave a 16-block wide "safety zone" between regions
+        // Leave a 512-block wide "safety zone" between regions because a region is 32 chunks big and
+        // regeneration is done by deleting regions.
         // at this point the regions map should never be null, because the lobby region should always exist
         if (regions != null) {
             if (regions.size() == 1 && regions.containsValue(lobby)) {
@@ -348,7 +349,7 @@ public class GameMgr extends BeaconzPluginDependent {
                     Region region = regions.get(key);
                     if (region != lobby) {
                         //getLogger().info("GameMgr.nextRegionLocation - processing region at " + region.getCenter());
-                        newregionctr = goodNeighbor(region.getCenter(), region.getRadius() + 16D + gradius);
+                        newregionctr = goodNeighbor(region.getCenter(), region.getRadius() + 512D + gradius);
                         if (newregionctr != null) {
                             break;
                         }                        

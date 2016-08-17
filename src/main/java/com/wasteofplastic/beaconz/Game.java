@@ -92,7 +92,7 @@ public class Game extends BeaconzPluginDependent {
      * and the region will regenerate "fresh"
      */
     public void reset() {
-        reset(null);
+        regenerate(null);
     }
 
     /**
@@ -101,7 +101,7 @@ public class Game extends BeaconzPluginDependent {
      * and the region will regenerate "fresh"
      * @param sender
      */
-    public void reset(CommandSender sender) {
+    public void regenerate(CommandSender sender) {
         // Set restart flag as true
         gameRestart = true;
         // Move all players in game to lobby

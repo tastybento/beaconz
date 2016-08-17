@@ -24,6 +24,7 @@ package com.wasteofplastic.beaconz;
 
 import java.util.Random;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -50,6 +51,7 @@ import com.wasteofplastic.include.it.unimi.dsi.util.XorShift;
  */
 public class BeaconPopulator extends BlockPopulator {
     private final Beaconz plugin;
+    private static final boolean DEBUG = false;
 
     public BeaconPopulator(Beaconz plugin) {
         this.plugin = plugin;
@@ -73,6 +75,7 @@ public class BeaconPopulator extends BlockPopulator {
     	regen = true;*/
         // Don't bother to make anything if it is outside the border. Make it just a bit smaller than the border
         // THERE IS NO BORDER ANYMORE, THIS MAY BE REMOVED
+        /*
         if (Settings.borderSize > 0) {
             int minX = (Settings.xCenter - Settings.borderSize/2) / 16 + 1;
             int minZ = (Settings.zCenter - Settings.borderSize/2) / 16 + 1;
@@ -81,34 +84,48 @@ public class BeaconPopulator extends BlockPopulator {
             if (source.getX() < minX || source.getX() > maxX || source.getZ() < minZ || source.getZ() > maxZ) {
                 return;
             }
-        }
+        }*/
         // Make sure we're within the boundaries of a game
         if (plugin.getGameMgr() != null) {
             if (plugin.getGameMgr().getLobby() == null) {
                 // No lobby yet
+                if (DEBUG)
+                    Bukkit.getLogger().info("DEBUG:no lobby yet");
                 return;
             }
             // Don't do anything in the lobby
             if (plugin.getGameMgr().getLobby().containsPoint(source.getX() * 16, source.getZ() * 16)) {
+                if (DEBUG)
+                    Bukkit.getLogger().info("DEBUG: no beaconz in lobby");
                 return;
             }
             if (plugin.getGameMgr().getLobby().containsPoint(source.getX() * 16 + 15, source.getZ() * 16 + 15)) {
+                if (DEBUG)
+                    Bukkit.getLogger().info("DEBUG: no beaconz in lobby");
                 return;
             }
             // Don't do anything unless inside a region
             // Check min coords
             Region region = plugin.getGameMgr().getRegion(source.getX() * 16, source.getZ() * 16);
             if (region == null) {
+                if (DEBUG)
+                    Bukkit.getLogger().info("DEBUG: non-region");
                 return;
             }
             // Check max coords of this chunk
             region = plugin.getGameMgr().getRegion(source.getX() * 16 + 15, source.getZ() * 16 + 15);
             if (region == null) {
+                if (DEBUG)
+                    Bukkit.getLogger().info("DEBUG: non-region");
                 return;
             }
+        } else {
+            if (DEBUG)
+                plugin.getLogger().info("DEBUG: game manager not ready");
+            return;
         }
-
-        //plugin.getLogger().info("DEBUG: Populating chunk: " + source.getX() + ":" + source.getZ());
+        if (DEBUG)
+            plugin.getLogger().info("DEBUG: Populating chunk: " + source.getX() + ":" + source.getZ());
 
         // pseudo-randomly place a beacon
         XorShift gen=new XorShift(new long[] {
@@ -125,11 +142,13 @@ public class BeaconPopulator extends BlockPopulator {
             // Check if there is already a beacon here, if so, don't make it again
             if (plugin.getRegister() != null) {
                 if (plugin.getRegister().getBeaconAt((source.getX() * 16 + x), (source.getZ()*16 + z)) != null) {
-                    //plugin.getLogger().info("DEBUG: Beacon already at " + (source.getX() * 16 + x) + "," + (source.getZ()*16 + z));
+                    if (DEBUG)
+                        plugin.getLogger().info("DEBUG: Beacon already at " + (source.getX() * 16 + x) + "," + (source.getZ()*16 + z));
                     return;
                 }
             }
-            //plugin.getLogger().info("DEBUG: Creating beacon at " + (source.getX() * 16 + x) + "," + (source.getZ()*16 + z));
+            if (DEBUG)
+                plugin.getLogger().info("DEBUG: Creating beacon at " + (source.getX() * 16 + x) + "," + (source.getZ()*16 + z));
 
             int y = source.getChunkSnapshot().getHighestBlockYAt(x, z);
             Block b = source.getBlock(x, y, z);
