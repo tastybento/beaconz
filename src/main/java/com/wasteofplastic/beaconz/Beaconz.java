@@ -700,12 +700,13 @@ public class Beaconz extends JavaPlugin {
         if (l == null || l.getWorld() == null) {
             return "";
         }
-        
-        DecimalFormat df1 = new DecimalFormat(".#");
-        return l.getWorld().getName() + ":" + l.getBlockX() + "_5:" + l.getBlockY() + ":" + l.getBlockZ() + "_5:" 
-                + String.valueOf(Float.floatToIntBits(l.getYaw())).replace('.', '_') + ":" + String.valueOf(Float.floatToIntBits(l.getPitch())).replace('.', '_');
+        return l.getWorld().getName() + ":" + strDbl(l.getX(),2) + ":" + strDbl(l.getY(),2) + ":" + strDbl(l.getZ(),2) 
+                + ":" + String.valueOf(Float.floatToIntBits(l.getYaw())) + ":" + String.valueOf(Float.floatToIntBits(l.getPitch()));        
     }
 
+    static private String strDbl (final Double dbl, int places) {
+        return (double)((int)(dbl * Math.pow(10.0, places))) / Math.pow(10.0, places) + "";
+    }
 
     /**
      * Converts a serialized location to a Location. Returns null if string is

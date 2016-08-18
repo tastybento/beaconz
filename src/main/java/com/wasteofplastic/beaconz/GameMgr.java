@@ -108,6 +108,7 @@ public class GameMgr extends BeaconzPluginDependent {
         // Save the lobby
         if (lobby != null) {
             gamesYml.set("lobby.region", ptsToStrCoord(lobby.corners()));
+            getLogger().info("lobby spawnpoint: " + lobby.getSpawnPoint());
             gamesYml.set("lobby.spawn", Beaconz.getStringLocation(lobby.getSpawnPoint()));
         }
         // Now save to file

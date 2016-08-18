@@ -76,8 +76,8 @@ public class Register extends BeaconzPluginDependent {
      * Store of the blocks around a beacon. Starts as the initial 8 blocks adjacent to the
      * beacon. Can expand as players add emerald blocks to the beacon.
      */
-    private HashMap<Point2D, BeaconObj> plinthBlocks = new HashMap<Point2D, BeaconObj>();
-    private HashMap<BeaconObj, Set<Point2D>> plinthBlocksInverse = new HashMap<BeaconObj, Set<Point2D>>();
+    private HashMap<Point2D, BeaconObj> baseBlocks = new HashMap<Point2D, BeaconObj>();
+    private HashMap<BeaconObj, Set<Point2D>> baseBlocksInverse = new HashMap<BeaconObj, Set<Point2D>>();
 
     public void saveRegister() {
         // Save the beacons
@@ -120,11 +120,20 @@ public class Register extends BeaconzPluginDependent {
             // Save additional blocks added to beacon
             //getLogger().info("DEBUG: plinthBlocksInverse = " + plinthBlocksInverse.toString());
             List<String> plinthBlocksString = new ArrayList<String>();
-            for (Point2D point: plinthBlocksInverse.get(beacon)) {
+            for (Point2D point: baseBlocksInverse.get(beacon)) {
                 //getLogger().info("DEBUG: writing plinth block " + point);
                 plinthBlocksString.add((int)point.getX() + ":" + (int)point.getY());
             }
-            beaconzYml.set("beacon." + count + ".defenseblocks", plinthBlocksString);
+            beaconzYml.set("beacon." + count + ".baseblocks", plinthBlocksString);
+            // Save the defenses
+            for (DefenseBlock defensiveBlock : beacon.getDefenseBlocks().values()) {
+                beaconzYml.set("beacon." + count + ".defensiveblocks."
+                        + Beaconz.getStringLocation(defensiveBlock.getBlock().getLocation()).replace('.', '_'), defensiveBlock.getLevel());
+                if (defensiveBlock.getPlacer() != null) {
+                    beaconzYml.set("beacon." + count + ".defensiveblocksowner."
+                            + Beaconz.getStringLocation(defensiveBlock.getBlock().getLocation()).replace('.', '_'), defensiveBlock.getPlacer().toString());
+                }
+            }
             // Save the defenses
             for (DefenseBlock defensiveBlock : beacon.getDefenseBlocks().values()) {
                 beaconzYml.set("beacon." + count + ".defensiveblocks."
@@ -211,15 +220,15 @@ public class Register extends BeaconzPluginDependent {
                                 List<BeaconLink> pairs = new ArrayList<BeaconLink>();
                                 beaconLinks.put(game, pairs);
                             }
-                            // Load plinth blocks
-                            List<String> defenseBlocks = configSec.getStringList(beacon + ".defenseblocks");
-                            for (String defenseBlock : defenseBlocks) {
-                                String[] args2 = defenseBlock.split(":");
+                            // Load base blocks
+                            List<String> baseBlocks = configSec.getStringList(beacon + ".baseblocks");
+                            for (String baseBlock : baseBlocks) {
+                                String[] args2 = baseBlock.split(":");
                                 if (args2.length == 2) {
                                     if (NumberUtils.isNumber(args2[0]) && NumberUtils.isNumber(args2[1])) {
                                         int blockX = Integer.valueOf(args2[0]);
                                         int blockZ = Integer.valueOf(args2[1]);
-                                        addBeaconPlinthBlock(blockX, blockZ, newBeacon);
+                                        addBeaconBaseBlock(blockX, blockZ, newBeacon);
                                     }
                                 }
                             }
@@ -505,13 +514,13 @@ public class Register extends BeaconzPluginDependent {
                     beaconRegister.put(location, beacon);
                 } else {
                     // Put the defensive blocks
-                    plinthBlocks.put(location, beacon);
-                    Set<Point2D> points = plinthBlocksInverse.get(beacon);
+                    baseBlocks.put(location, beacon);
+                    Set<Point2D> points = baseBlocksInverse.get(beacon);
                     if (points == null) {
                         points = new HashSet<Point2D>();
                     }
                     points.add(location);
-                    plinthBlocksInverse.put(beacon, points);
+                    baseBlocksInverse.put(beacon, points);
                     //getLogger().info("DEBUG: registered defense block at " + location + " status " + owner);
                 }
             }
@@ -705,9 +714,9 @@ public class Register extends BeaconzPluginDependent {
 
         // Check plinth blocks
         if (block.getType().equals(Material.EMERALD_BLOCK)) {
-            if (plinthBlocks.containsKey(point)) {
+            if (baseBlocks.containsKey(point)) {
                 // Check height
-                BeaconObj beacon = plinthBlocks.get(point);
+                BeaconObj beacon = baseBlocks.get(point);
                 if (beacon.getY() == block.getY() + 1) {
                     // Correct height
                     return beacon;
@@ -983,7 +992,7 @@ public class Register extends BeaconzPluginDependent {
      * @param beacon
      */
     public void addBeaconDefenseBlock(Location location, BeaconObj beacon) {
-        addBeaconPlinthBlock(location.getBlockX(), location.getBlockZ(), beacon);
+        addBeaconBaseBlock(location.getBlockX(), location.getBlockZ(), beacon);
     }
 
     /**
@@ -992,15 +1001,15 @@ public class Register extends BeaconzPluginDependent {
      * @param z
      * @param beacon
      */
-    public void addBeaconPlinthBlock(int x, int z, BeaconObj beacon) {
+    public void addBeaconBaseBlock(int x, int z, BeaconObj beacon) {
         Point2D point = new Point2D.Double(x,z);
-        plinthBlocks.put(point, beacon);
-        Set<Point2D> points = plinthBlocksInverse.get(beacon);
+        baseBlocks.put(point, beacon);
+        Set<Point2D> points = baseBlocksInverse.get(beacon);
         if (points == null) {
             points = new HashSet<Point2D>();
         }
         points.add(point);
-        plinthBlocksInverse.put(beacon, points);
+        baseBlocksInverse.put(beacon, points);
     }
 
     /**
@@ -1009,7 +1018,7 @@ public class Register extends BeaconzPluginDependent {
      * @return beacon or null if it doesn't exist
      */
     public BeaconObj getBeaconAt(Point2D point) {
-        return plinthBlocks.get(point);
+        return baseBlocks.get(point);
     }
 
     /**
@@ -1023,7 +1032,7 @@ public class Register extends BeaconzPluginDependent {
         }
         Point2D point = new Point2D.Double(location.getBlockX(),location.getBlockZ());
         //getLogger().info("DEBUG: " + point);
-        return plinthBlocks.get(point);
+        return baseBlocks.get(point);
     }
 
     /**
@@ -1032,7 +1041,7 @@ public class Register extends BeaconzPluginDependent {
      * @return Set of points
      */
     public Set<Point2D> getDefensesAtBeacon(BeaconObj beacon) {
-        return plinthBlocksInverse.get(beacon);
+        return baseBlocksInverse.get(beacon);
     }
 
     /**
@@ -1042,8 +1051,8 @@ public class Register extends BeaconzPluginDependent {
      */
     public boolean isAboveBeacon(Location loc) {
         Point2D point = new Point2D.Double(loc.getBlockX(),loc.getBlockZ());
-        if (plinthBlocks.containsKey(point)) {
-            BeaconObj beacon = plinthBlocks.get(point);
+        if (baseBlocks.containsKey(point)) {
+            BeaconObj beacon = baseBlocks.get(point);
             // Check ownership
             if (beacon.getOwnership() == null) {
                 return false;

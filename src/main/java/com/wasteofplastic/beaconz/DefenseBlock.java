@@ -4,7 +4,7 @@ import java.util.UUID;
 
 import org.bukkit.block.Block;
 
-public class DefenseBlock implements Comparable {
+public class DefenseBlock implements Comparable<Object> {
     private UUID placer;
     private int level;
     private Block block;
