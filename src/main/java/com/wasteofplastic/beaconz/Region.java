@@ -48,7 +48,6 @@ import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Score;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
-import org.bukkit.util.FileUtil;
 
 /**
  * Region instantiates the various regions in the world
@@ -105,6 +104,8 @@ public class Region extends BeaconzPluginDependent {
                 sender.sendMessage(ChatColor.RED + "Regeneration can only occur when there are no players in the world");
                 return;
             }
+            // TODO mark all offline players in this game/region as needing to teleport to spawn next login.
+            
             getLogger().info("Regenerating region at Ctr:Rad [" + this.getCenter().getX() + ", " + this.getCenter().getY() + "] : " + this.getRadius() + " ==> xMin: " + corners[0].getX() + " zMin: " +  corners[1].getX() + " xMax: " + corners[0].getY() + " zMax: " + corners[1].getY());
 
             // First clear the current register for the region
@@ -127,7 +128,7 @@ public class Region extends BeaconzPluginDependent {
                 while (chZ <= zMax) {
                     int regionX = (int)Math.floor(chX / 16.0 / 32.0);
                     int regionZ = (int)Math.floor(chZ / 16.0 / 32.0);
-                    getBeaconzWorld().unloadChunk(chX/16, chZ/16);
+                    //getBeaconzWorld().unloadChunk(chX/16, chZ/16);
                     delReg.add(new Pair(regionX,regionZ));
                     totalregen++;
                     chZ = chZ + 16;
@@ -135,6 +136,8 @@ public class Region extends BeaconzPluginDependent {
                 chZ = zMin;
                 chX = chX + 16;
             }
+            // Unload the world
+            getServer().unloadWorld(getBeaconzWorld(), true);
             if (chX > xMax) {
                 //RegionFileCache.a();
                 //getLogger().info("DEBUG: " + getServer().getWorldContainer().getAbsolutePath());
@@ -167,6 +170,7 @@ public class Region extends BeaconzPluginDependent {
     private void finishRegenerating(CommandSender sender, String delete) {
         // Wrap things up
         //getLogger().info("100% complete");
+        getBeaconzPlugin().reloadBeaconzWorld();
         if (delete.isEmpty()) {
             createCorners();
             sender.sendMessage(ChatColor.GREEN + Lang.adminRegenComplete);

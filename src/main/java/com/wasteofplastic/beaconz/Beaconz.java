@@ -24,6 +24,7 @@ package com.wasteofplastic.beaconz;
 
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -70,7 +71,6 @@ import com.wasteofplastic.beaconz.listeners.PlayerMovementListener;
 import com.wasteofplastic.beaconz.listeners.PlayerTeleportListener;
 import com.wasteofplastic.beaconz.listeners.SkyListeners;
 import com.wasteofplastic.beaconz.listeners.WorldListener;
-import com.wasteofplastic.include.it.unimi.dsi.util.XorShift;
 
 public class Beaconz extends JavaPlugin {
     private Register register;
@@ -700,9 +700,10 @@ public class Beaconz extends JavaPlugin {
         if (l == null || l.getWorld() == null) {
             return "";
         }
+        
         DecimalFormat df1 = new DecimalFormat(".#");
-        return l.getWorld().getName() + ":" + df1.format(l.getX()).replace('.', '_') + ":" + df1.format(l.getY()).replace('.', '_') + ":" + df1.format(l.getZ()).replace('.', '_') 
-                + ":" + String.valueOf(Float.floatToIntBits(l.getYaw())).replace('.', '_') + ":" + String.valueOf(Float.floatToIntBits(l.getPitch())).replace('.', '_');
+        return l.getWorld().getName() + ":" + l.getBlockX() + "_5:" + l.getBlockY() + ":" + l.getBlockZ() + "_5:" 
+                + String.valueOf(Float.floatToIntBits(l.getYaw())).replace('.', '_') + ":" + String.valueOf(Float.floatToIntBits(l.getPitch())).replace('.', '_');
     }
 
 
@@ -995,5 +996,11 @@ public class Beaconz extends JavaPlugin {
      */
     public PlayerTeleportListener getTeleportListener() {
         return teleportListener;
+    }
+
+
+    public void reloadBeaconzWorld() {
+        beaconzWorld = null;
+        getBeaconzWorld();
     }
 }

@@ -128,10 +128,10 @@ public class Register extends BeaconzPluginDependent {
             // Save the defenses
             for (DefenseBlock defensiveBlock : beacon.getDefenseBlocks().values()) {
                 beaconzYml.set("beacon." + count + ".defensiveblocks."
-                        + Beaconz.getStringLocation(defensiveBlock.getBlock().getLocation()), defensiveBlock.getLevel());
+                        + Beaconz.getStringLocation(defensiveBlock.getBlock().getLocation()).replace('.', '_'), defensiveBlock.getLevel());
                 if (defensiveBlock.getPlacer() != null) {
                     beaconzYml.set("beacon." + count + ".defensiveblocksowner."
-                            + Beaconz.getStringLocation(defensiveBlock.getBlock().getLocation()), defensiveBlock.getPlacer().toString());
+                            + Beaconz.getStringLocation(defensiveBlock.getBlock().getLocation()).replace('.', '_'), defensiveBlock.getPlacer().toString());
                 }
             }
             // Save maps
