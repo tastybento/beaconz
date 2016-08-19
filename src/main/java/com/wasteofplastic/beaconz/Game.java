@@ -112,6 +112,9 @@ public class Game extends BeaconzPluginDependent {
                 sendToLobby(player);
             }
         }
+        // Delete the teams
+        scorecard.deleteTeamMembers();
+        
         // Handle maps 
         Iterator<Short> it = getRegister().getBeaconMapIndex().iterator();
         while (it.hasNext()) {
@@ -366,8 +369,7 @@ public class Game extends BeaconzPluginDependent {
      * @param player
      */
     public void sendToLobby(Player player) {
-        getBeaconzPlugin().getTeleportListener().setDirectTeleportPlayer(player.getUniqueId());
-        getGameMgr().getLobby().tpToRegionSpawn(player);
+        getGameMgr().getLobby().tpToRegionSpawn(player, true);
     }
 
     /**

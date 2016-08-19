@@ -526,7 +526,7 @@ public class GameMgr extends BeaconzPluginDependent {
             } else {
                 if (!isPlayerInLobby(player)) {
                     //player.sendMessage(ChatColor.RED + "Player " + player.getName() + " must join a team to play in this world");
-                    getLobby().tpToRegionSpawn(player);
+                    getLobby().tpToRegionSpawn(player,true);
                 }
             }
         }

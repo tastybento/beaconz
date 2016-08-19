@@ -206,6 +206,7 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
                     if (DEBUG) {
                         getLogger().info("DEBUG: obsidian");
                         //Claiming unowned beacon
+                        getLogger().info("DEBUG: team = " + team);
                         getLogger().info("DEBUG: team = " + team.getDisplayName());
                         getLogger().info("DEBUG: block ID = " + game.getScorecard().getBlockID(team));
                     }

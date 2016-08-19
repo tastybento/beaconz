@@ -163,7 +163,7 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
             if (!player.isOp()) {
                 event.setCancelled(true);
                 player.sendMessage(ChatColor.RED + Lang.errorYouMustBeInAGame);
-                getGameMgr().getLobby().tpToRegionSpawn(player);
+                getGameMgr().getLobby().tpToRegionSpawn(player, true);
                 return;
             } else {
                 player.sendMessage(ChatColor.RED + Lang.errorYouMustBeInATeam);
@@ -304,7 +304,7 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
             if (!player.isOp()) {
                 event.setCancelled(true);
                 player.sendMessage(ChatColor.RED + Lang.errorYouMustBeInAGame);
-                getGameMgr().getLobby().tpToRegionSpawn(player);
+                getGameMgr().getLobby().tpToRegionSpawn(player,true);
                 return;
             } else {
                 player.sendMessage(ChatColor.RED + Lang.errorYouMustBeInATeam);
@@ -422,7 +422,7 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
             if (!player.isOp()) {
                 event.setCancelled(true);
                 player.sendMessage(ChatColor.RED + Lang.errorYouMustBeInAGame);
-                getGameMgr().getLobby().tpToRegionSpawn(player);
+                getGameMgr().getLobby().tpToRegionSpawn(player, true);
                 return;
             } else {
                 player.sendMessage(ChatColor.RED + Lang.errorYouMustBeInATeam);

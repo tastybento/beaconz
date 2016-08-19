@@ -171,6 +171,7 @@ error:
   InventoryFull: "You inventory is full! Dropping items!"
   NoBeaconThere: "There is no beacon there!"
   NoGames: "Could not find any games."
+  NoLobbyYet: "Hmm, there is no lobby yet, please wait."
   NoSuchGame: "No such game!"
   NoSuchTeam: "Could not find team!"
   NotEnoughExperience: "You do not have enough experience to do that!"

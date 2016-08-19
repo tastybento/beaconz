@@ -34,20 +34,41 @@ public class PlayerJoinLeaveListener extends BeaconzPluginDependent implements L
      */
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled=true)
     public void onJoin(final PlayerJoinEvent event) {
+        // Check if player is in the BeaconzWorld
         if (event.getPlayer().getWorld().equals(getBeaconzWorld())) {
             final Player player = event.getPlayer();
             final UUID playerUUID = player.getUniqueId();
             // Write this player's name to the database
             getBeaconzPlugin().getNameStore().savePlayerName(player.getName(), player.getUniqueId());
-            
+
             // Check if game is still in progress
             Game game = getGameMgr().getGame(event.getPlayer().getLocation());
-            if (game == null || game.isOver()) {
+            if (game == null || game.isOver() || game.isGameRestart()) {
                 // Send player to BeaconzWorld lobby area
-                getGameMgr().getLobby().tpToRegionSpawn(player);
+                if (DEBUG) {
+                    getLogger().info("DEBUG: Game is " + game);
+                    if (game != null) {
+                        getLogger().info("DEBUG: Game is over " + game.isOver());
+                        getLogger().info("DEBUG: Game is restart " + game.isGameRestart());
+                    }
+                }
+                getGameMgr().getLobby().tpToRegionSpawn(player, true);
             } else {
-                // Join the game but stay at the last location
-                game.join(player, false);
+                if (DEBUG)
+                    getLogger().info("DEBUG: game exists");
+                if (game.getScorecard().getTeam(player) == null) {
+                    if (DEBUG)
+                        getLogger().info("DEBUG: Player is not in a team");
+                    // Send player to BeaconzWorld lobby area
+                    getGameMgr().getLobby().tpToRegionSpawn(player, true);
+                } else {
+                    if (DEBUG) {
+                        getLogger().info("DEBUG: Player is in team - " + game.getScorecard().getTeam(player));
+                        getLogger().info("DEBUG: Player is in team - " + game.getScorecard().getTeam(player).getDisplayName());
+                    }
+                    // Join the game but stay at the last location
+                    game.join(player, false);
+                }
             }
             // Check messages
             // Load any messages for the player

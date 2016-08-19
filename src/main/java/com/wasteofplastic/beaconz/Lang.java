@@ -199,6 +199,7 @@ public class Lang extends BeaconzPluginDependent {
     public static String triangleThisBelongsTo;
     public static String triangleYourTeamLostATriangle;
     public static String triangleTeamLostATriangle;
+    public static String errorNoLobbyYet;
     
    
     public void loadLocale(String localeName) {
@@ -318,6 +319,7 @@ public class Lang extends BeaconzPluginDependent {
         errorInventoryFull = ChatColor.translateAlternateColorCodes('&', locale.getString("error.InventoryFull", "You inventory is full! Dropping items!"));
         errorNoBeaconThere = ChatColor.translateAlternateColorCodes('&', locale.getString("error.NoBeaconThere", "There is no beacon there!"));
         errorNoGames = ChatColor.translateAlternateColorCodes('&', locale.getString("error.NoGames", "Could not find any games."));
+        errorNoLobbyYet = ChatColor.translateAlternateColorCodes('&', locale.getString("error.NoLobbyYet", "Hmm, there is no lobby yet..."));
         errorNoSuchGame = ChatColor.translateAlternateColorCodes('&', locale.getString("error.NoSuchGame", "No such game!"));
         errorNoSuchTeam = ChatColor.translateAlternateColorCodes('&', locale.getString("error.NoSuchTeam", "Could not find team!"));
         errorNotEnoughExperience = ChatColor.translateAlternateColorCodes('&', locale.getString("error.NotEnoughExperience", "You do not have enough experience to do that!"));

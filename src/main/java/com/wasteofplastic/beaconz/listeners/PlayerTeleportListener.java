@@ -77,7 +77,7 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
             //getLogger().info("DEBUG: entering world");
             if (!getGameMgr().isPlayerInLobby(event.getPlayer())) {                
                 // Send player to lobby
-                getGameMgr().getLobby().tpToRegionSpawn(event.getPlayer());
+                getGameMgr().getLobby().tpToRegionSpawn(event.getPlayer(), true);
             }
             for (PotionEffect effect : event.getPlayer().getActivePotionEffects())
                 event.getPlayer().removePotionEffect(effect.getType());
@@ -107,6 +107,8 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
             getLogger().info("DEBUG: Teleporting event");
         // If player is teleporting, then ignore this event
         if (teleportingPlayers.containsKey(event.getPlayer().getUniqueId())) {
+            if (DEBUG)
+                getLogger().info("DEBUG: player is mid-teleport");
             return;
         }    
         if (event.getFrom().getWorld() == null || event.getTo().getWorld() == null) {
@@ -115,6 +117,7 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
             return;
         }
         if (event.getFrom().getWorld() != getBeaconzWorld()) {
+            getLogger().info("DEBUG: From world is not BeaconzWorld");
             // Ignore
             return;
         }
@@ -122,10 +125,13 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
         BeaconProtectionListener.getStandingOn().remove(event.getPlayer().getUniqueId());
         // If player is pushed back because of the barrier, just return
         if (barrierPlayers.contains(event.getPlayer().getUniqueId())) {
-            //getLogger().info("DEBUG: ignoring barrier teleport");
+            if (DEBUG)
+                getLogger().info("DEBUG: ignoring barrier teleport");
             barrierPlayers.remove(event.getPlayer().getUniqueId());
             return;
         }
+        if (DEBUG)
+            getLogger().info("DEBUG: Getting games from and to");
         // Get the games associated with these locations
         final Game fromGame = getGameMgr().getGame(event.getFrom());
         final Game toGame = getGameMgr().getGame(event.getTo());
@@ -134,14 +140,21 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
         final boolean fromLobby = getGameMgr().isLocationInLobby(event.getFrom());
         final boolean toLobby = getGameMgr().isLocationInLobby(event.getTo());
         // Teleporting out of Beaconz World
-        if (!event.getTo().getWorld().equals(getBeaconzWorld()) && fromGame != null) {
-            if (DEBUG)
+        // Check has to be done using names because after a regen, the world objects can be different apparently.
+        if (!event.getTo().getWorld().getName().equals(getBeaconzWorld().getName()) && fromGame != null) {
+            if (DEBUG) {
                 getLogger().info("DEBUG: Teleporting out of world");
+                getLogger().info("DEBUG: getTO world = " + event.getTo().getWorld().getName());
+                getLogger().info("DEBUG: beaconzworld = " + getBeaconzWorld().getName());
+                getLogger().info("DEBUG: from Game = " + fromGame.getName());
+            }
             // Player is trying to exit, maybe trying to escape
             delayTeleport(event.getPlayer(), event.getFrom(), event.getTo(), fromGame.getName(), LOBBY);
             event.setCancelled(true);
             return;
         }
+        if (DEBUG)
+            getLogger().info("DEBUG: Not out of BW");
         /*
         // Teleporting into Beaconz World
         if (event.getTo().getWorld().equals(getBeaconzWorld()) && event.getFrom().getWorld().equals(getBeaconzWorld())) {
@@ -157,7 +170,7 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
             return;
         }*/
         // Teleporting to different game
-        if (event.getTo().getWorld().equals(getBeaconzWorld()) && event.getFrom().getWorld().equals(getBeaconzWorld())) {
+        if (event.getTo().getWorld().getName().equals(getBeaconzWorld().getName()) && event.getFrom().getWorld().getName().equals(getBeaconzWorld().getName())) {
             if (DEBUG)
                 getLogger().info("DEBUG: Teleporting within world");
 
@@ -171,16 +184,22 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
                 if (DEBUG)
                     getLogger().info("DEBUG: Teleporting to lobby from game " + fromGame.getName());
                 if (!fromGame.isGameRestart() && !fromGame.isOver() && !directTeleportPlayers.contains(event.getPlayer().getUniqueId())) {
+                    if (DEBUG)
+                        getLogger().info("DEBUG: Delayed teleport to lobby from game: isGameRestart " + fromGame.isGameRestart() + " is game over = " + fromGame.isOver());
                     delayTeleport(event.getPlayer(), event.getFrom(), event.getTo(), fromGame.getName(), LOBBY);
                     event.setCancelled(true);
                     return;
-                } 
+                }
+                if (DEBUG)
+                    getLogger().info("DEBUG: Direct teleport to lobby!");
+                // Store
+                if (fromGame.hasPlayer(event.getPlayer())) {
+                    getBeaconzStore().storeInventory(event.getPlayer(), fromGame.getName(), event.getFrom());
+                }
+                // Get from store
+                getBeaconzStore().getInventory(event.getPlayer(), LOBBY);
                 // Remove now that they have teleported to the lobby
                 directTeleportPlayers.remove(event.getPlayer().getUniqueId());
-                // Store
-                getBeaconzStore().storeInventory(event.getPlayer(), fromGame.getName(), event.getFrom());
-                // Get from store
-                getBeaconzStore().getInventory(event.getPlayer(), LOBBY);                 
                 return;
             }
 
@@ -245,6 +264,8 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
             }
             return;
         }
+        if (DEBUG)
+            getLogger().info("DEBUG: Not in the world");
     }
 
     /**
@@ -286,6 +307,7 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
      * @param directTeleportPlayers the directTeleportPlayers to set
      */
     public void setDirectTeleportPlayer(UUID directTeleportPlayer) {
+        //getLogger().info("DEBUG: added player to direct TP");
         this.directTeleportPlayers.add(directTeleportPlayer);
     }
 

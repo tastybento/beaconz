@@ -60,10 +60,10 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
         case 0:
             player.setScoreboard(getServer().getScoreboardManager().getNewScoreboard());
             if (getGameMgr().getLobby() == null) {
-                player.sendMessage(ChatColor.RED + "Hmm, there is no lobby yet...");
+                player.sendMessage(ChatColor.RED + Lang.errorNoLobbyYet);
                 return true;
             }
-            getGameMgr().getLobby().tpToRegionSpawn(player);
+            getGameMgr().getLobby().tpToRegionSpawn(player, false);
             break;
 
             // One argument after the beaconz command

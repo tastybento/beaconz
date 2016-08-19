@@ -417,14 +417,15 @@ public class Region extends BeaconzPluginDependent {
 
     /**
      * Teleports a player to the region's spawn point
+     * @param player
+     * @param directly - if true player will go to spawn directly and not experience the delay teleport
      */
-    public void tpToRegionSpawn(Player player) {
+    public void tpToRegionSpawn(Player player, boolean directly) {
         //getLogger().info("DEBUG: tpToRegionSpawnPoint");
+        if (directly) {
+            getBeaconzPlugin().getTeleportListener().setDirectTeleportPlayer(player.getUniqueId());
+        }
         player.teleport(spawnPoint);
-        /*
-        if (this.equals(getGameMgr().getLobby())) {
-            enterLobby(player);
-        }*/
         // Remove any Mobs around the area
         for (Entity entity : player.getNearbyEntities(10, 10, 10)) {
             if (entity instanceof Monster) {

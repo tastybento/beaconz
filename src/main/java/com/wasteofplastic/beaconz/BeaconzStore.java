@@ -101,7 +101,7 @@ public class BeaconzStore extends BeaconzPluginDependent {
     }
 
     /**
-     * Puts the player's inventory into the right chest
+     * Store the player's inventory in the game
      * @param player
      * @param gameName - the game name for the inventory being store
      * @param from - the last position of the player in this game

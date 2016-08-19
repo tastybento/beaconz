@@ -27,6 +27,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map.Entry;
@@ -1095,6 +1096,7 @@ public class Scorecard extends BeaconzPluginDependent{
             teamsFile.renameTo(backup);
         }
         teamsYml.set(gameName, null);
+        /*
         for (Team team: scoreboard.getTeams()) {
             // Remove the team members
             if (teamMembers.containsKey(team)) {
@@ -1102,7 +1104,19 @@ public class Scorecard extends BeaconzPluginDependent{
                     team.removeEntry(name);
                 }
             }
+        }*/
+        // Remove from hashmap
+        Iterator<Team> it = teamMembers.keySet().iterator();
+        while (it.hasNext()) {
+            Team team = it.next();
+            for (String name : teamMembers.get(team)) {
+                team.removeEntry(name);
+            }
+            teamMembers.put(team, new ArrayList<String>());
         }
+        // Clear all the players from the teamLookup.
+        teamLookup.clear();
+        
         try {
             teamsYml.save(teamsFile);
         } catch (IOException e) {

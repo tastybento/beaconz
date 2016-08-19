@@ -105,7 +105,7 @@ public class Beaconz extends JavaPlugin {
 
         // Start the name store
         nameStore = new TinyDB(this);
-        
+
         // Run commands that need to be run 1 tick after start
         getServer().getScheduler().runTask(this, new Runnable() {
 
@@ -622,7 +622,9 @@ public class Beaconz extends JavaPlugin {
                 getLogger().info("Could not make world yet..");
                 return null;
             }
-            beaconzWorld.getPopulators().add(getBp());
+            if (!beaconzWorld.getPopulators().contains(getBp())) {
+                beaconzWorld.getPopulators().add(getBp());
+            }
         }
         // This is not allowed in this function as it can be called async
         //beaconzWorld.setSpawnLocation(Settings.xCenter, beaconzWorld.getHighestBlockYAt(Settings.xCenter, Settings.zCenter), Settings.zCenter);
@@ -1000,6 +1002,9 @@ public class Beaconz extends JavaPlugin {
     }
 
 
+    /**
+     * Reloads the world after it has been unloaded.
+     */
     public void reloadBeaconzWorld() {
         beaconzWorld = null;
         getBeaconzWorld();
