@@ -35,20 +35,21 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.PlayerLeashEntityEvent;
 import org.bukkit.event.hanging.HangingPlaceEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerShearEntityEvent;
 import org.bukkit.event.vehicle.VehicleDamageEvent;
 import org.bukkit.event.vehicle.VehicleMoveEvent;
 import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scoreboard.Team;
 import org.bukkit.util.Vector;
 
@@ -82,7 +83,7 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
             event.getPlayer().sendMessage(ChatColor.RED + Lang.errorYouCannotDoThat);
         }
     }
-    */
+     */
     /**
      * Prevents use of leashes outside the game area
      * @param event
@@ -173,12 +174,31 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
             Player player = (Player)passenger;
             Location from = event.getFrom();
             Location to = event.getTo();
+            /*
             if (checkMove(player, event.getVehicle().getWorld(), from, to)) {
                 // Vehicle should stop moving
                 Vector direction = event.getVehicle().getLocation().getDirection();
                 event.getVehicle().teleport(event.getVehicle().getLocation().add(from.toVector().subtract(to.toVector()).normalize()));
                 event.getVehicle().getLocation().setDirection(direction);
                 event.getVehicle().setVelocity(new Vector(0,0,0));
+            }*/
+            // Check potion effects for boats etc.
+            if ((!(event.getVehicle() instanceof LivingEntity))) {
+                for (PotionEffect effect : getPml().getTriangleEffects(player.getUniqueId())) {
+                    if (effect.getType().equals(PotionEffectType.SLOW)) {
+                        double delay = effect.getAmplifier();
+                        event.getVehicle().setVelocity(event.getVehicle().getVelocity().divide(new Vector(delay,delay,delay)));
+                        break;
+                    }
+                }
+            }
+            // Check if there are any other passengers
+            for (Player pl : getBeaconzWorld().getPlayers()) {
+                if (!pl.equals(player) && pl.isInsideVehicle() && pl.getVehicle().getEntityId() == event.getVehicle().getEntityId()) {
+                    //getLogger().info(pl.getName() + " inside vehicle of id " + pl.getVehicle().getEntityId());
+                    //getLogger().info("Event id = " + event.getVehicle().getEntityId());
+                    checkMove(pl, event.getVehicle().getWorld(), from, to);
+                }
             }
         }
     }
@@ -261,8 +281,15 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
 
         // Nothing from here on applies to Lobby...
         if (getGameMgr().isPlayerInLobby(player)) {
-            for (PotionEffect effect : player.getActivePotionEffects())
+            for (PotionEffect effect : player.getActivePotionEffects()) {
                 player.removePotionEffect(effect.getType());
+                // Check vehicle
+                if (player.isInsideVehicle() && player.getVehicle() instanceof LivingEntity) {                    
+                    //getLogger().info("DEBUG: living vehicle remove");
+                    LivingEntity le = (LivingEntity)player.getVehicle();
+                    le.removePotionEffect(effect.getType());
+                }
+            }
             triangleEffects.remove(player.getUniqueId());
             return false;
         }
@@ -301,8 +328,15 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
         }
         // Outside any field
         if (fromTriangles.isEmpty() && toTriangles.isEmpty()) {
-            for (PotionEffect effect : player.getActivePotionEffects())
+            for (PotionEffect effect : player.getActivePotionEffects()) {
                 player.removePotionEffect(effect.getType());
+                // Check vehicle
+                if (player.isInsideVehicle() && player.getVehicle() instanceof LivingEntity) {                    
+                    //getLogger().info("DEBUG: living vehicle remove");
+                    LivingEntity le = (LivingEntity)player.getVehicle();
+                    le.removePotionEffect(effect.getType());
+                }
+            }
             triangleEffects.remove(player.getUniqueId());
             return false;
         }
@@ -311,8 +345,15 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
             // Leaving a control triangle
             player.sendMessage(Lang.triangleLeaving.replace("[team]", fromTriangles.get(0).getOwner().getDisplayName()));
             if (triangleEffects.containsKey(player.getUniqueId())) {
-                for (PotionEffect effect : triangleEffects.get(player.getUniqueId()))
+                for (PotionEffect effect : triangleEffects.get(player.getUniqueId())) {
                     player.removePotionEffect(effect.getType());
+                    // Check vehicle
+                    if (player.isInsideVehicle() && player.getVehicle() instanceof LivingEntity) {                    
+                        //getLogger().info("DEBUG: living vehicle remove");
+                        LivingEntity le = (LivingEntity)player.getVehicle();
+                        le.removePotionEffect(effect.getType());
+                    }
+                }
             }
             triangleEffects.remove(player.getUniqueId());
             return false;
@@ -323,8 +364,15 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
         } else if (toTriangles.size() < fromTriangles.size()) {
             // Remove all current effects - the lower set will be applied below
             if (triangleEffects.containsKey(player.getUniqueId())) {
-                for (PotionEffect effect : triangleEffects.get(player.getUniqueId()))
+                for (PotionEffect effect : triangleEffects.get(player.getUniqueId())) {
                     player.removePotionEffect(effect.getType());
+                    // Check vehicle
+                    if (player.isInsideVehicle() && player.getVehicle() instanceof LivingEntity) {                    
+                        //getLogger().info("DEBUG: living vehicle remove");
+                        LivingEntity le = (LivingEntity)player.getVehicle();
+                        le.removePotionEffect(effect.getType());
+                    }
+                }
             }
             player.sendMessage((Lang.triangleDroppingToLevel.replace("[team]", toTriangles.get(0).getOwner().getDisplayName())).replace("[level]",String.valueOf(toTriangles.size())));
         }
@@ -344,8 +392,15 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
         //getLogger().info("DEBUG: applying effects");
         if (to == null || to.isEmpty() || team == null) {
             if (triangleEffects.containsKey(player.getUniqueId())) {
-                for (PotionEffect effect : triangleEffects.get(player.getUniqueId()))
-                    player.removePotionEffect(effect.getType());
+                for (PotionEffect effect : triangleEffects.get(player.getUniqueId())) {
+                    player.removePotionEffect(effect.getType());                   
+                    // Check vehicle
+                    if (player.isInsideVehicle() && player.getVehicle() instanceof LivingEntity) {                    
+                        //getLogger().info("DEBUG: living vehicle remove");
+                        LivingEntity le = (LivingEntity)player.getVehicle();
+                        le.removePotionEffect(effect.getType());
+                    }
+                }
             }
             triangleEffects.remove(player.getUniqueId());
             return;
@@ -362,6 +417,12 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
                 }
             }
             player.addPotionEffects(effects);
+            // Check vehicle
+            if (player.isInsideVehicle() && player.getVehicle() instanceof LivingEntity) {
+                //getLogger().info("DEBUG: living vehicle");
+                LivingEntity le = (LivingEntity)player.getVehicle();
+                le.addPotionEffects(effects);
+            }
         }
         // Friendly triangle
         if (triangleOwner != null && triangleOwner.equals(team)) {
@@ -371,6 +432,12 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
                 }
             }
             player.addPotionEffects(effects);
+            // Check vehicle
+            if (player.isInsideVehicle() && player.getVehicle() instanceof LivingEntity) {
+                //getLogger().info("DEBUG: living vehicle");
+                LivingEntity le = (LivingEntity)player.getVehicle();
+                le.addPotionEffects(effects);
+            }
         }
         triangleEffects.put(player.getUniqueId(), effects);
     }

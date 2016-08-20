@@ -117,7 +117,8 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
             return;
         }
         if (event.getFrom().getWorld() != getBeaconzWorld()) {
-            getLogger().info("DEBUG: From world is not BeaconzWorld");
+            if (DEBUG)
+                getLogger().info("DEBUG: From world is not BeaconzWorld");
             // Ignore
             return;
         }
