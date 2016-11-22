@@ -276,7 +276,7 @@ public class TerritoryMapRenderer extends MapRenderer {
     private static byte getMapPaletteColorForTeam(byte glassColor, int numberOfTriangles) {
         numberOfTriangles--;
         if (mapPaletteColors[glassColor] == null) {
-            DyeColor dyeColor = DyeColor.getByData(glassColor);
+            DyeColor dyeColor = DyeColor.getByDyeData(glassColor);
             Color color = dyeColor.getColor();
             List<Byte> colors = new ArrayList<>();
             byte previous = MapPalette.matchColor(0, 0, 0);
