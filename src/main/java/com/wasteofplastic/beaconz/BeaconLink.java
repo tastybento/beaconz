@@ -1,4 +1,4 @@
-package com.wasteofplastic.beaconz;
+package com.wasteofplastic.beaconz; 
 
 import java.awt.geom.Line2D;
 

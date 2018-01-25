@@ -31,7 +31,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.Map.Entry;
 
+import org.apache.commons.lang.StringUtils;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -390,4 +392,127 @@ public class BeaconObj extends BeaconzPluginDependent {
         }
     }
 
+    /** 
+     * Get the level of the highest defense block placed on top of a beacon
+     * @return
+     */
+    public int getHighestBlockLevel() {
+        int highestBlock = 0;
+        Iterator<Entry<Block, DefenseBlock>> it = this.getDefenseBlocks().entrySet().iterator();
+        while (it.hasNext()) {
+            Entry<Block, DefenseBlock> defenseBlock = it.next();
+            if (defenseBlock.getKey().getType().equals(Material.AIR)) {
+                // Clean up if any blocks have been removed by creatives, or moved due to gravity.
+                it.remove();
+            } else {
+                highestBlock = Math.max(highestBlock, defenseBlock.getValue().getLevel());
+            }
+        } 
+        return highestBlock;
+    }
+    
+
+    /** 
+     * Get the height of the highest defense block placed on top of a beacon
+     * @return
+     */
+    public int getHighestBlockY() {
+        int highestBlock = y;
+        Iterator<Entry<Block, DefenseBlock>> it = this.getDefenseBlocks().entrySet().iterator();
+        while (it.hasNext()) {
+            Entry<Block, DefenseBlock> defenseBlock = it.next();
+            if (defenseBlock.getKey().getType().equals(Material.AIR)) {
+                // Clean up if any blocks have been removed by creatives, or moved due to gravity.
+                it.remove();
+            } else {
+                highestBlock = Math.max(highestBlock, defenseBlock.getValue().getBlock().getY());
+            }
+        } 
+        return highestBlock;
+    }
+    
+    
+    /**
+     * Checks if any layer above the beacon matches the locking criteria
+     * This is a mechanism to allow for permanent ownership of beacons
+     * If any one level above the beacon has a certain number of "locking blocks", these blocks are unbreakable by all but the owner team
+     * 
+     * @return
+     */    
+    public Boolean isLocked () {
+        Boolean rc = false;
+        int maxHeight = getHighestBlockY();
+        for (int i = y; i <= maxHeight; i++) {
+            if (nbrToLock(i) <= 0) {
+                rc = true;
+                break;
+            }
+        }            
+     return rc;   
+    }
+    
+    /**
+     * Returns the number of "locking blocks" that must still be placed at the given height to block the beacon
+     * The returned integer can be negative, indicating that more than enough blocks have been placed
+     * Locking blocks could be defined in Settings, but I really think we should stick with Settings.linkRewards (default: Emerald)
+     * The number of locking blocks required is proportional to the number of players in the teams. 
+     * The number given in Settings applies to the largest team, all others go down proportionately.
+     * 
+     * @param height
+     * @return
+     */
+    
+    public int nbrToLock(int height) {               
+        
+        Integer maxLocking = Settings.nbrLockingBlocks;                
+        Material lockingBlock = Material.EMERALD_BLOCK;
+        int missing = maxLocking;
+                       
+        // Make sure the height is above the beacon
+        if (height >= y) {
+        
+            // Get the locking block material
+            if (Material.getMaterial(Settings.lockingBlock.toUpperCase()) != null) {
+                lockingBlock = Material.getMaterial(Settings.lockingBlock.toUpperCase());                
+            }
+            
+            // Figure out how many locking blocks we need for the owner team
+            Integer reqLocking = 3;
+            Integer maxSize = ownership.getSize(); 
+            /*for (Team t : ownership.getScoreboard().getTeams()) {
+                if (t.getSize() > maxSize) {
+                    maxSize = t.getSize();
+                }
+            }*/
+            Scorecard sc = getGameMgr().getSC(ownership);
+            if (sc != null) {
+                for (Team t : sc.getTeams()) {
+                    if (t.getSize() > maxSize) {
+                        maxSize = t.getSize();
+                    }                    
+                }
+            }
+            reqLocking = maxLocking * ownership.getSize() / maxSize; // integer division...
+            if (reqLocking > 8) reqLocking = 8;                      // ensure it's at most 8 blocks
+            
+            // See how many locking blocks are present at the given height
+            int lockBlocks = 0;
+            Material lockBlock = lockingBlock;
+            Block b = getBeaconzWorld().getBlockAt(x, height, z);
+            if (b.getType().equals(lockBlock)) missing--;
+            if (b.getRelative(BlockFace.SOUTH).getType().equals(lockBlock)) lockBlocks++;
+            if (b.getRelative(BlockFace.SOUTH_EAST).getType().equals(lockBlock)) lockBlocks++;
+            if (b.getRelative(BlockFace.SOUTH_WEST).getType().equals(lockBlock)) lockBlocks++;
+            if (b.getRelative(BlockFace.EAST).getType().equals(lockBlock)) lockBlocks++;
+            if (b.getRelative(BlockFace.WEST).getType().equals(lockBlock)) lockBlocks++;
+            if (b.getRelative(BlockFace.NORTH).getType().equals(lockBlock)) lockBlocks++;
+            if (b.getRelative(BlockFace.NORTH_EAST).getType().equals(lockBlock)) lockBlocks++;
+            if (b.getRelative(BlockFace.NORTH_WEST).getType().equals(lockBlock)) lockBlocks++;
+            
+            missing = reqLocking - lockBlocks; 
+        }        
+        
+        return missing;
+    }        
+    
 }

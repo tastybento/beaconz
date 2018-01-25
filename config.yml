@@ -23,6 +23,9 @@ world:
   teleportdelay: 5
 
   # Starter inventory. What players get when they start a game.
+  # For 'minigame' mode games, player XP is set to this value every time they reenter the game
+  initialXP: 100
+  
   # Format Material:Qty or Material:Data:Qty
   # Note that any type of pickaxe can eventually break the obsidian capstones.
   newbiekit:
@@ -329,3 +332,14 @@ general:
 
   # Show scoreboard by default
   usescoreboard: true
+  
+  # Show timer on the scoreboard
+  showtimer: true
+  
+  # The block that can be used to lock a beacon (and so take permanent ownership)
+  # Has to be a valid material
+  lockingBlock: EMERALD_BLOCK
+
+  # The number of locking blocks required for the largest team; for other teams it will be propotional to number of members
+  nbrLockingBlocks: 6
+  

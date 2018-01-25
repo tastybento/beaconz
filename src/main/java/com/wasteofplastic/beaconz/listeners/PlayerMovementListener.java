@@ -250,11 +250,13 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
                 //float yaw = player.getLocation().getYaw();
                 Vector direction = player.getLocation().getDirection();
                 barrierPlayers.add(player.getUniqueId());
-                player.teleport(player.getLocation().add(from.toVector().subtract(to.toVector()).normalize()));
+                //player.teleport(player.getLocation().add(from.toVector().subtract(to.toVector().multiply(4)).normalize()));
                 //player.getLocation().setPitch(pitch);
                 //player.getLocation().setPitch(yaw);
-                player.getLocation().setDirection(direction);
-                player.setVelocity(new Vector(0,0,0));
+                //player.getLocation().setDirection(direction);
+                //player.setVelocity(new Vector(0,0,0));
+                // There's no need to tp the player anywhere, just return true so onPlayerMove can cancel the event
+                // Also, teleporting the player back can cause problems in some situations
                 player.sendMessage(ChatColor.YELLOW + Lang.errorRegionLimit);
                 return true;
             }

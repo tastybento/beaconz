@@ -170,25 +170,28 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
                 return;
             }
         }
+
         Team team = sc.getTeam(player);
-        // Check if block is a beacon extension block
         Block block = event.getBlock();
-        if (block.getType().equals(Material.EMERALD_BLOCK)) {
-            // Check to see if it is being placed adjacent to a beacon
-            Block adjBlock = block.getRelative(BlockFace.NORTH);
-            BeaconObj adjacentBeacon = getRegister().getBeaconAt(new Point2D.Double(adjBlock.getX(), adjBlock.getZ()));
+        
+        // Check to see if block is being placed adjacent to a beacon
+        Block adjBlock = block.getRelative(BlockFace.NORTH);
+        BeaconObj adjacentBeacon = getRegister().getBeaconAt(new Point2D.Double(adjBlock.getX(), adjBlock.getZ()));
+        if (adjacentBeacon == null) {
+            adjBlock = block.getRelative(BlockFace.SOUTH);
+            adjacentBeacon = getRegister().getBeaconAt(new Point2D.Double(adjBlock.getX(), adjBlock.getZ()));
             if (adjacentBeacon == null) {
-                adjBlock = block.getRelative(BlockFace.SOUTH);
+                adjBlock = block.getRelative(BlockFace.EAST);
                 adjacentBeacon = getRegister().getBeaconAt(new Point2D.Double(adjBlock.getX(), adjBlock.getZ()));
                 if (adjacentBeacon == null) {
-                    adjBlock = block.getRelative(BlockFace.EAST);
+                    adjBlock = block.getRelative(BlockFace.WEST);
                     adjacentBeacon = getRegister().getBeaconAt(new Point2D.Double(adjBlock.getX(), adjBlock.getZ()));
-                    if (adjacentBeacon == null) {
-                        adjBlock = block.getRelative(BlockFace.WEST);
-                        adjacentBeacon = getRegister().getBeaconAt(new Point2D.Double(adjBlock.getX(), adjBlock.getZ()));
-                    }
                 }
             }
+        }
+        
+        // Check if block is a beacon extension block
+        if (block.getType().equals(Material.EMERALD_BLOCK)) {
             if (adjacentBeacon != null) {
                 // Check block is at the right height
                 if (block.getY() + 1 == adjacentBeacon.getY()) {
@@ -217,8 +220,31 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
                     player.sendMessage(ChatColor.GREEN + Lang.beaconExtended);
                     // TODO: give experience?
                     return;
-                }
+                } 
             }
+        }
+        
+        // Check if the block is a beacon locking block
+        Material lockingBlock = Material.EMERALD_BLOCK;
+        if (Material.getMaterial(Settings.lockingBlock.toUpperCase()) != null) {
+            lockingBlock = Material.getMaterial(Settings.lockingBlock.toUpperCase());                
+        }
+        if (block.getType().equals(lockingBlock)) {
+            // Check if the team is placing a block on their own beacon 
+            if (adjacentBeacon.getOwnership() != null && adjacentBeacon.getOwnership().equals(team)) {
+                // Check if block was placed directly above the beacon's base
+                if (Math.abs(block.getX()) - Math.abs(adjacentBeacon.getX()) < 2 && Math.abs(block.getZ()) - Math.abs(adjacentBeacon.getZ()) < 2) {
+                    // Check if beacon is locked
+                    int missing = adjacentBeacon.nbrToLock(block.getY());
+                    if (missing == 0) {
+                        player.sendMessage(ChatColor.YELLOW + Lang.beaconLockedJustNow.replace("[lockingBlock]", Settings.lockingBlock.toLowerCase()));                                
+                    } else if (adjacentBeacon.isLocked()) {
+                        player.sendMessage(ChatColor.YELLOW + Lang.beaconLockedAlready.replace("[lockingBlock]", Settings.lockingBlock.toLowerCase()));   
+                    } else {
+                        player.sendMessage(ChatColor.GREEN + Lang.beaconLockedWithNMoreBlocks.replace("[number]", missing + ""));
+                    }                        
+                }                        
+            } 
         }
 
         // Check if the block is a defensive block
@@ -328,6 +354,7 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
             // No it is not
             return;
         }
+        
         // If not same team, then blocks have to be removed in a specific way
         DefenseBlock dBlock = beacon.getDefenseBlocks().get(event.getBlock());
         if (team.equals(beacon.getOwnership())) {
@@ -344,22 +371,21 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
                         event.setCancelled(true); 
                     }
                 }
-            }
+            }            
         } else {
-            // Get the level
-            int level = dBlock.getLevel();
+            // Get the highest defense block height
+            int highestBlock = beacon.getHighestBlockLevel();
+            
+            // Check if beacon is locked
+            if (beacon.isLocked()) {        
+                player.sendMessage(ChatColor.YELLOW + Lang.beaconLocked);
+                event.setCancelled(true);
+                return;
+            }
+
             // Check all blocks in the defense
-            int highestBlock = 0;
-            Iterator<Entry<Block, DefenseBlock>> it = beacon.getDefenseBlocks().entrySet().iterator();
-            while (it.hasNext()) {
-                Entry<Block, DefenseBlock> defenseBlock = it.next();
-                if (defenseBlock.getKey().getType().equals(Material.AIR)) {
-                    // Clean up if any blocks have been removed by creatives, or moved due to gravity.
-                    it.remove();
-                } else {
-                    highestBlock = Math.max(highestBlock, defenseBlock.getValue().getLevel());
-                }
-            } 
+            int level = dBlock.getLevel();
+            
             if (player.getLevel() < highestBlock) {
                 player.sendMessage(ChatColor.RED + Lang.errorYouNeedToBeLevel.replace("[value]", String.valueOf(highestBlock))); 
                 event.setCancelled(true);
@@ -372,8 +398,10 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
                 return;
             }
         }
+
         // The block is broken
-        beacon.removeDefenseBlock(block);
+        beacon.removeDefenseBlock(block);        
+               
         // Check if it was a link block
         if (Settings.linkBlocks.containsKey(block.getType())) {
             player.sendMessage(ChatColor.RED + Lang.beaconLinkBlockBroken.replace("[range]", String.valueOf(Settings.linkBlocks.get(event.getBlock().getType())))); 

@@ -29,6 +29,7 @@ import java.util.Locale;
 import java.util.Random;
 import java.util.Set;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -98,7 +99,7 @@ public class Region extends BeaconzPluginDependent {
      * @param sender
      * @param delete - true if this is a deletion only.
      */
-    public void regenerate(final CommandSender sender, final String delete) {
+    public void regenerate_THIS_IS_NO_LONG_USED_AND_CAN_BE_REMOVED(final CommandSender sender, final String delete) {
         if (this != getGameMgr().getLobby()) {
             if (!getBeaconzWorld().getPlayers().isEmpty()) {
                 sender.sendMessage(ChatColor.RED + "Regeneration can only occur when there are no players in the world");
@@ -166,7 +167,7 @@ public class Region extends BeaconzPluginDependent {
             }
         }
     }
-
+        
     private void finishRegenerating(CommandSender sender, String delete) {
         // Wrap things up
         //getLogger().info("100% complete");
@@ -177,10 +178,31 @@ public class Region extends BeaconzPluginDependent {
         } else {
             sender.sendMessage(ChatColor.GREEN + Lang.adminDeletedGame.replace("[name]", delete));
         }
-    }
+    } 
 
     /**
+     * Unloads all of the region's chunks
+     */
+    public void unloadRegionChunks() {
+        final int xMin = (int) corners[0].getX() -16;
+        final int xMax = (int) corners[1].getX() +16;
+        final int zMin = (int) corners[0].getY() -16;
+        final int zMax = (int) corners[1].getY() +16;
+        int chX = xMin;
+        int chZ = zMin;
+        while (chX <= xMax) {
+            while (chZ <= zMax) {
+                getBeaconzWorld().unloadChunk(chX/16, chZ/16);
+                chZ = chZ + 16;
+            }
+            chZ = zMin;
+            chX = chX + 16;
+        }        
+    }
+    
+    /**
      * Creates the corner-most beacons so that the map can be theoretically be covered entirely (almost)
+     * Also regenerates the chunk
      * This is only for creating new regions. Existing regions have their corner beacons loaded with Register.loadRegister().
      */
     public void createCorners() {
@@ -197,6 +219,7 @@ public class Region extends BeaconzPluginDependent {
         for (Point2D point : fourcorners) {
             if (!getRegister().isNearBeacon(point, 5)) {
                 Block b = getBeaconzWorld().getHighestBlockAt((int)point.getX(), (int)point.getY());
+                // Find the topmost free block
                 while (b.getType().equals(Material.AIR) || b.getType().equals(Material.LEAVES) || b.getType().equals(Material.LEAVES_2)) {
                     if (b.getY() == 0) {
                         // Oops, nothing here
@@ -204,6 +227,11 @@ public class Region extends BeaconzPluginDependent {
                     }
                     b = b.getRelative(BlockFace.DOWN);
                 }
+                // If there's already a beacon there, go down 1, to avoid building diamond towers - only needed for capped beacons
+                if (b.getType().equals(Material.OBSIDIAN) && b.getRelative(BlockFace.DOWN).getType().equals(Material.BEACON)) {
+                    b = b.getRelative(BlockFace.DOWN);
+                }
+                
                 if (b.getY() > 3) {
                     // Create a beacon
                     //getLogger().info("DEBUG: createCorners() made a beacon at " + b.getLocation());
@@ -231,12 +259,6 @@ public class Region extends BeaconzPluginDependent {
     }
 
 
-    /**
-     * @return the corners
-     */
-    public Point2D[] getCorners() {
-        return corners;
-    }
 
     /**
      * Sets the region's corners, and in the right order
@@ -308,7 +330,7 @@ public class Region extends BeaconzPluginDependent {
             // Close to max x
             for (int z = -radius; z < radius; z++) {
                 for (int y = -radius; y < radius; y++) {
-                    Block b = getBeaconzWorld().getBlockAt(xMax+1, loc.getBlockY() + y, loc.getBlockZ() + z);
+                    Block b = getBeaconzWorld().getBlockAt(xMax, loc.getBlockY() + y, loc.getBlockZ() + z); // not xMax+1, that's outside the region
                     if (b.getType().equals(Material.AIR)) {
                         player.sendBlockChange(b.getLocation(), barrier, color);
                     }
@@ -319,7 +341,7 @@ public class Region extends BeaconzPluginDependent {
             // Close to max z
             for (int x = -radius; x < radius; x++) {
                 for (int y = -radius; y < radius; y++) {
-                    Block b = getBeaconzWorld().getBlockAt(loc.getBlockX() + x, loc.getBlockY() + y, zMax+1);
+                    Block b = getBeaconzWorld().getBlockAt(loc.getBlockX() + x, loc.getBlockY() + y, zMax); // not zMax+1, that's outside the region
                     if (b.getType().equals(Material.AIR)) {
                         player.sendBlockChange(b.getLocation(), barrier, color);
                     }
@@ -342,7 +364,7 @@ public class Region extends BeaconzPluginDependent {
      * Returns the region's radius
      */
     public int getRadius() {
-        return (int)((Math.abs(corners[0].getX()) + Math.abs(corners[1].getX())) / 2D);
+        return (int) Math.abs((corners[0].getX() - corners[1].getX()) / 2D);
     }
 
     /**
@@ -438,6 +460,7 @@ public class Region extends BeaconzPluginDependent {
      * Handles player entering the Lobby
      */
     public void enterLobby(final Player player) {
+        
         // Welcome player in chat
         player.sendMessage(ChatColor.GREEN + Lang.titleWelcome);
         player.sendMessage(ChatColor.AQUA + Lang.titleSubTitle);
@@ -447,6 +470,7 @@ public class Region extends BeaconzPluginDependent {
                 "title " + player.getName() + " title {\"text\":\"" + Lang.titleWelcome + "\", \"color\":\"" + Lang.titleWelcomeColor + "\"}");
         getServer().dispatchCommand(getServer().getConsoleSender(),
                 "title " + player.getName() + " subtitle {\"text\":\"" + Lang.titleSubTitle + "\", \"color\":\"" + Lang.titleSubTitleColor + "\"}");
+        
         // Show the lobby scoreboard - wait for title message to disappear
         if (this.equals(getGameMgr().getLobby())) {
 
@@ -486,60 +510,68 @@ public class Region extends BeaconzPluginDependent {
      */
     public void exit(Player player) {
         player.setScoreboard(getServer().getScoreboardManager().getNewScoreboard());
+        if (game !=null && game.getGamemode().equals("minigame"))  {
+            getBeaconzStore().clearItems(player, game.getName(), player.getLocation());
+            player.getInventory().clear();
+        }
     }
 
     /**
      * Handles player Enter event
      */
     public void enter(Player player) {
-        if (getGameMgr().isPlayerInLobby(player)) {
-            //getLogger().info("DEBUG: enter - player is in lobby, enter lobby");
-            enterLobby(player);
+        
+        // Show scoreboard
+        String teamname = "no";
+        Team team = game.getScorecard().getTeam(player);
+        if (team != null) teamname = team.getDisplayName();
+        if (Settings.useScoreboard) {
+            player.setScoreboard(game.getScorecard().getScoreboard());
         } else {
-            Game game = getGameMgr().getGame(this);
-            String teamname = "no";
-            Team team = game.getScorecard().getTeam(player);
-            if (team != null) teamname = team.getDisplayName();
-            if (Settings.useScoreboard) {
-                player.setScoreboard(game.getScorecard().getScoreboard());
-            } else {
-                player.setScoreboard(getServer().getScoreboardManager().getNewScoreboard());
-            }
-            //game.getScorecard().sendPlayersHome(player, true);
+            player.setScoreboard(getServer().getScoreboardManager().getNewScoreboard());
+        }
 
-            // Welcome player in chat
-            player.sendMessage(ChatColor.GREEN + Lang.titleWelcome);
-            //player.sendMessage(ChatColor.AQUA + (Lang.startYourePlaying.replace("[name]", game.getName())).replace("[mode]", game.getGamemode()));
-            player.sendMessage(ChatColor.AQUA + Lang.startYoureAMember.replace("[name]", teamname));
-            if (game.getGamegoalvalue() > 0) {
-                player.sendMessage(ChatColor.AQUA + (Lang.startObjective.replace("[value]", String.format(Locale.US, "%,d",game.getGamegoalvalue())).replace("[goal]", game.getGamegoal())));
-            } else {
-                player.sendMessage(ChatColor.AQUA + Lang.startMostObjective.replace("[goal]", game.getGamegoal()));
-            }
+        // Send player to team spawn
+        //game.getScorecard().sendPlayersHome(player, true);
 
-            // Welcome player on screen
-            /*
+        // Welcome player in chat
+        player.sendMessage(ChatColor.GREEN + Lang.titleWelcome);
+        //player.sendMessage(ChatColor.AQUA + (Lang.startYourePlaying.replace("[name]", game.getName())).replace("[mode]", game.getGamemode()));
+        player.sendMessage(ChatColor.AQUA + Lang.startYoureAMember.replace("[name]", teamname));
+        if (game.getGamegoalvalue() > 0) {
+            player.sendMessage(ChatColor.AQUA + (Lang.startObjective.replace("[value]", String.format(Locale.US, "%,d",game.getGamegoalvalue())).replace("[goal]", game.getGamegoal())));
+        } else {
+            player.sendMessage(ChatColor.AQUA + Lang.startMostObjective.replace("[goal]", game.getGamegoal()));
+        }
+
+        // Welcome player on screen
+        /*
             getServer().dispatchCommand(getServer().getConsoleSender(),
                     "title " + player.getName() + " title {\"text\":\"" + Lang.welcome + "\", \"color\":\"" + Lang.welcomeColor + "\"}");
             getServer().dispatchCommand(getServer().getConsoleSender(),
                     "title " + player.getName() + " subtitle {\"text\":\"" + Lang.subTitle + "\", \"color\":\"" + Lang.subTitleColor + "\"}");
-             */
-        }
+         */
     }
 
     /**
      * Find the nearest safe spot to a given point, within a radius
      * The radius is arbitrarily limited to 20 blocks
-     * If no safe location within radius is found, this creates a safe spot by converting the block at location to
+     * If no safe location within radius is found, this creates a safe spot by converting the block at location to bedrock
      */
     public Location findSafeSpot (Location location, Integer radius) {
-        // Check actual first location
-        if (isLocationSafe(location)) {
-            return location;
-        }
-        if (radius > 20) radius = 20;
+        
         Location safeloc = null;
-        if (location != null) {
+        
+        // First tell WorldListener to ignore these chunk loads
+        getBeaconzPlugin().ignoreChunkLoad = true;
+        
+        // Check actual first location
+        //senderMsg(Bukkit.getConsoleSender(), "Checking original: " + location + " material: " + location.getBlock().getRelative(BlockFace.DOWN).getState().getType());
+        if (isLocationSafe(location)) {
+            safeloc = location;
+        }
+        if (radius > 20) radius = 20;        
+        if (safeloc == null && location != null) {
             // look for a safe spot at location and within radius
             Block bl = location.getBlock();
             String usedxyz = "";
@@ -549,30 +581,35 @@ public class Region extends BeaconzPluginDependent {
             outerloop:
                 for (int rad = 0; rad < radius; rad++) {
                     //for (int y = -rad; y <= rad; y++) {
-                    for (int z = -rad; z <= rad; z++) {
-                        for (int x = -rad; x <= rad; x++) {
-                            String coords = "#" + x + " "+ z + "#";
-                            if (!usedxyz.contains(coords)) {
-                                usedxyz = usedxyz + coords;
-                                checkloc = getBeaconzWorld().getHighestBlockAt(bl.getRelative(x, 0, z).getLocation()).getLocation();
-                                if (isLocationSafe(checkloc)) {
-                                    safeloc = checkloc.add(0.5, 0.0, 0.5);
-                                    break outerloop;
+                        for (int z = -rad; z <= rad; z++) {
+                            for (int x = -rad; x <= rad; x++) {
+                                String coords = "#" + x + " "+ z + "#";
+                                if (!usedxyz.contains(coords)) {
+                                    usedxyz = usedxyz + coords;
+                                    checkloc = getBeaconzWorld().getHighestBlockAt(bl.getRelative(x, 0, z).getLocation()).getLocation();
+                                    //senderMsg(Bukkit.getConsoleSender(), "Checking: " + checkloc + " material: " + checkloc.getBlock().getRelative(BlockFace.DOWN).getState().getType());
+                                    if (isLocationSafe(checkloc)) {
+                                        safeloc = checkloc.add(0.5, 0.0, 0.5);
+                                        break outerloop;
+                                    }
                                 }
                             }
                         }
-                    }
                     //}
                 }
         }
         if (safeloc == null) {
-            //getLogger().warning(ChatColor.RED + "Could not find a safe spot for region spawn point. Region at " + displayCoords() + ". Using default.");
+            senderMsg(Bukkit.getConsoleSender(), ChatColor.YELLOW + "Could not find a safe spot. Region at " + displayCoords() + ". Using default.");
             safeloc = getBeaconzWorld().getHighestBlockAt((int) location.getX(), (int) location.getZ()).getLocation();
             safeloc = safeloc.add(0.5, 0.0, 0.5);
-            if (safeloc.getBlock().isLiquid() || safeloc.getBlock().isEmpty()) {
-                safeloc.getBlock().getRelative(BlockFace.DOWN).setType(Material.BEDROCK);
-            }
+            safeloc.getBlock().getRelative(BlockFace.DOWN).setType(Material.BEDROCK);
         }
+
+        // WorldListener can process chunk loads again
+        this.unloadRegionChunks();
+        getBeaconzPlugin().ignoreChunkLoad = false;        
+        
+        // Return the safe location
         return safeloc;
     }
 
@@ -783,5 +820,31 @@ public class Region extends BeaconzPluginDependent {
             return false;
         }
         return containsPoint(location.getBlockX(), location.getBlockZ());
+    }
+    
+    /**
+     * Sends all players in this region to the lobby, optionally clears inventory
+     * @param clearInv
+     */
+    public void sendAllPlayersToLobby(Boolean saveInv) {
+        for (Player player : getServer().getOnlinePlayers()) {
+            sendToLobby(player, saveInv);
+        }
+    }
+    
+    /**
+     * Sends player to lobby, if he is in this region
+     * @param player
+     */
+    public void sendToLobby(Player player, Boolean saveInv) {
+        if (isPlayerInRegion(player)) {
+            String gameName = game != null? game.getName() : null;
+            if (saveInv || gameName != null) {
+                getBeaconzStore().storeInventory(player, gameName, player.getLocation());
+            } else {
+                getBeaconzStore().clearItems(player, gameName, null);
+            }
+            getGameMgr().getLobby().tpToRegionSpawn(player, true);
+        }        
     }
 }

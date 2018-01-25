@@ -22,6 +22,8 @@
 
 package com.wasteofplastic.beaconz;
 
+import io.github.ebaldino.queuemgr.QueueMgrInterface;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -141,14 +143,14 @@ public class Scorecard extends BeaconzPluginDependent{
         } catch (Exception e){ };
 
         scoreboard = manager.getNewScoreboard();
-        scoreobjective = scoreboard.registerNewObjective("score", "dummy");
+        scoreobjective = scoreboard.registerNewObjective("score", "beaconz");
         scoreobjective.setDisplaySlot(DisplaySlot.SIDEBAR);
         sidebarline = 15;
 
         // Set up the scoreboard with the goal
         //getLogger().info("GameMode: " + game.getGamemode());
-        //scoreobjective.setDisplayName(ChatColor.GREEN + Lang.titleBeaconz + " " + game.getGamemode() + "! 00d 00:00:00");
-        scoreobjective.setDisplayName(ChatColor.GREEN + Lang.titleBeaconz + " " + game.getGamemode() + "!");
+        scoreobjective.setDisplayName(ChatColor.GREEN + Lang.titleBeaconz + " " + game.getGamemode() + "! 00d 00:00:00");
+        //scoreobjective.setDisplayName(ChatColor.GREEN + Lang.titleBeaconz + " " + game.getGamemode() + "!");
 
         goalstr = "";
         if (game.getGamegoalvalue() == 0) {
@@ -279,7 +281,7 @@ public class Scorecard extends BeaconzPluginDependent{
             // If the gamegoal value is zero, then the game is never ending
             //getLogger().info("DEBUG: ending game goal = " + game.getGamegoal() + " required value = " + game.getGamegoalvalue() + " actual value = " + value);
             //getLogger().info("DEBUG: timertype = " + timertype + " scoretype = " + scoretype);
-            if (game.getGamegoalvalue() > 0 && timertype.equals("openended") && scoretype.equals(game.getGamegoal()) && value >= game.getGamegoalvalue()) {
+            if (game.getGamegoalvalue() > 0 && scoretype.equals(game.getGamegoal()) && value >= game.getGamegoalvalue()) {
                 //getLogger().info("DEBUG: ending game");
                 endGame();
             }
@@ -836,8 +838,8 @@ public class Scorecard extends BeaconzPluginDependent{
                 }
                 direction++;
             }
-            teamSP = teamSP.getBlock().getRelative(blockFace, Settings.gameDistance / 4).getLocation();
-            teamSP = region.findSafeSpot(teamSP, Settings.gameDistance / 4);
+            teamSP = teamSP.getBlock().getRelative(blockFace, game.getRegion().getRadius() / 4).getLocation();
+            teamSP = region.findSafeSpot(teamSP, 20);
         }
         //getLogger().info("Team spawn: " + team.getDisplayName() + " >> " + teamSP);
 
@@ -1020,16 +1022,19 @@ public class Scorecard extends BeaconzPluginDependent{
                             }
                         }
                     }
-                }
-                // Teleport any players in the game to the lobby
-                for (Player player: getServer().getOnlinePlayers()) {
-                    if (game.getRegion().contains(player.getLocation())) {
-                        // Send to Lobby
-                        game.sendToLobby(player);
+                }  
+                // If working with QueueMgr, tell it the game ended:
+                if (getServer().getPluginManager().getPlugin("QueueMgr") != null) {
+                    QueueMgrInterface qMgr = getServer().getServicesManager().load(QueueMgrInterface.class);
+                    if (qMgr != null && winner != null) {
+                        qMgr.endGame(game.getName());
+                        qMgr.setWinnerVar(game.getName(), winner.getDisplayName().toUpperCase(), null);
+                        qMgr.setGameOverVar1(game.getName(), "THAT WAS A GREAT GAME!", null);
+                        qMgr.setGameOverVar2(game.getName(), "THANK YOU FOR PLAYING!", null);
                     }
                 }
             }
-        }, 30);
+        }, 30);        
     }
 
     /**

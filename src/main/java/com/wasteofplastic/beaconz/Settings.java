@@ -65,7 +65,7 @@ public class Settings {
      */
     public static Integer minigameTimer;
     public static Integer strategyTimer;
-    public static Boolean showTimer = false;
+    public static Boolean showTimer = true;
     /**
      * The default sidebar options for the two game modes
      */
@@ -131,6 +131,11 @@ public class Settings {
      * Format is "Id#/Material:[Durability/Qty]:Qty"
      */
     public static List<ItemStack> newbieKit = new ArrayList<ItemStack>();
+    
+    /**
+     * The XP players get when joining a game in minigame mode
+     */
+    public static int initialXP;
 
     /**
      * Whether teamchat is on or not
@@ -272,4 +277,13 @@ public class Settings {
      */
     public static boolean useScoreboard;
     
+    /**
+     * Define the locking block
+     */
+    public static String lockingBlock;
+    
+    /**
+     * Number of locking blocks required (for largest team)
+     */
+    public static int nbrLockingBlocks;
 }

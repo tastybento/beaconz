@@ -71,7 +71,7 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
             switch (args[0].toLowerCase()) {
             case "help":
                 sender.sendMessage("/" + label + " help " + Lang.helpHelp);
-                //sender.sendMessage("/" + label + " join <game> " + Lang.helpJoin);
+                /* sender.sendMessage("/" + label + " join <game> " + Lang.helpJoin); */
                 if (player.hasPermission("beaconz.player.leave")) {
                     sender.sendMessage("/" + label + " leave <game> " + Lang.helpLeave);
                 }
@@ -158,19 +158,20 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
             }
             break;
         case 2:
-            Game game;
+            Game game;            
             switch (args[0].toLowerCase()) {
-            /*
             case "join":
-                String gamename = args[1];
-                game = getGameMgr().getGame(gamename);
-                if (game == null) {
-                    sender.sendMessage(ChatColor.AQUA + Lang.errorNoSuchGame + " '" + gamename + "'");
-                } else {
-                    game.join(player);
-                }
+                // beaconz join command (undocumented) so admins can make players join any game
+                if (player.isOp()) {
+                    String gamename = args[1];
+                    game = getGameMgr().getGame(gamename);
+                    if (game == null) {
+                        sender.sendMessage(ChatColor.AQUA + Lang.errorNoSuchGame + " '" + gamename + "'");
+                    } else {
+                        game.join(player);
+                    }                   
+                }    
                 break;
-             */
             case "leave":
                 if (player.hasPermission("beaconz.player.leave")) {
                     game = getGameMgr().getGame(args[1]);

@@ -47,6 +47,9 @@ import com.wasteofplastic.include.it.unimi.dsi.util.XorShift;
  * the lower it is, the fewer chunks get a beacon and the beacons
  * are more spread out in the world.
  *
+ * Note added by EBaldino: in order to be able to regenerate and repopulate chunks for specific game regions,
+ * and considering that other plugins may regenerate a chunk in an active game area, I am removing this from
+ * the world's populators and calling it explicitly in WorldListener.onChunkLoad
  *
  */
 public class BeaconPopulator extends BlockPopulator {
@@ -59,34 +62,20 @@ public class BeaconPopulator extends BlockPopulator {
 
     @Override
     public void populate(World world, Random unused, Chunk source) {
+        Boolean cornerBeacon = false;
+        Integer cornerX = null;
+        Integer cornerZ = null;
+        
         if (plugin.getRegister() == null) {
             // Not ready!
             return;
         }
-        //Bukkit.getLogger().info("DEBUG: populator called. ");
 
-        // If we're regenerating this chunk from within the game (e.g. a "reset" command), don't do anything
-        /*
-        boolean regen = false;
-    	if (Settings.populate.contains(new Pair(source.getX(),source.getZ()))) {
-    	    plugin.getLogger().info("DEBUG: POPULATING chunk: " + source.getX() + ":" + source.getZ());
-    	    regen = true;
-    	}
-    	regen = true;*/
-        // Don't bother to make anything if it is outside the border. Make it just a bit smaller than the border
-        // THERE IS NO BORDER ANYMORE, THIS MAY BE REMOVED
-        /*
-        if (Settings.borderSize > 0) {
-            int minX = (Settings.xCenter - Settings.borderSize/2) / 16 + 1;
-            int minZ = (Settings.zCenter - Settings.borderSize/2) / 16 + 1;
-            int maxX = (Settings.xCenter + Settings.borderSize/2) / 16 - 1;
-            int maxZ = (Settings.zCenter + Settings.borderSize/2) / 16 - 1;
-            if (source.getX() < minX || source.getX() > maxX || source.getZ() < minZ || source.getZ() > maxZ) {
-                return;
-            }
-        }*/
         // Make sure we're within the boundaries of a game
         if (plugin.getGameMgr() != null) {
+            int X = source.getX();
+            int Z = source.getZ();
+            
             if (plugin.getGameMgr().getLobby() == null) {
                 // No lobby yet
                 if (DEBUG)
@@ -94,31 +83,45 @@ public class BeaconPopulator extends BlockPopulator {
                 return;
             }
             // Don't do anything in the lobby
-            if (plugin.getGameMgr().getLobby().containsPoint(source.getX() * 16, source.getZ() * 16)) {
+            if (plugin.getGameMgr().getLobby().containsPoint(X * 16, Z * 16)) {
                 if (DEBUG)
                     Bukkit.getLogger().info("DEBUG: no beaconz in lobby");
                 return;
             }
-            if (plugin.getGameMgr().getLobby().containsPoint(source.getX() * 16 + 15, source.getZ() * 16 + 15)) {
+            if (plugin.getGameMgr().getLobby().containsPoint(X * 16 + 15, Z * 16 + 15)) {
                 if (DEBUG)
                     Bukkit.getLogger().info("DEBUG: no beaconz in lobby");
                 return;
-            }
+            }            
+            
             // Don't do anything unless inside a region
             // Check min coords
-            Region region = plugin.getGameMgr().getRegion(source.getX() * 16, source.getZ() * 16);
-            if (region == null) {
+            Region region1 = plugin.getGameMgr().getRegion(X * 16, Z * 16);
+            if (region1 == null) {
                 if (DEBUG)
                     Bukkit.getLogger().info("DEBUG: non-region");
                 return;
             }
             // Check max coords of this chunk
-            region = plugin.getGameMgr().getRegion(source.getX() * 16 + 15, source.getZ() * 16 + 15);
-            if (region == null) {
+            Region region2 = plugin.getGameMgr().getRegion(X * 16 + 15, Z * 16 + 15);
+            if (region2 == null || region1 != region2) {
                 if (DEBUG)
                     Bukkit.getLogger().info("DEBUG: non-region");
                 return;
             }
+            // If we're in the corner chunk of a region, get the coordinates offset to build the corner beacon
+            int cX = X << 4;
+            int cZ = Z << 4;
+            int xMin = (int) region1.corners()[0].getX();
+            int xMax = (int) region1.corners()[1].getX()-16;
+            int zMin = (int) region1.corners()[0].getY();
+            int zMax = (int) region1.corners()[1].getY()-16;
+            if (cX >= xMin && cX < xMin + 16 && cZ >= zMin && cZ < zMin + 16) {cornerX = 1;  cornerZ = 1; }
+            if (cX <= xMax && cX > xMax - 16 && cZ <= zMax && cZ > zMax - 16) {cornerX = 14; cornerZ = 14;} 
+            if (cX <= xMax && cX > xMax - 16 && cZ >= zMin && cZ < zMin + 16) {cornerX = 14; cornerZ = 1; } 
+            if (cX >= xMin && cX < xMin + 16 && cZ <= zMax && cZ > zMax - 16) {cornerX = 1;  cornerZ = 14;}  
+            cornerBeacon = (cornerX != null && cornerZ != null);
+
         } else {
             if (DEBUG)
                 plugin.getLogger().info("DEBUG: game manager not ready");
@@ -131,15 +134,30 @@ public class BeaconPopulator extends BlockPopulator {
         XorShift gen=new XorShift(new long[] {
                 source.getX(),
                 source.getZ(),
-                world.getSeed(),
+                //world.getSeed(), world seed is always the same, was causing beacons to be placed always on the same spot - using currentTimeMillis instead...
+                System.currentTimeMillis(),
                 Settings.seedAdjustment
-        });
+        });                
         double nd = gen.nextDouble();
-        //plugin.getLogger().info("DEBUG: next double = " + nd);
-        if (nd < Settings.distribution) {
-            int x = gen.nextInt(16);
-            int z = gen.nextInt(16);
+        
+        // Compare the pseudo-random double generated with the game's beacon distribution threshold        
+        Double distribution = plugin.getGameMgr().getRegion(source.getX() << 4, source.getZ() << 4).getGame().getGamedistribution();
+        if (distribution == null) distribution = Settings.distribution;
+        if (nd < distribution || cornerBeacon) {
+            int x;
+            int z;
+            if (cornerBeacon) {
+                // We're building a corner beacon, the relative build coordinates are given by cornerX and cornerZ
+                x = cornerX;
+                z = cornerZ;
+            } else {
+                // Otherwise, pick a random relative position in the chunk
+                x = gen.nextInt(15);
+                z = gen.nextInt(15);
+            }
+            
             // Check if there is already a beacon here, if so, don't make it again
+            // This should never happen...
             if (plugin.getRegister() != null) {
                 if (plugin.getRegister().getBeaconAt((source.getX() * 16 + x), (source.getZ()*16 + z)) != null) {
                     if (DEBUG)
@@ -150,6 +168,7 @@ public class BeaconPopulator extends BlockPopulator {
             if (DEBUG)
                 plugin.getLogger().info("DEBUG: Creating beacon at " + (source.getX() * 16 + x) + "," + (source.getZ()*16 + z));
 
+            // Figure out at which height the beacon should be placed
             int y = source.getChunkSnapshot().getHighestBlockYAt(x, z);
             Block b = source.getBlock(x, y, z);
             if (b.getType().equals(Material.SNOW)) {
@@ -168,7 +187,12 @@ public class BeaconPopulator extends BlockPopulator {
                 return;
             }
             while (b.getType().equals(Material.AIR) || b.getType().equals(Material.LEAVES) || b.getType().equals(Material.LEAVES_2)
-                    || b.getType().equals(Material.HUGE_MUSHROOM_1) || b.getType().equals(Material.HUGE_MUSHROOM_2)) {
+                    || b.getType().equals(Material.HUGE_MUSHROOM_1) || b.getType().equals(Material.HUGE_MUSHROOM_2) || b.getType().equals(Material.OBSIDIAN)) {
+                // if found an obsidian, we only keep going down if it's NOT capping a beacon .. this shouldn't really happen either, since we're regenerating the chunk... 
+                // ... but, just in case, it should help avoid the creation of diamond towers, which were plentiful during testing...
+                if (b.getType().equals(Material.OBSIDIAN) && !b.getRelative(BlockFace.DOWN).getType().equals(Material.BEACON)) {
+                    break;
+                }
                 y--;
                 if (y == 0) {
                     // Oops, nothing here
@@ -176,6 +200,7 @@ public class BeaconPopulator extends BlockPopulator {
                 }
                 b = source.getBlock(x, y, z);
             }
+                        
             // Else make it into a beacon
             //beacons.add(new Vector(x,y,z));
             //Bukkit.getLogger().info("DEBUG: made beacon at " + (source.getX() * 16 + x) + " " + y + " " + (source.getZ()*16 + z) );

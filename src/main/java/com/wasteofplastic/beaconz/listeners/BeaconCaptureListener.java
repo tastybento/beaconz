@@ -153,6 +153,7 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
                 return;
             }
         }
+        
         // Prevent breakage of blocks outside the game area
         Game game = getGameMgr().getGame(event.getBlock().getLocation());
         if (DEBUG) {
@@ -162,20 +163,17 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
                 getLogger().info("DEBUG: game name = " + game.getName());
             }
         }
-        if (game == null) {
+        if (game == null && !player.isOp()) {
             event.setCancelled(true);
             player.sendMessage(ChatColor.RED + Lang.errorYouCannotDoThat);
             return;
         }
         // Get the player's team
-        Team team = game.getScorecard().getTeam(player);
-        if (team == null) {
-            if (player.isOp()) {
-                return;
-            } else {
-                event.setCancelled(true);
-                return;
-            }
+        Team team = null;
+        if (game != null && game.getScorecard() != null) team = game.getScorecard().getTeam(player);
+        if (team == null && !player.isOp()) {
+            event.setCancelled(true);
+            return;
         }
 
         // Check if the block is a beacon or the surrounding pyramid
@@ -184,7 +182,7 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
         if (beacon == null) {
             return;
         }
-        // Cancel any breakage
+        // Cancel any breakage (if it IS a beacon)
         event.setCancelled(true);
         // Check for obsidian/glass breakage - i.e., capture
         if (block.getRelative(BlockFace.DOWN).getType().equals(Material.BEACON)) {
