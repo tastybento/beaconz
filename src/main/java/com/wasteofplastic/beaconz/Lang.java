@@ -72,6 +72,10 @@ public class Lang extends BeaconzPluginDependent {
     public static String beaconLinkCouldNotBeCreated;
     public static String beaconLinkCreated;
     public static String beaconLinkLost;
+    public static String beaconLocked;
+    public static String beaconLockedAlready;
+    public static String beaconLockedJustNow;
+    public static String beaconLockedWithNMoreBlocks;
     public static String beaconMapBeaconMap;
     public static String beaconMapUnknownBeacon;
     public static String beaconMaxLinks;
@@ -286,6 +290,10 @@ public class Lang extends BeaconzPluginDependent {
         beaconLinkCouldNotBeCreated = ChatColor.translateAlternateColorCodes('&', locale.getString("beacon.LinkCouldNotBeCreated", "Link could not be created!"));
         beaconLinkCreated = ChatColor.translateAlternateColorCodes('&', locale.getString("beacon.LinkCreated", "Link created!"));
         beaconLinkLost = ChatColor.translateAlternateColorCodes('&', locale.getString("beacon.LinkLost", "The longest link was lost!"));
+        beaconLocked = ChatColor.translateAlternateColorCodes('&', locale.getString("beacon.Locked", "This beacon is locked!"));
+        beaconLockedAlready = ChatColor.translateAlternateColorCodes('&', locale.getString("beacon.LockedAlready", "This beacon is already locked. Don't waste [lockingBlock]s!"));
+        beaconLockedJustNow = ChatColor.translateAlternateColorCodes('&', locale.getString("beacon.LockedJustNow", "This beacon is now locked. Break an [lockingBlock] to unlock it!"));
+        beaconLockedWithNMoreBlocks = ChatColor.translateAlternateColorCodes('&', locale.getString("beacon.LockedWithNMoreBlocks", "[number] additional locking block(s) on this level will lock the beacon."));        
         beaconMapBeaconMap = ChatColor.translateAlternateColorCodes('&', locale.getString("beacon.MapBeaconMap", "Beacon Map"));
         beaconMapUnknownBeacon = ChatColor.translateAlternateColorCodes('&', locale.getString("beacon.MapUnknownBeacon", "Unknown beacon"));
         beaconMaxLinks = ChatColor.translateAlternateColorCodes('&', locale.getString("beacon.MaxLinks", "This beacon already has [number] outbound links!"));

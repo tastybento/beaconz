@@ -208,7 +208,7 @@ public class OurServerListener extends BeaconzPluginDependent implements Listene
         String name = game.getName();
         double[] x = new double[4];
         double[] z = new double[4];
-        Point2D[] corners = game.getRegion().getCorners();
+        Point2D[] corners = game.getRegion().corners();
         int xMin = (int) corners[0].getX();
         int xMax = (int) corners[1].getX();
         int zMin = (int) corners[0].getY();

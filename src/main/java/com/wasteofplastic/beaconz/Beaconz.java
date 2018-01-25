@@ -24,8 +24,6 @@ package com.wasteofplastic.beaconz;
 
 
 import java.io.IOException;
-import java.math.BigDecimal;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -41,6 +39,7 @@ import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
 import org.bukkit.WorldType;
+import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.generator.BlockPopulator;
@@ -84,6 +83,7 @@ public class Beaconz extends JavaPlugin {
     protected PlayerMovementListener pml;
     private TinyDB nameStore;
     private PlayerTeleportListener teleportListener;
+    public Boolean ignoreChunkLoad;
 
 
     @Override
@@ -127,6 +127,7 @@ public class Beaconz extends JavaPlugin {
 
                 // Create the inventory store 
                 beaconzStore = new BeaconzStore(plugin);
+                
                 // Register the listeners - block break etc. 
                 getServer().getPluginManager().registerEvents(new BeaconLinkListener(plugin), plugin);
                 getServer().getPluginManager().registerEvents(new BeaconCaptureListener(plugin), plugin);
@@ -144,6 +145,8 @@ public class Beaconz extends JavaPlugin {
                 getServer().getPluginManager().registerEvents(new WorldListener(plugin), plugin);
                 getServer().getPluginManager().registerEvents(new BeaconSurroundListener(plugin), plugin);
                 getServer().getPluginManager().registerEvents(new LobbyListener(plugin), plugin);
+                ignoreChunkLoad = false; // used in WorldListener and other classes
+                
                 // Load messages for players
                 messages = new Messages(plugin);
 
@@ -179,10 +182,12 @@ public class Beaconz extends JavaPlugin {
         }
 
         getGameMgr().saveAllGames();
+        /* 
         beaconzWorld.getPopulators().clear();
         if (beaconPopulator != null) {
-            //beaconzWorld.getPopulators().remove(beaconPopulator);
+            beaconzWorld.getPopulators().remove(beaconPopulator);
         }
+        */
         //getConfig().set("world.distribution", Settings.distribution);
         //saveConfig();
     }
@@ -227,6 +232,8 @@ public class Beaconz extends JavaPlugin {
     public void loadConfig() {
         // Use scoreboard
         Settings.useScoreboard = getConfig().getBoolean("general.usescoreboard");
+        // Show timer
+        Settings.showTimer = getConfig().getBoolean("general.showtimer");
         // Dynmap
         Settings.useDynmap = getConfig().getBoolean("general.usedynmap");
         // Destroy link blocks when they are removed
@@ -272,6 +279,11 @@ public class Beaconz extends JavaPlugin {
         }
         // Max number of links a beacon can have
         Settings.maxLinks = getConfig().getInt("links.maxlinks", 6);
+        
+        // The Locking block
+        Settings.lockingBlock = getConfig().getString("general.lockingBlock", "EMERALD_BLOCK");
+        Settings.nbrLockingBlocks = getConfig().getInt("nbrLockingBlocks", 6);
+        
         // Load teleport delay
         Settings.teleportDelay = getConfig().getInt("general.teleportdelay",5);
         // get the lobby coords and size, adjust to match chunk size
@@ -545,6 +557,10 @@ public class Beaconz extends JavaPlugin {
         for (String item : newbieKit) {
             Settings.newbieKit.add(getItemFromString(item));
         }
+        
+        // Set the initial XP for minigames
+        Settings.initialXP = getConfig().getInt("world.initialXP", 100);
+        
     }
 
     /**
@@ -622,12 +638,14 @@ public class Beaconz extends JavaPlugin {
                 getLogger().info("Could not make world yet..");
                 return null;
             }
-            if (!beaconzWorld.getPopulators().contains(getBp())) {
-                beaconzWorld.getPopulators().add(getBp());
-            }
         }
         // This is not allowed in this function as it can be called async
         //beaconzWorld.setSpawnLocation(Settings.xCenter, beaconzWorld.getHighestBlockYAt(Settings.xCenter, Settings.zCenter), Settings.zCenter);
+        /*
+        if (!beaconzWorld.getPopulators().contains(getBp())) {
+            beaconzWorld.getPopulators().add(getBp());
+        }
+        */
         return beaconzWorld;
     }
 
@@ -1001,7 +1019,6 @@ public class Beaconz extends JavaPlugin {
         return teleportListener;
     }
 
-
     /**
      * Reloads the world after it has been unloaded.
      */
@@ -1009,4 +1026,20 @@ public class Beaconz extends JavaPlugin {
         beaconzWorld = null;
         getBeaconzWorld();
     }
+    
+    /**
+     * Sends a message to the command sender
+     * Allows for null senders and messages
+     * @param sender
+     * @param msg
+     * @return
+     */
+    public Boolean senderMsg(CommandSender sender, String msg) {
+        if (sender!=null && msg!=null && !msg.isEmpty()) {
+            sender.sendMessage(msg);
+            return true;
+        } else {
+            return false;
+        }
+    }   
 }

@@ -83,16 +83,16 @@ public class BeaconzStore extends BeaconzPluginDependent {
         if (health > 20D) {
             health = 20D;
         }
-        if (health < 0D) {
-            health = 0D;
+        if (health <= 0D) {
+            health = 1D;
         }
         player.setHealth(health);
         int food = ymlIndex.getInt(gameName + "." + player.getUniqueId().toString() + ".food", 20); 
         if (food > 20) {
             food = 20;
         }
-        if (food < 0) {
-            food = 0;
+        if (food <= 0) {
+            food = 1;
         }
         player.setFoodLevel(food);
         BeaconLinkListener.setTotalExperience(player, ymlIndex.getInt(gameName + "." + player.getUniqueId().toString() + ".exp", 0));
@@ -152,7 +152,6 @@ public class BeaconzStore extends BeaconzPluginDependent {
      * @param spawnPoint
      */
     public void clearItems(Player player, String gameName, Location from) {
-        getLogger().info("DEBUG: clear inventory for " + player.getName() + " in " + gameName);
         ymlIndex.set(gameName + "." + player.getUniqueId().toString() + ".inventory", null);
         ymlIndex.set(gameName + "." + player.getUniqueId().toString() + ".location", from);
         saveInventories();

@@ -58,56 +58,60 @@ public class PlayerDeathListener extends BeaconzPluginDependent implements Liste
 
     /**
      * Saves the player's death and resets their spawn point to the team spawn
+     * for when they reenter the game
      * @param event
      */
+    @SuppressWarnings("deprecation")
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onDeath(final PlayerDeathEvent event) {
-        //getLogger().info("DEBUG: death");
+
         Player player = event.getEntity();
-        // Check if player died in-game
-        if (!player.getWorld().equals(getBeaconzWorld())) {
-            //getLogger().info("DEBUG: not in world");
-            return;
-        }
-        // If in the lobby, ignore
-        if (getGameMgr().isLocationInLobby(player.getLocation())) {
-            //getLogger().info("DEBUG: died in lobby");
-            return;
-        }
-        // Get game
-        Game game = getGameMgr().getGame(player.getLocation());
-        if (game != null) {
-            Team team = game.getScorecard().getTeam(player);
-            //getLogger().info("DEBUG: team is " + team.getDisplayName());
-            // Store new spawn point
-            Location spawnPoint = game.getScorecard().getTeamSpawnPoint(team);
-            //getLogger().info("DEBUG: new spawn point is " + spawnPoint);
-            if (event.getKeepInventory()) {
-                // Store the inventory for this player because they will get it when they come back
-                // Will also store their exp
-                //getLogger().info("DEBUG: keep inventory is true");
-                getBeaconzStore().storeInventory(player, game.getName(), spawnPoint);
-            } else {
-                //getLogger().info("DEBUG: keep inventory is false");
-                // Their inventory is going to get dumped on the floor so they need to have their possessions removed
-                getBeaconzStore().clearItems(player, game.getName(), spawnPoint);
+        if (player.getWorld().equals(getBeaconzWorld())) {            
+            
+            // Get the respawn location - first the default
+            Location spawnPoint = getGameMgr().getLobby().getSpawnPoint();
+            String gameName = LOBBY;
+            
+            // Then the actual game's, if player died in a game
+            if (!getGameMgr().getLobby().isPlayerInRegion(player)) {
+                Game game = getGameMgr().getGame(player.getLocation());
+                if (game != null) {
+                    gameName = game.getName();
+                    Team team = game.getScorecard().getTeam(player);                    
+                    if (team != null) spawnPoint = game.getScorecard().getTeamSpawnPoint(team);
+                }
             }
+            
+            // Now we have proper gameName and spawnPoint, let's take care of business
+            
+            // Process region exit - this may clear the inventory, so do this before the storeInventory call
+            if (!gameName.equals(LOBBY)) {
+                getGameMgr().getGame(gameName).getRegion().exit(player);
+                if (getGameMgr().getGame(gameName).getGamemode().equals("minigame")) {                
+                    event.getDrops().clear();
+                }
+            }            
+            
+            // Store the inventory because they will get it when they come back
+            getBeaconzStore().storeInventory(player, gameName, spawnPoint); 
+            
+            // If their inventory is going to get dumped on the floor, they need to have their possessions removed - NOTE: this clears the store
+            if (!event.getKeepInventory() && !gameName.equals(LOBBY)) {                
+                getBeaconzStore().clearItems(player, gameName, spawnPoint);
+            }
+            
+            // If they don't get to keep their level, their exp needs updating to what they'll get in this world.
             if (!event.getKeepLevel()) {
-                //getLogger().info("DEBUG: lose level! - new exp = " + event.getNewExp());
-                // If they don't get to keep their level, their exp needs updating to what they'll get in this world.
-                getBeaconzStore().setExp(player, game.getName(), event.getNewExp());
-            } else {
-                //getLogger().info("DEBUG: keep level");
-            }
+                getBeaconzStore().setExp(player, gameName, event.getNewExp());
+            }  
+
             // They are dead, so when they respawn they need to have full health (otherwise they will die repeatedly)
-            getBeaconzStore().setHealth(player, game.getName(), player.getMaxHealth());
-            // They will also get full food level
-            getBeaconzStore().setFood(player, game.getName(), 20);
+            getBeaconzStore().setHealth(player, gameName, player.getMaxHealth());
+            getBeaconzStore().setFood(player, gameName, 20); 
+
             // Make a note of their death status
-            deadPlayers.put(player.getUniqueId(), spawnPoint);
-        } else {
-            //getLogger().info("DEBUG: game is null");
-        }
+            deadPlayers.put(player.getUniqueId(), spawnPoint);            
+        }        
     }
 
     /**
@@ -116,15 +120,17 @@ public class PlayerDeathListener extends BeaconzPluginDependent implements Liste
      */
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onRespawn(final PlayerRespawnEvent event) {
-        //getLogger().info("DEBUG: Respawn");
         if (!deadPlayers.containsKey(event.getPlayer().getUniqueId())) {
             return;
         }
+        
         // Set respawn location to Beaconz lobby
         event.setRespawnLocation(getGameMgr().getLobby().getSpawnPoint());
         deadPlayers.remove(event.getPlayer().getUniqueId());
+        
         // Get from store
         getBeaconzStore().getInventory(event.getPlayer(), LOBBY);
+        
     }
 
     

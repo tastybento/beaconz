@@ -362,7 +362,7 @@ public class Register extends BeaconzPluginDependent {
             Iterator<TriangleField> trit = triangleFields.iterator();
             while (trit.hasNext()) {
                 TriangleField tri = trit.next();
-                //getLogger().info("DEBUG: Checking triange with corner at " + tri.a);
+                //getLogger().info("DEBUG: Checking triangle with corner at " + tri.a);
                 if (region.containsPoint(tri.a)) {
                     //getLogger().info("DEBUG: Removing triangle!");
                     trit.remove();

@@ -29,7 +29,7 @@ public class PlayerJoinLeaveListener extends BeaconzPluginDependent implements L
         super(plugin);
     }
     /**
-     * Processes players coming directly into the game
+     * Processes players coming directly into the game world
      * @param event
      */
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled=true)
@@ -38,6 +38,7 @@ public class PlayerJoinLeaveListener extends BeaconzPluginDependent implements L
         if (event.getPlayer().getWorld().equals(getBeaconzWorld())) {
             final Player player = event.getPlayer();
             final UUID playerUUID = player.getUniqueId();
+            
             // Write this player's name to the database
             getBeaconzPlugin().getNameStore().savePlayerName(player.getName(), player.getUniqueId());
 
@@ -53,6 +54,8 @@ public class PlayerJoinLeaveListener extends BeaconzPluginDependent implements L
                     }
                 }
                 getGameMgr().getLobby().tpToRegionSpawn(player, true);
+                getGameMgr().getLobby().enterLobby(event.getPlayer());
+                
             } else {
                 if (DEBUG)
                     getLogger().info("DEBUG: game exists");
@@ -61,6 +64,8 @@ public class PlayerJoinLeaveListener extends BeaconzPluginDependent implements L
                         getLogger().info("DEBUG: Player is not in a team");
                     // Send player to BeaconzWorld lobby area
                     getGameMgr().getLobby().tpToRegionSpawn(player, true);
+                    getGameMgr().getLobby().enterLobby(event.getPlayer());
+                    
                 } else {
                     if (DEBUG) {
                         getLogger().info("DEBUG: Player is in team - " + game.getScorecard().getTeam(player));
@@ -105,6 +110,10 @@ public class PlayerJoinLeaveListener extends BeaconzPluginDependent implements L
         if (event.getPlayer().getWorld().equals(getBeaconzWorld())) {
             for (PotionEffect effect : event.getPlayer().getActivePotionEffects())
                 event.getPlayer().removePotionEffect(effect.getType());
+        }
+        final Game fromGame = getGameMgr().getGame(event.getPlayer().getLocation());
+        if (fromGame != null) {
+            getBeaconzStore().storeInventory(event.getPlayer(), fromGame.getName(), null);   
         }
     }
 

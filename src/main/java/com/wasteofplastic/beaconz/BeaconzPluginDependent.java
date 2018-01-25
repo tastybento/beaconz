@@ -28,6 +28,7 @@ import java.util.logging.Logger;
 
 import org.bukkit.Server;
 import org.bukkit.World;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.generator.BlockPopulator;
 import org.bukkit.inventory.ItemStack;
@@ -84,6 +85,10 @@ public abstract class BeaconzPluginDependent {
 
     public final Messages getMessages() {
         return this.beaconzPlugin.getMessages();
+    }
+
+    public final Boolean senderMsg(CommandSender sender, String msg) {
+        return this.beaconzPlugin.senderMsg(sender, msg);
     }
 
     /**

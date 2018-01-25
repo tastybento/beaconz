@@ -358,6 +358,7 @@ public class BeaconProtectionListener extends BeaconzPluginDependent implements 
         if (!world.equals(getBeaconzWorld())) {
             return;
         }
+        
         Player player = event.getPlayer();
         // Only Ops place blocks in the lobby
         if (getGameMgr().isPlayerInLobby(player)) {
@@ -368,6 +369,12 @@ public class BeaconProtectionListener extends BeaconzPluginDependent implements 
                 return;
             }
         }
+        
+        // Actually, ops can break blocks anywhere
+        if (player.isOp()) {
+            return;
+        }
+        
         // Check for placing blocks outside the play area
         // TODO: This assumes that adjacent games will always be greater than 5 blocks away
         Game game = getGameMgr().getGame(event.getBlock().getLocation());

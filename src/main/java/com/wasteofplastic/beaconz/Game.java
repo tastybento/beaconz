@@ -40,6 +40,7 @@ import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
 import org.bukkit.scoreboard.Team;
 
+import com.wasteofplastic.beaconz.listeners.BeaconLinkListener;
 import com.wasteofplastic.beaconz.map.BeaconMap;
 import com.wasteofplastic.beaconz.map.TerritoryMapRenderer;
 
@@ -50,11 +51,14 @@ public class Game extends BeaconzPluginDependent {
     private String gameName;
     private Scorecard scorecard;
     private String gamemode;
+    private int gamedistance;
+    private double gamedistribution;
     private int nbr_teams;
     private String gamegoal;
     private int gamegoalvalue;
     private int countdowntimer;
     private Long startTime;
+    private Long gameCreateTime;
     private String scoretypes;
     private boolean gameRestart;
     private boolean isOver;
@@ -66,13 +70,15 @@ public class Game extends BeaconzPluginDependent {
      *
      * @param beaconzPlugin
      */
-    public Game(Beaconz beaconzPlugin, Region region, String gameName, String gamemode, int nbr_teams, String gamegoal, int gamegoalvalue, int countdowntimer, String scoretypes) {
+    public Game(Beaconz beaconzPlugin, int gamedistance, Region region, String gameName, String gamemode, int nbr_teams, String gamegoal, int gamegoalvalue, int countdowntimer, String scoretypes, Double distribution) {
         super(beaconzPlugin);
         this.plugin = beaconzPlugin;
         this.region = region;
         this.gameName = gameName;
         this.startTime = ((System.currentTimeMillis()+500)/1000)*1000;
-        setGameParms(gamemode, nbr_teams, gamegoal, gamegoalvalue, countdowntimer, startTime, scoretypes);
+        this.gameCreateTime = System.currentTimeMillis();
+        region.setGame(this);
+        setGameParms(gamemode, gamedistance, nbr_teams, gamegoal, gamegoalvalue, countdowntimer, startTime, gameCreateTime, scoretypes, distribution);
         // Now create the scorecard
         scorecard = new Scorecard(plugin, this);
     }
@@ -90,28 +96,16 @@ public class Game extends BeaconzPluginDependent {
      * Resets an existing game
      * The idea is that all current beacons will be removed
      * and the region will regenerate "fresh"
-     */
-    public void reset() {
-        regenerate(null);
-    }
-
-    /**
-     * Resets an existing game
-     * The idea is that all current beacons will be removed
-     * and the region will regenerate "fresh"
+     * THIS IS NO LONGER USED - REGENERATION OF A REGION IS DONE WHEN A GAME IS **DELETED** AND THEREFORE HANDLED BY THE GAMEMGR
      * @param sender
      */
-    public void regenerate(CommandSender sender) {
+    public void regenerate_THIS_IS_NO_LONGER_USED_AND_CAN_BE_REMOVED(CommandSender sender) {
         // Set restart flag as true
         gameRestart = true;
+        
         // Move all players in game to lobby
-        for (Player player : getServer().getOnlinePlayers()) {
-            if (getRegion().isPlayerInRegion(player)) {
-                // Clear inventories
-                player.getInventory().clear();
-                sendToLobby(player);
-            }
-        }
+        getRegion().sendAllPlayersToLobby(false);
+        
         // Delete the teams
         scorecard.deleteTeamMembers();
         
@@ -129,36 +123,42 @@ public class Game extends BeaconzPluginDependent {
                 it.remove();
             }
         }
-        // set all beacons to "unowned"
+        // Remove all beacons
         for (BeaconObj beacon : getRegister().getBeaconRegister().values()) {
             if (this.getRegion().containsBeacon(beacon)) {
-                getRegister().removeBeaconOwnership(beacon, true);
+                getRegister().removeBeaconOwnership(beacon, true); 
             }
         }
+        
+        //region.regenerate(sender, ""); // -- no longer used - chunks will be regenerated as needed when loaded
+        
+        
+        // Handle other loose ends
         getRegister().saveRegister();
-        region.regenerate(sender, "");
         startTime = ((System.currentTimeMillis()+500)/1000)*1000;
         scorecard.reload();
         getBeaconzStore().removeGame(gameName);
         save();
-        // Set restart flag as true
+        
+        // Set restart flag back to false
         gameRestart = false;
-        // It's not over
-        isOver = false;
+        // Game is over
+        isOver = true;
     }
 
     /**
      * Restarts the game
+     * The idea is that all beacons remain in place and the game restarts with the same teams
      */
     public void restart() {
         // Set restart flag as true
         gameRestart = true;
-        // Move all players in game to lobby
-        for (Player player : getServer().getOnlinePlayers()) {
-            if (getRegion().isPlayerInRegion(player)) {
-                sendToLobby(player);
-            }
-        }
+        
+        // Move all players in game to lobby, do not save inventory
+        getRegion().sendAllPlayersToLobby(false);
+        
+        //TODO - figure out how to give players starting kits when they come in, since they will already be in teams...
+        
         // set all beacons to "unowned"
         for (BeaconObj beacon : getRegister().getBeaconRegister().values()) {
             if (this.getRegion().containsBeacon(beacon)) {
@@ -196,6 +196,7 @@ public class Game extends BeaconzPluginDependent {
      */
     public void forceEnd() {
         //getLogger().info("DEBUG: force End called");
+        isOver = true;
         scorecard.endGame();
     }
 
@@ -218,13 +219,16 @@ public class Game extends BeaconzPluginDependent {
         String path = "game." + gameName;
         gamesYml.set(path + ".region", ptsToStrCoord(region.corners()));
         gamesYml.set(path + ".gamemode", gamemode);
+        gamesYml.set(path + ".gamedistance", gamedistance);
         gamesYml.set(path + ".nbrteams", nbr_teams);
         gamesYml.set(path + ".gamegoal", gamegoal);
         gamesYml.set(path + ".goalvalue", gamegoalvalue);
         gamesYml.set(path + ".starttime", startTime);
+        gamesYml.set(path + ".creationtime", this.gameCreateTime);
         gamesYml.set(path + ".countdowntimer", scorecard.getCountdownTimer());
         gamesYml.set(path + ".scoretypes", scoretypes);
         gamesYml.set(path + ".gameOver", isOver);
+        gamesYml.set(path + ".gamedistribution", gamedistribution);
 
         // Now save to file
         try {
@@ -242,6 +246,17 @@ public class Game extends BeaconzPluginDependent {
      * Deletes the game
      */
     public void delete() {
+        
+        // End the game if it's active
+        if (!isOver) forceEnd();
+        
+        // Delete the teams
+        scorecard.deleteTeamMembers();
+        
+        // Teleport any players in the game to the lobby, do not save inventory
+        region.sendAllPlayersToLobby(false);
+        
+        // Prepare files 
         File gamesFile = new File(getBeaconzPlugin().getDataFolder(),"games.yml");
         YamlConfiguration gamesYml = YamlConfiguration.loadConfiguration(gamesFile);
 
@@ -251,7 +266,7 @@ public class Game extends BeaconzPluginDependent {
             gamesFile.renameTo(backup);
         }
 
-        // Save game name, region and all parameters
+        // Get ready to delete game name, region and all parameters from file
         String path = "game." + gameName;
         gamesYml.set(path, null);
 
@@ -263,8 +278,6 @@ public class Game extends BeaconzPluginDependent {
             e.printStackTrace();
         }
 
-        // Save the teams
-        scorecard.deleteTeamMembers();
     }
 
     /**
@@ -285,9 +298,9 @@ public class Game extends BeaconzPluginDependent {
         //getLogger().info("DEBUG: player join home = " + goHome);
         boolean newPlayer = !scorecard.inTeam(player);
         if (newPlayer) {
-            player.sendMessage(ChatColor.GREEN + Lang.titleWelcomeToGame.replace("[name]", ChatColor.YELLOW + gameName));
+            senderMsg(player, ChatColor.GREEN + Lang.titleWelcomeToGame.replace("[name]", ChatColor.YELLOW + gameName));
         } else {
-            player.sendMessage(ChatColor.GREEN + Lang.titleWelcomeBackToGame.replace("[name]", ChatColor.YELLOW + gameName));
+            senderMsg(player, ChatColor.GREEN + Lang.titleWelcomeBackToGame.replace("[name]", ChatColor.YELLOW + gameName));
         }
 
         // Assign a team if player doesn't have one
@@ -296,37 +309,53 @@ public class Game extends BeaconzPluginDependent {
         // Take him to his team's home in the game
         if (goHome) {
             //getLogger().info("DEBUG: go home");
-            scorecard.sendPlayersHome(player, false);
+            scorecard.sendPlayersHome(player, false); // this triggers PlayerTeleportListener, which calls region.enter()
+        } else {
+            region.enter(player); // if the player is not teleporting, we have to process region.enter()
         }
-
-        // Process region enter
-        region.enter(player);
 
         // Update scores
         scorecard.refreshScores();
 
         // Give newbie kit
         if (newPlayer) {
-            player.getInventory().clear();
-            for (ItemStack item : Settings.newbieKit) {
-                HashMap<Integer, ItemStack> tooBig = player.getInventory().addItem(item);
-                if (!tooBig.isEmpty()) {
-                    for (ItemStack items : tooBig.values()) {
-                        player.getWorld().dropItemNaturally(player.getLocation(), items);
-                    }
-                }
-            }
+            giveStartingKit(player);
         }
     }
 
     /**
-     * Kicks a player from a game
+     * Gives player a starting kit, clears inventory first
+     * For minigame games, gives player starting XP
+     * @param player
      */
-    public void kick(CommandSender sender) {
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            leave(sender, player);
+    public void giveStartingKit(Player player) {
+        if (gamemode.equals("minigame")) {
+            BeaconLinkListener.setTotalExperience(player, Settings.initialXP);
+        }
+        player.getInventory().clear();
+        for (ItemStack item : Settings.newbieKit) {
+            HashMap<Integer, ItemStack> tooBig = player.getInventory().addItem(item);
+            if (!tooBig.isEmpty()) {
+                for (ItemStack items : tooBig.values()) {
+                    player.getWorld().dropItemNaturally(player.getLocation(), items);
+                }
+            }
         }
     }
+    
+    /**
+     * Kicks all player from a game
+     */
+    public void kickAll() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            leave(null, player);
+        }
+    }
+    /**
+     * Kicks one player from a game
+     * @param sender
+     * @param player
+     */
     public void kick(CommandSender sender, Player player) {
         leave(sender, player);
     }
@@ -348,30 +377,14 @@ public class Game extends BeaconzPluginDependent {
                         getRegister().removeBeaconMap(item.getDurability());
                     }
                 }
-            }
-            player.getInventory().clear();
-            if (this.getRegion().contains(player.getLocation())) {
-                sendToLobby(player);
-                getBeaconzStore().clearItems(player, this.gameName, null);
-            }
-            sender.sendMessage(ChatColor.GREEN + Lang.generalSuccess);
+            }            
+            senderMsg(sender, ChatColor.GREEN + Lang.generalSuccess);
         } else {
-            sender.sendMessage(ChatColor.RED + Lang.errorNotInGame.replace("[game]", this.gameName));
-            if (this.getRegion().contains(player.getLocation())) {
-                sendToLobby(player);
-                getBeaconzStore().clearItems(player, this.gameName, null);
-            }
+            senderMsg(sender, ChatColor.RED + Lang.errorNotInGame.replace("[game]", this.gameName));
         }
+        getRegion().sendToLobby(player, false);
     }
-
-    /**
-     * Sends player to lobby, do not pass go, do not collect $200
-     * @param player
-     */
-    public void sendToLobby(Player player) {
-        getGameMgr().getLobby().tpToRegionSpawn(player, true);
-    }
-
+    
     /**
      * Returns the game's name
      */
@@ -394,11 +407,14 @@ public class Game extends BeaconzPluginDependent {
      * Return the game's parameters
      */
     public String getGamemode() {return gamemode;}
+    public int getGamedistance() {return gamedistance;}
+    public double getGamedistribution() {return gamedistribution;}
     public int getNbrTeams() {return nbr_teams;}
     public String getGamegoal() {return gamegoal;}
     public int getGamegoalvalue() {return gamegoalvalue;}
     public int getCountdownTimer() {return countdowntimer;}
     public Long getStartTime() {return startTime;}
+    public Long getCreateTime() {return gameCreateTime;}
     public String getScoretypes() {return scoretypes;}
 
 
@@ -412,22 +428,27 @@ public class Game extends BeaconzPluginDependent {
      * @param startTime
      * @param scoretypes
      */
-    public void setGameParms(String gamemode, int nbr_teams, String gamegoal, int gamegoalvalue, int countdowntimer, Long startTime, String scoretypes) {
+    public void setGameParms(String gamemode, int gdistance, int nbr_teams, String gamegoal, int gamegoalvalue, int countdowntimer, Long startTime, Long createTime, String scoretypes, double distribution) {
         this.gamemode = gamemode;
+        this.gamedistance = gdistance;
         this.nbr_teams = nbr_teams;
         this.gamegoal = gamegoal;
         this.gamegoalvalue = gamegoalvalue;
         this.countdowntimer = countdowntimer;
         this.startTime = startTime;
+        this.gameCreateTime = createTime;
         this.scoretypes = scoretypes;
+        this.gamedistribution = distribution;
     }
     public void setGamemode(String gm) {gamemode = gm;}
+    public void setGamedistance(int gd) {gamedistance = gd;}
     public void setNbrTeams(int tn) {nbr_teams = tn;}
     public void setGamegoal(String gg) {gamegoal = gg;}
     public void setGamegoalvalue(int gv) {gamegoalvalue = gv;}
     public void setCountdownTimer(int cd) {countdowntimer = cd;}
     public void setStartTime(Long stt) {startTime = stt;}
     public void setScoretypes(String sct) {scoretypes = sct;}
+    public void setGamedistribution(double gdist) {gamedistribution = gdist;}
 
     /**
      * Converts into a Point2D array of 2 points into a string x1:z1:x2:z2
@@ -449,7 +470,7 @@ public class Game extends BeaconzPluginDependent {
     }
 
     /**
-     * Checks if this game has this player in it or note
+     * Checks if this game has this player in it or not
      * @param player
      * @return true if player is a part of the game
      */
