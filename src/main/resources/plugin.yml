@@ -3,6 +3,7 @@ main: com.wasteofplastic.beaconz.Beaconz
 version: ${version}
 description: Capture the beacons game
 author: tastybento
+api-version: "1.21"
 load: startup
 loadbefore: [Multiverse-Core]
 softdepend: [dynmap]

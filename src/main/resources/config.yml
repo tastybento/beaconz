@@ -48,7 +48,7 @@ lobby:
   lobbyblocks:
   - BLACK_STAINED_GLASS
   - RED_STAINED_GLASS
-  - AQUA_STAINED_GLASS
+  - CYAN_STAINED_GLASS
   - BLUE_STAINED_GLASS
 
   # Lobby animal/mob spawning
@@ -171,16 +171,17 @@ mining:
   # Goodies are items not normally available because they are from the nether or end or rare.
   enemygoodies:
   - "EMERALD:1=1"
-  - "NETHER_STALK:1=5"
+  - "NETHER_WART:1=5"
   - "SOUL_SAND:1=10"
   - "GHAST_TEAR:1=1"
   - "BLAZE_ROD:1=2"
   - "GLOWSTONE:1=5"
   - "NETHERRACK:4=20"
   - "SPECTRAL_ARROW:1=5"
-  - "ENDER_STONE:1=1"
+  - "END_STONE:1=1"
   - "CHORUS_FLOWER:1=1"
-  - "QUARTZ_ORE:1=10"
+  - "NETHER_QUARTZ_ORE:1=10"
+  - "NETHER_GOLD_ORE:1=10"
 
   # Mining your own beacon should give you the chance of obtaining a map
   teamgoodies:
@@ -250,7 +251,7 @@ teams:
       glasscolor: WHITE_STAINED_GLASS
     aqua:
       displayname: "Aqua"
-      glasscolor: AQUA_STAINED_GLASS
+      glasscolor: LIGHT_BLUE_STAINED_GLASS
     yellow:
       displayname: "Yellow"
       glasscolor: YELLOW_STAINED_GLASS
@@ -265,7 +266,7 @@ teams:
       glasscolor: LIGHT_GRAY_STAINED_GLASS
     cyan:
       displayname: "Cyan"
-      glasscolor: LIGHT_BLUE_STAINED_GLASS
+      glasscolor: CYAN_STAINED_GLASS
     purple:
       displayname: "Purple"
       glasscolor: PURPLE_STAINED_GLASS
