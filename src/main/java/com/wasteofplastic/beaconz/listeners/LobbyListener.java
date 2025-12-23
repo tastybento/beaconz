@@ -24,7 +24,6 @@ package com.wasteofplastic.beaconz.listeners;
 
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
-import org.bukkit.Material;
 import org.bukkit.Tag;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Animals;
@@ -174,7 +173,6 @@ public class LobbyListener extends BeaconzPluginDependent implements Listener {
             if (!Settings.allowLobbyAnimalSpawn) {
                 // Animals are not allowed to spawn
                 e.setCancelled(true);
-                return;
             }
         }
     }  

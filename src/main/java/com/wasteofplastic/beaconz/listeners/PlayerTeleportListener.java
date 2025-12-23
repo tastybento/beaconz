@@ -54,9 +54,9 @@ import com.wasteofplastic.beaconz.Settings;
  */
 public class PlayerTeleportListener extends BeaconzPluginDependent implements Listener {
 
-    private Set<UUID> barrierPlayers = new HashSet<UUID>();
-    private HashMap<UUID, Vector> teleportingPlayers = new HashMap<UUID,Vector>();
-    private Set<UUID> directTeleportPlayers = new HashSet<UUID>();
+    private final Set<UUID> barrierPlayers = new HashSet<>();
+    private final HashMap<UUID, Vector> teleportingPlayers = new HashMap<>();
+    private final Set<UUID> directTeleportPlayers = new HashSet<>();
     private static final String LOBBY = "Lobby";
 
     /**
@@ -85,17 +85,14 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
             final List<String> messages = getMessages().getMessages(player.getUniqueId());
             if (messages != null) {
                 // plugin.getLogger().info("DEBUG: Messages waiting!");
-                getServer().getScheduler().runTaskLater(getBeaconzPlugin(), new Runnable() {
-                    @Override
-                    public void run() {
-                        player.sendMessage(ChatColor.AQUA + Lang.titleBeaconzNews);
-                        int i = 1;
-                        for (String message : messages) {
-                            player.sendMessage(i++ + ": " + message);
-                        }
-                        // Clear the messages
-                        getMessages().clearMessages(player.getUniqueId());
+                getServer().getScheduler().runTaskLater(getBeaconzPlugin(), () -> {
+                    player.sendMessage(ChatColor.AQUA + Lang.titleBeaconzNews);
+                    int i = 1;
+                    for (String message : messages) {
+                        player.sendMessage(i++ + ": " + message);
                     }
+                    // Clear the messages
+                    getMessages().clearMessages(player.getUniqueId());
                 }, 40L);
             }
             
@@ -132,12 +129,11 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
     public void onTeleport(final PlayerTeleportEvent event) {
         
         // We only handle teleports originating in the BeaconzWorld
-        if (event.getFrom().getWorld() != getBeaconzWorld()) {    
-            return;
+        if (event.getFrom().getWorld() != getBeaconzWorld()) {
         } else {
             // Let's start by getting some bearings
             final Player player  = event.getPlayer();
-            final Boolean teleporting = teleportingPlayers.containsKey(player.getUniqueId()); 
+            final boolean teleporting = teleportingPlayers.containsKey(player.getUniqueId());
             final Game fromGame = getGameMgr().getGame(event.getFrom());
             final Game toGame = getGameMgr().getGame(event.getTo());
             final boolean fromLobby = getGameMgr().isLocationInLobby(event.getFrom());
@@ -149,13 +145,12 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
             // If player is pushed back because of the barrier, just return
             if (barrierPlayers.contains(player.getUniqueId())) {
                 barrierPlayers.remove(player.getUniqueId());
-                return;
-                
+
             } else {
                 // Teleporting out of a game
                 if (fromGame != null) {           
                     // Ignore teleporting within a game
-                    if (toGame != null && fromGame.equals(toGame)) {
+                    if (fromGame.equals(toGame)) {
                         return;
                     } else {
                         if (!teleporting) { 
@@ -177,7 +172,7 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
                 // Teleporting out of the lobby
                 if (fromLobby) {
                     // Ignore teleporting within the lobby
-                    if (fromLobby && toLobby) {
+                    if (toLobby) {
                         return;
                     } else {
                         getBeaconzStore().storeInventory(player, LOBBY, event.getFrom());
@@ -218,8 +213,7 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
                 // Teleporting into the lobby
                 if (toLobby) {
                     // Ignore teleporting within the lobby
-                    if (fromLobby && toLobby) {
-                        return;
+                    if (fromLobby) {
                     } else {
                         getBeaconzStore().getInventory(player, LOBBY);            
                         directTeleportPlayers.remove(player.getUniqueId());
@@ -239,32 +233,30 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
      * @param fromGame
      */
     private void delayTeleport(final Player player, final Location from, final Location to, final String fromGame, final String toGame) {
-        Long delay = 20L;
+        long delay = 20L;
         if  (player.isOp()) {
             delay = 0L;
         } else {
             player.sendMessage(ChatColor.RED + Lang.teleportDoNotMove.replace("[number]", String.valueOf(Settings.teleportDelay)));
         }
         teleportingPlayers.put(player.getUniqueId(), player.getLocation().toVector());
-        getServer().getScheduler().runTaskLater(getBeaconzPlugin(), new Runnable() {
-            @Override
-            public void run() {
-                // Check if player moved
-                if (player != null && !player.isDead() && teleportingPlayers.containsKey(player.getUniqueId())) {                      
-                    if (player.getLocation().toVector().equals(teleportingPlayers.get(player.getUniqueId()))) {
+        getServer().getScheduler().runTaskLater(getBeaconzPlugin(), () -> {
+            // Check if player moved
+            if (player != null && !player.isDead() && teleportingPlayers.containsKey(player.getUniqueId())) {
+                if (player.getLocation().toVector().equals(teleportingPlayers.get(player.getUniqueId()))) {
 
-                        player.teleport(to);
+                    player.teleport(to);
 
-                    } else {
-                        player.sendMessage(ChatColor.RED + Lang.teleportYouMoved);
-                    }
+                } else {
+                    player.sendMessage(ChatColor.RED + Lang.teleportYouMoved);
                 }
-                teleportingPlayers.remove(player.getUniqueId());
-            }}, Settings.teleportDelay * delay);
+            }
+            teleportingPlayers.remove(player.getUniqueId());
+        }, Settings.teleportDelay * delay);
     }
 
     /**
-     * @param directTeleportPlayers the directTeleportPlayers to set
+     * @param directTeleportPlayer UUID of player to set for direct teleport
      */
     public void setDirectTeleportPlayer(UUID directTeleportPlayer) {
         //getLogger().info("DEBUG: added player to direct TP");

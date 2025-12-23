@@ -5,11 +5,9 @@
 package com.wasteofplastic.beaconz;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map.Entry;
@@ -33,7 +31,6 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
-import org.bukkit.material.MaterialData;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
@@ -75,7 +72,7 @@ public class Scorecard extends BeaconzPluginDependent{
      *    (ii) the Teams associated to the Scoreboards
      *    (iii) the timer for this instance of the game
      *    (iv) the goal for this instance of the game
-     *
+     * <p>
      *  Note that a single Scoreboard is shown for all teams and that the Scoreboard can show as many different "score types" as we want
      *  Keep in mind that the side bar has as maximum of 16 lines, including the title
      *  Currently we have 4 "score types" defined: area, beacons, links, triangles.
@@ -177,7 +174,7 @@ public class Scorecard extends BeaconzPluginDependent{
     @SuppressWarnings("deprecation")
     protected void addTeams() {
         ConfigurationSection csect = getBeaconzPlugin().getConfig().getConfigurationSection("teams.names");
-        Integer teamcnt = 0;
+        int teamcnt = 0;
         if (csect != null) {
             for (String teamName: csect.getValues(false).keySet()) {
                 Material teamBlock = Material.getMaterial(csect.getString(teamName + ".glasscolor"));
@@ -305,13 +302,13 @@ public class Scorecard extends BeaconzPluginDependent{
 
     /**
      * Adds a team to the scoreboard and returns the team that was made
+     *
      * @param teamName
      * @param teamBlock
-     * @param save - if true, saves game to file after adding team
-     * @return team
+     * @param save      - if true, saves game to file after adding team
      */
     @SuppressWarnings("deprecation")
-    public Team addTeam(String teamName, String teamDisplayName, Material teamBlock, Boolean save) {
+    public void addTeam(String teamName, String teamDisplayName, Material teamBlock, Boolean save) {
         Team team = scoreboard.getTeam(teamName);
         if (team == null) {
             // Create the team
@@ -342,7 +339,6 @@ public class Scorecard extends BeaconzPluginDependent{
         refreshScores(team);
         if (save) game.save();
 
-        return team;
     }
 
     /**
@@ -390,7 +386,7 @@ public class Scorecard extends BeaconzPluginDependent{
         String uuid = player.getUniqueId().toString();
         teamLookup.put(player.getUniqueId(), team);
         List<String> members = teamMembers.get(team);
-        if (members == null) members = new ArrayList<String>();
+        if (members == null) members = new ArrayList<>();
         members.add(uuid);
         teamMembers.put(team, members);
         game.save();
@@ -477,10 +473,10 @@ public class Scorecard extends BeaconzPluginDependent{
     /**
      * Puts a player in a team if he isn't already in one
      * Returns the player's team
+     *
      * @param player
-     * @return Team
      */
-    public Team assignTeam(Player player) {
+    public void assignTeam(Player player) {
         Team team = teamLookup.get(player.getUniqueId());
         if (team == null) {
             // New player!
@@ -493,7 +489,6 @@ public class Scorecard extends BeaconzPluginDependent{
             }
             addTeamPlayer(team, player);
         }
-        return team;
     }
 
 
@@ -543,15 +538,15 @@ public class Scorecard extends BeaconzPluginDependent{
      * @return team list
      */
     public String getTeamListString() {
-        String result = "";
+        StringBuilder result = new StringBuilder();
         for (Team team : scoreboard.getTeams()) {
-            if (result.isEmpty()) {
-                result = team.getName();
+            if (result.length() == 0) {
+                result = new StringBuilder(team.getName());
             } else {
-                result += ", " + team.getName();
+                result.append(", ").append(team.getName());
             }
         }
-        return result;
+        return result.toString();
     }
 
     /**
@@ -583,9 +578,6 @@ public class Scorecard extends BeaconzPluginDependent{
         YamlConfiguration teamsYml = new YamlConfiguration();
         try {
             teamsYml.load(teamFile);
-        } catch (FileNotFoundException e) {
-            // Catch block
-            e.printStackTrace();
         } catch (IOException e) {
             // Catch block
             e.printStackTrace();
@@ -705,12 +697,13 @@ public class Scorecard extends BeaconzPluginDependent{
     /**
      * Set the score for a team
      * @param team
-     * @param score
+     * @param scoretype
+     * @param value
      */
     public void putScore(Team team, String scoretype, int value) {
         if (gameON && team != null && scoretype != null) {
             HashMap<String,Integer> stypes = score.get(team);
-            if (stypes == null) stypes = new HashMap<String,Integer>();
+            if (stypes == null) stypes = new HashMap<>();
             stypes.put(scoretype, value);
             score.put(team, stypes);
             //getLogger().info("saved " + scoretype + " value " + value + " for " + team.getDisplayName());
@@ -720,8 +713,9 @@ public class Scorecard extends BeaconzPluginDependent{
 
     /**
      * Adds score to team
-     * @param owner
-     * @param area
+     * @param team
+     * @param scoretype
+     * @param value
      */
     public void addScore(Team team, String scoretype, int value) {
         if (score.containsKey(team)) {
@@ -736,8 +730,9 @@ public class Scorecard extends BeaconzPluginDependent{
 
     /**
      * Subtracts score from team
-     * @param owner
-     * @param area
+     * @param team
+     * @param scoretype
+     * @param value
      */
     public void subtractScore(Team team, String scoretype, int value) {
         addScore(team, scoretype, -value);
@@ -761,9 +756,6 @@ public class Scorecard extends BeaconzPluginDependent{
         YamlConfiguration teamsYml = new YamlConfiguration();
         try {
             teamsYml.load(teamFile);
-        } catch (FileNotFoundException e) {
-            // Catch block
-            e.printStackTrace();
         } catch (IOException e) {
             // Catch block
             e.printStackTrace();
@@ -784,32 +776,17 @@ public class Scorecard extends BeaconzPluginDependent{
             int direction = 0;
             for (Team t : scoreboard.getTeams()) {
                 if (t.equals(team)) {
-                    switch (direction) {
-                    case 0:
-                        blockFace = BlockFace.NORTH;
-                        break;
-                    case 1:
-                        blockFace = BlockFace.SOUTH;
-                        break;
-                    case 2:
-                        blockFace = BlockFace.EAST;
-                        break;
-                    case 3:
-                        blockFace = BlockFace.WEST;
-                        break;
-                    case 4:
-                        blockFace = BlockFace.NORTH_EAST;
-                        break;
-                    case 5:
-                        blockFace = BlockFace.NORTH_WEST;
-                        break;
-                    case 6:
-                        blockFace = BlockFace.SOUTH_EAST;
-                        break;
-                    case 7:
-                        blockFace = BlockFace.SOUTH_WEST;
-                        break;
-                    }
+                    blockFace = switch (direction) {
+                        case 0 -> BlockFace.NORTH;
+                        case 1 -> BlockFace.SOUTH;
+                        case 2 -> BlockFace.EAST;
+                        case 3 -> BlockFace.WEST;
+                        case 4 -> BlockFace.NORTH_EAST;
+                        case 5 -> BlockFace.NORTH_WEST;
+                        case 6 -> BlockFace.SOUTH_EAST;
+                        case 7 -> BlockFace.SOUTH_WEST;
+                        default -> blockFace;
+                    };
                 }
                 direction++;
             }
@@ -955,115 +932,108 @@ public class Scorecard extends BeaconzPluginDependent{
         scoreline = scoreobjective.getScore(ChatColor.GREEN + Lang.scoreGameOver);
         scoreline.setScore(15);
         // Wait a second to let all other messages display first
-        getBeaconzPlugin().getServer().getScheduler().runTaskLater(getBeaconzPlugin(), new Runnable() {
-            @Override
-            public void run() {
-                // Announce winner to all players
-                Team winner = frontRunner(game.getGamegoal());
-                String titleline = Lang.scoreGameOver;
-                String subtitleline = Lang.scoreNoWinners;
-                if (winner != null) {
-                    titleline = Lang.scoreTeamWins.replace("[team]", winner.getDisplayName().toUpperCase());
-                    subtitleline = Lang.scoreCongratulations;
-                }
-                //getLogger().info("DEBUG: telling team results");
-                for (Team team : scoreboard.getTeams()) {
-                    //getLogger().info("DEBUG: team = " + team.getDisplayName());
-                    for (String entry : team.getEntries()) {
-                        //getLogger().info("DEBUG: entry = " + entry);
-                        UUID uuid = getBeaconzPlugin().getNameStore().getPlayerUUID(entry);
-                        //getLogger().info("DEBUG: uuid = " + uuid);
-                        if (uuid != null) {
-                            Player player = Bukkit.getServer().getPlayer(uuid);
-                            if (player != null) {
-                                // Tell players in the game
-                                if (game.getRegion().isPlayerInRegion(player)) {
-                                    getServer().dispatchCommand(getServer().getConsoleSender(),
-                                            "title " + player.getName() + " title {\"text\":\"" + titleline + "\", \"color\":\"" + "gold" + "\"}");
-                                    getServer().dispatchCommand(getServer().getConsoleSender(),
-                                            "title " + player.getName() + " subtitle {\"text\":\"" + subtitleline + "\", \"color\":\"" + "gold" + "\"}");
-                                    player.sendMessage(ChatColor.GREEN + Lang.helpLine);
-                                    player.sendMessage(ChatColor.YELLOW + titleline);
-                                    player.sendMessage(ChatColor.YELLOW + subtitleline);
-                                    player.sendMessage(ChatColor.GREEN + Lang.helpLine);                                
-                                } else {
-                                    player.sendMessage(ChatColor.GREEN + "[" + game.getName() + "] " + ChatColor.YELLOW + titleline);                        
-                                }
-                                player.getWorld().playSound(player.getLocation(), Sound.ENTITY_FIREWORK_ROCKET_BLAST, 1F, 1F);
-                                player.getWorld().playSound(player.getLocation(), Sound.ENTITY_FIREWORK_ROCKET_TWINKLE, 1F, 1F);
+        getBeaconzPlugin().getServer().getScheduler().runTaskLater(getBeaconzPlugin(), () -> {
+            // Announce winner to all players
+            Team winner = frontRunner(game.getGamegoal());
+            String titleline = Lang.scoreGameOver;
+            String subtitleline = Lang.scoreNoWinners;
+            if (winner != null) {
+                titleline = Lang.scoreTeamWins.replace("[team]", winner.getDisplayName().toUpperCase());
+                subtitleline = Lang.scoreCongratulations;
+            }
+            //getLogger().info("DEBUG: telling team results");
+            for (Team team : scoreboard.getTeams()) {
+                //getLogger().info("DEBUG: team = " + team.getDisplayName());
+                for (String entry : team.getEntries()) {
+                    //getLogger().info("DEBUG: entry = " + entry);
+                    UUID uuid = getBeaconzPlugin().getNameStore().getPlayerUUID(entry);
+                    //getLogger().info("DEBUG: uuid = " + uuid);
+                    if (uuid != null) {
+                        Player player = Bukkit.getServer().getPlayer(uuid);
+                        if (player != null) {
+                            // Tell players in the game
+                            if (game.getRegion().isPlayerInRegion(player)) {
+                                getServer().dispatchCommand(getServer().getConsoleSender(),
+                                        "title " + player.getName() + " title {\"text\":\"" + titleline + "\", \"color\":\"" + "gold" + "\"}");
+                                getServer().dispatchCommand(getServer().getConsoleSender(),
+                                        "title " + player.getName() + " subtitle {\"text\":\"" + subtitleline + "\", \"color\":\"" + "gold" + "\"}");
+                                player.sendMessage(ChatColor.GREEN + Lang.helpLine);
+                                player.sendMessage(ChatColor.YELLOW + titleline);
+                                player.sendMessage(ChatColor.YELLOW + subtitleline);
+                                player.sendMessage(ChatColor.GREEN + Lang.helpLine);                                
                             } else {
-                                // Offline player
-                                getMessages().setMessage(uuid, "[" + game.getName() + "] " + titleline);
+                                player.sendMessage(ChatColor.GREEN + "[" + game.getName() + "] " + ChatColor.YELLOW + titleline);                        
                             }
+                            player.getWorld().playSound(player.getLocation(), Sound.ENTITY_FIREWORK_ROCKET_BLAST, 1F, 1F);
+                            player.getWorld().playSound(player.getLocation(), Sound.ENTITY_FIREWORK_ROCKET_TWINKLE, 1F, 1F);
+                        } else {
+                            // Offline player
+                            getMessages().setMessage(uuid, "[" + game.getName() + "] " + titleline);
                         }
                     }
-                }  
-                // If working with QueueMgr, tell it the game ended:
-                /*
-                if (getServer().getPluginManager().getPlugin("QueueMgr") != null) {
-                    QueueMgrInterface qMgr = getServer().getServicesManager().load(QueueMgrInterface.class);
-                    if (qMgr != null && winner != null) {
-                        qMgr.endGame(game.getName());
-                        qMgr.setWinnerVar(game.getName(), winner.getDisplayName().toUpperCase(), null);
-                        qMgr.setGameOverVar1(game.getName(), "THAT WAS A GREAT GAME!", null);
-                        qMgr.setGameOverVar2(game.getName(), "THANK YOU FOR PLAYING!", null);
-                    }
                 }
-                 */
+            }  
+            // If working with QueueMgr, tell it the game ended:
+            /*
+            if (getServer().getPluginManager().getPlugin("QueueMgr") != null) {
+                QueueMgrInterface qMgr = getServer().getServicesManager().load(QueueMgrInterface.class);
+                if (qMgr != null && winner != null) {
+                    qMgr.endGame(game.getName());
+                    qMgr.setWinnerVar(game.getName(), winner.getDisplayName().toUpperCase(), null);
+                    qMgr.setGameOverVar1(game.getName(), "THAT WAS A GREAT GAME!", null);
+                    qMgr.setGameOverVar2(game.getName(), "THANK YOU FOR PLAYING!", null);
+                }
             }
+             */
         }, 30);        
     }
 
     /**
      * Timer
-     * @param interval (in seconds)
      *
      * This runs a countdown if Settings.minigameTimer or Settings.strategyTimer > 0, open-ended clock otherwise
      *
      */
     public void runtimer () {
         if (timertaskid != null) timertaskid.cancel();
-        timertaskid = getBeaconzPlugin().getServer().getScheduler().runTaskTimerAsynchronously(getBeaconzPlugin(), new Runnable() {
-            @Override
-            public void run() {
+        timertaskid = getBeaconzPlugin().getServer().getScheduler().runTaskTimerAsynchronously(getBeaconzPlugin(), () -> {
 
-                if (gameON) {
-                    Long seconds = 0L;
-                    Integer t = timerinterval;
+            if (gameON) {
+                long seconds = 0L;
+                int t = timerinterval;
 
-                    if (timertype.equals("openended")) {
-                        seconds = (System.currentTimeMillis() - starttimemilis) / 1000;
-                        seconds = ((seconds+t-1)/t)*t;
-                    } else {
-                        countdownTimer = countdownTimer - t;
-                        if (countdownTimer < 1) {
-                            // Beacon timer ran out
-                            countdownTimer = 0;
-                            timertaskid.cancel();
-                            //getLogger().info("DEBUG: countdown timer expired - ending game");
-                            endGame();
-                        }
-                        seconds = countdownTimer + 0L;
+                if (timertype.equals("openended")) {
+                    seconds = (System.currentTimeMillis() - starttimemilis) / 1000;
+                    seconds = ((seconds+t-1)/t)*t;
+                } else {
+                    countdownTimer = countdownTimer - t;
+                    if (countdownTimer < 1) {
+                        // Beacon timer ran out
+                        countdownTimer = 0;
+                        timertaskid.cancel();
+                        //getLogger().info("DEBUG: countdown timer expired - ending game");
+                        endGame();
                     }
+                    seconds = (long) countdownTimer;
+                }
 
-                    // display the timer
-                    long s = seconds % 60;
-                    long m = (seconds / 60) % 60;
-                    long h = (seconds / (60 * 60)) % 24;
-                    long d = (seconds / (60 * 60 * 24)) %100;
-                    displaytime = String.format("%02dd %02d:%02d:%02d", d,h,m,s);
+                // display the timer
+                long s = seconds % 60;
+                long m = (seconds / 60) % 60;
+                long h = (seconds / (60 * 60)) % 24;
+                long d = (seconds / (60 * 60 * 24)) %100;
+                displaytime = String.format("%02dd %02d:%02d:%02d", d,h,m,s);
 
-                    if (showtimer) {
-                        String objName = scoreobjective.getDisplayName();
-                        if (!objName.contains(":")) objName = objName + "! 00d 00:00:00";
-                        objName = objName.substring(0, objName.length() - displaytime.length()) + displaytime;
-                        scoreobjective.setDisplayName(objName);
-                    } else {
-                        scoreobjective.setDisplayName(ChatColor.GREEN + "Beaconz " + game.getGamemode());
-                    }
+                if (showtimer) {
+                    String objName = scoreobjective.getDisplayName();
+                    if (!objName.contains(":")) objName = objName + "! 00d 00:00:00";
+                    objName = objName.substring(0, objName.length() - displaytime.length()) + displaytime;
+                    scoreobjective.setDisplayName(objName);
+                } else {
+                    scoreobjective.setDisplayName(ChatColor.GREEN + "Beaconz " + game.getGamemode());
                 }
             }
-        }, 20, timerinterval*20);
+        }, 20, timerinterval* 20L);
     }
 
     /**
@@ -1088,13 +1058,11 @@ public class Scorecard extends BeaconzPluginDependent{
             }
         }*/
         // Remove from hashmap
-        Iterator<Team> it = teamMembers.keySet().iterator();
-        while (it.hasNext()) {
-            Team team = it.next();
+        for (Team team : teamMembers.keySet()) {
             for (String name : teamMembers.get(team)) {
                 team.removeEntry(name);
             }
-            teamMembers.put(team, new ArrayList<String>());
+            teamMembers.put(team, new ArrayList<>());
         }
         // Clear all the players from the teamLookup.
         teamLookup.clear();
@@ -1120,7 +1088,7 @@ public class Scorecard extends BeaconzPluginDependent{
      * @return List of team names for this game
      */
     public List<String> getTeamsNames() {
-        List<String> teamNames = new ArrayList<String>();
+        List<String> teamNames = new ArrayList<>();
         for (Team team: scoreboard.getTeams()) {
             teamNames.add(team.getName());
         }

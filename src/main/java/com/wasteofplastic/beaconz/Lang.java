@@ -425,7 +425,7 @@ public class Lang extends BeaconzPluginDependent {
         triangleTeamLostATriangle = ChatColor.translateAlternateColorCodes('&', locale.getString("triangle.TeamLostATriangle", "[team] lost a triangle!"));
 
         // Defense text
-        defenseText = new HashMap<Material,String>();
+        defenseText = new HashMap<>();
         for (String material : locale.getConfigurationSection("defenseText").getKeys(false)) {
             try {
                 Material mat = Material.valueOf(material.toUpperCase());

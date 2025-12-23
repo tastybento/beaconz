@@ -57,16 +57,15 @@ public class ChatListener extends BeaconzPluginDependent implements Listener {
 
     private Beaconz plugin;
     // List of which admins are spying or not on team chat
-    private Set<UUID> spies;
+    private final Set<UUID> spies;
 
     /**
-     * @param plugin
-     * @param teamChatOn
+     * @param plugin Beaconz plugin instance
      */
     public ChatListener(Beaconz plugin) {
         super(plugin);
         // Initialize spies
-        spies = new HashSet<UUID>();
+        spies = new HashSet<>();
     }
 
 
@@ -81,11 +80,7 @@ public class ChatListener extends BeaconzPluginDependent implements Listener {
             event.setCancelled(true);
             // Queue the sync task because you cannot use HashMaps asynchronously. Delaying to the next tick
             // won't be a major issue for synch events either.
-            Bukkit.getScheduler().runTask(plugin, new Runnable() {
-                @Override
-                public void run() {
-                    teamChat(event,event.getMessage());
-                }});
+            Bukkit.getScheduler().runTask(plugin, () -> teamChat(event,event.getMessage()));
         }
     }
 

@@ -22,8 +22,6 @@
 
 package com.wasteofplastic.beaconz.listeners;
 
-import java.util.Iterator;
-
 import org.bukkit.ChatColor;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -87,12 +85,7 @@ public class SkyListeners extends BeaconzPluginDependent implements Listener {
         if (!world.equals(getBeaconzWorld())) {
             return;
         }
-        Iterator<Block> it = event.blockList().iterator();
-        while(it.hasNext()) {
-            if (it.next().getY() == BLOCK_HEIGHT) {
-                it.remove();
-            }
-        }
+        event.blockList().removeIf(block -> block.getY() == BLOCK_HEIGHT);
     }
 
     /**

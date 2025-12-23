@@ -67,7 +67,7 @@ import com.wasteofplastic.beaconz.DefenseBlock;
  */
 public class BeaconProjectileDefenseListener extends BeaconzPluginDependent implements Listener {
     private static final int RANGE = 10;
-    private HashMap<UUID, Team> projectiles = new HashMap<UUID, Team>();
+    private final HashMap<UUID, Team> projectiles = new HashMap<>();
     /**
      * @param plugin
      */
@@ -130,7 +130,6 @@ public class BeaconProjectileDefenseListener extends BeaconzPluginDependent impl
             if (playersTeam.equals(team)) {
                 //getLogger().info("DEBUG: prevented damage to friendly team member");
                 event.setCancelled(true);
-                return;
             }
             // Else it's fine to hurt!
             //getLogger().info("DEBUG: die!");
@@ -320,10 +319,9 @@ public class BeaconProjectileDefenseListener extends BeaconzPluginDependent impl
         if (event.getVehicle().getPassenger() == null) {
             return;
         }
-        if (!(event.getVehicle().getPassenger() instanceof Player)) {
+        if (!(event.getVehicle().getPassenger() instanceof Player player)) {
             return;
         }
-        Player player = (Player)event.getVehicle().getPassenger();
         fireOnPlayer(player, event.getFrom(), event.getTo());
     }
 

@@ -38,12 +38,12 @@ import org.bukkit.scoreboard.Team;
  */
 public class TriangleField {
     public Team owner;
-    public Point2D a;
-    public Point2D b;
-    public Point2D c;
-    public double area;
-    private Polygon triangle;
-    private Set<Line2D> sides;
+    public final Point2D a;
+    public final Point2D b;
+    public final Point2D c;
+    public final double area;
+    private final Polygon triangle;
+    private final Set<Line2D> sides;
 
     /**
      * Fields are 2D. Only x and z coordinates count
@@ -61,7 +61,7 @@ public class TriangleField {
         this.a = point2d;
         this.b = point2d2;
         this.c = point2d3;
-        this.sides = new HashSet<Line2D>();
+        this.sides = new HashSet<>();
         sides.add(new Line2D.Double(a,b));
         sides.add(new Line2D.Double(b,c));
         sides.add(new Line2D.Double(c,a));
@@ -98,10 +98,9 @@ public class TriangleField {
         if (obj == null) {
             return false;
         }
-        if (!(obj instanceof TriangleField)) {
+        if (!(obj instanceof TriangleField other)) {
             return false;
         }
-        TriangleField other = (TriangleField) obj;
         // TODO: Handle nulls
         // Fields are equal as long as the three points are the same
         if (!a.equals(other.a) && !a.equals(other.b) && !a.equals(other.c)) {
@@ -110,10 +109,7 @@ public class TriangleField {
         if (!b.equals(other.a) && !b.equals(other.b) && !b.equals(other.c)) {
             return false;
         }
-        if (!c.equals(other.a) && !c.equals(other.b) && !c.equals(other.c)) {
-            return false;
-        }
-        return true;
+        return c.equals(other.a) || c.equals(other.b) || c.equals(other.c);
     }
 
     /**
@@ -157,10 +153,7 @@ public class TriangleField {
      * @return
      */
     public boolean hasVertex(Point2D point) {
-        if (a.equals(point) || b.equals(point) || c.equals(point)) {
-            return true;
-        }
-        return false;
+        return a.equals(point) || b.equals(point) || c.equals(point);
     }
 
     /**
@@ -178,10 +171,7 @@ public class TriangleField {
      * @return
      */
     public boolean contains(TriangleField triangle2) {
-        if (triangle.contains(triangle2.a) || triangle.contains(triangle2.b) || triangle.contains(triangle2.c)) {
-            return true;
-        }
-        return false;
+        return triangle.contains(triangle2.a) || triangle.contains(triangle2.b) || triangle.contains(triangle2.c);
     }
 
     /**

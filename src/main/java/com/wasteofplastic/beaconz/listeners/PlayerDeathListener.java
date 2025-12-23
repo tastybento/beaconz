@@ -46,7 +46,7 @@ import com.wasteofplastic.beaconz.Game;
  */
 public class PlayerDeathListener extends BeaconzPluginDependent implements Listener {
 
-    private HashMap<UUID, Location> deadPlayers = new HashMap<UUID,Location>();
+    private final HashMap<UUID, Location> deadPlayers = new HashMap<>();
     private static final String LOBBY = "Lobby";
 
     /**

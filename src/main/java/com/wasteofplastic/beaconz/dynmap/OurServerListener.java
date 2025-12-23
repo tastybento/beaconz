@@ -31,15 +31,12 @@ import com.wasteofplastic.beaconz.TriangleField;
 
 
 public class OurServerListener extends BeaconzPluginDependent implements Listener {
-    private Beaconz plugin;
-    private Plugin dynmap;
-    private DynmapAPI api;
-    private MarkerAPI markerapi;
+    private final Beaconz plugin;
+    private final Plugin dynmap;
+    private final DynmapAPI api;
     private int updatesPerTick = 20;
-    private File dynmapFile;
-    private YamlConfiguration cfg;
+    private final YamlConfiguration cfg;
     private MarkerSet set;
-    private long updperiod;
     private boolean use3d;
     private String infowindow;
     private AreaStyle defstyle;
@@ -48,7 +45,7 @@ public class OurServerListener extends BeaconzPluginDependent implements Listene
     private static final String DEF_INFOWINDOW = "<div class=\"infowindow\">Team <span style=\"font-weight:bold;\">%teamname%</span><br /></div>";
     private Set<TriangleField> trianglesToDo;
 
-    private Map<String, AreaMarker> resareas = new HashMap<String, AreaMarker>();
+    private final Map<String, AreaMarker> resareas = new HashMap<>();
     protected LinkedHashMap<String, Game> gamesToDo;
 
 
@@ -57,7 +54,7 @@ public class OurServerListener extends BeaconzPluginDependent implements Listene
         this.plugin = plugin;
         this.dynmap = dynmap;
         api = (DynmapAPI)dynmap; /* Get API */
-        dynmapFile = new File(getBeaconzPlugin().getDataFolder(),"dynmap.yml");
+        File dynmapFile = new File(getBeaconzPlugin().getDataFolder(), "dynmap.yml");
         if (!dynmapFile.exists()) {
             getBeaconzPlugin().saveResource("dynmap.yml", false);
         }
@@ -84,7 +81,7 @@ public class OurServerListener extends BeaconzPluginDependent implements Listene
 
     private void activate(Plugin dynmap) {
         /* Now, get markers API */
-        markerapi = api.getMarkerAPI();
+        MarkerAPI markerapi = api.getMarkerAPI();
         if(markerapi == null) {
             getLogger().severe("Error loading dynmap marker API!");
             return;
@@ -109,7 +106,7 @@ public class OurServerListener extends BeaconzPluginDependent implements Listene
 
         /* Get style information */
         defstyle = new AreaStyle(cfg, "trianglestyle");
-        teamstyle = new HashMap<String, AreaStyle>();
+        teamstyle = new HashMap<>();
         ConfigurationSection sect = cfg.getConfigurationSection("teamstyle");
         if(sect != null) {
             Set<String> ids = sect.getKeys(false);
@@ -121,7 +118,7 @@ public class OurServerListener extends BeaconzPluginDependent implements Listene
         /* Set up update job - based on period */
         int per = cfg.getInt("update.period", 300);
         if(per < 15) per = 15;
-        updperiod = per*20;
+        long updperiod = per * 20L;
         stop = false;
 
         new BukkitRunnable() {
@@ -136,7 +133,7 @@ public class OurServerListener extends BeaconzPluginDependent implements Listene
                 for (Game game : getGameMgr().getGames().values()) {
                     handleGames(game);
                 }
-                trianglesToDo = new HashSet<TriangleField>(getRegister().getTriangleFields());
+                trianglesToDo = new HashSet<>(getRegister().getTriangleFields());
                 new BukkitRunnable() {
                     @Override
                     public void run() {
@@ -171,12 +168,12 @@ public class OurServerListener extends BeaconzPluginDependent implements Listene
     }
 
     private static class AreaStyle {
-        String strokecolor;
-        String unownedstrokecolor;
-        double strokeopacity;
-        int strokeweight;
-        String fillcolor;
-        double fillopacity;
+        final String strokecolor;
+        final String unownedstrokecolor;
+        final double strokeopacity;
+        final int strokeweight;
+        final String fillcolor;
+        final double fillopacity;
         String label;
 
         AreaStyle(FileConfiguration cfg, String path, AreaStyle def) {
@@ -253,7 +250,7 @@ public class OurServerListener extends BeaconzPluginDependent implements Listene
         x[1] = triangle.b.getX(); z[1] = triangle.b.getY();
         x[2] = triangle.c.getX(); z[2] = triangle.c.getY();
 
-        String markerid = world.getName() + "_" + triangle.toString();
+        String markerid = world.getName() + "_" + triangle;
         AreaMarker m = resareas.remove(markerid); /* Existing area? */
         if(m == null) {
             m = set.createAreaMarker(markerid, name, false, world.getName(), x, z, false);

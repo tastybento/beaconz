@@ -10,6 +10,7 @@ import java.net.Proxy;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -27,8 +28,8 @@ import org.bukkit.scheduler.BukkitTask;
 import com.google.common.collect.Lists;
 
 public class Metrics {
-    private static String encode(final String text) throws UnsupportedEncodingException {
-        return URLEncoder.encode(text, "UTF-8");
+    private static String encode(final String text) {
+        return URLEncoder.encode(text, StandardCharsets.UTF_8);
     }
 
     private static void encodeDataPair(final StringBuilder buffer, final String key, final String value) throws UnsupportedEncodingException {
@@ -56,9 +57,9 @@ public class Metrics {
         configurationFile = getConfigFile();
         configuration = YamlConfiguration.loadConfiguration(configurationFile);
 
-        configuration.addDefault("opt-out", Boolean.valueOf(false));
+        configuration.addDefault("opt-out", Boolean.FALSE);
         configuration.addDefault("guid", UUID.randomUUID().toString());
-        configuration.addDefault("debug", Boolean.valueOf(false));
+        configuration.addDefault("debug", Boolean.FALSE);
 
         if (configuration.get("guid", null) == null) {
             configuration.options().header("http://mcstats.org").copyDefaults(true);
@@ -72,7 +73,7 @@ public class Metrics {
     public void disable() throws IOException {
         synchronized (optOutLock) {
             if (!isOptOut()) {
-                configuration.set("opt-out", Boolean.valueOf(true));
+                configuration.set("opt-out", Boolean.TRUE);
                 configuration.save(configurationFile);
             }
 
@@ -86,7 +87,7 @@ public class Metrics {
     public void enable() throws IOException {
         synchronized (optOutLock) {
             if (isOptOut()) {
-                configuration.set("opt-out", Boolean.valueOf(false));
+                configuration.set("opt-out", Boolean.FALSE);
                 configuration.save(configurationFile);
             }
 
@@ -115,12 +116,7 @@ public class Metrics {
         synchronized (optOutLock) {
             try {
                 configuration.load(getConfigFile());
-            } catch (final IOException ex) {
-                if (debug) {
-                    Bukkit.getLogger().log(Level.INFO, "[Metrics] " + ex.getMessage());
-                }
-                return true;
-            } catch (final InvalidConfigurationException ex) {
+            } catch (final IOException | InvalidConfigurationException ex) {
                 if (debug) {
                     Bukkit.getLogger().log(Level.INFO, "[Metrics] " + ex.getMessage());
                 }
@@ -167,7 +163,7 @@ public class Metrics {
             encodeDataPair(data, "ping", "true");
         }
 
-        final URL url = new URL("http://mcstats.org" + String.format("/report/%s", new Object[] { encode(pluginName) }));
+        final URL url = new URL("http://mcstats.org" + String.format("/report/%s", encode(pluginName)));
         URLConnection connection;
         if (isMineshafterPresent()) {
             connection = url.openConnection(Proxy.NO_PROXY);
@@ -200,14 +196,14 @@ public class Metrics {
         return Collections.unmodifiableList(list);
     }
 
-    public boolean start() {
+    public void start() {
         synchronized (optOutLock) {
             if (isOptOut()) {
-                return false;
+                return;
             }
 
             if (task != null) {
-                return true;
+                return;
             }
 
             task = plugin.getServer().getScheduler().runTaskTimerAsynchronously(plugin, new Runnable() {
@@ -234,7 +230,6 @@ public class Metrics {
                 }
             }, 0L, 12000L);
 
-            return true;
         }
     }
 }

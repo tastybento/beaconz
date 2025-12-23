@@ -40,14 +40,14 @@ import com.wasteofplastic.include.it.unimi.dsi.util.XorShift;
 /**
  * BeaconPopulator class
  * @author TastyBento
- *
+ * <p>
  * This is called every time a chunk is (re)generated in the world
  * The idea is to place a single beacon on a chunk if a XorShift
  * generates a random number below the Settings.distribution threshold
  * If Settings.distribution were 1, every chunk would get a single beacon;
  * the lower it is, the fewer chunks get a beacon and the beacons
  * are more spread out in the world.
- *
+ * <p>
  * Note added by EBaldino: in order to be able to regenerate and repopulate chunks for specific game regions,
  * and considering that other plugins may regenerate a chunk in an active game area, I am removing this from
  * the world's populators and calling it explicitly in WorldListener.onChunkLoad
@@ -63,7 +63,7 @@ public class BeaconPopulator extends BlockPopulator {
 
     @Override
     public void populate(World world, Random unused, Chunk source) {
-        Boolean cornerBeacon = false;
+        boolean cornerBeacon = false;
         Integer cornerX = null;
         Integer cornerZ = null;
         

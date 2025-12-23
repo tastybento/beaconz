@@ -73,7 +73,7 @@ public class WorldListener extends BeaconzPluginDependent implements Listener {
         //senderMsg(Bukkit.getConsoleSender(), "LOADING CHUNK: " + event.getChunk().getX() + ":" + event.getChunk().getZ());
         // We only deal with events on the Beaconz World
         if (event.getWorld().equals(getBeaconzWorld()) && !getBeaconzPlugin().ignoreChunkLoad) {
-            Boolean regen = false;
+            boolean regen = false;
             int cX = event.getChunk().getX() << 4;
             int cZ = event.getChunk().getZ() << 4;
             

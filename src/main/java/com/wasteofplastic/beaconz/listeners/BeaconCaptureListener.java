@@ -114,11 +114,10 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
             if (getRegister().isBeacon(block.getRelative(BlockFace.DOWN))) {
                 // It is a real beacon
                 // Check that the beacon is clear of blocks
-                if (!beacon.isClear() && (beacon.getOwnership() == null || !beacon.getOwnership().equals(team))) {
+                if (beacon.isClear() && (beacon.getOwnership() == null || !beacon.getOwnership().equals(team))) {
                     // You can't capture an uncleared beacon
                     player.sendMessage(ChatColor.GOLD + Lang.errorClearAroundBeacon);
                     event.setCancelled(true);
-                    return;
                 }
             }
         } else {
@@ -195,7 +194,7 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
                 // It is a real beacon
                 if (block.getType().equals(Material.OBSIDIAN)) {
                     // Check that the beacon is clear of blocks
-                    if (!beacon.isClear()) {
+                    if (beacon.isClear()) {
                         // You can't capture an uncleared beacon
                         player.sendMessage(ChatColor.RED + Lang.errorClearAroundBeacon);
                         event.setCancelled(true);
@@ -230,7 +229,7 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
                             return;
                         }
                         // Check that the beacon is clear of blocks
-                        if (!beacon.isClear()) {
+                        if (beacon.isClear()) {
                             // You can't capture an uncleared beacon
                             player.sendMessage(ChatColor.RED + Lang.errorClearAroundBeacon);
                             event.setCancelled(true);
@@ -268,7 +267,7 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
                     // Remove experience
                     if (DEBUG)
                         getLogger().info("DEBUG: player has " + player.getTotalExperience() + " and needs " + Settings.beaconMineExpRequired);
-                    if (!BeaconLinkListener.testForExp(player, Settings.beaconMineExpRequired)) {
+                    if (BeaconLinkListener.testForExp(player, Settings.beaconMineExpRequired)) {
                         player.sendMessage(ChatColor.RED + Lang.errorNotEnoughExperience);
                         player.getWorld().playSound(player.getLocation(), Sound.BLOCK_ANVIL_BREAK, 1F, 1F);
                         return;
@@ -335,7 +334,7 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
                         if (split.length == 2) {
                             int amplifier = 1;
                             if (NumberUtils.isNumber(split[1])) {
-                                amplifier = Integer.valueOf(split[1]);
+                                amplifier = Integer.parseInt(split[1]);
                                 if (DEBUG)
                                     getLogger().info("DEBUG: Amplifier is " + amplifier);
                             }
@@ -344,7 +343,7 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
                                 player.addPotionEffect(new PotionEffect(potionEffectType, num,amplifier));
                                 player.getWorld().playSound(player.getLocation(), Sound.ENTITY_SPLASH_POTION_BREAK, 1F, 1F);
                                 if (DEBUG)
-                                    getLogger().info("DEBUG: Applying " + potionEffectType.toString() + ":" + amplifier + " for " + num + " ticks");
+                                    getLogger().info("DEBUG: Applying " + potionEffectType + ":" + amplifier + " for " + num + " ticks");
                             }
                         } else {
                             getLogger().warning("Unknown hack cooldown effect" + effect);

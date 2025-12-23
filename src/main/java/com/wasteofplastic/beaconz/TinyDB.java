@@ -41,8 +41,8 @@ import org.bukkit.scheduler.BukkitRunnable;
  *
  */
 public class TinyDB {
-    private Beaconz plugin;
-    private ConcurrentHashMap<String,UUID> treeMap;
+    private final Beaconz plugin;
+    private final ConcurrentHashMap<String,UUID> treeMap;
     private boolean savingFlag;
     /**
      * Opens the database
@@ -50,7 +50,7 @@ public class TinyDB {
      */
     public TinyDB(Beaconz plugin) {       
         this.plugin = plugin;
-        this.treeMap = new ConcurrentHashMap<String,UUID>();
+        this.treeMap = new ConcurrentHashMap<>();
         File database = new File(plugin.getDataFolder(), "name-uuid.txt");
         if (!database.exists()) {
             try {
@@ -104,12 +104,10 @@ public class TinyDB {
                             // Read next lines
                             line = br.readLine();
                             uuid = br.readLine();
-                        } 
-                        br.close();
+                        }
                     }
                     
-                }                
-                out.close();      
+                }
             }
             
             // Move files around

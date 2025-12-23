@@ -29,7 +29,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -79,7 +78,6 @@ public class Beaconz extends JavaPlugin {
     private GameMgr gameMgr;
     private Messages messages;
     private BeaconzStore beaconzStore;
-    private Lang locale;
     protected PlayerMovementListener pml;
     private TinyDB nameStore;
     private PlayerTeleportListener teleportListener;
@@ -107,64 +105,59 @@ public class Beaconz extends JavaPlugin {
         nameStore = new TinyDB(this);
 
         // Run commands that need to be run 1 tick after start
-        getServer().getScheduler().runTask(this, new Runnable() {
+        getServer().getScheduler().runTask(this, () -> {
 
-            @Override
-            public void run() {
+            // Start the game manager and create the lobby region
+            gameMgr = new GameMgr(plugin);
 
-                // Start the game manager and create the lobby region
-                gameMgr = new GameMgr(plugin);
+            // Load the beacon register
+            register = new Register(plugin);
+            register.loadRegister();
 
-                // Load the beacon register
-                register = new Register(plugin);
-                register.loadRegister();
+            // Create the block populator
+            getBp();
 
-                // Create the block populator
-                getBp();
+            // Create the world
+            getBeaconzWorld();
 
-                // Create the world
-                getBeaconzWorld();
+            // Create the inventory store
+            beaconzStore = new BeaconzStore(plugin);
 
-                // Create the inventory store 
-                beaconzStore = new BeaconzStore(plugin);
+            // Register the listeners - block break etc.
+            getServer().getPluginManager().registerEvents(new BeaconLinkListener(plugin), plugin);
+            getServer().getPluginManager().registerEvents(new BeaconCaptureListener(plugin), plugin);
+            getServer().getPluginManager().registerEvents(new ChatListener(plugin), plugin);
+            getServer().getPluginManager().registerEvents(new BeaconPassiveDefenseListener(plugin), plugin);
+            getServer().getPluginManager().registerEvents(new BeaconProjectileDefenseListener(plugin), plugin);
+            getServer().getPluginManager().registerEvents(new BeaconProtectionListener(plugin), plugin);
+            getServer().getPluginManager().registerEvents(new PlayerDeathListener(plugin), plugin);
+            getServer().getPluginManager().registerEvents(new PlayerJoinLeaveListener(plugin), plugin);
+            pml = new PlayerMovementListener(plugin);
+            getServer().getPluginManager().registerEvents(pml, plugin);
+            teleportListener = new PlayerTeleportListener(plugin);
+            getServer().getPluginManager().registerEvents(teleportListener, plugin);
+            getServer().getPluginManager().registerEvents(new SkyListeners(plugin), plugin);
+            getServer().getPluginManager().registerEvents(new WorldListener(plugin), plugin);
+            getServer().getPluginManager().registerEvents(new BeaconSurroundListener(plugin), plugin);
+            getServer().getPluginManager().registerEvents(new LobbyListener(plugin), plugin);
+            ignoreChunkLoad = false; // used in WorldListener and other classes
 
-                // Register the listeners - block break etc. 
-                getServer().getPluginManager().registerEvents(new BeaconLinkListener(plugin), plugin);
-                getServer().getPluginManager().registerEvents(new BeaconCaptureListener(plugin), plugin);
-                getServer().getPluginManager().registerEvents(new ChatListener(plugin), plugin);
-                getServer().getPluginManager().registerEvents(new BeaconPassiveDefenseListener(plugin), plugin);
-                getServer().getPluginManager().registerEvents(new BeaconProjectileDefenseListener(plugin), plugin);
-                getServer().getPluginManager().registerEvents(new BeaconProtectionListener(plugin), plugin);
-                getServer().getPluginManager().registerEvents(new PlayerDeathListener(plugin), plugin);
-                getServer().getPluginManager().registerEvents(new PlayerJoinLeaveListener(plugin), plugin);
-                pml = new PlayerMovementListener(plugin);
-                getServer().getPluginManager().registerEvents(pml, plugin);
-                teleportListener = new PlayerTeleportListener(plugin);
-                getServer().getPluginManager().registerEvents(teleportListener, plugin);
-                getServer().getPluginManager().registerEvents(new SkyListeners(plugin), plugin);
-                getServer().getPluginManager().registerEvents(new WorldListener(plugin), plugin);
-                getServer().getPluginManager().registerEvents(new BeaconSurroundListener(plugin), plugin);
-                getServer().getPluginManager().registerEvents(new LobbyListener(plugin), plugin);
-                ignoreChunkLoad = false; // used in WorldListener and other classes
+            // Load messages for players
+            messages = new Messages(plugin);
 
-                // Load messages for players
-                messages = new Messages(plugin);
-
-                /* Get dynmap */
-                if (Settings.useDynmap) {
-                    PluginManager pm = getServer().getPluginManager();
-                    Plugin dynmap = pm.getPlugin("dynmap");
-                    if(dynmap != null) {
-                        getLogger().info("Hooking into dynmap.");
-                        getServer().getPluginManager().registerEvents(new OurServerListener(plugin, dynmap), plugin); 
-                    }
-                }
-                // Make first game
-                if (gameMgr.getGames().isEmpty()) {
-                    gameMgr.newGame(Settings.defaultGameName);
+            /* Get dynmap */
+            if (Settings.useDynmap) {
+                PluginManager pm = getServer().getPluginManager();
+                Plugin dynmap = pm.getPlugin("dynmap");
+                if(dynmap != null) {
+                    getLogger().info("Hooking into dynmap.");
+                    getServer().getPluginManager().registerEvents(new OurServerListener(plugin, dynmap), plugin);
                 }
             }
-
+            // Make first game
+            if (gameMgr.getGames().isEmpty()) {
+                gameMgr.newGame(Settings.defaultGameName);
+            }
         });
     }
 
@@ -245,7 +238,7 @@ public class Beaconz extends JavaPlugin {
         // Link commands
         Settings.linkCommands = getConfig().getStringList("links.linkcommands");
         // Default language
-        locale = new Lang(this);
+        Lang locale = new Lang(this);
         locale.loadLocale(getConfig().getString("general.defaultlocale","en-US"));
         // Default game name
         Settings.defaultGameName = getConfig().getString("world.defaultgamename", "Beaconz");
@@ -261,7 +254,7 @@ public class Beaconz extends JavaPlugin {
         // The maximum distance the beacon can link without extending link blocks
         Settings.linkLimit = getConfig().getInt("links.linklimit", 500);
         // Link blocks enable links to reach further for less experience
-        Settings.linkBlocks = new HashMap<Material, Integer>();
+        Settings.linkBlocks = new HashMap<>();
         if (getConfig().contains("links.linkblocks")) {
             for (String material: getConfig().getConfigurationSection("links.linkblocks").getKeys(false)) {
                 //getLogger().info("DEBUG: reading " + material);
@@ -357,7 +350,7 @@ public class Beaconz extends JavaPlugin {
         // height above a beacon.
         // This is a list where the index is the height (minus 1), and the value is the level required.
         if (getConfig().contains("defense.defenselevel")) {
-            Settings.defenseLevels = new ArrayList<Integer>();
+            Settings.defenseLevels = new ArrayList<>();
             // Zero the index
             for (int i = 0; i < Settings.defenseHeight; i++) {
                 Settings.defenseLevels.add(0);
@@ -365,7 +358,7 @@ public class Beaconz extends JavaPlugin {
             // Load from the config
             for (String level : getConfig().getConfigurationSection("defense.defenselevel").getValues(false).keySet()) {
                 try {
-                    int index = Integer.valueOf(level) - 1;
+                    int index = Integer.parseInt(level) - 1;
                     if (index >= 0) {
                         int levelReq = getConfig().getInt("defense.defenselevel." + level, 0);
                         Settings.defenseLevels.add(index, levelReq);
@@ -385,7 +378,7 @@ public class Beaconz extends JavaPlugin {
             }
         }
         if (getConfig().contains("defense.attacklevel")) {
-            Settings.attackLevels = new ArrayList<Integer>();
+            Settings.attackLevels = new ArrayList<>();
             // Zero the index
             for (int i = 0; i < Settings.defenseHeight; i++) {
                 Settings.attackLevels.add(0);
@@ -393,7 +386,7 @@ public class Beaconz extends JavaPlugin {
             // Load from the config
             for (String level : getConfig().getConfigurationSection("defense.attacklevel").getValues(false).keySet()) {
                 try {
-                    int index = Integer.valueOf(level) - 1;
+                    int index = Integer.parseInt(level) - 1;
                     if (index >= 0) {
                         int levelReq = getConfig().getInt("defense.attacklevel." + level, 0);
                         Settings.attackLevels.add(index, levelReq);
@@ -422,14 +415,14 @@ public class Beaconz extends JavaPlugin {
         Settings.xCenter = getConfig().getInt("world.xcenter",2000);
         Settings.zCenter = getConfig().getInt("world.zcenter",2000);
         Settings.seedAdjustment = getConfig().getLong("world.seedadjustment", 0);
-        Settings.mineCoolDown = getConfig().getInt("mining.minecooldown", 1) * 60000; // Minutes in millis
+        Settings.mineCoolDown = getConfig().getInt("mining.minecooldown", 1) * 60000L; // Minutes in millis
         ConfigurationSection enemyFieldSection = getConfig().getConfigurationSection("triangles.enemyfieldeffects");
         // Step through the numbers
-        Settings.enemyFieldEffects = new HashMap<Integer, List<PotionEffect>>();
+        Settings.enemyFieldEffects = new HashMap<>();
         for (Entry<String, Object> part : enemyFieldSection.getValues(false).entrySet()) {
             if (NumberUtils.isNumber(part.getKey())) {
                 // It is a number, now get the string list
-                List<PotionEffect> effects = new ArrayList<PotionEffect>();
+                List<PotionEffect> effects = new ArrayList<>();
                 List<String> effectsList = getConfig().getStringList("triangles.enemyfieldeffects." + part.getKey());
                 for (String effectString : effectsList) {
                     String[] split = effectString.split(":");
@@ -456,7 +449,7 @@ public class Beaconz extends JavaPlugin {
                 Settings.enemyFieldEffects.put(NumberUtils.toInt(part.getKey()), effects);
             }
         }
-        Settings.friendlyFieldEffects = new HashMap<Integer, List<PotionEffect>>();
+        Settings.friendlyFieldEffects = new HashMap<>();
         ConfigurationSection friendlyFieldSection = getConfig().getConfigurationSection("triangles.friendlyfieldeffects");
         // Step through the numbers
         for (Entry<String, Object> part : friendlyFieldSection.getValues(false).entrySet()) {
@@ -464,7 +457,7 @@ public class Beaconz extends JavaPlugin {
             if (NumberUtils.isNumber(part.getKey())) {
                 //getLogger().info("DEBUG: Field is a number");
                 // It is a number, now get the string list
-                List<PotionEffect> effects = new ArrayList<PotionEffect>();
+                List<PotionEffect> effects = new ArrayList<>();
                 List<String> effectsList = getConfig().getStringList("triangles.friendlyfieldeffects." + part.getKey());
                 //getLogger().info("DEBUG: Effects list: " + effectsList);
                 for (String effectString : effectsList) {
@@ -565,8 +558,8 @@ public class Beaconz extends JavaPlugin {
 
     /**
      * Format is Material:Qty or Material:Data:Qty or Integer:Qty or Integer:Data:Qty
-     * @param item
-     * @return
+     * @param item the string to parse
+     * @return the ItemStack or null if error
      */
     @SuppressWarnings("deprecation")
     private ItemStack getItemFromString(String goodie) {
@@ -661,23 +654,26 @@ public class Beaconz extends JavaPlugin {
     public String cleanString(String strToClean, String basevalues, String defaultIfEmpty) {
         strToClean = strToClean + ":";
         basevalues = basevalues + ":";
-        Boolean removestr = false;
+        boolean removestr = false;
         // Remove extraneous text
         for (String str : strToClean.split(":")) {
             removestr = true;
             for (String bv : basevalues.split(":")) {
-                if (bv.equals(str)) removestr = false;
+                if (bv.equals(str)) {
+                    removestr = false;
+                    break;
+                }
             }
             if (removestr) strToClean = strToClean.replace(str, "");
         }
         //Reassemble the string
-        String newString = "";
+        StringBuilder newString = new StringBuilder();
         for (String str: strToClean.split(":")) {
-            if (!str.isEmpty()) newString = newString + str + ":";
+            if (!str.isEmpty()) newString.append(str).append(":");
         }
-        if (newString.length() > 0) newString = newString.substring(0, newString.length()-1);
-        if (newString.isEmpty()) newString = defaultIfEmpty;
-        return newString;
+        if (newString.length() > 0) newString = new StringBuilder(newString.substring(0, newString.length() - 1));
+        if (newString.length() == 0) newString = new StringBuilder(defaultIfEmpty);
+        return newString.toString();
     }
 
     /**
@@ -708,7 +704,7 @@ public class Beaconz extends JavaPlugin {
             return "";
         }
         return l.getWorld().getName() + ":" + strDbl(l.getX(),2) + ":" + strDbl(l.getY(),2) + ":" + strDbl(l.getZ(),2) 
-        + ":" + String.valueOf(Float.floatToIntBits(l.getYaw())) + ":" + String.valueOf(Float.floatToIntBits(l.getPitch()));        
+        + ":" + Float.floatToIntBits(l.getYaw()) + ":" + Float.floatToIntBits(l.getPitch());
     }
 
     static private String strDbl (final Double dbl, int places) {
@@ -733,9 +729,9 @@ public class Beaconz extends JavaPlugin {
             if (w == null) {
                 return null;
             }
-            final double x = Double.valueOf(parts[1].replace('_', '.'));
-            final double y = Double.valueOf(parts[2].replace('_', '.'));
-            final double z = Double.valueOf(parts[3].replace('_', '.'));
+            final double x = Double.parseDouble(parts[1].replace('_', '.'));
+            final double y = Double.parseDouble(parts[2].replace('_', '.'));
+            final double z = Double.parseDouble(parts[3].replace('_', '.'));
             final float yaw = Float.intBitsToFloat(Integer.parseInt(parts[4].replace('_', '.')));
             final float pitch = Float.intBitsToFloat(Integer.parseInt(parts[5].replace('_', '.')));
             return new Location(w, x, y, z, yaw, pitch);
@@ -754,7 +750,7 @@ public class Beaconz extends JavaPlugin {
         for (String cmd : commands) {
             if (cmd.startsWith("[SELF]")) {
                 getLogger().info("Running command '" + cmd + "' as " + player.getName());
-                cmd = cmd.substring(6,cmd.length()).replace("[player]", player.getName()).trim();
+                cmd = cmd.substring(6).replace("[player]", player.getName()).trim();
                 try {
                     player.performCommand(cmd);
                 } catch (Exception e) {
@@ -788,7 +784,7 @@ public class Beaconz extends JavaPlugin {
      * @return a list of what was given to the player
      */
     public List<ItemStack> giveItems(Player player, List<String> itemRewards) {
-        List<ItemStack> rewardedItems = new ArrayList<ItemStack>();
+        List<ItemStack> rewardedItems = new ArrayList<>();
         Material rewardItem;
         int rewardQty;
         // Build the item stack of rewards to give the player
@@ -800,7 +796,7 @@ public class Beaconz extends JavaPlugin {
                     rewardQty = Integer.parseInt(element[1]);
                     ItemStack item = new ItemStack(rewardItem, rewardQty);
                     rewardedItems.add(item);
-                    final HashMap<Integer, ItemStack> leftOvers = player.getInventory().addItem(new ItemStack[] { item });
+                    final HashMap<Integer, ItemStack> leftOvers = player.getInventory().addItem(item);
                     if (!leftOvers.isEmpty()) {
                         player.getWorld().dropItemNaturally(player.getLocation(), leftOvers.get(0));
                     }                  
@@ -808,13 +804,13 @@ public class Beaconz extends JavaPlugin {
                 } catch (Exception e) {
                     player.sendMessage(ChatColor.RED + Lang.errorError);
                     plugin.getLogger().severe("Could not give " + element[0] + ":" + element[1] + " to " + player.getName() + " as reward!");
-                    String materialList = "";
+                    StringBuilder materialList = new StringBuilder();
                     boolean hint = false;
                     for (Material m : Material.values()) {
-                        materialList += m.toString() + ",";
+                        materialList.append(m.toString()).append(",");
                         if (element[0].length() > 3) {
                             if (m.toString().startsWith(element[0].substring(0, 3))) {
-                                plugin.getLogger().severe("Did you mean " + m.toString() + "?");
+                                plugin.getLogger().severe("Did you mean " + m + "?");
                                 hint = true;
                             }
                         }
@@ -838,7 +834,7 @@ public class Beaconz extends JavaPlugin {
                         if (item != null) {
                             rewardedItems.add(item);
                             final HashMap<Integer, ItemStack> leftOvers = player.getInventory().addItem(
-                                    new ItemStack[] { item });
+                                    item);
                             if (!leftOvers.isEmpty()) {
                                 player.getWorld().dropItemNaturally(player.getLocation(), leftOvers.get(0));
                             }
@@ -848,12 +844,12 @@ public class Beaconz extends JavaPlugin {
                 } catch (Exception e) {
                     player.sendMessage(ChatColor.RED + "There was a problem giving your reward. Ask Admin to check log!");
                     plugin.getLogger().severe("Could not give " + element[0] + ":" + element[1] + " to " + player.getName() + " for challenge reward!");
-                    String materialList = "";
+                    StringBuilder materialList = new StringBuilder();
                     boolean hint = false;
                     for (Material m : Material.values()) {
-                        materialList += m.toString() + ",";
+                        materialList.append(m.toString()).append(",");
                         if (m.toString().startsWith(element[0].substring(0, 3))) {
-                            plugin.getLogger().severe("Did you mean " + m.toString() + "? If so, put that in challenges.yml.");
+                            plugin.getLogger().severe("Did you mean " + m + "? If so, put that in challenges.yml.");
                             hint = true;
                         }
                     }
@@ -885,9 +881,9 @@ public class Beaconz extends JavaPlugin {
                     plugin.getLogger().severe("POTION:JUMP:2:NOTEXTENDED:NOSPLASH:1");
                     plugin.getLogger().severe("POTION:WEAKNESS:::::1   -  any weakness potion");
                     plugin.getLogger().severe("Available names are:");
-                    String potionNames = "";
+                    StringBuilder potionNames = new StringBuilder();
                     for (PotionType p : PotionType.values()) {
-                        potionNames += p.toString() + ", ";
+                        potionNames.append(p.toString()).append(", ");
                     }
                     plugin.getLogger().severe(potionNames.substring(0, potionNames.length()-2));
                     return null;
@@ -908,9 +904,8 @@ public class Beaconz extends JavaPlugin {
 
     /**
      * Converts a serialized potion to a ItemStack of that potion
-     * @param element
-     * @param rewardQty
-     * @param configFile that is being used
+     * @param element - array of potion parameters
+     * @param rewardQty - quantity of potions
      * @return ItemStack of the potion
      */
     public static ItemStack getPotion(String[] element, int rewardQty) {
@@ -924,7 +919,7 @@ public class Beaconz extends JavaPlugin {
             // Add level etc.
             if (!element[2].isEmpty()) {
                 try {
-                    level = Integer.valueOf(element[2]);
+                    level = Integer.parseInt(element[2]);
                 } catch (Exception e) {
                     level = 1;
                 }
@@ -959,7 +954,7 @@ public class Beaconz extends JavaPlugin {
             }
             PotionMeta potionMeta = (PotionMeta) result.getItemMeta();
             try {
-                PotionData potionData = new PotionData(PotionType.valueOf(element[1].toUpperCase()), extended, level > 1 ? true: false);
+                PotionData potionData = new PotionData(PotionType.valueOf(element[1].toUpperCase()), extended, level > 1);
                 potionMeta.setBasePotionData(potionData); 
             } catch (IllegalArgumentException iae) {
                 Bukkit.getLogger().severe("Potion parsing problem with " + element[1] +": " + iae.getMessage());

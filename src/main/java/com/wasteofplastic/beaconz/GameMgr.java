@@ -24,7 +24,6 @@ package com.wasteofplastic.beaconz;
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Random;
@@ -39,10 +38,10 @@ import org.bukkit.scoreboard.Team;
 
 public class GameMgr extends BeaconzPluginDependent {
 
-    private Beaconz plugin;
+    private final Beaconz plugin;
     private Region lobby;
-    private LinkedHashMap<Point2D[], Region> regions;
-    private LinkedHashMap<String, Game> games;
+    private final LinkedHashMap<Point2D[], Region> regions;
+    private final LinkedHashMap<String, Game> games;
     private String gamemode;
     private Integer gamedistance;
     private Double gamedistribution;
@@ -58,8 +57,8 @@ public class GameMgr extends BeaconzPluginDependent {
     public GameMgr(Beaconz beaconzPlugin) {
         super(beaconzPlugin);
         this.plugin = beaconzPlugin;
-        regions = new LinkedHashMap<Point2D[], Region>();
-        games = new LinkedHashMap<String, Game>();
+        regions = new LinkedHashMap<>();
+        games = new LinkedHashMap<>();
         setGameDefaultParms();
         loadAllGames();
         if (lobby == null) {
@@ -163,8 +162,6 @@ public class GameMgr extends BeaconzPluginDependent {
             YamlConfiguration gamesYml = new YamlConfiguration();
             try {
                 gamesYml.load(gamesFile);
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
             } catch (IOException e) {
                 e.printStackTrace();
             } catch (InvalidConfigurationException e) {
@@ -204,7 +201,7 @@ public class GameMgr extends BeaconzPluginDependent {
                         int gt  = csec.getInt(gname + ".countdowntimer");
                         String gs   = csec.getString(gname + ".scoretypes");
                         boolean isOver = csec.getBoolean(gname + ".gameOver");
-                        Double gdist = csec.getDouble(gname + ".gamedistribution");
+                        double gdist = csec.getDouble(gname + ".gamedistribution");
 
                         Game game = games.get(gameName);
                         if (game != null && gameName != null) {
@@ -305,7 +302,7 @@ public class GameMgr extends BeaconzPluginDependent {
 
             // Have the region, create the game
             Game game = null;
-            Boolean nametaken = (getGames().get(gameName) != null);
+            boolean nametaken = (getGames().get(gameName) != null);
             if (region == null || nametaken || gameName == null) {
                 getLogger().warning("Could not create new game.");
             } else {
@@ -355,7 +352,7 @@ public class GameMgr extends BeaconzPluginDependent {
         if (newregionctr == null) {
             for (int i = 0; i <10; i++) {
                 Random rand = new Random();
-                Integer r = rand.nextInt(gamedistance * 100);
+                int r = rand.nextInt(gamedistance * 100);
                 Point2D rctr = new Point2D.Double(r, r);
                 newregionctr = goodNeighbor(rctr, gradius);
                 if (newregionctr != null) {
@@ -416,16 +413,14 @@ public class GameMgr extends BeaconzPluginDependent {
 
     public Boolean isAreaFree(Point2D pt1, Point2D pt2) {
         // pt1 **must be** the upper left corner and pt2 **must be** the lower right corner
-        Boolean safe = true;
-        Point2D lowerleft = pt1;
+        boolean safe = true;
         Point2D upperleft = new Point2D.Double(pt1.getX(), pt2.getY());
-        Point2D upperright = pt2;
         Point2D lowerright = new Point2D.Double(pt2.getX(), pt1.getY());
         //getLogger().info("IsAreaFree - checking: [" + lowerleft.getX() + ":" + lowerleft.getY() + "] to [" + upperright.getX() + ":" + upperright.getY() + "]");
         for (Point2D[] key : regions.keySet()) { 
             Region reg = regions.get(key);
             //getLogger().info("against region " + reg.displayCoords());
-            if (reg.containsPoint(lowerleft) || reg.containsPoint(upperleft) || reg.containsPoint(lowerright) || reg.containsPoint(upperright)) {
+            if (reg.containsPoint(pt1) || reg.containsPoint(upperleft) || reg.containsPoint(lowerright) || reg.containsPoint(pt2)) {
                 safe = false;
                 break;
             }
@@ -443,7 +438,7 @@ public class GameMgr extends BeaconzPluginDependent {
      * Note: world.getBiome() does NOT trigger a chunk load!
      */
     public Boolean isAreaSafe (Point2D ctr, Double radius) {
-        int unsafeBiomes = 0+0;
+        int unsafeBiomes = 0;
         int maxBadChunks = (int)(radius*radius)/1280;
         int increment = 50; // in order to catch approx. 1/10 of the chunks in the area    
         int minx = (int) (rup16(ctr.getX() - radius)/1);
@@ -451,8 +446,8 @@ public class GameMgr extends BeaconzPluginDependent {
         int maxx = (int) (rup16(ctr.getX() + radius)/1);
         int maxz = (int) (rup16(ctr.getY() + radius)/1);
         outerloop:
-        for (Integer x = minx; x <= maxx; x = x + increment) {
-            for (Integer z = minz; z <= maxz; z = z  + increment) {
+        for (int x = minx; x <= maxx; x = x + increment) {
+            for (int z = minz; z <= maxz; z = z  + increment) {
                 if (getBeaconzWorld().getBiome(x, z).equals(Biome.DEEP_OCEAN) || getBeaconzWorld().getBiome(x, z).equals(Biome.OCEAN)) {
                     unsafeBiomes ++;
                 }
@@ -605,7 +600,7 @@ public class GameMgr extends BeaconzPluginDependent {
         Game game = null;
         if (games != null) {
             for (Game g : games.values()) {
-                if (g.getScorecard().getTeamMembers().keySet().contains(team)) {
+                if (g.getScorecard().getTeamMembers().containsKey(team)) {
                     game = g;
                     break;
                 }
@@ -766,8 +761,8 @@ public class GameMgr extends BeaconzPluginDependent {
      * (not invading other areas)
      */
     public Boolean checkAreaFree (Point2D center, Integer rad) {
-        Boolean free = true;
-        Point2D lowerleft = new Point2D.Double(center.getX() - rad, center.getY() - rad);;
+        boolean free = true;
+        Point2D lowerleft = new Point2D.Double(center.getX() - rad, center.getY() - rad);
         Point2D upperleft = new Point2D.Double(center.getX()  - rad, center.getY() + rad);
         Point2D upperright = new Point2D.Double(center.getX()  + rad, center.getY() + rad);
         Point2D lowerright = new Point2D.Double(center.getX()  + rad, center.getY() - rad);
@@ -786,7 +781,7 @@ public class GameMgr extends BeaconzPluginDependent {
      * Rounds a number up (or down, if negative) to an even chunk (16) boundary
      */
     public Double rup16 (double x) {
-        Double rnd;
+        double rnd;
         if (x < 0) {
             rnd = (((int) x - 8) / 16) * 16.0;
         } else {
@@ -802,14 +797,13 @@ public class GameMgr extends BeaconzPluginDependent {
      * Currently not used
      */
     public Point2D [] regionCorners(String c) {
-        return regionCorners(Integer.valueOf(c.split(":")[0]),
-                Integer.valueOf(c.split(":")[1]),
-                Integer.valueOf(c.split(":")[2]),
-                Integer.valueOf(c.split(":")[3]));
+        return regionCorners(Integer.parseInt(c.split(":")[0]),
+                Integer.parseInt(c.split(":")[1]),
+                Integer.parseInt(c.split(":")[2]),
+                Integer.parseInt(c.split(":")[3]));
     }
     public Point2D [] regionCorners(int x1, int z1, int x2, int z2) {
-        Point2D [] corners = {new Point2D.Double(x1,z1), new Point2D.Double(x2,z2)};
-        return corners;
+        return new Point2D[]{new Point2D.Double(x1,z1), new Point2D.Double(x2,z2)};
     }
 
     /**
@@ -818,10 +812,10 @@ public class GameMgr extends BeaconzPluginDependent {
      * Currently not used
      */
     private Point2D [] strCoordToPts(String c) {
-        Double x1 = Double.valueOf(c.split(":")[0]);
-        Double z1 = Double.valueOf(c.split(":")[1]);
-        Double x2 = Double.valueOf(c.split(":")[2]);
-        Double z2 = Double.valueOf(c.split(":")[3]);
+        double x1 = Double.parseDouble(c.split(":")[0]);
+        double z1 = Double.parseDouble(c.split(":")[1]);
+        double x2 = Double.parseDouble(c.split(":")[2]);
+        double z2 = Double.parseDouble(c.split(":")[3]);
         Double a1 = x1 < x2 ? x1 : x2;
         Double b1 = x1 < x2 ? z1 : z2;
         Double a2 = x1 < x2 ? x2 : x1;

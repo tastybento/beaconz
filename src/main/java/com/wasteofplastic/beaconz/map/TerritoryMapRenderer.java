@@ -1,26 +1,17 @@
 package com.wasteofplastic.beaconz.map;
 
 import java.awt.geom.Point2D;
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import org.bukkit.Color;
-import org.bukkit.DyeColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.map.MapCanvas;
 import org.bukkit.map.MapCursor;
 import org.bukkit.map.MapCursorCollection;
-import org.bukkit.map.MapPalette;
 import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
-import org.bukkit.material.MaterialData;
 import org.bukkit.scoreboard.Team;
 
 import com.wasteofplastic.beaconz.BeaconObj;
@@ -37,7 +28,7 @@ public class TerritoryMapRenderer extends MapRenderer {
     private static final String MAP_UNCLAIMED_PERMISSION = "beaconz.map.unclaimed";
 
     // cache for getMapPaletteColorForTeam
-    private static Map<Material, Color> mapPaletteColors = new EnumMap<>(Material.class);
+    private static final Map<Material, Color> mapPaletteColors = new EnumMap<>(Material.class);
 
     private static final int TICKS_PER_REFRESH = 20; // update map once per second
 
@@ -133,7 +124,7 @@ public class TerritoryMapRenderer extends MapRenderer {
                 if (count % 3 == 0) {
                     List<TriangleField> triangles = beaconz.getRegister().getTriangle(xBlock, zBlock);
                     if (triangles != null && !triangles.isEmpty()) {
-                        TriangleField triangleField = triangles.get(0);
+                        TriangleField triangleField = triangles.getFirst();
                         Scorecard scoreCard = beaconz.getGameMgr().getSC(xBlock,zBlock);
                         if (scoreCard != null) {
                             Material materialData = scoreCard.getBlockID(triangleField.getOwner());
@@ -298,8 +289,8 @@ public class TerritoryMapRenderer extends MapRenderer {
     }
 
     private static class CachedBeacon {
-        private Team owner;
-        private Set<BeaconObj> links;
+        private final Team owner;
+        private final Set<BeaconObj> links;
 
         public CachedBeacon(BeaconObj beaconObj) {
             this.owner = beaconObj.getOwnership();
@@ -314,7 +305,7 @@ public class TerritoryMapRenderer extends MapRenderer {
 
             CachedBeacon that = (CachedBeacon) o;
 
-            return links.equals(that.links) && !(owner != null ? !owner.equals(that.owner) : that.owner != null);
+            return links.equals(that.links) && Objects.equals(owner, that.owner);
 
         }
 
@@ -327,8 +318,8 @@ public class TerritoryMapRenderer extends MapRenderer {
     }
 
     private static class TeamCursor {
-        public MapCursor.Type type;
-        public byte direction; // 0 to 15
+        public final MapCursor.Type type;
+        public final byte direction; // 0 to 15
 
         public TeamCursor(MapCursor.Type type, int direction) {
             this.type = type;

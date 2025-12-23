@@ -84,14 +84,8 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
             return;
         }
         // Remove any blocks that are defensive
-        Iterator<Block> it = event.blockList().iterator();
-        while(it.hasNext()) {
-            Block b = it.next();
-            if (getRegister().isAboveBeacon(b.getLocation())) {
-                // TODO: Check if it is the highest block
-                it.remove();
-            }
-        }
+        // TODO: Check if it is the highest block
+        event.blockList().removeIf(b -> getRegister().isAboveBeacon(b.getLocation()));
     }
 
     /**
@@ -534,7 +528,6 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
         if (level < highestBlock) {
             event.getPlayer().sendMessage(ChatColor.RED + Lang.beaconDefenseRemoveTopDown);
             event.setCancelled(true);
-            return;
         }
     }
 

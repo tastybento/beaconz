@@ -33,7 +33,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.Map.Entry;
 
-import org.apache.commons.lang.StringUtils;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -50,18 +49,18 @@ import com.destroystokyo.paper.MaterialTags;
  *
  */
 public class BeaconObj extends BeaconzPluginDependent {
-    private Point2D location;
-    private int x;
-    private int z;
-    private int y;
+    private final Point2D location;
+    private final int x;
+    private final int z;
+    private final int y;
     private long hackTimer;
     private Team ownership;
     //private Set<BeaconObj> links;
     private Integer id = null;
     private boolean newBeacon = true;
-    private static final List<BlockFace> FACES = new ArrayList<BlockFace>(Arrays.asList(BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST, BlockFace.NORTH_EAST, BlockFace.NORTH_WEST, BlockFace.SOUTH_EAST, BlockFace.SOUTH_WEST));
-    private HashMap<Block, DefenseBlock> defenseBlocks = new HashMap<Block,DefenseBlock>();
-    private Set<BeaconObj> links = new HashSet<BeaconObj>();
+    private static final List<BlockFace> FACES = new ArrayList<>(Arrays.asList(BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST, BlockFace.NORTH_EAST, BlockFace.NORTH_WEST, BlockFace.SOUTH_EAST, BlockFace.SOUTH_WEST));
+    private HashMap<Block, DefenseBlock> defenseBlocks = new HashMap<>();
+    private final Set<BeaconObj> links = new HashSet<>();
 
     /**
      * Represents a beacon
@@ -116,7 +115,7 @@ public class BeaconObj extends BeaconzPluginDependent {
 
     /**
      * Add a link from this beacon to another beacon and make a return link
-     * @param beaconPair
+     * @param beacon the beacon to link to
      * @return true if link made, false if not
      */
     public boolean addOutboundLink(BeaconObj beacon) {
@@ -134,7 +133,7 @@ public class BeaconObj extends BeaconzPluginDependent {
 
     /**
      * Called by another beacon. Adds a link
-     * @param beaconPair
+     * @param beacon the beacon to link to
      */
     public void addLink(BeaconObj beacon) {
         links.add(beacon);
@@ -235,17 +234,17 @@ public class BeaconObj extends BeaconzPluginDependent {
             Block block = beacon.getRelative(face);
             //getLogger().info("DEBUG: highest block at " + block.getX() + "," + block.getZ() + " y = " + getHighestBlockYAt(block.getX(), block.getZ()));
             if (block.getY() != getHighestBlockYAt(block.getX(), block.getZ())) {
-                return false;
+                return true;
             }
         }
         // Check all the defense blocks too
         for (Point2D point: getRegister().getDefensesAtBeacon(this)) {
             beacon = getBeaconzWorld().getBlockAt((int)point.getX(), y, (int)point.getY());
             if (beacon.getY() != getHighestBlockYAt((int)point.getX(), (int)point.getY())) {
-                return false;
+                return true;
             }
         }
-        return true;
+        return false;
     }
 
     /**
@@ -443,7 +442,7 @@ public class BeaconObj extends BeaconzPluginDependent {
      * @return
      */    
     public Boolean isLocked () {
-        Boolean rc = false;
+        boolean rc = false;
         int maxHeight = getHighestBlockY();
         for (int i = y; i <= maxHeight; i++) {
             if (nbrToLock(i) <= 0) {
@@ -467,7 +466,7 @@ public class BeaconObj extends BeaconzPluginDependent {
     
     public int nbrToLock(int height) {               
         
-        Integer maxLocking = Settings.nbrLockingBlocks;                
+        int maxLocking = Settings.nbrLockingBlocks;
         Material lockingBlock = Material.EMERALD_BLOCK;
         int missing = maxLocking;
                        
@@ -480,8 +479,8 @@ public class BeaconObj extends BeaconzPluginDependent {
             }
             
             // Figure out how many locking blocks we need for the owner team
-            Integer reqLocking = 3;
-            Integer maxSize = ownership.getSize(); 
+            int reqLocking = 3;
+            int maxSize = ownership.getSize();
             /*for (Team t : ownership.getScoreboard().getTeams()) {
                 if (t.getSize() > maxSize) {
                     maxSize = t.getSize();

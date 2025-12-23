@@ -5,7 +5,6 @@ import java.util.Iterator;
 
 import org.bukkit.Material;
 import org.bukkit.block.Block;
-import org.bukkit.material.MaterialData;
 import org.bukkit.scheduler.BukkitRunnable;
 
 /**
@@ -16,8 +15,8 @@ import org.bukkit.scheduler.BukkitRunnable;
 public class LineVisualizer extends BeaconzPluginDependent {
     private final static int BLOCKS_TO_SET = 100;
     private Point2D current;
-    private Iterator<Point2D> it;
-    private Iterator<Point2D> it2;
+    private final Iterator<Point2D> it;
+    private final Iterator<Point2D> it2;
 
     public LineVisualizer(Beaconz beaconzPlugin, final BeaconLink beaconPair, final boolean addLink) {
         super(beaconzPlugin);

@@ -153,9 +153,9 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
             // Check if the player has sufficient experience to link the beacons
             int expRequired = getReqExp(beacon, mappedBeacon); 
             if (expRequired > 0) {
-                if (!testForExp(player, (int)(expRequired))) {
+                if (testForExp(player, expRequired)) {
                     player.sendMessage(ChatColor.RED + Lang.errorNotEnoughExperience);
-                    player.sendMessage(ChatColor.RED + Lang.beaconYouNeedThisMuchExp.replace("[number]", String.format(Locale.US, "%,d",(int)(expRequired))));
+                    player.sendMessage(ChatColor.RED + Lang.beaconYouNeedThisMuchExp.replace("[number]", String.format(Locale.US, "%,d", expRequired)));
                     player.sendMessage(ChatColor.RED + Lang.beaconYouHaveThisMuchExp.replace("[number]", String.format(Locale.US, "%,d",getTotalExperience(player))));
                     return;
                 }
@@ -372,7 +372,7 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
      * @return true if sufficient experience points otherwise false
      */
     public static boolean testForExp(Player player , int xpRequired){
-        return getTotalExperience(player) >= xpRequired ? true : false;
+        return getTotalExperience(player) < xpRequired;
     }
 
     /**

@@ -58,7 +58,7 @@ public class BeaconSurroundListener extends BeaconzPluginDependent implements Li
     // Make breaking blocks 90% harder
     private static final double PROBABILITY = 1D;
     private static final double DAMAGE = 0D;
-    private static final Set<Material> protectedMaterials = new HashSet<Material>();
+    private static final Set<Material> protectedMaterials = new HashSet<>();
     static {
         protectedMaterials.add(Material.BARRIER);
         protectedMaterials.add(Material.BEACON);

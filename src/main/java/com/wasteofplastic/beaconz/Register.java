@@ -24,7 +24,6 @@ package com.wasteofplastic.beaconz;
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -66,23 +65,23 @@ public class Register extends BeaconzPluginDependent {
         super(beaconzPlugin);
     }
 
-    private HashMap<Integer, BeaconObj> beaconMaps = new HashMap<>();
-    private HashMap<Point2D, BeaconObj> beaconRegister = new HashMap<>();
+    private final HashMap<Integer, BeaconObj> beaconMaps = new HashMap<>();
+    private final HashMap<Point2D, BeaconObj> beaconRegister = new HashMap<>();
     private Set<TriangleField> triangleFields = new HashSet<>();
     //private HashMap<Team, Set<Line2D>> links = new HashMap<Team, Set<Line2D>>();
-    private HashMap<Game,List<BeaconLink>> beaconLinks = new HashMap<>();
+    private final HashMap<Game,List<BeaconLink>> beaconLinks = new HashMap<>();
 
     /**
      * Store of the blocks around a beacon. Starts as the initial 8 blocks adjacent to the
      * beacon. Can expand as players add emerald blocks to the beacon.
      */
-    private HashMap<Point2D, BeaconObj> baseBlocks = new HashMap<Point2D, BeaconObj>();
-    private HashMap<BeaconObj, Set<Point2D>> baseBlocksInverse = new HashMap<BeaconObj, Set<Point2D>>();
+    private final HashMap<Point2D, BeaconObj> baseBlocks = new HashMap<>();
+    private final HashMap<BeaconObj, Set<Point2D>> baseBlocksInverse = new HashMap<>();
 
     public void saveRegister() {
         // Save the beacons
         File beaconzFile = new File(getBeaconzPlugin().getDataFolder(),"beaconz.yml");
-        Set<BeaconLink> storedLinks = new HashSet<BeaconLink>();
+        Set<BeaconLink> storedLinks = new HashSet<>();
         YamlConfiguration beaconzYml = new YamlConfiguration();
         // Backup the beacons file just in case
         if (beaconzFile.exists()) {
@@ -102,7 +101,7 @@ public class Register extends BeaconzPluginDependent {
                     + ":" + owner);
             // Store links
             if (game != null) {
-                List<String> beaconStringLinks = new ArrayList<String>();
+                List<String> beaconStringLinks = new ArrayList<>();
                 if (beaconLinks.containsKey(game)) {
                     for (BeaconLink link : beaconLinks.get(game)) {
                         if (!storedLinks.contains(link) && link.getBeacon1().equals(beacon)) {
@@ -119,7 +118,7 @@ public class Register extends BeaconzPluginDependent {
             }
             // Save additional blocks added to beacon
             //getLogger().info("DEBUG: plinthBlocksInverse = " + plinthBlocksInverse.toString());
-            List<String> plinthBlocksString = new ArrayList<String>();
+            List<String> plinthBlocksString = new ArrayList<>();
             for (Point2D point: baseBlocksInverse.get(beacon)) {
                 //getLogger().info("DEBUG: writing plinth block " + point);
                 plinthBlocksString.add((int)point.getX() + ":" + (int)point.getY());
@@ -144,7 +143,7 @@ public class Register extends BeaconzPluginDependent {
                 }
             }
             // Save maps
-            List<String> maps = new ArrayList<String>();
+            List<String> maps = new ArrayList<>();
             for (Integer id : beaconMaps.keySet()) {
                 if (beacon.equals(beaconMaps.get(id))) {
                     // Check if this map still exists
@@ -179,9 +178,6 @@ public class Register extends BeaconzPluginDependent {
         YamlConfiguration beaconzYml = new YamlConfiguration();
         try {
             beaconzYml.load(beaconzFile);
-        } catch (FileNotFoundException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
         } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -191,7 +187,7 @@ public class Register extends BeaconzPluginDependent {
         }
         //beacons
         beaconLinks.clear();
-        HashMap<BeaconObj, List<String>> beaconStringLinks = new HashMap<BeaconObj, List<String>>();
+        HashMap<BeaconObj, List<String>> beaconStringLinks = new HashMap<>();
         ConfigurationSection configSec = beaconzYml.getConfigurationSection("beacon");
         if (configSec != null) {
             for (String beacon : configSec.getValues(false).keySet()) {
@@ -200,9 +196,9 @@ public class Register extends BeaconzPluginDependent {
                 String[] args = info.split(":");
                 if (!info.isEmpty() && args.length == 4) {
                     if (NumberUtils.isNumber(args[0]) && NumberUtils.isNumber(args[1]) && NumberUtils.isNumber(args[2])) {
-                        int x = Integer.valueOf(args[0]);
-                        int y = Integer.valueOf(args[1]);
-                        int z = Integer.valueOf(args[2]);
+                        int x = Integer.parseInt(args[0]);
+                        int y = Integer.parseInt(args[1]);
+                        int z = Integer.parseInt(args[2]);
 
                         Game game = getGameMgr().getGame(x, z);
                         if (game != null) {
@@ -217,7 +213,7 @@ public class Register extends BeaconzPluginDependent {
                             beaconStringLinks.put(newBeacon, configSec.getStringList(beacon + ".links"));
                             // Initialize the link array if required
                             if (beaconLinks.get(game) == null) {
-                                List<BeaconLink> pairs = new ArrayList<BeaconLink>();
+                                List<BeaconLink> pairs = new ArrayList<>();
                                 beaconLinks.put(game, pairs);
                             }
                             // Load base blocks
@@ -226,8 +222,8 @@ public class Register extends BeaconzPluginDependent {
                                 String[] args2 = baseBlock.split(":");
                                 if (args2.length == 2) {
                                     if (NumberUtils.isNumber(args2[0]) && NumberUtils.isNumber(args2[1])) {
-                                        int blockX = Integer.valueOf(args2[0]);
-                                        int blockZ = Integer.valueOf(args2[1]);
+                                        int blockX = Integer.parseInt(args2[0]);
+                                        int blockZ = Integer.parseInt(args2[1]);
                                         addBeaconBaseBlock(blockX, blockZ, newBeacon);
                                     }
                                 }
@@ -248,7 +244,7 @@ public class Register extends BeaconzPluginDependent {
                             // Load map id's
                             List<String> maps = configSec.getStringList(beacon + ".maps");
                             for (String mapNumber: maps) {
-                                int id = Integer.valueOf(mapNumber);
+                                int id = Integer.parseInt(mapNumber);
                                 beaconMaps.put(id, newBeacon);
                                 MapView map = Bukkit.getMap(id);
                                 if (map != null) {
@@ -277,11 +273,11 @@ public class Register extends BeaconzPluginDependent {
         for (BeaconObj beacon: beaconStringLinks.keySet()) {
             for (String link : beaconStringLinks.get(beacon)) {
                 String[] args = link.split(":");
-                BeaconObj dest = beaconRegister.get(new Point2D.Double(Double.valueOf(args[0]), Double.valueOf(args[1])));
+                BeaconObj dest = beaconRegister.get(new Point2D.Double(Double.parseDouble(args[0]), Double.parseDouble(args[1])));
                 if (dest != null) {
-                    Long linkTime = 0L;
+                    long linkTime = 0L;
                     if (args.length == 3) {
-                        linkTime = Long.valueOf(args[2]);
+                        linkTime = Long.parseLong(args[2]);
                     } else {
                         count += 1000;
                         linkTime = count;
@@ -291,7 +287,7 @@ public class Register extends BeaconzPluginDependent {
                     Game game = getGameMgr().getGame(beacon.getPoint());
                     if (game != null) {
                         if (beaconLinks.get(game) == null) {
-                            List<BeaconLink> pairs = new ArrayList<BeaconLink>();
+                            List<BeaconLink> pairs = new ArrayList<>();
                             beaconLinks.put(game, pairs);
                         }
                         if (!beaconLinks.get(game).contains(newBeaconPair)) {
@@ -338,35 +334,17 @@ public class Register extends BeaconzPluginDependent {
             beaconLinks.clear();
         } else {
             //getLogger().info("DEBUG: clearing region " + region.displayCoords());
-            Iterator<Entry<Integer, BeaconObj>> bmit = beaconMaps.entrySet().iterator();
-            while (bmit.hasNext()) {
-                Entry<Integer, BeaconObj> en = bmit.next();
-                //getLogger().info("DEBUG: Checking map " + en.getKey());
-                if (region.containsBeacon(en.getValue())) {
-                    //getLogger().info("DEBUG: Removing map " + en.getKey());
-                    bmit.remove();
-                }
-            }
+            //getLogger().info("DEBUG: Checking map " + en.getKey());
+            //getLogger().info("DEBUG: Removing map " + en.getKey());
+            beaconMaps.entrySet().removeIf(en -> region.containsBeacon(en.getValue()));
             //getLogger().info("DEBUG: beacon maps done");
-            Iterator<Entry<Point2D, BeaconObj>> brit = beaconRegister.entrySet().iterator();
-            while (brit.hasNext()) {
-                Entry<Point2D, BeaconObj> en = brit.next();
-                //getLogger().info("DEBUG: checking " + en.getKey());
-                if (region.containsPoint(en.getKey())) {
-                    //getLogger().info("DEBUG: Removing beacon at " + en.getKey());
-                    brit.remove();
-                }
-            }
+            //getLogger().info("DEBUG: checking " + en.getKey());
+            //getLogger().info("DEBUG: Removing beacon at " + en.getKey());
+            beaconRegister.entrySet().removeIf(en -> region.containsPoint(en.getKey()));
             //getLogger().info("DEBUG: beacons done");
-            Iterator<TriangleField> trit = triangleFields.iterator();
-            while (trit.hasNext()) {
-                TriangleField tri = trit.next();
-                //getLogger().info("DEBUG: Checking triangle with corner at " + tri.a);
-                if (region.containsPoint(tri.a)) {
-                    //getLogger().info("DEBUG: Removing triangle!");
-                    trit.remove();
-                }
-            }
+            //getLogger().info("DEBUG: Checking triangle with corner at " + tri.a);
+            //getLogger().info("DEBUG: Removing triangle!");
+            triangleFields.removeIf(tri -> region.containsPoint(tri.a));
             //getLogger().info("DEBUG: triangles done");
             beaconLinks.remove(region.getGame());
            // getLogger().info("DEBUG: links done");
@@ -375,16 +353,14 @@ public class Register extends BeaconzPluginDependent {
 
     /**
      * Add a link between beacons created now
-     * @param beacon
-     * @param otherBeacon
+     * @param startBeacon
+     * @param endBeacon
      * @return number of fields made, success/failure and number of fields failed to make
      */
     public LinkResult addBeaconLink(BeaconObj startBeacon, BeaconObj endBeacon) {
         Game game = getGameMgr().getGame(startBeacon.getPoint());
         BeaconLink beaconPair = new BeaconLink(startBeacon, endBeacon);
-        if (beaconLinks.get(game) == null) {
-            beaconLinks.put(game, new ArrayList<BeaconLink>());
-        }
+        beaconLinks.computeIfAbsent(game, k -> new ArrayList<>());
         // Note that links cannot be duplicated
         if (!beaconLinks.get(game).contains(beaconPair)) {
             beaconLinks.get(game).add(beaconPair);
@@ -460,7 +436,7 @@ public class Register extends BeaconzPluginDependent {
      * @return set of beacons or empty set if none
      */
     public List<BeaconObj> getTeamBeacons(Team team) {
-        List<BeaconObj> teambeacons = new ArrayList<BeaconObj>();
+        List<BeaconObj> teambeacons = new ArrayList<>();
         for (BeaconObj beacon : beaconRegister.values()) {
             if (beacon.getOwnership() != null && beacon.getOwnership().equals(team)) {
                 teambeacons.add(beacon);
@@ -516,7 +492,7 @@ public class Register extends BeaconzPluginDependent {
                     baseBlocks.put(location, beacon);
                     Set<Point2D> points = baseBlocksInverse.get(beacon);
                     if (points == null) {
-                        points = new HashSet<Point2D>();
+                        points = new HashSet<>();
                     }
                     points.add(location);
                     baseBlocksInverse.put(beacon, points);
@@ -644,7 +620,7 @@ public class Register extends BeaconzPluginDependent {
      * @return true if it is part of a beacon, false if not
      */
     public boolean isBeacon(Block b) {
-        return getBeacon(b) == null ? false:true;
+        return getBeacon(b) != null;
     }
 
     /**
@@ -672,7 +648,7 @@ public class Register extends BeaconzPluginDependent {
      */
     public List<BeaconObj> getNearbyBeacons(Location location, int range) {
         int distSquared = range*range;
-        List<BeaconObj> result = new ArrayList<BeaconObj>();
+        List<BeaconObj> result = new ArrayList<>();
         Point2D point = new Point2D.Double(location.getX(), location.getZ());
         for (Point2D beacon : beaconRegister.keySet()) {
             // Distance squared check is less computationally intensive than checking the square
@@ -735,27 +711,19 @@ public class Register extends BeaconzPluginDependent {
             }
             point = new Point2D.Double(below.getLocation().getBlockX(),below.getLocation().getBlockZ());
             // Beacon below
-            if (beaconRegister.containsKey(point)) {
-                //getLogger().info("DEBUG: found in register");
-                return beaconRegister.get(point);
-            } else {
-                //getLogger().info("DEBUG: not found in register");
-                return null;
-            }
+            //getLogger().info("DEBUG: found in register");
+            //getLogger().info("DEBUG: not found in register");
+            return beaconRegister.getOrDefault(point, null);
         }
         // Check beacons
         if (block.getType().equals(Material.BEACON)) {
-            if (beaconRegister.containsKey(point)) {
-                //getLogger().info("DEBUG: found in register");
-                return beaconRegister.get(point);
-            } else {
-                /*
+            //getLogger().info("DEBUG: found in register");
+            /*
                 getLogger().info("DEBUG: not found in register. Known points are:");
                 for (Point2D points : beaconRegister.keySet()) {
                     getLogger().info("DEBUG: " + points);
                 }*/
-                return null;
-            }
+            return beaconRegister.getOrDefault(point, null);
         }
         // Check the pyramid around the beacon
         // Look for a beacon
@@ -792,20 +760,13 @@ public class Register extends BeaconzPluginDependent {
         beacon.setOwnership(null);
 
         // Remove links to the beacon (and back)
-        Iterator<BeaconObj> beaconIterator = beacon.getLinks().iterator();
-        while (beaconIterator.hasNext()) {
-            beaconIterator.next().removeLink(beacon);
+        for (BeaconObj beaconObj : beacon.getLinks()) {
+            beaconObj.removeLink(beacon);
         }
         if (!beaconLinks.isEmpty() && game != null) {
             if (beaconLinks.get(game) != null) {
                 // Remove links from this register
-                Iterator<BeaconLink> beaconPairIterator = beaconLinks.get(game).iterator();
-                while (beaconPairIterator.hasNext()) {
-                    BeaconLink beaconPair = beaconPairIterator.next();
-                    if (beaconPair.getBeacon1().equals(beacon) || beaconPair.getBeacon2().equals(beacon)) {
-                        beaconPairIterator.remove();
-                    }
-                }
+                beaconLinks.get(game).removeIf(beaconPair -> beaconPair.getBeacon1().equals(beacon) || beaconPair.getBeacon2().equals(beacon));
                 Iterator<BeaconLink> linkIterator = beaconLinks.get(game).iterator();
                 int linkLossCount = 0;
                 while (linkIterator.hasNext()) {
@@ -885,7 +846,7 @@ public class Register extends BeaconzPluginDependent {
     }
 
     /**
-     * @param beaconMaps the beaconMaps to set
+     * @param beacon the beacon map to add
      */
     public void addBeaconMap(int i, BeaconObj beacon) {
         beacon.setId(i);
@@ -916,7 +877,7 @@ public class Register extends BeaconzPluginDependent {
      */
     public List<TriangleField> getTriangle(int x, int y) {
         // TODO: Brute force check - in the future, will need to be indexed better
-        List<TriangleField> result = new ArrayList<TriangleField>();
+        List<TriangleField> result = new ArrayList<>();
         //int index = 1;
         for (TriangleField tri: triangleFields) {
             if (tri.contains(x, y) != null) {
@@ -964,7 +925,7 @@ public class Register extends BeaconzPluginDependent {
      * @return set of links
      */
     public Set<Line2D> getEnemyLinks(Team team) {
-        Set<Line2D> result = new HashSet<Line2D>();
+        Set<Line2D> result = new HashSet<>();
         if (getGameMgr().getGame(team) != null && beaconLinks.containsKey(getGameMgr().getGame(team))) {
             for (BeaconLink pair: beaconLinks.get(getGameMgr().getGame(team))) {
                 if (!pair.getOwner().equals(team)) {
@@ -1005,7 +966,7 @@ public class Register extends BeaconzPluginDependent {
         baseBlocks.put(point, beacon);
         Set<Point2D> points = baseBlocksInverse.get(beacon);
         if (points == null) {
-            points = new HashSet<Point2D>();
+            points = new HashSet<>();
         }
         points.add(point);
         baseBlocksInverse.put(beacon, points);
@@ -1022,7 +983,7 @@ public class Register extends BeaconzPluginDependent {
 
     /**
      * Get the beacon associated with this location. World and Y coord is ignored.
-     * @param point
+     * @param location location of the beacon
      * @return beacon or null if it doesn't exist
      */
     public BeaconObj getBeaconAt(Location location) {
@@ -1057,11 +1018,8 @@ public class Register extends BeaconzPluginDependent {
                 return false;
             }
             // Check height - if block is lower than the beacon, then it's not a part of it
-            if (beacon.getY() > loc.getBlockY()) {
-                return false;
-            }
+            return beacon.getY() <= loc.getBlockY();
             // It's a defense block
-            return true;
         }
         return false;
     }

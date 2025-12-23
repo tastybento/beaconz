@@ -42,9 +42,6 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
-import org.bukkit.material.MaterialData;
-import org.bukkit.material.SimpleAttachableMaterialData;
-import org.bukkit.material.TrapDoor;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Score;
@@ -59,14 +56,9 @@ import org.bukkit.scoreboard.Team;
  */
 public class Region extends BeaconzPluginDependent {
 
-    private Beaconz plugin;
-    private Point2D [] corners;
+    private final Beaconz plugin;
+    private final Point2D [] corners;
     private Location spawnPoint;
-    //private int loopcount;
-    private int chX;
-    private int chZ;
-    //private BukkitTask task = null;
-    private int totalregen;
     //private long progress;
     private Game game = null;
 
@@ -118,14 +110,16 @@ public class Region extends BeaconzPluginDependent {
             final int zMin = (int) corners[0].getY() -16;
             final int zMax = (int) corners[1].getY() +16;
 
-            totalregen = 0;
-            chX = xMin;
-            chZ = zMin;
+            //private BukkitTask task = null;
+            int totalregen = 0;
+            //private int loopcount;
+            int chX = xMin;
+            int chZ = zMin;
             Settings.populate.clear();
             //getLogger().info("0% complete");
             getBeaconzWorld().setKeepSpawnInMemory(false);
 
-            Set<Pair> delReg = new HashSet<Pair>();
+            Set<Pair> delReg = new HashSet<>();
             while (chX <= xMax) {
                 while (chZ <= zMax) {
                     int regionX = (int)Math.floor(chX / 16.0 / 32.0);
@@ -145,7 +139,7 @@ public class Region extends BeaconzPluginDependent {
                 //getLogger().info("DEBUG: " + getServer().getWorldContainer().getAbsolutePath());
                 for (Pair pair : delReg) {                   
                     //getLogger().info("DEBUG: " + getServer().getWorldContainer().getAbsolutePath() + "beaconz_world/region/r." + pair.getLeft() + "." + pair.getRight() + ".mca");
-                    File df = new File(getServer().getWorldContainer().getAbsolutePath(), getBeaconzWorld().getName() + File.separator +"region" + File.separator + "r." + pair.getLeft() + "." + pair.getRight() + ".mca");
+                    File df = new File(getServer().getWorldContainer().getAbsolutePath(), getBeaconzWorld().getName() + File.separator +"region" + File.separator + "r." + pair.left() + "." + pair.right() + ".mca");
                     //File dfback = new File(getServer().getWorldContainer().getAbsolutePath(), "beaconz_world/region/r." + pair.getLeft() + "." + pair.getRight() + ".bak");
                     if (df.exists()) {
                         //FileDeleteStrategy.FORCE.deleteQuietly(df);
@@ -208,7 +202,7 @@ public class Region extends BeaconzPluginDependent {
      */
     public void createCorners() {
         // Check corners
-        Set<Point2D> fourcorners = new HashSet<Point2D>();
+        Set<Point2D> fourcorners = new HashSet<>();
         int xMin = (int) corners[0].getX();
         int xMax = (int) corners[1].getX();
         int zMin = (int) corners[0].getY();
@@ -279,8 +273,7 @@ public class Region extends BeaconzPluginDependent {
             zMin = zMax;
             zMax = z;
         }
-        Point2D [] c = {new Point2D.Double(xMin, zMin), new Point2D.Double(xMax, zMax)};
-        return c;
+        return new Point2D[]{new Point2D.Double(xMin, zMin), new Point2D.Double(xMax, zMax)};
     }
 
     /**
@@ -292,9 +285,8 @@ public class Region extends BeaconzPluginDependent {
 
     /**
      * Displays the barrier blocks if player is within a distance of the barrier
-     * @param loc
-     * @param radius
-     * @return
+     * @param player player to show to
+     * @param radius size of barrier
      */
     @SuppressWarnings("deprecation")
     public void showBarrier(Player player, int radius) {
@@ -357,8 +349,8 @@ public class Region extends BeaconzPluginDependent {
      * Returns the region's center point
      */
     public Point2D getCenter() {
-        Double x = (corners[0].getX() + corners[1].getX()) / 2.0;
-        Double z = (corners[0].getY() + corners[1].getY()) / 2.0;
+        double x = (corners[0].getX() + corners[1].getX()) / 2.0;
+        double z = (corners[0].getY() + corners[1].getY()) / 2.0;
         return new Point2D.Double(x,z);
     }
 
@@ -373,11 +365,10 @@ public class Region extends BeaconzPluginDependent {
      * Returns the region's coordinates in a pretty display string
      */
     public String displayCoords() {
-        String coords = "center: [" +
+        return "center: [" +
                 (int) getCenter().getX() + ":" + (int) getCenter().getY() + "] - corners: [" +
                 (int) corners()[0].getX() + ":" + (int) corners()[0].getY() + "] and [" +
                 (int) corners()[1].getX() + ":" + (int) corners()[1].getY() + "]";
-        return coords;
     }
 
     /**
@@ -476,32 +467,28 @@ public class Region extends BeaconzPluginDependent {
         // Show the lobby scoreboard - wait for title message to disappear
         if (this.equals(getGameMgr().getLobby())) {
 
-            getServer().getScheduler().runTaskLater(plugin, new Runnable() {
+            getServer().getScheduler().runTaskLater(plugin, () -> {
+                // This runs after a few seconds, so make sure that player is still in the lobby
+                if (getGameMgr().isPlayerInLobby(player)) {
+                    Scoreboard sb = plugin.getServer().getScoreboardManager().getNewScoreboard();
+                    Objective sbobj = null;
+                    Score scoreline = null;
+                    player.setScoreboard(sb);
 
-                @Override
-                public void run() {
-                    // This runs after a few seconds, so make sure that player is still in the lobby
-                    if (getGameMgr().isPlayerInLobby(player)) {
-                        Scoreboard sb = plugin.getServer().getScoreboardManager().getNewScoreboard();
-                        Objective sbobj = null;
-                        Score scoreline = null;
-                        player.setScoreboard(sb);
+                    try {
+                        sb.clearSlot(DisplaySlot.SIDEBAR);
+                    } catch (Exception e){ }
 
-                        try {
-                            sb.clearSlot(DisplaySlot.SIDEBAR);
-                        } catch (Exception e){ };
-
-                        sbobj = sb.registerNewObjective("text", "dummy");
-                        sbobj.setDisplaySlot(DisplaySlot.SIDEBAR);
-                        String[] lobbyInfo = Lang.titleLobbyInfo.split("\\|");
-                        sbobj.setDisplayName(ChatColor.GREEN + lobbyInfo[0]);
-                        for (int line = 1; line < lobbyInfo.length; line++) {
-                            scoreline = sbobj.getScore(lobbyInfo[line]);
-                            scoreline.setScore(16-line);
-                        }
-                        player.setScoreboard(sb);
-
+                    sbobj = sb.registerNewObjective("text", "dummy");
+                    sbobj.setDisplaySlot(DisplaySlot.SIDEBAR);
+                    String[] lobbyInfo = Lang.titleLobbyInfo.split("\\|");
+                    sbobj.setDisplayName(ChatColor.GREEN + lobbyInfo[0]);
+                    for (int line = 1; line < lobbyInfo.length; line++) {
+                        scoreline = sbobj.getScore(lobbyInfo[line]);
+                        scoreline.setScore(16-line);
                     }
+                    player.setScoreboard(sb);
+
                 }
             }, 60L);
         }
@@ -576,7 +563,7 @@ public class Region extends BeaconzPluginDependent {
         if (safeloc == null && location != null) {
             // look for a safe spot at location and within radius
             Block bl = location.getBlock();
-            String usedxyz = "";
+            StringBuilder usedxyz = new StringBuilder();
 
             // sweep in a concentric cube pattern to check for a safe spot
             Location checkloc = null;
@@ -586,8 +573,8 @@ public class Region extends BeaconzPluginDependent {
                         for (int z = -rad; z <= rad; z++) {
                             for (int x = -rad; x <= rad; x++) {
                                 String coords = "#" + x + " "+ z + "#";
-                                if (!usedxyz.contains(coords)) {
-                                    usedxyz = usedxyz + coords;
+                                if (!usedxyz.toString().contains(coords)) {
+                                    usedxyz.append(coords);
                                     checkloc = getBeaconzWorld().getHighestBlockAt(bl.getRelative(x, 0, z).getLocation()).getLocation();
                                     //senderMsg(Bukkit.getConsoleSender(), "Checking: " + checkloc + " material: " + checkloc.getBlock().getRelative(BlockFace.DOWN).getState().getType());
                                     if (isLocationSafe(checkloc)) {
@@ -647,19 +634,15 @@ public class Region extends BeaconzPluginDependent {
         }
 
         // Portals are not "safe"
-        if (Tag.PORTALS.isTagged(space1.getType())
-                || Tag.PORTALS.isTagged(space2.getType())
-                || Tag.PORTALS.isTagged(ground.getType())
-                || Tag.TRAPDOORS.isTagged(ground.getType())
-                || Tag.FENCES.isTagged(ground.getType())
-                || Tag.SIGNS.isTagged(ground.getType())
-                || Tag.LEAVES.isTagged(ground.getType())
-                || ground.getType() == Material.CACTUS
-                ) {
-            return false;
-        }
+        return !Tag.PORTALS.isTagged(space1.getType())
+                && !Tag.PORTALS.isTagged(space2.getType())
+                && !Tag.PORTALS.isTagged(ground.getType())
+                && !Tag.TRAPDOORS.isTagged(ground.getType())
+                && !Tag.FENCES.isTagged(ground.getType())
+                && !Tag.SIGNS.isTagged(ground.getType())
+                && !Tag.LEAVES.isTagged(ground.getType())
+                && ground.getType() != Material.CACTUS;
         // Safe
-        return true;
     }
 
     /**
@@ -747,42 +730,25 @@ public class Region extends BeaconzPluginDependent {
      * @return degrees
      */
     public static float blockFaceToFloat(BlockFace face) {
-        switch (face) {
-        case EAST:
-            return 90F;
-        case EAST_NORTH_EAST:
-            return 67.5F;
-        case EAST_SOUTH_EAST:
-            return 0F;
-        case NORTH:
-            return 0F;
-        case NORTH_EAST:
-            return 45F;
-        case NORTH_NORTH_EAST:
-            return 22.5F;
-        case NORTH_NORTH_WEST:
-            return 337.5F;
-        case NORTH_WEST:
-            return 315F;
-        case SOUTH:
-            return 180F;
-        case SOUTH_EAST:
-            return 135F;
-        case SOUTH_SOUTH_EAST:
-            return 157.5F;
-        case SOUTH_SOUTH_WEST:
-            return 202.5F;
-        case SOUTH_WEST:
-            return 225F;
-        case WEST:
-            return 270F;
-        case WEST_NORTH_WEST:
-            return 292.5F;
-        case WEST_SOUTH_WEST:
-            return 247.5F;
-        default:
-            return 0F;
-        }
+        return switch (face) {
+            case EAST -> 90F;
+            case EAST_NORTH_EAST -> 67.5F;
+            case EAST_SOUTH_EAST -> 0F;
+            case NORTH -> 0F;
+            case NORTH_EAST -> 45F;
+            case NORTH_NORTH_EAST -> 22.5F;
+            case NORTH_NORTH_WEST -> 337.5F;
+            case NORTH_WEST -> 315F;
+            case SOUTH -> 180F;
+            case SOUTH_EAST -> 135F;
+            case SOUTH_SOUTH_EAST -> 157.5F;
+            case SOUTH_SOUTH_WEST -> 202.5F;
+            case SOUTH_WEST -> 225F;
+            case WEST -> 270F;
+            case WEST_NORTH_WEST -> 292.5F;
+            case WEST_SOUTH_WEST -> 247.5F;
+            default -> 0F;
+        };
     }
 
     /**

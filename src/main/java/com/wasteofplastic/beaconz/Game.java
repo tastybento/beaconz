@@ -46,10 +46,9 @@ import com.wasteofplastic.beaconz.map.TerritoryMapRenderer;
 
 public class Game extends BeaconzPluginDependent {
 
-    private Beaconz plugin;
-    private Region region;
-    private String gameName;
-    private Scorecard scorecard;
+    private final Region region;
+    private final String gameName;
+    private final Scorecard scorecard;
     private String gamemode;
     private int gamedistance;
     private double gamedistribution;
@@ -72,7 +71,6 @@ public class Game extends BeaconzPluginDependent {
      */
     public Game(Beaconz beaconzPlugin, int gamedistance, Region region, String gameName, String gamemode, int nbr_teams, String gamegoal, int gamegoalvalue, int countdowntimer, String scoretypes, Double distribution) {
         super(beaconzPlugin);
-        this.plugin = beaconzPlugin;
         this.region = region;
         this.gameName = gameName;
         this.startTime = ((System.currentTimeMillis()+500)/1000)*1000;
@@ -80,7 +78,7 @@ public class Game extends BeaconzPluginDependent {
         region.setGame(this);
         setGameParms(gamemode, gamedistance, nbr_teams, gamegoal, gamegoalvalue, countdowntimer, startTime, gameCreateTime, scoretypes, distribution);
         // Now create the scorecard
-        scorecard = new Scorecard(plugin, this);
+        scorecard = new Scorecard(beaconzPlugin, this);
     }
 
     /**
@@ -486,7 +484,7 @@ public class Game extends BeaconzPluginDependent {
     }
 
     /**
-     * @param Set when the game is over
+     * @param isOver when the game is over
      */
     public void setOver(boolean isOver) {
         //getLogger().info("DEBUG: game setOver = " + isOver);

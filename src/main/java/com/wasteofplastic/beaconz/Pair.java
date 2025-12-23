@@ -1,47 +1,31 @@
 /*******************************************************************************
  * This file is part of ASkyBlock.
- *
+ * <p>
  *     ASkyBlock is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
- *
+ * <p>
  *     ASkyBlock is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- *
+ * <p>
  *     You should have received a copy of the GNU General Public License
  *     along with ASkyBlock.  If not, see <http://www.gnu.org/licenses/>.
  *******************************************************************************/
 
 package com.wasteofplastic.beaconz;
 
-public class Pair {
-    private final int left;
-    private final int right;
-
-    public Pair(int left, int right) {
-        this.left = left;
-        this.right = right;
-    }
-
-    public int getLeft() {
-        return left;
-    }
-
-    public int getRight() {
-        return right;
-    }
+public record Pair(int left, int right) {
 
     @Override
     public boolean equals(Object o) {
         if (o == null)
             return false;
-        if (!(o instanceof Pair))
+        if (!(o instanceof Pair(int left1, int right1)))
             return false;
-        Pair pairo = (Pair) o;
-        return (this.left == pairo.getLeft()) && (this.right == pairo.getRight());
+        return (this.left == left1) && (this.right == right1);
     }
 
 }
