@@ -46,10 +46,10 @@ lobby:
   # Lobby platform will be made up randomly of these blocks.
   # You can replace the lobby after it is made.
   lobbyblocks:
-  - STAINED_GLASS:2
-  - STAINED_GLASS:3
-  - STAINED_GLASS:4
-  - STAINED_GLASS:5
+  - BLACK_STAINED_GLASS
+  - RED_STAINED_GLASS
+  - AQUA_STAINED_GLASS
+  - BLUE_STAINED_GLASS
 
   # Lobby animal/mob spawning
   allowMobSpawn: false
@@ -165,7 +165,7 @@ mining:
   - "SLOW_DIGGING:1"
 
   # Rewards from mining beaconz
-  # Format is "Id#/Material:[Durability/Qty]:Qty=%Chance"
+  # Format is "Id#/Material:Qty=%Chance"
   # Reward from mining an enemy beacon. Generally the idea is to give players an
   # incentive to find enemy beaconz and even if they cannot attack them, to mine them
   # Goodies are items not normally available because they are from the nether or end or rare.
@@ -238,71 +238,55 @@ teams:
   # Teams have glass colors that can be picked from these. They must be different.
   # Team names can be anything you like, but must be a single word. They are taken in
   # the order listed.
-  # 0: White Stained Glass
-  # 1: Orange Stained Glass
-  # 2: Magenta Stained Glass
-  # 3: Light Blue Stained Glass
-  # 4: Yellow Stained Glass
-  # 5: Lime Stained Glass
-  # 6: Pink Stained Glass
-  # 7: Gray Stained Glass
-  # 8: Light Gray Stained Glass
-  # 9: Cyan Stained Glass
-  # 10: Purple Stained Glass
-  # 11: Blue Stained Glass
-  # 12: Brown Stained Glass
-  # 13: Green Stained Glass
-  # 14: Red Stained Glass
-  # 15: Black Stained Glass
   names:
     red:
       displayname: "Red"
-      glasscolor: 14
+      glasscolor: RED_STAINED_GLASS
     blue:
       displayname: "Blue"
-      glasscolor: 11
+      glasscolor: BLUE_STAINED_GLASS
     white:
       displayname: "White"
-      glasscolor: 0
+      glasscolor: WHITE_STAINED_GLASS
     aqua:
       displayname: "Aqua"
-      glasscolor: 3
+      glasscolor: AQUA_STAINED_GLASS
     yellow:
       displayname: "Yellow"
-      glasscolor: 4
+      glasscolor: YELLOW_STAINED_GLASS
     lime:
       displayname: "Lime"
-      glasscolor: 5
+      glasscolor: LIME_STAINED_GLASS
     gray:
       displayname: "Gray"
-      glasscolor: 7
+      glasscolor: GRAY_STAINED_GLASS
     dust:
       displayname: "Dust"
-      glasscolor: 8
+      glasscolor: LIGHT_GRAY_STAINED_GLASS
     cyan:
       displayname: "Cyan"
-      glasscolor: 9
+      glasscolor: LIGHT_BLUE_STAINED_GLASS
     purple:
       displayname: "Purple"
-      glasscolor: 10
+      glasscolor: PURPLE_STAINED_GLASS
     brown:
       displayname: "Brown"
-      glasscolor: 12
+      glasscolor: BROWN_STAINED_GLASS
     green:
       displayname: "Green"
-      glasscolor: 13
+      glasscolor: GREEN_STAINED_GLASS
     black:
       displayname: "Black"
-      glasscolor: 15
+      glasscolor: BLACK_STAINED_GLASS
     orange:
       displayname: "Orange"
-      glasscolor: 1
+      glasscolor: ORANGE_STAINED_GLASS
     magenta:
       displayname: "Magenta"
-      glasscolor: 2
+      glasscolor: MAGENTA_STAINED_GLASS
     pink:
       displayname: "Pink"
-      glasscolor: 6   
+      glasscolor: PINK_STAINED_GLASS   
 
 ### SCOREBOARD SETTINGS
 scoreboard:
