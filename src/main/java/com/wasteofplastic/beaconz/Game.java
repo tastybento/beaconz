@@ -110,9 +110,9 @@ public class Game extends BeaconzPluginDependent {
         scorecard.deleteTeamMembers();
         
         // Handle maps 
-        Iterator<Short> it = getRegister().getBeaconMapIndex().iterator();
+        Iterator<Integer> it = getRegister().getBeaconMapIndex().iterator();
         while (it.hasNext()) {
-            short index = it.next();
+            int index = it.next();
             MapView map = Bukkit.getMap(index);
             if (map != null && (map.getWorld().equals(getBeaconzWorld()) && getRegion().containsPoint(map.getCenterX(), map.getCenterZ()))) {
                 for (MapRenderer renderer : map.getRenderers()) {

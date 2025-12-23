@@ -66,11 +66,11 @@ public class Register extends BeaconzPluginDependent {
         super(beaconzPlugin);
     }
 
-    private HashMap<Short, BeaconObj> beaconMaps = new HashMap<Short, BeaconObj>();
-    private HashMap<Point2D, BeaconObj> beaconRegister = new HashMap<Point2D, BeaconObj>();
-    private Set<TriangleField> triangleFields = new HashSet<TriangleField>();
+    private HashMap<Integer, BeaconObj> beaconMaps = new HashMap<>();
+    private HashMap<Point2D, BeaconObj> beaconRegister = new HashMap<>();
+    private Set<TriangleField> triangleFields = new HashSet<>();
     //private HashMap<Team, Set<Line2D>> links = new HashMap<Team, Set<Line2D>>();
-    private HashMap<Game,List<BeaconLink>> beaconLinks = new HashMap<Game, List<BeaconLink>>();
+    private HashMap<Game,List<BeaconLink>> beaconLinks = new HashMap<>();
 
     /**
      * Store of the blocks around a beacon. Starts as the initial 8 blocks adjacent to the
@@ -145,7 +145,7 @@ public class Register extends BeaconzPluginDependent {
             }
             // Save maps
             List<String> maps = new ArrayList<String>();
-            for (Short id : beaconMaps.keySet()) {
+            for (Integer id : beaconMaps.keySet()) {
                 if (beacon.equals(beaconMaps.get(id))) {
                     // Check if this map still exists
                     if (Bukkit.getMap(id) != null) {
@@ -248,9 +248,8 @@ public class Register extends BeaconzPluginDependent {
                             // Load map id's
                             List<String> maps = configSec.getStringList(beacon + ".maps");
                             for (String mapNumber: maps) {
-                                short id = Short.valueOf(mapNumber);
+                                int id = Integer.valueOf(mapNumber);
                                 beaconMaps.put(id, newBeacon);
-                                @SuppressWarnings("deprecation")
                                 MapView map = Bukkit.getMap(id);
                                 if (map != null) {
                                     for (MapRenderer renderer : map.getRenderers()) {
@@ -339,9 +338,9 @@ public class Register extends BeaconzPluginDependent {
             beaconLinks.clear();
         } else {
             //getLogger().info("DEBUG: clearing region " + region.displayCoords());
-            Iterator<Entry<Short, BeaconObj>> bmit = beaconMaps.entrySet().iterator();
+            Iterator<Entry<Integer, BeaconObj>> bmit = beaconMaps.entrySet().iterator();
             while (bmit.hasNext()) {
-                Entry<Short, BeaconObj> en = bmit.next();
+                Entry<Integer, BeaconObj> en = bmit.next();
                 //getLogger().info("DEBUG: Checking map " + en.getKey());
                 if (region.containsBeacon(en.getValue())) {
                     //getLogger().info("DEBUG: Removing map " + en.getKey());
@@ -387,7 +386,7 @@ public class Register extends BeaconzPluginDependent {
             beaconLinks.put(game, new ArrayList<BeaconLink>());
         }
         // Note that links cannot be duplicated
-        if (!beaconLinks.get(game).contains(beaconLinks)) {
+        if (!beaconLinks.get(game).contains(beaconPair)) {
             beaconLinks.get(game).add(beaconPair);
             // Try to add link - if there are too many already, refuse
             if (!startBeacon.addOutboundLink(endBeacon)) {
@@ -705,7 +704,7 @@ public class Register extends BeaconzPluginDependent {
         //getLogger().info("DEBUG: material = " + b.getType());
         // Quick check
         if (!block.getType().equals(Material.BEACON) && !block.getType().equals(Material.DIAMOND_BLOCK)
-                && !block.getType().equals(Material.OBSIDIAN) && !block.getType().equals(Material.STAINED_GLASS)
+                && !block.getType().equals(Material.OBSIDIAN) &&  !block.getType().name().endsWith("STAINED_GLASS")
                 && !block.getType().equals(Material.EMERALD_BLOCK)) {
             return null;
         }
@@ -728,7 +727,7 @@ public class Register extends BeaconzPluginDependent {
         //getLogger().info("DEBUG: checking point " + point);
 
         // Check glass or obsidian
-        if (block.getType().equals(Material.OBSIDIAN) || block.getType().equals(Material.STAINED_GLASS)) {
+        if (block.getType().equals(Material.OBSIDIAN) || block.getType().name().endsWith("STAINED_GLASS")) {
             Block below = block.getRelative(BlockFace.DOWN);
             if (!below.getType().equals(Material.BEACON)) {
                 //getLogger().info("DEBUG: no beacon below here");
@@ -881,23 +880,23 @@ public class Register extends BeaconzPluginDependent {
     /**
      * @return the beaconMaps or null if not found
      */
-    public BeaconObj getBeaconMap(Short index) {
+    public BeaconObj getBeaconMap(int index) {
         return beaconMaps.get(index);
     }
 
     /**
      * @param beaconMaps the beaconMaps to set
      */
-    public void addBeaconMap(Short index, BeaconObj beacon) {
-        beacon.setId(index);
+    public void addBeaconMap(int i, BeaconObj beacon) {
+        beacon.setId(i);
         //getLogger().info("DEBUG: storing beacon map # " + index + " for beacon at "+ beacon.getLocation());
-        this.beaconMaps.put(index, beacon);
+        this.beaconMaps.put(i, beacon);
     }
 
     /**
      * @param index the map index to remove
      */
-    public void removeBeaconMap(Short index) {  
+    public void removeBeaconMap(int index) {  
         getLogger().info("DEBUG: removing beacon map # " + index );
         this.beaconMaps.remove(index);
     }
@@ -905,7 +904,7 @@ public class Register extends BeaconzPluginDependent {
     /**
      * @return set of all the beacon maps
      */
-    public Set<Short> getBeaconMapIndex() {
+    public Set<Integer> getBeaconMapIndex() {
         return beaconMaps.keySet();
     }
 
@@ -1071,7 +1070,7 @@ public class Register extends BeaconzPluginDependent {
      * Removed Beaconz renderers from maps when the plugin is disabled
      */
     public void removeMapRenderers() {
-        for (Short id : beaconMaps.keySet()) {
+        for (Integer id : beaconMaps.keySet()) {
             MapView map = Bukkit.getMap(id);
             if (map != null) {
                 for (MapRenderer renderer : map.getRenderers()) {

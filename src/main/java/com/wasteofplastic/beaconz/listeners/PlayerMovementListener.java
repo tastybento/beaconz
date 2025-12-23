@@ -185,7 +185,7 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
             // Check potion effects for boats etc.
             if ((!(event.getVehicle() instanceof LivingEntity))) {
                 for (PotionEffect effect : getPml().getTriangleEffects(player.getUniqueId())) {
-                    if (effect.getType().equals(PotionEffectType.SLOW)) {
+                    if (effect.getType().equals(PotionEffectType.SLOWNESS)) {
                         double delay = effect.getAmplifier();
                         event.getVehicle().setVelocity(event.getVehicle().getVelocity().divide(new Vector(delay,delay,delay)));
                         break;

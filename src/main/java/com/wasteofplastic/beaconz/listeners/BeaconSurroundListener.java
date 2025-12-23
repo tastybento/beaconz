@@ -66,15 +66,15 @@ public class BeaconSurroundListener extends BeaconzPluginDependent implements Li
         protectedMaterials.add(Material.CLAY);
         protectedMaterials.add(Material.COBBLESTONE);
         protectedMaterials.add(Material.DIRT);
-        protectedMaterials.add(Material.GRASS);
-        protectedMaterials.add(Material.GRASS_PATH);
-        protectedMaterials.add(Material.HARD_CLAY);
+        protectedMaterials.add(Material.GRASS_BLOCK);
+        protectedMaterials.add(Material.DIRT_PATH);
+        protectedMaterials.add(Material.CLAY);
         protectedMaterials.add(Material.MOSSY_COBBLESTONE);
         protectedMaterials.add(Material.OBSIDIAN);
         protectedMaterials.add(Material.RED_SANDSTONE);
         protectedMaterials.add(Material.SANDSTONE);
-        protectedMaterials.add(Material.SOIL);
-        protectedMaterials.add(Material.STAINED_CLAY);
+        protectedMaterials.add(Material.DIRT);
+        protectedMaterials.add(Material.TERRACOTTA);
         protectedMaterials.add(Material.STONE);
     }
 

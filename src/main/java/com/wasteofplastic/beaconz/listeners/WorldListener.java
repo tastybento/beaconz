@@ -93,7 +93,7 @@ public class WorldListener extends BeaconzPluginDependent implements Listener {
                 // Set the chunk's ID
                 String gCT = " " + getGameMgr().getGame(cX, cZ).getCreateTime().toString();
                 Block bl = event.getChunk().getBlock(7, 1, 7);
-                bl.setType(Material.WALL_SIGN, false);
+                bl.setType(Material.OAK_WALL_SIGN, false);
                 Sign sign = (Sign) bl.getState();
                 sign.setLine(0, gCT);
                 sign.update();  
@@ -110,7 +110,7 @@ public class WorldListener extends BeaconzPluginDependent implements Listener {
                     String gCT = " " + getGameMgr().getGame(cX, cZ).getCreateTime().toString();   
                     
                     // Check the chunk's ID sign
-                    if (!bl.getType().equals(Material.WALL_SIGN)) {
+                    if (!bl.getType().equals(Material.OAK_WALL_SIGN)) {
                         // There's no sign, it must be the first time the game is being loaded; let's regen
                         regen = true;
                         

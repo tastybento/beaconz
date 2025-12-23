@@ -127,7 +127,7 @@ public class Beaconz extends JavaPlugin {
 
                 // Create the inventory store 
                 beaconzStore = new BeaconzStore(plugin);
-                
+
                 // Register the listeners - block break etc. 
                 getServer().getPluginManager().registerEvents(new BeaconLinkListener(plugin), plugin);
                 getServer().getPluginManager().registerEvents(new BeaconCaptureListener(plugin), plugin);
@@ -146,7 +146,7 @@ public class Beaconz extends JavaPlugin {
                 getServer().getPluginManager().registerEvents(new BeaconSurroundListener(plugin), plugin);
                 getServer().getPluginManager().registerEvents(new LobbyListener(plugin), plugin);
                 ignoreChunkLoad = false; // used in WorldListener and other classes
-                
+
                 // Load messages for players
                 messages = new Messages(plugin);
 
@@ -187,7 +187,7 @@ public class Beaconz extends JavaPlugin {
         if (beaconPopulator != null) {
             beaconzWorld.getPopulators().remove(beaconPopulator);
         }
-        */
+         */
         //getConfig().set("world.distribution", Settings.distribution);
         //saveConfig();
     }
@@ -279,11 +279,11 @@ public class Beaconz extends JavaPlugin {
         }
         // Max number of links a beacon can have
         Settings.maxLinks = getConfig().getInt("links.maxlinks", 6);
-        
+
         // The Locking block
         Settings.lockingBlock = getConfig().getString("general.lockingBlock", "EMERALD_BLOCK");
         Settings.nbrLockingBlocks = getConfig().getInt("nbrLockingBlocks", 6);
-        
+
         // Load teleport delay
         Settings.teleportDelay = getConfig().getInt("general.teleportdelay",5);
         // get the lobby coords and size, adjust to match chunk size
@@ -557,10 +557,10 @@ public class Beaconz extends JavaPlugin {
         for (String item : newbieKit) {
             Settings.newbieKit.add(getItemFromString(item));
         }
-        
+
         // Set the initial XP for minigames
         Settings.initialXP = getConfig().getInt("world.initialXP", 100);
-        
+
     }
 
     /**
@@ -578,18 +578,12 @@ public class Beaconz extends JavaPlugin {
             if (NumberUtils.isNumber(split[1])) {
                 qty = NumberUtils.toInt(split[1]);
             }
-            // Try to get #
-            if (NumberUtils.isNumber(split[0])) {
-                int itemType = NumberUtils.toInt(split[0]);
+            try {
+                Material itemType = Material.valueOf(split[0]);
                 return new ItemStack(itemType, qty);
-            } else {
-                try {
-                    Material itemType = Material.valueOf(split[0]);
-                    return new ItemStack(itemType, qty);
-                } catch (Exception e) {
-                    getLogger().severe("Could not parse " + split[0] + " skipping...");
-                    return null;
-                }
+            } catch (Exception e) {
+                getLogger().severe("Could not parse " + split[0] + " skipping...");
+                return null;
             }
         } else if (split.length == 3) {
             // Get the qty
@@ -603,21 +597,14 @@ public class Beaconz extends JavaPlugin {
                 durability = NumberUtils.toInt(split[1]);
             }
             // Try to get #
-            if (NumberUtils.isNumber(split[0])) {
-                int itemType = NumberUtils.toInt(split[0]);
+            try {
+                Material itemType = Material.valueOf(split[0]);
                 ItemStack item = new ItemStack(itemType, qty);
                 item.setDurability((short)durability);
                 return item;
-            } else {
-                try {
-                    Material itemType = Material.valueOf(split[0]);
-                    ItemStack item = new ItemStack(itemType, qty);
-                    item.setDurability((short)durability);
-                    return item;
-                } catch (Exception e) {
-                    getLogger().severe("Could not parse " + split[0] + " skipping...");
-                    return null;
-                }
+            } catch (Exception e) {
+                getLogger().severe("Could not parse " + split[0] + " skipping...");
+                return null;
             }
         }
         return null;
@@ -645,7 +632,7 @@ public class Beaconz extends JavaPlugin {
         if (!beaconzWorld.getPopulators().contains(getBp())) {
             beaconzWorld.getPopulators().add(getBp());
         }
-        */
+         */
         return beaconzWorld;
     }
 
@@ -721,7 +708,7 @@ public class Beaconz extends JavaPlugin {
             return "";
         }
         return l.getWorld().getName() + ":" + strDbl(l.getX(),2) + ":" + strDbl(l.getY(),2) + ":" + strDbl(l.getZ(),2) 
-                + ":" + String.valueOf(Float.floatToIntBits(l.getYaw())) + ":" + String.valueOf(Float.floatToIntBits(l.getPitch()));        
+        + ":" + String.valueOf(Float.floatToIntBits(l.getYaw())) + ":" + String.valueOf(Float.floatToIntBits(l.getPitch()));        
     }
 
     static private String strDbl (final Double dbl, int places) {
@@ -809,11 +796,7 @@ public class Beaconz extends JavaPlugin {
             final String[] element = s.split(":");
             if (element.length == 2) {
                 try {
-                    if (StringUtils.isNumeric(element[0])) {
-                        rewardItem = Material.getMaterial(Integer.parseInt(element[0]));
-                    } else {
-                        rewardItem = Material.getMaterial(element[0].toUpperCase());
-                    }
+                    rewardItem = Material.getMaterial(element[0].toUpperCase());
                     rewardQty = Integer.parseInt(element[1]);
                     ItemStack item = new ItemStack(rewardItem, rewardQty);
                     rewardedItems.add(item);
@@ -843,11 +826,7 @@ public class Beaconz extends JavaPlugin {
                 }
             } else if (element.length == 3) {
                 try {
-                    if (StringUtils.isNumeric(element[0])) {
-                        rewardItem = Material.getMaterial(Integer.parseInt(element[0]));
-                    } else {
-                        rewardItem = Material.getMaterial(element[0].toUpperCase());
-                    }
+                    rewardItem = Material.getMaterial(element[0].toUpperCase());
                     rewardQty = Integer.parseInt(element[2]);                    
                     // Check for POTION
                     if (rewardItem.equals(Material.POTION)) {
@@ -889,11 +868,7 @@ public class Beaconz extends JavaPlugin {
                 //plugin.getLogger().info("DEBUG: 6 element reward");
                 // Potion format = POTION:name:level:extended:splash:qty
                 try {
-                    if (StringUtils.isNumeric(element[0])) {
-                        rewardItem = Material.getMaterial(Integer.parseInt(element[0]));
-                    } else {
-                        rewardItem = Material.getMaterial(element[0].toUpperCase());
-                    }
+                    rewardItem = Material.getMaterial(element[0].toUpperCase());
                     rewardQty = Integer.parseInt(element[5]);
                     // Check for POTION
                     if (rewardItem.equals(Material.POTION)) {
@@ -1026,7 +1001,7 @@ public class Beaconz extends JavaPlugin {
         beaconzWorld = null;
         getBeaconzWorld();
     }
-    
+
     /**
      * Sends a message to the command sender
      * Allows for null senders and messages

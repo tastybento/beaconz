@@ -208,8 +208,8 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
                         getLogger().info("DEBUG: team = " + team.getDisplayName());
                         getLogger().info("DEBUG: block ID = " + game.getScorecard().getBlockID(team));
                     }
-                    block.setType(game.getScorecard().getBlockID(team).getItemType());
-                    block.setData(game.getScorecard().getBlockID(team).getData());
+                    block.setType(game.getScorecard().getBlockID(team));
+                    // TODO block.setData(game.getScorecard().getBlockID(team).getData());
                     // Register the beacon to this team
                     getRegister().setBeaconOwner(beacon,team);
                     player.sendMessage(ChatColor.GREEN + Lang.beaconYouCapturedABeacon);
@@ -294,7 +294,7 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
                                 if (rand.nextInt(100) < Settings.beaconMineExhaustChance) {
                                     beacon.resetHackTimer();
                                     player.sendMessage(ChatColor.GREEN + Lang.generalSuccess + " " + Lang.beaconIsExhausted.replace("[minutes]", String.valueOf(Settings.mineCoolDown/60000)));
-                                    player.getWorld().playSound(player.getLocation(), Sound.BLOCK_ENDERCHEST_CLOSE, 1F, 1F);
+                                    player.getWorld().playSound(player.getLocation(), Sound.BLOCK_CHEST_CLOSE, 1F, 1F);
                                 } else {
                                     player.sendMessage(ChatColor.GREEN + Lang.generalSuccess);
                                     player.getWorld().playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 1F, 1F);
@@ -314,7 +314,7 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
                             if (rand.nextInt(100) < Settings.beaconMineExhaustChance) {
                                 beacon.resetHackTimer();
                                 player.sendMessage(ChatColor.GREEN + Lang.generalSuccess + Lang.beaconIsExhausted.replace("[minutes]", String.valueOf(Settings.mineCoolDown/60000)));
-                                player.getWorld().playSound(player.getLocation(), Sound.BLOCK_ENDERCHEST_CLOSE, 1F, 1F);
+                                player.getWorld().playSound(player.getLocation(), Sound.BLOCK_CHEST_CLOSE, 1F, 1F);
                             } else {
                                 player.sendMessage(ChatColor.GREEN + Lang.generalSuccess);
                                 player.getWorld().playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 1F, 1F);
@@ -374,7 +374,7 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
         map.addRenderer(new TerritoryMapRenderer(getBeaconzPlugin()));
         map.addRenderer(new BeaconMap(getBeaconzPlugin()));
         ItemStack newMap = new ItemStack(Material.MAP);
-        newMap.setDurability(map.getId());
+        // TODO newMap.setDurability(map.getId());
         ItemMeta meta = newMap.getItemMeta();
         meta.setDisplayName("Beacon map for " + beacon.getName());
         newMap.setItemMeta(meta);

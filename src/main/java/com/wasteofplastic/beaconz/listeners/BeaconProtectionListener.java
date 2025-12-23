@@ -31,6 +31,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
+import org.bukkit.Tag;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -106,7 +107,7 @@ public class BeaconProtectionListener extends BeaconzPluginDependent implements 
                         // Do something
                         Random rand = new Random();
                         player.setVelocity(new Vector(rand.nextGaussian(),1.2,rand.nextGaussian()));
-                        getBeaconzWorld().playSound(player.getLocation(), Sound.BLOCK_NOTE_HARP, 1F, 1F);
+                        getBeaconzWorld().playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_HARP, 1F, 1F);
                     } 
                 }
             }
@@ -208,16 +209,10 @@ public class BeaconProtectionListener extends BeaconzPluginDependent implements 
         }
         BeaconObj beacon = getRegister().getBeaconAt(event.getBlock().getX(),event.getBlock().getZ());
         if (beacon != null && beacon.getY() < event.getBlock().getY()) {
-            switch (event.getBlock().getType()) {
-            // Allow leaves to grow over the beacon
-            case LEAVES:
-            case LEAVES_2:
-                break;
-            default:
+            if (!Tag.LEAVES.isTagged(event.getBlock().getType())) {
                 // For everything else, make sure there is air
                 event.getBlock().setType(Material.AIR);
             }
-
         }
     }
 

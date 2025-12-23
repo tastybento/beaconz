@@ -42,6 +42,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.scoreboard.Team;
 
+import com.destroystokyo.paper.MaterialTags;
+
 /**
  * Represents a beacon
  * @author tastybento
@@ -345,10 +347,11 @@ public class BeaconObj extends BeaconzPluginDependent {
             b.getRelative(BlockFace.UP).setType(Material.OBSIDIAN);
         }
         
-        if (ownership != null && (!b.getRelative(BlockFace.UP).getType().equals(Material.STAINED_GLASS) && b.getRelative(BlockFace.UP).getData() != Settings.teamBlock.get(ownership).getData())) {
+        
+        
+        if (ownership != null && (!MaterialTags.STAINED_GLASS.isTagged(b.getRelative(BlockFace.UP)) && b.getRelative(BlockFace.UP).getType() != Settings.teamBlock.get(ownership))) {
             getLogger().severe("Beacon at " + x + " " + y + " " + z + " missing team glass block!");
-            b.getRelative(BlockFace.UP).setType(Material.STAINED_GLASS);
-            b.getRelative(BlockFace.UP).setData(Settings.teamBlock.get(ownership).getData());
+            b.getRelative(BlockFace.UP).setType(Settings.teamBlock.get(ownership));
         }
         // Create the pyramid
         b = b.getRelative(BlockFace.DOWN);

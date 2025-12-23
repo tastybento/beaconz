@@ -33,6 +33,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Tag;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -220,7 +221,8 @@ public class Region extends BeaconzPluginDependent {
             if (!getRegister().isNearBeacon(point, 5)) {
                 Block b = getBeaconzWorld().getHighestBlockAt((int)point.getX(), (int)point.getY());
                 // Find the topmost free block
-                while (b.getType().equals(Material.AIR) || b.getType().equals(Material.LEAVES) || b.getType().equals(Material.LEAVES_2)) {
+                while (b.getType().equals(Material.AIR) 
+                        || Tag.LEAVES.isTagged(b.getType())) {
                     if (b.getY() == 0) {
                         // Oops, nothing here
                         break;
@@ -645,42 +647,15 @@ public class Region extends BeaconzPluginDependent {
         }
 
         // Portals are not "safe"
-        if (space1.getType() == Material.PORTAL || ground.getType() == Material.PORTAL || space2.getType() == Material.PORTAL
-                || space1.getType() == Material.ENDER_PORTAL || ground.getType() == Material.ENDER_PORTAL || space2.getType() == Material.ENDER_PORTAL) {
-            return false;
-        }
-
-        MaterialData materialData = ground.getState().getData();
-        if (materialData instanceof SimpleAttachableMaterialData) {
-            //Bukkit.getLogger().info("DEBUG: trapdoor/button/tripwire hook etc.");
-            if (materialData instanceof TrapDoor) {
-                TrapDoor trapDoor = (TrapDoor)materialData;
-                if (trapDoor.isOpen()) {
-                    //Bukkit.getLogger().info("DEBUG: trapdoor open");
-                    return false;
-                }
-            } else {
-                return false;
-            }
-            //Bukkit.getLogger().info("DEBUG: trapdoor closed");
-        }
-        if (ground.getType().equals(Material.CACTUS) || ground.getType().equals(Material.BOAT) || ground.getType().equals(Material.FENCE)
-                || ground.getType().equals(Material.NETHER_FENCE) || ground.getType().equals(Material.SIGN_POST) || ground.getType().equals(Material.WALL_SIGN)) {
-            // Bukkit.getLogger().info("DEBUG: cactus");
-            return false;
-        }
-        // We don't want to be standing on leaves either
-        if (ground.getType().equals(Material.LEAVES)) {
-            return false;
-        }
-        // Check that the space is not solid
-        // The isSolid function is not fully accurate (yet) so we have to
-        // check a few other items
-        // isSolid thinks that PLATEs and SIGNS are solid, but they are not
-        if (space1.getType().isSolid() && !space1.getType().equals(Material.SIGN_POST) && !space1.getType().equals(Material.WALL_SIGN)) {
-            return false;
-        }
-        if (space2.getType().isSolid() && !space2.getType().equals(Material.SIGN_POST) && !space2.getType().equals(Material.WALL_SIGN)) {
+        if (Tag.PORTALS.isTagged(space1.getType())
+                || Tag.PORTALS.isTagged(space2.getType())
+                || Tag.PORTALS.isTagged(ground.getType())
+                || Tag.TRAPDOORS.isTagged(ground.getType())
+                || Tag.FENCES.isTagged(ground.getType())
+                || Tag.SIGNS.isTagged(ground.getType())
+                || Tag.LEAVES.isTagged(ground.getType())
+                || ground.getType() == Material.CACTUS
+                ) {
             return false;
         }
         // Safe
@@ -724,6 +699,7 @@ public class Region extends BeaconzPluginDependent {
                     //getLogger().info("DEBUG: material = " + material);
                     if (material != null) {
                         block.setType(material);
+                        /*
                         if (matType.contains(":")) {
                             // Set value
                             //getLogger().info("DEBUG: colon - " + matType.substring(matType.indexOf(":")+1));
@@ -733,7 +709,7 @@ public class Region extends BeaconzPluginDependent {
                                 getLogger().severe("Could not parse block data value for " + matType + ", using 0...");
                             }
 
-                        }
+                        }*/
                     } else {
                         getLogger().severe("Could not parse block material value for " + matType + ", skipping...");
                     }
@@ -746,7 +722,7 @@ public class Region extends BeaconzPluginDependent {
         spawnPoint = new Location(getBeaconzWorld(),x,Settings.lobbyHeight+1,z+2);
         // Place sign
         Block sign = getBeaconzWorld().getBlockAt(spawnPoint.getBlockX(), spawnPoint.getBlockY(), spawnPoint.getBlockZ());
-        sign.setType(Material.SIGN_POST);
+        sign.setType(Material.OAK_SIGN);
         Sign realSign = (Sign)sign.getState();
         realSign.setLine(0, "[beaconz]");
         realSign.setLine(1, Settings.defaultGameName);

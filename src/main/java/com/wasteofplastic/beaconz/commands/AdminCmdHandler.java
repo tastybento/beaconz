@@ -22,8 +22,6 @@
 
 package com.wasteofplastic.beaconz.commands;
 
-import io.github.ebaldino.queuemgr.QueueMgrInterface;
-
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,7 +33,6 @@ import org.apache.commons.lang.math.NumberUtils;
 import org.bukkit.ChatColor;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.block.Sign;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -145,8 +142,8 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                                         // Claim a beacon
                                         //getRegister().getBeaconRegister().get(newClaim).setOwnership(team);
                                         getRegister().setBeaconOwner(beacon, team);
-                                        block.setType(game.getScorecard().getBlockID(team).getItemType());
-                                        block.setData(game.getScorecard().getBlockID(team).getData());
+                                        block.setType(game.getScorecard().getBlockID(team));
+                                        // TODO block.setData(game.getScorecard().getBlockID(team).getData());
                                     }
                                     player.sendMessage(Lang.beaconClaimedForTeam.replace("[team]", args[1]));
                                 }

@@ -1,28 +1,8 @@
 /*
  * Copyright (c) 2015 - 2016 tastybento
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
  */
 
 package com.wasteofplastic.beaconz;
-
-import io.github.ebaldino.queuemgr.QueueMgrInterface;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -82,11 +62,11 @@ public class Scorecard extends BeaconzPluginDependent{
     private String goalstr;
     private Long starttimemilis;
     private BukkitTask timertaskid;
-    private HashMap<Team, Location> teamSpawnPoint = new HashMap<Team, Location>();
-    private HashMap<Team, HashMap<String,Integer>> score = new HashMap<Team, HashMap<String,Integer>>();
-    private HashMap<Team, List<String>> teamMembers = new HashMap<Team, List<String>>();
-    private HashMap<UUID, Team> teamLookup = new HashMap<UUID, Team>();
-    private HashMap<Team, MaterialData> teamBlocks = new HashMap<Team, MaterialData>();
+    private HashMap<Team, Location> teamSpawnPoint = new HashMap<>();
+    private HashMap<Team, HashMap<String,Integer>> score = new HashMap<>();
+    private HashMap<Team, List<String>> teamMembers = new HashMap<>();
+    private HashMap<UUID, Team> teamLookup = new HashMap<>();
+    private HashMap<Team, Material> teamBlocks = new HashMap<>();
     private enum Scoretypes {area, links, triangles, beacons};
 
     /**
@@ -169,7 +149,7 @@ public class Scorecard extends BeaconzPluginDependent{
         score.clear();
 
         // Create the teams and enable scoreboards
-        teamBlocks = new HashMap<Team, MaterialData>();
+        teamBlocks = new HashMap<>();
         addTeams();
         loadTeamMembers();
 
@@ -200,7 +180,7 @@ public class Scorecard extends BeaconzPluginDependent{
         Integer teamcnt = 0;
         if (csect != null) {
             for (String teamName: csect.getValues(false).keySet()) {
-                MaterialData teamBlock = new MaterialData(Material.STAINED_GLASS,(byte) csect.getInt(teamName + ".glasscolor"));
+                Material teamBlock = Material.getMaterial(csect.getString(teamName + ".glasscolor"));
                 //IMPORTANT: The a team's display name must ALWAYS be the team's name, PRECEEDED BY the ChatColor
                 String teamDisplayName = ChatColor.translateAlternateColorCodes('&', csect.getString(teamName + ".displayname", teamName));
                 if (teamName.length() > 16) {
@@ -330,7 +310,8 @@ public class Scorecard extends BeaconzPluginDependent{
      * @param save - if true, saves game to file after adding team
      * @return team
      */
-    public Team addTeam(String teamName, String teamDisplayName, MaterialData teamBlock, Boolean save) {
+    @SuppressWarnings("deprecation")
+    public Team addTeam(String teamName, String teamDisplayName, Material teamBlock, Boolean save) {
         Team team = scoreboard.getTeam(teamName);
         if (team == null) {
             // Create the team
@@ -539,7 +520,7 @@ public class Scorecard extends BeaconzPluginDependent{
      * @param team
      * @return block type or null if it does not exist
      */
-    public MaterialData getBlockID(Team team) {
+    public Material getBlockID(Team team) {
         return teamBlocks.get(team);
     }
 
@@ -549,14 +530,8 @@ public class Scorecard extends BeaconzPluginDependent{
      * @return Team, or null if it doesn't exist
      */
     public Team getTeamFromBlock(Block b) {
-        for (Entry<Team, MaterialData> md: teamBlocks.entrySet()) {
-            //if (md.getValue().getItemType().equals(b.getType()) && md.getValue().getData() == b.getData()) {
-            //    return md.getKey();
-            //}
-            if (md.getValue().getItemType().equals(b.getType()) &&
-                    md.getValue().toItemStack().getItemMeta().getDisplayName().equals(b.getState().getData().toItemStack().getItemMeta().getDisplayName()) &&
-                    md.getValue().toItemStack().getItemMeta().getLore().equals(b.getState().getData().toItemStack().getItemMeta().getLore())
-                    ) {
+        for (Entry<Team, Material> md: teamBlocks.entrySet()) {
+            if (md.getValue() == b.getType()) {
                 return md.getKey();
             }
         }
@@ -1014,8 +989,8 @@ public class Scorecard extends BeaconzPluginDependent{
                                 } else {
                                     player.sendMessage(ChatColor.GREEN + "[" + game.getName() + "] " + ChatColor.YELLOW + titleline);                        
                                 }
-                                player.getWorld().playSound(player.getLocation(), Sound.ENTITY_FIREWORK_LARGE_BLAST, 1F, 1F);
-                                player.getWorld().playSound(player.getLocation(), Sound.ENTITY_FIREWORK_TWINKLE, 1F, 1F);
+                                player.getWorld().playSound(player.getLocation(), Sound.ENTITY_FIREWORK_ROCKET_BLAST, 1F, 1F);
+                                player.getWorld().playSound(player.getLocation(), Sound.ENTITY_FIREWORK_ROCKET_TWINKLE, 1F, 1F);
                             } else {
                                 // Offline player
                                 getMessages().setMessage(uuid, "[" + game.getName() + "] " + titleline);
@@ -1024,6 +999,7 @@ public class Scorecard extends BeaconzPluginDependent{
                     }
                 }  
                 // If working with QueueMgr, tell it the game ended:
+                /*
                 if (getServer().getPluginManager().getPlugin("QueueMgr") != null) {
                     QueueMgrInterface qMgr = getServer().getServicesManager().load(QueueMgrInterface.class);
                     if (qMgr != null && winner != null) {
@@ -1033,6 +1009,7 @@ public class Scorecard extends BeaconzPluginDependent{
                         qMgr.setGameOverVar2(game.getName(), "THANK YOU FOR PLAYING!", null);
                     }
                 }
+                 */
             }
         }, 30);        
     }
@@ -1121,7 +1098,7 @@ public class Scorecard extends BeaconzPluginDependent{
         }
         // Clear all the players from the teamLookup.
         teamLookup.clear();
-        
+
         try {
             teamsYml.save(teamsFile);
         } catch (IOException e) {

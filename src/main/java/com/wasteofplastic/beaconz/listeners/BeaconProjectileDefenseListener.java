@@ -289,7 +289,7 @@ public class BeaconProjectileDefenseListener extends BeaconzPluginDependent impl
                 //getLogger().info("DEBUG: spectral arrow");
                 projectile = block.getWorld().spawnArrow(from, direction.add(aim), 1F, 10F, SpectralArrow.class);
                 ((SpectralArrow)projectile).setKnockbackStrength(1);
-            } else if (ih.getInventory().contains(Material.FIREBALL)) {
+            } else if (ih.getInventory().contains(Material.FIRE_CHARGE)) {
                 //getLogger().info("DEBUG: fireball");
                 projectile = (Projectile)block.getWorld().spawnEntity(from, EntityType.FIREBALL);
                 ((Fireball)projectile).setDirection(direction.add(aim));
@@ -359,7 +359,7 @@ public class BeaconProjectileDefenseListener extends BeaconzPluginDependent impl
                     case DISPENSER:
                         InventoryHolder ih = (InventoryHolder)block.getKey().getState();
                         if (ih.getInventory().contains(Material.ARROW) || ih.getInventory().contains(Material.TIPPED_ARROW)
-                                || ih.getInventory().contains(Material.SPECTRAL_ARROW) || ih.getInventory().contains(Material.FIREBALL)) {
+                                || ih.getInventory().contains(Material.SPECTRAL_ARROW) || ih.getInventory().contains(Material.FIRE_CHARGE)) {
                             //getLogger().info("DEBUG: contains arrow");
                             Vector adjust = (to.toVector().subtract(from.toVector()));
                             fireProjectile(block.getKey(), to, adjust, beacon.getOwnership());

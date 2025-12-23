@@ -25,6 +25,7 @@ package com.wasteofplastic.beaconz.listeners;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
+import org.bukkit.Tag;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Animals;
 import org.bukkit.entity.Monster;
@@ -63,6 +64,7 @@ public class LobbyListener extends BeaconzPluginDependent implements Listener {
     /**
      * Handles using signs in the lobby to join games
      */
+    @SuppressWarnings("deprecation")
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onSignClick(final PlayerInteractEvent event) {
         // We are only interested in hitting signs
@@ -75,8 +77,7 @@ public class LobbyListener extends BeaconzPluginDependent implements Listener {
             return;
         }
         //getLogger().info("DEBUG: block material = " + event.getClickedBlock().getType());
-        if (!event.getClickedBlock().getType().equals(Material.SIGN) && !event.getClickedBlock().getType().equals(Material.WALL_SIGN) 
-                && !event.getClickedBlock().getType().equals(Material.SIGN_POST)) {
+        if (!Tag.SIGNS.isTagged(event.getClickedBlock().getType())) {
             return;
         }
         // Check world
@@ -93,6 +94,7 @@ public class LobbyListener extends BeaconzPluginDependent implements Listener {
             Sign sign = (Sign) event.getClickedBlock().getState();
             if (sign.getLine(0).toLowerCase().contains(Lang.adminSignKeyword)) {
                 for (int i = 1; i < 4; i++) {
+                    @SuppressWarnings("deprecation")
                     String gamename = sign.getLine(i);
                     //getLogger().info("DEBUG: gamename = " + gamename);
                     if (getGameMgr().getGame(gamename) != null) {
@@ -114,6 +116,7 @@ public class LobbyListener extends BeaconzPluginDependent implements Listener {
      * Tells admin if the game sign has been placed successfully
      * @param event
      */
+    @SuppressWarnings("deprecation")
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onSignPlace(final SignChangeEvent event) {
         // Check world

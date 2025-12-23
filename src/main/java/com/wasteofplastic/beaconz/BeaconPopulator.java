@@ -27,6 +27,7 @@ import java.util.Random;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Material;
+import org.bukkit.Tag;
 import org.bukkit.World;
 import org.bukkit.block.Biome;
 import org.bukkit.block.Block;
@@ -175,8 +176,7 @@ public class BeaconPopulator extends BlockPopulator {
                 // There can be snow in trees, so need to move down to ground level
                 while (y > 0 && (source.getBlock(x, y, z).getType().equals(Material.SNOW) 
                         || source.getBlock(x, y, z).getType().equals(Material.AIR)
-                        || source.getBlock(x, y, z).getType().equals(Material.LEAVES)
-                        || source.getBlock(x, y, z).getType().equals(Material.LEAVES_2))) {
+                        || Tag.LEAVES.isTagged(source.getBlock(x, y, z).getType()))) {
                     y--;
                 }
                 b = source.getBlock(x, y, z);
@@ -186,8 +186,11 @@ public class BeaconPopulator extends BlockPopulator {
             if (b.getBiome().equals(Biome.OCEAN) || b.getBiome().equals(Biome.DEEP_OCEAN)) {
                 return;
             }
-            while (b.getType().equals(Material.AIR) || b.getType().equals(Material.LEAVES) || b.getType().equals(Material.LEAVES_2)
-                    || b.getType().equals(Material.HUGE_MUSHROOM_1) || b.getType().equals(Material.HUGE_MUSHROOM_2) || b.getType().equals(Material.OBSIDIAN)) {
+            while (b.getType().equals(Material.AIR) 
+                    || Tag.LEAVES.isTagged(b.getType())
+                    || b.getType().equals(Material.BROWN_MUSHROOM_BLOCK) 
+                    || b.getType().equals(Material.RED_MUSHROOM_BLOCK) 
+                    || b.getType().equals(Material.OBSIDIAN)) {
                 // if found an obsidian, we only keep going down if it's NOT capping a beacon .. this shouldn't really happen either, since we're regenerating the chunk... 
                 // ... but, just in case, it should help avoid the creation of diamond towers, which were plentiful during testing...
                 if (b.getType().equals(Material.OBSIDIAN) && !b.getRelative(BlockFace.DOWN).getType().equals(Material.BEACON)) {

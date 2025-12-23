@@ -223,7 +223,7 @@ public class Settings {
     /**
      * Team colors
      */
-    public static HashMap<Team, MaterialData> teamBlock;
+    public static HashMap<Team, Material> teamBlock;
     
     /**
      * Commands to run when a player makes a link

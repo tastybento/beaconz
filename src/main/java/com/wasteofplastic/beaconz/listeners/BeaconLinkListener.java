@@ -67,6 +67,7 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
      * Handles the event of hitting a beacon with paper or a map
      * @param event
      */
+    @SuppressWarnings("deprecation")
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onPaperMapUse(final PlayerInteractEvent event) {
         if (DEBUG)
@@ -130,6 +131,7 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
             return;
         } else {*/
         // Map!
+        @SuppressWarnings("deprecation")
         BeaconObj mappedBeacon = getRegister().getBeaconMap(event.getItem().getDurability());
         if (mappedBeacon == null) {
             // This is not a beacon map
@@ -235,7 +237,7 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
         map.addRenderer(new TerritoryMapRenderer(getBeaconzPlugin()));
         map.addRenderer(new BeaconMap(getBeaconzPlugin()));
         ItemStack newMap = new ItemStack(Material.MAP);
-        newMap.setDurability(map.getId());
+        //newMap.setDurability(map.getId());
         ItemMeta meta = newMap.getItemMeta();
         meta.setDisplayName("Beacon map for " + beacon.getName());
         newMap.setItemMeta(meta);
@@ -286,6 +288,7 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
      * @param otherBeacon
      * @return true if link is made successfully
      */
+    @SuppressWarnings("deprecation")
     private boolean linkBeacons(Player player, Team team, BeaconObj beacon,
             BeaconObj otherBeacon) {
         if (beacon.equals(otherBeacon)) {
@@ -320,7 +323,7 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
         if (result.isSuccess()) {
             player.sendMessage(ChatColor.GREEN + Lang.beaconLinkCreated);
             player.sendMessage(ChatColor.GREEN + Lang.beaconNowHasLinks.replace("[number]", String.valueOf(beacon.getNumberOfLinks())));
-            player.getWorld().playSound(player.getLocation(), Sound.ENTITY_FIREWORK_LARGE_BLAST, 1F, 1F);
+            player.getWorld().playSound(player.getLocation(), Sound.ENTITY_FIREWORK_ROCKET_LARGE_BLAST, 1F, 1F);
             // Tell the team
             getMessages().tellTeam(player, ChatColor.GREEN + Lang.beaconNameCreatedALink.replace("[name]", player.getDisplayName()));
         } else {
@@ -334,6 +337,7 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
                 // Taunt other teams
                 getMessages().tellOtherTeams(team, ChatColor.RED + Lang.beaconNameCreateATriangle.replace("[name]", team.getDisplayName()));
             } else {
+                @SuppressWarnings("deprecation")
                 String message = (Lang.beaconNameCreateTriangles.replace("[name]", player.getDisplayName())).replace("[number]", String.valueOf(result.getFieldsMade()));
                 String newScore = Lang.scoreNewScore + " " + String.format(Locale.US, "%,d", getGameMgr().getSC(team).getScore(team, "area"));
                 player.sendMessage(ChatColor.GOLD + message + " " + newScore);
