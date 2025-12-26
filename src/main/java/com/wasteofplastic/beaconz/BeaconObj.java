@@ -225,25 +225,32 @@ public class BeaconObj extends BeaconzPluginDependent {
 
     /**
      * Checks if a beacon base is clear of blocks and above the blocks all the way to the sky
-     * @return true if clear, false if not
+     * @return false if clear, true if not
      */
-    public boolean isClear() {
+    public boolean isNotClear() {
         Block beacon = getBeaconzWorld().getBlockAt((int)location.getX(), y, (int)location.getY());
-        //getLogger().info("DEBUG: block y = " + beacon.getY() + " " + beacon.getLocation());
+        getLogger().info("DEBUG: block y = " + beacon.getY() + " " + beacon.getLocation());
         for (BlockFace face: FACES) {
             Block block = beacon.getRelative(face);
-            //getLogger().info("DEBUG: highest block at " + block.getX() + "," + block.getZ() + " y = " + getHighestBlockYAt(block.getX(), block.getZ()));
+            getLogger().info("DEBUG: highest block at " + block.getX() + "," + block.getZ() + " y = " + getHighestBlockYAt(block.getX(), block.getZ()));
             if (block.getY() != getHighestBlockYAt(block.getX(), block.getZ())) {
+                getLogger().info("DEBUG: Beacon is not cleared");
                 return true;
             }
         }
+        getLogger().info("DEBUG: Checking defences");
         // Check all the defense blocks too
+        Block block;
         for (Point2D point: getRegister().getDefensesAtBeacon(this)) {
-            beacon = getBeaconzWorld().getBlockAt((int)point.getX(), y, (int)point.getY());
-            if (beacon.getY() != getHighestBlockYAt((int)point.getX(), (int)point.getY())) {
+            getLogger().info("DEBUG: checking = " + (int)point.getX() + "," + y + ", " + (int)point.getY());
+            block = getBeaconzWorld().getBlockAt((int)point.getX(), y, (int)point.getY());
+            getLogger().info("DEBUG: Block Y = " + block.getY() + " and it is " + block.getType());
+            if (block.getY() != getHighestBlockYAt((int)point.getX(), (int)point.getY())) {
+                getLogger().info("DEBUG: Beacon is no cleared");
                 return true;
             }
         }
+        getLogger().info("DEBUG: Beacon is cleared");
         return false;
     }
 

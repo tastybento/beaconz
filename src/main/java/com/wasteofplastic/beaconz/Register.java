@@ -480,7 +480,7 @@ public class Register extends BeaconzPluginDependent {
     public BeaconObj addBeacon(Team owner, int x, int y, int z) {
         // Create a beacon
         BeaconObj beacon = new BeaconObj(getBeaconzPlugin(), x, y, z, owner);
-        //getLogger().info("DEBUG: registered beacon at " + x + "," + y + ", " + z + " owner " + owner);
+        getLogger().info("DEBUG: registered beacon at " + x + "," + y + ", " + z + " owner " + owner);
         for (int xx = x-1; xx <= x + 1; xx++) {
             for (int zz = z - 1; zz <= z + 1; zz++) {
                 Point2D location = new Point2D.Double(xx,zz);
@@ -677,14 +677,14 @@ public class Register extends BeaconzPluginDependent {
      * @return BeaconObj or null if none
      */
     public BeaconObj getBeacon(Block block) {
-        //getLogger().info("DEBUG: material = " + b.getType());
+        getLogger().info("DEBUG: material = " + block.getType());
         // Quick check
         if (!block.getType().equals(Material.BEACON) && !block.getType().equals(Material.DIAMOND_BLOCK)
                 && !block.getType().equals(Material.OBSIDIAN) &&  !block.getType().name().endsWith("STAINED_GLASS")
                 && !block.getType().equals(Material.EMERALD_BLOCK)) {
             return null;
         }
-        //getLogger().info("DEBUG: correct material");
+        getLogger().info("DEBUG: correct material");
         Point2D point = new Point2D.Double(block.getLocation().getBlockX(),block.getLocation().getBlockZ());
 
         // Check plinth blocks
@@ -700,13 +700,13 @@ public class Register extends BeaconzPluginDependent {
                 }
             }
         }
-        //getLogger().info("DEBUG: checking point " + point);
+        getLogger().info("DEBUG: checking point " + point);
 
         // Check glass or obsidian
         if (block.getType().equals(Material.OBSIDIAN) || block.getType().name().endsWith("STAINED_GLASS")) {
             Block below = block.getRelative(BlockFace.DOWN);
             if (!below.getType().equals(Material.BEACON)) {
-                //getLogger().info("DEBUG: no beacon below here");
+                getLogger().info("DEBUG: no beacon below here");
                 return null;
             }
             point = new Point2D.Double(below.getLocation().getBlockX(),below.getLocation().getBlockZ());

@@ -59,7 +59,7 @@ import com.wasteofplastic.beaconz.map.TerritoryMapRenderer;
 
 public class BeaconCaptureListener extends BeaconzPluginDependent implements Listener {
 
-    private final static boolean DEBUG = false;
+    private final static boolean DEBUG = true;
 
     public BeaconCaptureListener(Beaconz plugin) {
         super(plugin);
@@ -114,7 +114,7 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
             if (getRegister().isBeacon(block.getRelative(BlockFace.DOWN))) {
                 // It is a real beacon
                 // Check that the beacon is clear of blocks
-                if (beacon.isClear() && (beacon.getOwnership() == null || !beacon.getOwnership().equals(team))) {
+                if (beacon.isNotClear() && (beacon.getOwnership() == null || !beacon.getOwnership().equals(team))) {
                     // You can't capture an uncleared beacon
                     player.sendMessage(ChatColor.GOLD + Lang.errorClearAroundBeacon);
                     event.setCancelled(true);
@@ -194,7 +194,7 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
                 // It is a real beacon
                 if (block.getType().equals(Material.OBSIDIAN)) {
                     // Check that the beacon is clear of blocks
-                    if (beacon.isClear()) {
+                    if (beacon.isNotClear()) {
                         // You can't capture an uncleared beacon
                         player.sendMessage(ChatColor.RED + Lang.errorClearAroundBeacon);
                         event.setCancelled(true);
@@ -229,7 +229,7 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
                             return;
                         }
                         // Check that the beacon is clear of blocks
-                        if (beacon.isClear()) {
+                        if (beacon.isNotClear()) {
                             // You can't capture an uncleared beacon
                             player.sendMessage(ChatColor.RED + Lang.errorClearAroundBeacon);
                             event.setCancelled(true);

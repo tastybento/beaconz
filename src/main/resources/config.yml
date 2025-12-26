@@ -16,7 +16,7 @@ world:
   zcenter: 2000
 
   # Length for the sides of each new (square) game region
-  distance: 2000
+  distance: 20000
 
   # Number of seconds a player must be stationary before they will be teleported
   # As this is a PVP game, this will prevent escapes using teleporting.

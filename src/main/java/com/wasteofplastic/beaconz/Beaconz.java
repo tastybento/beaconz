@@ -42,6 +42,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.generator.BlockPopulator;
+import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.plugin.Plugin;
@@ -51,6 +52,7 @@ import org.bukkit.potion.PotionData;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.potion.PotionType;
+import org.jetbrains.annotations.Nullable;
 
 import com.wasteofplastic.beaconz.commands.AdminCmdHandler;
 import com.wasteofplastic.beaconz.commands.CmdHandler;
@@ -68,13 +70,12 @@ import com.wasteofplastic.beaconz.listeners.PlayerJoinLeaveListener;
 import com.wasteofplastic.beaconz.listeners.PlayerMovementListener;
 import com.wasteofplastic.beaconz.listeners.PlayerTeleportListener;
 import com.wasteofplastic.beaconz.listeners.SkyListeners;
-import com.wasteofplastic.beaconz.listeners.WorldListener;
 
 public class Beaconz extends JavaPlugin {
     private Register register;
     private World beaconzWorld;
     private static Beaconz plugin;
-    static BlockPopulator beaconPopulator;
+    private BlockPopulator beaconPopulator;
     private GameMgr gameMgr;
     private Messages messages;
     private BeaconzStore beaconzStore;
@@ -82,6 +83,7 @@ public class Beaconz extends JavaPlugin {
     private TinyDB nameStore;
     private PlayerTeleportListener teleportListener;
     public Boolean ignoreChunkLoad;
+    private @Nullable ChunkGenerator chunkGenerator;
 
 
     @Override
@@ -111,8 +113,7 @@ public class Beaconz extends JavaPlugin {
             gameMgr = new GameMgr(plugin);
 
             // Load the beacon register
-            register = new Register(plugin);
-            register.loadRegister();
+            getRegister();
 
             // Create the block populator
             getBp();
@@ -137,7 +138,7 @@ public class Beaconz extends JavaPlugin {
             teleportListener = new PlayerTeleportListener(plugin);
             getServer().getPluginManager().registerEvents(teleportListener, plugin);
             getServer().getPluginManager().registerEvents(new SkyListeners(plugin), plugin);
-            getServer().getPluginManager().registerEvents(new WorldListener(plugin), plugin);
+            //getServer().getPluginManager().registerEvents(new WorldListener(plugin), plugin);
             getServer().getPluginManager().registerEvents(new BeaconSurroundListener(plugin), plugin);
             getServer().getPluginManager().registerEvents(new LobbyListener(plugin), plugin);
             ignoreChunkLoad = false; // used in WorldListener and other classes
@@ -175,14 +176,6 @@ public class Beaconz extends JavaPlugin {
         }
 
         getGameMgr().saveAllGames();
-        /* 
-        beaconzWorld.getPopulators().clear();
-        if (beaconPopulator != null) {
-            beaconzWorld.getPopulators().remove(beaconPopulator);
-        }
-         */
-        //getConfig().set("world.distribution", Settings.distribution);
-        //saveConfig();
     }
 
 
@@ -197,6 +190,10 @@ public class Beaconz extends JavaPlugin {
      * @return the register
      */
     public Register getRegister() {
+        if (register == null) {
+            register = new Register(plugin);
+            register.loadRegister();
+        }
         return register;
     }
 
@@ -608,12 +605,18 @@ public class Beaconz extends JavaPlugin {
      * @return
      */
     public World getBeaconzWorld() {
+        chunkGenerator = new BeaconzChunkGen(this);
         // Check to see if the world exists, and if not, make it
         if (beaconzWorld == null) {
             // World doesn't exist, so make it
             getLogger().info("World is '" + Settings.worldName + "'");
             try {
-                beaconzWorld = WorldCreator.name(Settings.worldName).type(WorldType.NORMAL).environment(World.Environment.NORMAL).createWorld();
+                beaconzWorld = WorldCreator
+                        .name(Settings.worldName)
+                        .type(WorldType.NORMAL)
+                        .environment(World.Environment.NORMAL)
+                        .generator(chunkGenerator)
+                        .createWorld();
             } catch (Exception e) {
                 getLogger().info("Could not make world yet..");
                 return null;
