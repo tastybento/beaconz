@@ -10,11 +10,14 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDamageEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scoreboard.Team;
@@ -30,8 +33,12 @@ import org.mockito.quality.Strictness;
 
 import com.wasteofplastic.beaconz.BeaconObj;
 import com.wasteofplastic.beaconz.Beaconz;
+import com.wasteofplastic.beaconz.Game;
 import com.wasteofplastic.beaconz.GameMgr;
+import com.wasteofplastic.beaconz.Lang;
+import com.wasteofplastic.beaconz.Messages;
 import com.wasteofplastic.beaconz.Register;
+import com.wasteofplastic.beaconz.Scorecard;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.logging.Logger;
@@ -69,6 +76,14 @@ class BeaconCaptureListenerTest {
     private @NotNull Block beaconBlock;
     @Mock
     private Logger logger;
+    @Mock
+    private Game game;
+    @Mock
+    private Scorecard scorecard;
+    @Mock
+    private Messages messages;
+    @Mock
+    private Location location;
 
     /**
      * @throws java.lang.Exception
@@ -87,8 +102,24 @@ class BeaconCaptureListenerTest {
         when(block.getRelative(BlockFace.DOWN)).thenReturn(beaconBlock);
 
         when(plugin.getLogger()).thenReturn(logger);
-        
-       
+        when(plugin.getMessages()).thenReturn(messages);
+        when(block.getLocation()).thenReturn(location);
+        when(mgr.getGame(location)).thenReturn(game);
+        when(game.getScorecard()).thenReturn(scorecard);
+        when(scorecard.getTeam(player)).thenReturn(team);
+        when(scorecard.getBlockID(team)).thenReturn(Material.RED_WOOL);
+        when(beacon.getOwnership()).thenReturn(null);
+        when(team.getDisplayName()).thenReturn("teamA");
+        when(otherTeam.getDisplayName()).thenReturn("teamB");
+        when(player.getDisplayName()).thenReturn("playerA");
+
+        // Provide Lang static strings to avoid NPEs during replace/sends
+        Lang.errorYouCannotDoThat = "errorYouCannotDoThat";
+        Lang.errorClearAroundBeacon = "errorClearAroundBeacon";
+        Lang.beaconYouCannotDestroyYourOwnBeacon = "beaconYouCannotDestroyYourOwnBeacon";
+        Lang.beaconTeamDestroyed = "beaconTeamDestroyed [team1] [team2]";
+        Lang.beaconPlayerDestroyed = "beaconPlayerDestroyed [player] [team]";
+        Lang.beaconYouDestroyed = "beaconYouDestroyed [team]";
     }
 
     /**
@@ -254,9 +285,141 @@ class BeaconCaptureListenerTest {
      * Test method for {@link com.wasteofplastic.beaconz.listeners.BeaconCaptureListener#onBeaconBreak(org.bukkit.event.block.BlockBreakEvent)}.
      */
     @Test
-    @Disabled("Not yet implemented")
-    void testOnBeaconBreak() {
-        fail("Not yet implemented");
+    void testOnBeaconBreakNotInWorld() {
+        World otherWorld = org.mockito.Mockito.mock(World.class);
+        when(block.getWorld()).thenReturn(otherWorld);
+
+        BlockBreakEvent e = new BlockBreakEvent(block, player);
+        bcl.onBeaconBreak(e);
+
+        assertFalse(e.isCancelled());
+        verify(register, never()).getBeacon(block);
+    }
+
+    @Test
+    void testOnBeaconBreakLobbyNonOp() {
+        when(block.getWorld()).thenReturn(world);
+        when(mgr.isPlayerInLobby(player)).thenReturn(true);
+        when(player.isOp()).thenReturn(false);
+
+        BlockBreakEvent e = new BlockBreakEvent(block, player);
+        bcl.onBeaconBreak(e);
+
+        assertTrue(e.isCancelled());
+    }
+
+    @Test
+    void testOnBeaconBreakGameNullNonOp() {
+        when(block.getWorld()).thenReturn(world);
+        when(mgr.isPlayerInLobby(player)).thenReturn(false);
+        when(mgr.getGame(location)).thenReturn(null);
+        when(player.isOp()).thenReturn(false);
+
+        BlockBreakEvent e = new BlockBreakEvent(block, player);
+        bcl.onBeaconBreak(e);
+
+        assertTrue(e.isCancelled());
+        verify(player).sendMessage(anyString());
+    }
+
+    @Test
+    void testOnBeaconBreakTeamNullNonOp() {
+        when(block.getWorld()).thenReturn(world);
+        when(mgr.getGame(location)).thenReturn(game);
+        when(scorecard.getTeam(player)).thenReturn(null);
+        when(player.isOp()).thenReturn(false);
+
+        BlockBreakEvent e = new BlockBreakEvent(block, player);
+        bcl.onBeaconBreak(e);
+
+        assertTrue(e.isCancelled());
+    }
+
+    @Test
+    void testOnBeaconBreakNotBeacon() {
+        when(block.getWorld()).thenReturn(world);
+        when(register.getBeacon(block)).thenReturn(null);
+
+        BlockBreakEvent e = new BlockBreakEvent(block, player);
+        bcl.onBeaconBreak(e);
+
+        assertFalse(e.isCancelled());
+    }
+
+    @Test
+    void testOnBeaconBreakObsidianNotClear() {
+        when(block.getWorld()).thenReturn(world);
+        when(register.getBeacon(block)).thenReturn(beacon);
+        when(block.getType()).thenReturn(Material.OBSIDIAN);
+        when(beacon.isNotClear()).thenReturn(true);
+
+        BlockBreakEvent e = new BlockBreakEvent(block, player);
+        bcl.onBeaconBreak(e);
+
+        assertTrue(e.isCancelled());
+        verify(player).sendMessage(ChatColor.RED + Lang.errorClearAroundBeacon);
+    }
+
+    @Test
+    void testOnBeaconBreakOwnedByTeam() {
+        when(block.getWorld()).thenReturn(world);
+        when(register.getBeacon(block)).thenReturn(beacon);
+        when(block.getType()).thenReturn(Material.GLASS);
+        when(beacon.getOwnership()).thenReturn(team);
+
+        BlockBreakEvent e = new BlockBreakEvent(block, player);
+        bcl.onBeaconBreak(e);
+
+        assertTrue(e.isCancelled());
+        verify(player).sendMessage(ChatColor.RED + Lang.beaconYouCannotDestroyYourOwnBeacon);
+        verify(register, never()).removeBeaconOwnership(beacon);
+    }
+
+    @Test
+    void testOnBeaconBreakOwnedByOtherTeam() {
+        when(block.getWorld()).thenReturn(world);
+        when(register.getBeacon(block)).thenReturn(beacon);
+        when(block.getType()).thenReturn(Material.GLASS);
+        when(beacon.getOwnership()).thenReturn(otherTeam);
+        when(beacon.isNotClear()).thenReturn(true);
+
+        BlockBreakEvent e = new BlockBreakEvent(block, player);
+        bcl.onBeaconBreak(e);
+
+        assertTrue(e.isCancelled());
+        verify(player).sendMessage(ChatColor.RED + Lang.errorClearAroundBeacon);
+        verify(register, never()).removeBeaconOwnership(beacon);
+        verify(block, never()).setType(Material.OBSIDIAN);
+    }
+
+    @Test
+    void testOnBeaconBreakUnownedBeacon() {
+        when(block.getWorld()).thenReturn(world);
+        when(register.getBeacon(block)).thenReturn(beacon);
+        when(block.getType()).thenReturn(Material.GLASS);
+        when(beacon.getOwnership()).thenReturn(null);
+        when(beacon.isNotClear()).thenReturn(false);
+
+        BlockBreakEvent e = new BlockBreakEvent(block, player);
+        bcl.onBeaconBreak(e);
+
+        assertTrue(e.isCancelled());
+        verify(register).removeBeaconOwnership(beacon);
+        verify(block).setType(Material.OBSIDIAN);
+    }
+
+    @Test
+    void testOnBeaconBreakNotAboveBeaconNoOwnership() {
+        when(block.getWorld()).thenReturn(world);
+        when(register.getBeacon(block)).thenReturn(beacon);
+        when(beaconBlock.getType()).thenReturn(Material.AIR);
+        when(beacon.getOwnership()).thenReturn(null);
+
+        BlockBreakEvent e = new BlockBreakEvent(block, player);
+        bcl.onBeaconBreak(e);
+
+        assertTrue(e.isCancelled());
+        verify(beacon, never()).resetHackTimer();
     }
 
 }
