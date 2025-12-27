@@ -185,8 +185,8 @@ mining:
 
   # Mining your own beacon should give you the chance of obtaining a map
   teamgoodies:
-  # The map is a beacon map. Give empty map if you want to give a normal map
-  - "MAP:1=100"
+  # The map is a beacon map. Give map if you want to give a normal map
+  - "FILLED_MAP:1=100"
 
 ### TRIANGLE POWER SETTINGS
 triangles:

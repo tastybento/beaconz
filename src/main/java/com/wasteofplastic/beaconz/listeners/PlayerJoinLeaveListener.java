@@ -23,7 +23,7 @@ import com.wasteofplastic.beaconz.Lang;
  *
  */
 public class PlayerJoinLeaveListener extends BeaconzPluginDependent implements Listener {
-    private final static boolean DEBUG = false;
+    private final static boolean DEBUG = true;
 
     public PlayerJoinLeaveListener(Beaconz plugin) {
         super(plugin);
@@ -71,6 +71,8 @@ public class PlayerJoinLeaveListener extends BeaconzPluginDependent implements L
                         getLogger().info("DEBUG: Player is in team - " + game.getScorecard().getTeam(player));
                         getLogger().info("DEBUG: Player is in team - " + game.getScorecard().getTeam(player).getDisplayName());
                     }
+                    // Set inventory
+                    //getBeaconzStore().getInventory(event.getPlayer(), game.getName());   
                     // Join the game but stay at the last location
                     game.join(player, false);
                 }
@@ -110,7 +112,7 @@ public class PlayerJoinLeaveListener extends BeaconzPluginDependent implements L
         }
         final Game fromGame = getGameMgr().getGame(event.getPlayer().getLocation());
         if (fromGame != null) {
-            getBeaconzStore().storeInventory(event.getPlayer(), fromGame.getName(), null);   
+            //getBeaconzStore().storeInventory(event.getPlayer(), fromGame.getName(), null);   
         }
     }
 

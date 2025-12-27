@@ -41,8 +41,9 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDamageEvent;
+import org.bukkit.event.server.MapInitializeEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.MapMeta;
 import org.bukkit.map.MapView;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -56,6 +57,8 @@ import com.wasteofplastic.beaconz.Lang;
 import com.wasteofplastic.beaconz.Settings;
 import com.wasteofplastic.beaconz.map.BeaconMap;
 import com.wasteofplastic.beaconz.map.TerritoryMapRenderer;
+
+import net.kyori.adventure.text.Component;
 
 public class BeaconCaptureListener extends BeaconzPluginDependent implements Listener {
 
@@ -286,7 +289,7 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
                         Entry<Integer, ItemStack> en = Settings.teamGoodies.ceilingEntry(value);
                         //getLogger().info("DEBUG: en = " + en);
                         if (en != null && en.getValue() != null) {
-                            if (en.getValue().getType().equals(Material.MAP)) {
+                            if (en.getValue().getType().equals(Material.FILLED_MAP)) {
                                 giveBeaconMap(player,beacon);                                
                             } else {
                                 player.getWorld().dropItem(event.getPlayer().getLocation(), en.getValue());
@@ -363,30 +366,33 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
      */
     @SuppressWarnings("deprecation")
     private void giveBeaconMap(Player player, BeaconObj beacon) {
-        // Make a map!
-        player.sendMessage(ChatColor.GREEN + Lang.beaconYouHaveAMap);
-        MapView map = Bukkit.createMap(getBeaconzWorld());
-        //map.setWorld(getBeaconzWorld());
-        map.setCenterX(beacon.getX());
-        map.setCenterZ(beacon.getZ());
-        map.getRenderers().clear();
-        map.addRenderer(new TerritoryMapRenderer(getBeaconzPlugin()));
-        map.addRenderer(new BeaconMap(getBeaconzPlugin()));
-        ItemStack newMap = new ItemStack(Material.MAP);
-        // TODO newMap.setDurability(map.getId());
-        ItemMeta meta = newMap.getItemMeta();
-        meta.setDisplayName("Beacon map for " + beacon.getName());
-        newMap.setItemMeta(meta);
-        // Each map is unique and the durability defines the map ID, register it
-        getRegister().addBeaconMap(map.getId(), beacon);
-        //getLogger().info("DEBUG: beacon id = " + beacon.getId());
-        // Put map into hand
-        //ItemStack inHand = player.getInventory().getItemInMainHand();
+     // Create the MapView
+        MapView mapView = Bukkit.createMap(getBeaconzWorld());
+        mapView.setCenterX(beacon.getX());
+        mapView.setCenterZ(beacon.getZ());
+        mapView.getRenderers().clear();
+        mapView.addRenderer(new TerritoryMapRenderer(getBeaconzPlugin()));
+        mapView.addRenderer(new BeaconMap(getBeaconzPlugin()));
+
+        // Use FILLED_MAP, not MAP
+        ItemStack newMap = new ItemStack(Material.FILLED_MAP);
+
+        // Update the Meta
+        if (newMap.getItemMeta() instanceof MapMeta meta) {
+            meta.displayName(Component.text("Beacon map for " + beacon.getName()));
+            
+            // This connects the ItemStack to the custom MapView and ID
+            meta.setMapView(mapView); 
+            
+            newMap.setItemMeta(meta);
+        }
+
+        // Give to player
         ItemStack offHand = player.getInventory().getItemInOffHand();
-        player.getInventory().setItemInOffHand(newMap);
-        //player.getInventory().setItemInOffHand(inHand);
-        if (offHand != null && !offHand.getType().equals(Material.AIR)) {
-            HashMap<Integer, ItemStack> leftOvers = player.getInventory().addItem(offHand);
+        getLogger().info("offhand = " + offHand);
+                
+        if (!offHand.getType().equals(Material.AIR)) {
+            HashMap<Integer, ItemStack> leftOvers = player.getInventory().addItem(newMap);
             if (!leftOvers.isEmpty()) {
                 player.sendMessage(ChatColor.RED + Lang.errorInventoryFull);
                 for (ItemStack item: leftOvers.values()) {
@@ -394,7 +400,12 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
                     player.getWorld().playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 1F, 0.5F);
                 }
             }
+        } else {
+            player.getInventory().setItemInOffHand(newMap);
         }
+        
+        // Register in system
+        getRegister().addBeaconMap(mapView.getId(), beacon);
+ 
     }
-
 }

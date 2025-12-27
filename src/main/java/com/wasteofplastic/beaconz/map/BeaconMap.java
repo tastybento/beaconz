@@ -55,7 +55,7 @@ public class BeaconMap extends MapRenderer {
         // Only render if the map is in a hand
         ItemStack inMainHand = player.getInventory().getItemInMainHand();
         ItemStack inOffHand = player.getInventory().getItemInOffHand();
-        if (inMainHand.getType().equals(Material.MAP) || inOffHand.getType().equals(Material.MAP)) {
+        if (inMainHand.getType().equals(Material.FILLED_MAP) || inOffHand.getType().equals(Material.FILLED_MAP)) {
             //Bukkit.getLogger().info("DEBUG: render");
             // here's where you do your drawing - see the Javadocs for the MapCanvas class for
             // the methods you can use

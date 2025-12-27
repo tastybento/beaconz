@@ -370,7 +370,7 @@ public class Game extends BeaconzPluginDependent {
             player.setScoreboard(scorecard.getManager().getNewScoreboard());
             // Remove any maps
             for (ItemStack item: player.getInventory()) {
-                if (item != null && item.getType().equals(Material.MAP)) {
+                if (item != null && item.getType().equals(Material.FILLED_MAP)) {
                     if (getRegister().getBeaconMap(item.getDurability()) != null) {
                         getRegister().removeBeaconMap(item.getDurability());
                     }

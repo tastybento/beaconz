@@ -58,7 +58,7 @@ public class TerritoryMapRenderer extends MapRenderer {
         // Only render if the map is in a hand
         ItemStack inMainHand = player.getInventory().getItemInMainHand();
         ItemStack inOffHand = player.getInventory().getItemInOffHand();
-        if (inMainHand.getType().equals(Material.MAP) || inOffHand.getType().equals(Material.MAP)) {
+        if (inMainHand.getType().equals(Material.FILLED_MAP) || inOffHand.getType().equals(Material.FILLED_MAP)) {
             tick++;
             if (tick > TICKS_PER_REFRESH) tick = 0;
             if (tick != 0) return;
