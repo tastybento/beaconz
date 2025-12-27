@@ -5,7 +5,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.awt.geom.Line2D;
 
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 public class LineIteratorTest {
 

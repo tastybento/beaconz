@@ -7,7 +7,7 @@ import java.awt.geom.Point2D;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 public class TriangleScoreTest {
 
