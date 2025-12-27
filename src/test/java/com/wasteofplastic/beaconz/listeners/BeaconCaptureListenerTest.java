@@ -41,86 +41,22 @@ import com.wasteofplastic.beaconz.Register;
 import com.wasteofplastic.beaconz.Scorecard;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.logging.Logger;
-
 /**
  * Exercises BeaconCaptureListener behaviors for beacon damage/break events with mocked plugin context.
- * Uses lenient Mockito to share stubs across branches; Lang strings and display names are seeded to avoid NPEs in message formatting.
+ * Extends BeaconzListenerTestBase for common test infrastructure.
  */
-@ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.LENIENT)
-class BeaconCaptureListenerTest {
-    
-    @Mock
-    private Beaconz plugin;
-    @Mock
-    private Player player;
-    @Mock
-    private Block block;
-    @Mock
-    private ItemStack item;
-    @Mock
-    private World world;
-    @Mock
-    private GameMgr mgr;
-    @Mock
-    private Register register;
-    
+class BeaconCaptureListenerTest extends BeaconzListenerTestBase {
+
     private BeaconCaptureListener bcl;
-    @Mock
-    private Team team;
-    @Mock
-    private Team otherTeam;
-    @Mock
-    private BeaconObj beacon;
-    @Mock
-    private @NotNull Block beaconBlock;
-    @Mock
-    private Logger logger;
-    @Mock
-    private Game game;
-    @Mock
-    private Scorecard scorecard;
-    @Mock
-    private Messages messages;
-    @Mock
-    private Location location;
 
     /**
-     * @throws java.lang.Exception
+     * Initialize the listener after base setup completes.
      */
+    @Override
     @BeforeEach
     void setUp() throws Exception {
+        super.setUp();
         bcl = new BeaconCaptureListener(plugin);
-        when(plugin.getBeaconzWorld()).thenReturn(world);
-        when(block.getWorld()).thenReturn(world);
-        when(plugin.getGameMgr()).thenReturn(mgr);
-        when(mgr.getPlayerTeam(player)).thenReturn(team);
-        when(plugin.getRegister()).thenReturn(register);
-        when(register.getBeacon(block)).thenReturn(beacon);
-        when(register.isBeacon(beaconBlock)).thenReturn(true);
-        when(beaconBlock.getType()).thenReturn(Material.BEACON);
-        when(block.getRelative(BlockFace.DOWN)).thenReturn(beaconBlock);
-
-        when(plugin.getLogger()).thenReturn(logger);
-        when(plugin.getMessages()).thenReturn(messages);
-        when(block.getLocation()).thenReturn(location);
-        when(mgr.getGame(location)).thenReturn(game);
-        when(game.getScorecard()).thenReturn(scorecard);
-        when(scorecard.getTeam(player)).thenReturn(team);
-        when(scorecard.getBlockID(team)).thenReturn(Material.RED_WOOL);
-        when(beacon.getOwnership()).thenReturn(null);
-        when(team.getDisplayName()).thenReturn("teamA");
-        when(otherTeam.getDisplayName()).thenReturn("teamB");
-        when(player.getDisplayName()).thenReturn("playerA");
-
-        // Provide Lang static strings to avoid NPEs during replace/sends
-        Lang.errorYouCannotDoThat = "errorYouCannotDoThat";
-        Lang.errorClearAroundBeacon = "errorClearAroundBeacon";
-        Lang.beaconYouCannotDestroyYourOwnBeacon = "beaconYouCannotDestroyYourOwnBeacon";
-        Lang.beaconTeamDestroyed = "beaconTeamDestroyed [team1] [team2]";
-        Lang.beaconPlayerDestroyed = "beaconPlayerDestroyed [player] [team]";
-        Lang.beaconYouDestroyed = "beaconYouDestroyed [team]";
     }
 
     /** Sanity-checks listener construction. */
