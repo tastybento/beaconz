@@ -44,7 +44,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.logging.Logger;
 
 /**
- * @author tastybento
+ * Exercises BeaconCaptureListener behaviors for beacon damage/break events with mocked plugin context.
+ * Uses lenient Mockito to share stubs across branches; Lang strings and display names are seeded to avoid NPEs in message formatting.
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -122,24 +123,13 @@ class BeaconCaptureListenerTest {
         Lang.beaconYouDestroyed = "beaconYouDestroyed [team]";
     }
 
-    /**
-     * @throws java.lang.Exception
-     */
-    @AfterEach
-    void tearDown() throws Exception {
-    }
-
-    /**
-     * Test method for {@link com.wasteofplastic.beaconz.listeners.BeaconCaptureListener#BeaconCaptureListener(com.wasteofplastic.beaconz.Beaconz)}.
-     */
+    /** Sanity-checks listener construction. */
     @Test
     void testBeaconCaptureListener() {
         assertNotNull(bcl);
     }
 
-    /**
-     * Test method for {@link com.wasteofplastic.beaconz.listeners.BeaconCaptureListener#onBeaconDamage(org.bukkit.event.block.BlockDamageEvent)}.
-     */
+    /** Happy-path beacon damage: registered beacon, clear area, same-team ownership => no cancel. */
     @Test
     void testOnBeaconDamageHappyPath() {
         BlockDamageEvent e = new BlockDamageEvent(player, block, BlockFace.EAST, item, false);
@@ -148,6 +138,7 @@ class BeaconCaptureListenerTest {
         assertFalse(e.isCancelled());
     }
 
+    /** Damage outside Beaconz world should be ignored. */
     @Test
     void testOnBeaconDamageNotInWorld() {
         World otherWorld = org.mockito.Mockito.mock(World.class);
@@ -160,6 +151,7 @@ class BeaconCaptureListenerTest {
         assertFalse(e.isCancelled());
     }
 
+    /** Lobby non-op cannot damage blocks: expect cancellation. */
     @Test
     void testOnBeaconDamagePlayerInLobbyNonOp() {
         when(mgr.isPlayerInLobby(player)).thenReturn(true);
@@ -172,6 +164,7 @@ class BeaconCaptureListenerTest {
         assertTrue(e.isCancelled());
     }
 
+    /** Lobby op bypasses restriction: no cancel. */
     @Test
     void testOnBeaconDamagePlayerInLobbyOp() {
         when(mgr.isPlayerInLobby(player)).thenReturn(true);
@@ -184,6 +177,7 @@ class BeaconCaptureListenerTest {
         assertFalse(e.isCancelled());
     }
 
+    /** No team & non-op: damage is blocked. */
     @Test
     void testOnBeaconDamageNoTeamNonOp() {
         when(mgr.getPlayerTeam(player)).thenReturn(null);
@@ -196,6 +190,7 @@ class BeaconCaptureListenerTest {
         assertTrue(e.isCancelled());
     }
 
+    /** No team but op: allowed. */
     @Test
     void testOnBeaconDamageNoTeamOp() {
         when(mgr.getPlayerTeam(player)).thenReturn(null);
@@ -208,6 +203,7 @@ class BeaconCaptureListenerTest {
         assertFalse(e.isCancelled());
     }
 
+    /** Non-beacon block returns without side effects. */
     @Test
     void testOnBeaconDamageNotBeaconBlock() {
         when(register.getBeacon(block)).thenReturn(null);
@@ -220,6 +216,7 @@ class BeaconCaptureListenerTest {
         assertFalse(e.isCancelled());
     }
 
+    /** Block not above beacon pyramid: integrity check only. */
     @Test
     void testOnBeaconDamageBlockNotAboveBeacon() {
         when(beaconBlock.getType()).thenReturn(Material.OBSIDIAN);
@@ -231,6 +228,7 @@ class BeaconCaptureListenerTest {
         assertFalse(e.isCancelled());
     }
 
+    /** Beacon below is unregistered: integrity still checked; no cancel. */
     @Test
     void testOnBeaconDamageNotRegisteredBeacon() {
         when(register.isBeacon(beaconBlock)).thenReturn(false);
@@ -242,6 +240,7 @@ class BeaconCaptureListenerTest {
         assertFalse(e.isCancelled());
     }
 
+    /** Uncleared beacon and unowned: player warned, event cancelled. */
     @Test
     void testOnBeaconDamageBeaconNotClearAndUnowned() {
         when(beacon.isNotClear()).thenReturn(true);
@@ -255,6 +254,7 @@ class BeaconCaptureListenerTest {
         assertTrue(e.isCancelled());
     }
 
+    /** Uncleared beacon owned by other team: warning + cancel. */
     @Test
     void testOnBeaconDamageBeaconNotClearOwnedByOtherTeam() {
         when(beacon.isNotClear()).thenReturn(true);
@@ -268,6 +268,7 @@ class BeaconCaptureListenerTest {
         assertTrue(e.isCancelled());
     }
 
+    /** Uncleared beacon owned by same team: allowed to proceed. */
     @Test
     void testOnBeaconDamageBeaconNotClearOwnedByTeam() {
         when(beacon.isNotClear()).thenReturn(true);
@@ -281,9 +282,7 @@ class BeaconCaptureListenerTest {
         assertFalse(e.isCancelled());
     }
 
-    /**
-     * Test method for {@link com.wasteofplastic.beaconz.listeners.BeaconCaptureListener#onBeaconBreak(org.bukkit.event.block.BlockBreakEvent)}.
-     */
+    /** Block break outside Beaconz world: ignored. */
     @Test
     void testOnBeaconBreakNotInWorld() {
         World otherWorld = org.mockito.Mockito.mock(World.class);
@@ -296,6 +295,7 @@ class BeaconCaptureListenerTest {
         verify(register, never()).getBeacon(block);
     }
 
+    /** Lobby non-op cannot break: cancel. */
     @Test
     void testOnBeaconBreakLobbyNonOp() {
         when(block.getWorld()).thenReturn(world);
@@ -308,6 +308,7 @@ class BeaconCaptureListenerTest {
         assertTrue(e.isCancelled());
     }
 
+    /** No game (outside arena) for non-op: cancel with message. */
     @Test
     void testOnBeaconBreakGameNullNonOp() {
         when(block.getWorld()).thenReturn(world);
@@ -322,6 +323,7 @@ class BeaconCaptureListenerTest {
         verify(player).sendMessage(anyString());
     }
 
+    /** No team for non-op: break blocked. */
     @Test
     void testOnBeaconBreakTeamNullNonOp() {
         when(block.getWorld()).thenReturn(world);
@@ -335,6 +337,7 @@ class BeaconCaptureListenerTest {
         assertTrue(e.isCancelled());
     }
 
+    /** Not a beacon: no cancellation expected. */
     @Test
     void testOnBeaconBreakNotBeacon() {
         when(block.getWorld()).thenReturn(world);
@@ -346,6 +349,7 @@ class BeaconCaptureListenerTest {
         assertFalse(e.isCancelled());
     }
 
+    /** Obsidian top but uncleared: warn and cancel. */
     @Test
     void testOnBeaconBreakObsidianNotClear() {
         when(block.getWorld()).thenReturn(world);
@@ -360,6 +364,7 @@ class BeaconCaptureListenerTest {
         verify(player).sendMessage(ChatColor.RED + Lang.errorClearAroundBeacon);
     }
 
+    /** Own beacon: prevent destruction and warn. */
     @Test
     void testOnBeaconBreakOwnedByTeam() {
         when(block.getWorld()).thenReturn(world);
@@ -375,6 +380,10 @@ class BeaconCaptureListenerTest {
         verify(register, never()).removeBeaconOwnership(beacon);
     }
 
+    /**
+     * Enemy beacon with uncleared surroundings: cancel with clear-warning.
+     * Note: we avoid the cleared branch here because it triggers Paper's Sound registry, which fails under MockBukkit 1.21 (registry mismatch).
+     */
     @Test
     void testOnBeaconBreakOwnedByOtherTeam() {
         when(block.getWorld()).thenReturn(world);
@@ -392,6 +401,7 @@ class BeaconCaptureListenerTest {
         verify(block, never()).setType(Material.OBSIDIAN);
     }
 
+    /** Unowned beacon, clear: ownership removed and block converted to obsidian. */
     @Test
     void testOnBeaconBreakUnownedBeacon() {
         when(block.getWorld()).thenReturn(world);
@@ -408,6 +418,7 @@ class BeaconCaptureListenerTest {
         verify(block).setType(Material.OBSIDIAN);
     }
 
+    /** Breaking non-beacon part while unowned: event cancels; hack timer untouched. */
     @Test
     void testOnBeaconBreakNotAboveBeaconNoOwnership() {
         when(block.getWorld()).thenReturn(world);
