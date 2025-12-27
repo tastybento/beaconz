@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.wasteofplastic.beaconz;
 
 import static org.hamcrest.CoreMatchers.is;

@@ -1,7 +1,13 @@
 package com.wasteofplastic.beaconz.map;
 
 import java.awt.geom.Point2D;
-import java.util.*;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 import org.bukkit.Color;
 import org.bukkit.Material;

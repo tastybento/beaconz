@@ -40,7 +40,6 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.MapMeta;
 import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
@@ -53,7 +52,6 @@ import com.wasteofplastic.beaconz.DefenseBlock;
 import com.wasteofplastic.beaconz.Lang;
 import com.wasteofplastic.beaconz.LinkResult;
 import com.wasteofplastic.beaconz.Settings;
-import com.wasteofplastic.beaconz.map.BeaconMap;
 import com.wasteofplastic.beaconz.map.TerritoryMapRenderer;
 
 public class BeaconLinkListener extends BeaconzPluginDependent implements Listener {

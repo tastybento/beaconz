@@ -1,6 +1,7 @@
 package com.wasteofplastic.include.it.unimi.dsi.util;
 
 import java.util.Random;
+import java.util.random.RandomGenerator;
 
 /*
  * DSI utilities
