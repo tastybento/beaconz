@@ -107,19 +107,46 @@ public abstract class BeaconzListenerTestBase {
      * These are commonly referenced throughout listener code.
      */
     protected void setupLangStrings() {
+        // Common error messages
         Lang.errorYouCannotDoThat = "errorYouCannotDoThat";
         Lang.errorClearAroundBeacon = "errorClearAroundBeacon";
+        Lang.errorYouMustBeInAGame = "errorYouMustBeInAGame";
+        Lang.errorYouMustBeInATeam = "errorYouMustBeInATeam";
+        Lang.errorCanOnlyPlaceBlocks = "errorCanOnlyPlaceBlocks";
+        Lang.errorCanOnlyPlaceBlocksUpTo = "errorCanOnlyPlaceBlocksUpTo [value]";
+        Lang.errorYouNeedToBeLevel = "errorYouNeedToBeLevel [value]";
+        Lang.errorTooFar = "errorTooFar [max]";
+        Lang.errorNotEnoughExperience = "errorNotEnoughExperience";
+        Lang.errorYouCannotRemoveOtherPlayersBlocks = "errorYouCannotRemoveOtherPlayersBlocks";
+
+        // Beacon capture/destroy messages
         Lang.beaconYouCannotDestroyYourOwnBeacon = "beaconYouCannotDestroyYourOwnBeacon";
         Lang.beaconTeamDestroyed = "beaconTeamDestroyed [team1] [team2]";
         Lang.beaconPlayerDestroyed = "beaconPlayerDestroyed [player] [team]";
         Lang.beaconYouDestroyed = "beaconYouDestroyed [team]";
         Lang.beaconYouMustCapturedBeacon = "beaconYouMustCapturedBeacon";
+
+        // Beacon linking messages
         Lang.beaconOriginNotOwned = "beaconOriginNotOwned [team]";
-        Lang.errorTooFar = "errorTooFar [max]";
-        Lang.errorNotEnoughExperience = "errorNotEnoughExperience";
         Lang.beaconYouNeedThisMuchExp = "beaconYouNeedThisMuchExp [number]";
         Lang.beaconYouHaveThisMuchExp = "beaconYouHaveThisMuchExp [number]";
         Lang.beaconTheMapDisintegrates = "beaconTheMapDisintegrates";
+
+        // Defense-related messages
+        Lang.beaconYouCanOnlyExtend = "beaconYouCanOnlyExtend";
+        Lang.beaconCannotBeExtended = "beaconCannotBeExtended";
+        Lang.beaconExtended = "beaconExtended";
+        Lang.beaconLockedJustNow = "beaconLockedJustNow [lockingBlock]";
+        Lang.beaconLockedAlready = "beaconLockedAlready [lockingBlock]";
+        Lang.beaconLockedWithNMoreBlocks = "beaconLockedWithNMoreBlocks [number]";
+        Lang.beaconLinkBlockPlaced = "beaconLinkBlockPlaced [range]";
+        Lang.beaconDefensePlaced = "beaconDefensePlaced";
+        Lang.beaconLinkBlockBroken = "beaconLinkBlockBroken [range]";
+        Lang.beaconLinkLost = "beaconLinkLost";
+        Lang.beaconDefenseRemoveTopDown = "beaconDefenseRemoveTopDown";
+        Lang.beaconLocked = "beaconLocked";
+        Lang.beaconAmplifierBlocksCannotBeRecovered = "beaconAmplifierBlocksCannotBeRecovered";
+        Lang.generalLevel = "Level";
     }
 
     /**
