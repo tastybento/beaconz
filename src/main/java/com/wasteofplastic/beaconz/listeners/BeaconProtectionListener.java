@@ -200,10 +200,10 @@ public class BeaconProtectionListener extends BeaconzPluginDependent implements 
         }
         BeaconObj beacon = getRegister().getBeaconAt(event.getBlock().getX(),event.getBlock().getZ());
         if (beacon != null && beacon.getY() < event.getBlock().getY()) {
-            if (!Tag.LEAVES.isTagged(event.getBlock().getType())) {
+            // TODO if (!Tag.LEAVES.isTagged(event.getBlock().getType())) {
                 // For everything else, make sure there is air
                 event.getBlock().setType(Material.AIR);
-            }
+           // }
         }
     }
 

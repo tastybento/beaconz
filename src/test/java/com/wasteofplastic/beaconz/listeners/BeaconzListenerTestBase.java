@@ -2,6 +2,8 @@ package com.wasteofplastic.beaconz.listeners;
 
 import static org.mockito.Mockito.when;
 
+import java.util.logging.Logger;
+
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -12,10 +14,12 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.scoreboard.Team;
 import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockbukkit.mockbukkit.MockBukkit;
+import org.mockbukkit.mockbukkit.ServerMock;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
@@ -28,8 +32,6 @@ import com.wasteofplastic.beaconz.Messages;
 import com.wasteofplastic.beaconz.Register;
 import com.wasteofplastic.beaconz.Scorecard;
 
-import java.util.logging.Logger;
-
 /**
  * Base class for listener tests providing common mocks and setup.
  * Subclasses can override setupMocks() to customize behavior for specific tests.
@@ -37,7 +39,6 @@ import java.util.logging.Logger;
  * <p>Uses lenient Mockito to allow shared stubs across test methods.
  * Lang static strings are initialized to prevent NPEs during message formatting.
  */
-@ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 public abstract class BeaconzListenerTestBase {
 
@@ -89,17 +90,31 @@ public abstract class BeaconzListenerTestBase {
     @Mock
     protected BeaconObj otherBeacon;
 
+    // Server mock
+    protected ServerMock server;
+    private AutoCloseable closeable;
+
     /**
      * Sets up common mocks before each test.
      * Subclasses can override to add custom setup, but should call super.setUp().
      */
     @BeforeEach
     void setUp() throws Exception {
+        // Processes the @Mock annotations and initializes the field
+        closeable = MockitoAnnotations.openMocks(this);
+        server = MockBukkit.mock();
+
         setupLangStrings();
         setupPluginMocks();
         setupWorldMocks();
         setupPlayerMocks();
         setupBeaconMocks();
+    }
+
+    @AfterEach
+    void tearDown() throws Exception {
+        closeable.close();
+        MockBukkit.unmock();
     }
 
     /**
