@@ -45,7 +45,7 @@ import com.wasteofplastic.beaconz.listeners.PlayerMovementListener;
  * classes and Java does not (yet?) support multiple inheritance.
  */
 public abstract class BeaconzPluginDependent {
-    private final Beaconz beaconzPlugin;
+    protected final Beaconz beaconzPlugin;
 
     public final Beaconz getBeaconzPlugin() {
         return beaconzPlugin;

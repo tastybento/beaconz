@@ -71,13 +71,13 @@
     </profiles>
 
     <repositories>
-        <repository>
-            <id>papermc</id>
-            <url>https://repo.papermc.io/repository/maven-public/</url>
-        </repository>
-        <repository>
+         <repository>
             <id>jitpack.io</id>
             <url>https://jitpack.io</url>
+        </repository>
+        <repository>
+          <id>papermc</id>
+          <url>https://repo.papermc.io/repository/maven-public/</url>
         </repository>
         <repository>
             <id>MikeRepo</id>
@@ -86,19 +86,18 @@
     </repositories>
 
     <dependencies>
-        <!-- Paper API -->
-       <dependency>
+        <dependency>
+            <groupId>com.github.MockBukkit</groupId>
+            <artifactId>MockBukkit</artifactId>
+            <version>v1.21-SNAPSHOT</version>
+            <scope>test</scope>
+         </dependency>
+        <dependency>
           <groupId>io.papermc.paper</groupId>
           <artifactId>paper-api</artifactId>
-          <version>${paper.version}</version>
+          <version>1.21.10-R0.1-SNAPSHOT</version>
+          <scope>provided</scope>
       </dependency>
-              <dependency>
-            <groupId>org.mockbukkit.mockbukkit</groupId>
-            <artifactId>mockbukkit-v1.21</artifactId>
-            <version>4.98.0</version>
-            <scope>test</scope>
-        </dependency>
-
       <dependency>
             <groupId>com.github.MilkBowl</groupId>
             <artifactId>VaultAPI</artifactId>
@@ -106,6 +105,7 @@
             <scope>provided</scope>
         </dependency>
         <!-- Testing-->
+        <!-- Mockito (Unit testing) -->
         <dependency>
                 <groupId>org.junit.jupiter</groupId>
                 <artifactId>junit-jupiter-api</artifactId>
@@ -121,7 +121,7 @@
             <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-junit-jupiter</artifactId>
-                <version>${mockito.version}</version>
+                <version>5.11.0</version>
                 <scope>test</scope>
             </dependency>
         <dependency>
@@ -169,38 +169,6 @@
             </resource>
         </resources>
         <plugins>
-            <plugin>
-                <groupId>org.codehaus.gmaven</groupId>
-                <artifactId>groovy-maven-plugin</artifactId>
-                <version>2.1.1</version>
-                <executions>
-                    <execution>
-                        <phase>initialize</phase>
-                        <goals>
-                            <goal>execute</goal>
-                        </goals>
-                        <configuration>
-                            <source>
-                                // Extract Paper version from MockBukkit JAR
-                                def mockbukkitJar = project.artifacts.find {
-                                it.artifactId.startsWith('mockbukkit-')
-                                }?.file
-            
-                                if (mockbukkitJar) {
-                                def jar = new java.util.jar.JarFile(mockbukkitJar)
-                                def manifest = jar.manifest
-                                def paperVersion = manifest.mainAttributes.getValue('Paper-Version')
-                                jar.close()
-            
-                                if (paperVersion) {
-                                project.properties['paper.version.from.mockbukkit'] = paperVersion
-                                }
-                                }
-                            </source>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-clean-plugin</artifactId>
