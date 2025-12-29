@@ -93,7 +93,6 @@ public class LobbyListener extends BeaconzPluginDependent implements Listener {
             Sign sign = (Sign) event.getClickedBlock().getState();
             if (sign.getLine(0).toLowerCase().contains(Lang.adminSignKeyword)) {
                 for (int i = 1; i < 4; i++) {
-                    @SuppressWarnings("deprecation")
                     String gamename = sign.getLine(i);
                     //getLogger().info("DEBUG: gamename = " + gamename);
                     if (getGameMgr().getGame(gamename) != null) {

@@ -162,6 +162,13 @@ public abstract class BeaconzListenerTestBase {
         Lang.beaconLocked = "beaconLocked";
         Lang.beaconAmplifierBlocksCannotBeRecovered = "beaconAmplifierBlocksCannotBeRecovered";
         Lang.generalLevel = "Level";
+        
+        // Lobby
+        Lang.adminUseSurvival = "adminUseSurvival";
+        Lang.adminSignKeyword = "adminkeyword";
+        Lang.errorNotReady = "errorNotReady";
+        Lang.errorNoSuchGame = "errorNoSuchGame";
+        Lang.adminGameSignPlaced = "adminGameSignPlaced";
     }
 
     /**
