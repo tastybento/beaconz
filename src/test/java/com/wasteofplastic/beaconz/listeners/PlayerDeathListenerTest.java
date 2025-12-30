@@ -1,6 +1,6 @@
 package com.wasteofplastic.beaconz.listeners;
 
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -140,7 +140,7 @@ class PlayerDeathListenerTest extends CommonTestBase {
         PlayerRespawnEvent event = new PlayerRespawnEvent(player, location, false);
         pdl.onRespawn(event);
         assertEquals(location, event.getRespawnLocation());
-        verify((store).getInventory(event.getPlayer(), PlayerDeathListener.LOBBY));
+        verify(store).getInventory(event.getPlayer(), PlayerDeathListener.LOBBY);
     }
 
 }
