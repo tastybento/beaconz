@@ -142,7 +142,7 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
 
     /**
      * Prevents damaging vehicles outside of the game area
-     * @param event
+     * @param event event
      */
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onVehicleDamage(final VehicleDamageEvent event) {
@@ -181,7 +181,7 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
             }*/
             // Check potion effects for boats etc.
             if ((!(event.getVehicle() instanceof LivingEntity))) {
-                for (PotionEffect effect : getPml().getTriangleEffects(player.getUniqueId())) {
+                for (PotionEffect effect : getTriangleEffects(player.getUniqueId())) {
                     if (effect.getType().equals(PotionEffectType.SLOWNESS)) {
                         double delay = effect.getAmplifier();
                         event.getVehicle().setVelocity(event.getVehicle().getVelocity().divide(new Vector(delay,delay,delay)));
@@ -313,6 +313,7 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
      * @param toTriangles - list of new triangles player is covered by
      * @return true if the event should be canceled
      */
+    @SuppressWarnings("deprecation")
     public boolean applyTriangleEffects(Player player,
             List<TriangleField> fromTriangles, List<TriangleField> toTriangles) {
         // Get the player's team
@@ -435,6 +436,13 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
      */
     public Collection<PotionEffect> getTriangleEffects(UUID playerUUID) {
         return triangleEffects.getOrDefault(playerUUID, Collections.emptyList());
+    }
+
+    /**
+     * @return the triangleEffects
+     */
+    public HashMap<UUID, Collection<PotionEffect>> getTriangleEffects() {
+        return triangleEffects;
     }
 
 }

@@ -47,20 +47,20 @@ public class TriangleField {
 
     /**
      * Fields are 2D. Only x and z coordinates count
-     * @param point2d
-     * @param point2d2
-     * @param point2d3
+     * @param point1
+     * @param point2
+     * @param point3
      * @param owner
      */
-    public TriangleField(Point2D point2d, Point2D point2d2, Point2D point2d3, Team owner) {
+    public TriangleField(Point2D point1, Point2D point2, Point2D point3, Team owner) {
         this.owner = owner;
         this.triangle = new Polygon();
-        this.triangle.addPoint((int)point2d.getX(), (int)point2d.getY());
-        this.triangle.addPoint((int)point2d2.getX(), (int)point2d2.getY());
-        this.triangle.addPoint((int)point2d3.getX(), (int)point2d3.getY());
-        this.a = point2d;
-        this.b = point2d2;
-        this.c = point2d3;
+        this.triangle.addPoint((int)point1.getX(), (int)point1.getY());
+        this.triangle.addPoint((int)point2.getX(), (int)point2.getY());
+        this.triangle.addPoint((int)point3.getX(), (int)point3.getY());
+        this.a = point1;
+        this.b = point2;
+        this.c = point3;
         this.sides = new HashSet<>();
         sides.add(new Line2D.Double(a,b));
         sides.add(new Line2D.Double(b,c));

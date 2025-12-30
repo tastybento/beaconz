@@ -121,10 +121,8 @@ public class PlayerDeathListener extends BeaconzPluginDependent implements Liste
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onRespawn(final PlayerRespawnEvent event) {
         if (!deadPlayers.containsKey(event.getPlayer().getUniqueId())) {
-            System.out.println("1");
             return;
         }
-        System.out.println("2");
         // Set respawn location to Beaconz lobby
         event.setRespawnLocation(getGameMgr().getLobby().getSpawnPoint());
         deadPlayers.remove(event.getPlayer().getUniqueId());

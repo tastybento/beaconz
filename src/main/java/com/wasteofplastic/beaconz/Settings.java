@@ -118,7 +118,7 @@ public class Settings {
      * Effects from going into enemy triangle fields. Effects are cumulative
      * Integer is the level of triangle overlap.
      */
-    public static HashMap<Integer, List<PotionEffect>> enemyFieldEffects;
+    public static HashMap<Integer, List<PotionEffect>> enemyFieldEffects = new HashMap<>();
     /**
      * Effects from going into friendly triangle fields. Effects are cumulative
      * Integer is the level of triangle overlap.

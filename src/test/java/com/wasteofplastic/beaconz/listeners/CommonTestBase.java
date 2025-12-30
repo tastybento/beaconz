@@ -172,6 +172,9 @@ public abstract class CommonTestBase {
         Lang.beaconLocked = "beaconLocked";
         Lang.beaconAmplifierBlocksCannotBeRecovered = "beaconAmplifierBlocksCannotBeRecovered";
         Lang.generalLevel = "Level";
+        Lang.triangleEntering = "[team] triangleEntering";
+        Lang.triangleLeaving = "[team] triangleLeaving";
+        Lang.triangleDroppingToLevel = "[team] triangleDroppingToLevel";
         
         // Lobby
         Lang.adminUseSurvival = "adminUseSurvival";
