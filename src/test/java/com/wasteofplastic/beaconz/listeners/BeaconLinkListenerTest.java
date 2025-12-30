@@ -26,7 +26,7 @@ import com.wasteofplastic.beaconz.Settings;
  *
  * <p>Note: Some tests may skip branches that trigger Paper's Sound/MapView registry to avoid MockBukkit compatibility issues.
  */
-class BeaconLinkListenerTest extends BeaconzListenerTestBase {
+class BeaconLinkListenerTest extends CommonTestBase {
 
     private BeaconLinkListener listener;
 

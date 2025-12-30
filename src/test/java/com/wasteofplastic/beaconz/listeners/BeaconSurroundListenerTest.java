@@ -23,7 +23,7 @@ import com.wasteofplastic.beaconz.BeaconObj;
 /**
  * Tests BeaconSurroundListener behaviors for block damage protection, explosion filtering, and tree growth prevention near beacons.
  */
-class BeaconSurroundListenerTest extends BeaconzListenerTestBase {
+class BeaconSurroundListenerTest extends CommonTestBase {
 
     /**
      * Test method for {@link com.wasteofplastic.beaconz.listeners.BeaconSurroundListener#BeaconSurroundListener(com.wasteofplastic.beaconz.Beaconz)}.

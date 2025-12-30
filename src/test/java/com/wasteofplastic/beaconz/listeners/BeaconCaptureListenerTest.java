@@ -45,7 +45,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
  * Exercises BeaconCaptureListener behaviors for beacon damage/break events with mocked plugin context.
  * Extends BeaconzListenerTestBase for common test infrastructure.
  */
-class BeaconCaptureListenerTest extends BeaconzListenerTestBase {
+class BeaconCaptureListenerTest extends CommonTestBase {
 
     private BeaconCaptureListener bcl;
 

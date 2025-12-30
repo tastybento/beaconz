@@ -30,7 +30,7 @@ import com.wasteofplastic.beaconz.Settings;
 /**
  * Tests for {@link ChatListener} covering team chat routing, spying, and broadcast fallbacks.
  */
-class ChatListenerTest extends BeaconzListenerTestBase {
+class ChatListenerTest extends CommonTestBase {
 
     private ChatListener listener;
     private MockedStatic<Bukkit> mockedBukkit;

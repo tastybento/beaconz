@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.UUID;
 
 import org.bukkit.Location;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -47,7 +48,7 @@ import com.wasteofplastic.beaconz.Game;
 public class PlayerDeathListener extends BeaconzPluginDependent implements Listener {
 
     private final HashMap<UUID, Location> deadPlayers = new HashMap<>();
-    private static final String LOBBY = "Lobby";
+    protected static final String LOBBY = "Lobby";
 
     /**
      * @param plugin
@@ -61,7 +62,6 @@ public class PlayerDeathListener extends BeaconzPluginDependent implements Liste
      * for when they reenter the game
      * @param event
      */
-    @SuppressWarnings("deprecation")
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onDeath(final PlayerDeathEvent event) {
 
@@ -106,8 +106,8 @@ public class PlayerDeathListener extends BeaconzPluginDependent implements Liste
             }  
 
             // They are dead, so when they respawn they need to have full health (otherwise they will die repeatedly)
-            getBeaconzStore().setHealth(player, gameName, player.getMaxHealth());
-            getBeaconzStore().setFood(player, gameName, 20); 
+            getBeaconzStore().setHealth(player, gameName, player.getAttribute(Attribute.MAX_HEALTH).getValue());
+            getBeaconzStore().setFood(player, gameName,  20); 
 
             // Make a note of their death status
             deadPlayers.put(player.getUniqueId(), spawnPoint);            
@@ -121,9 +121,10 @@ public class PlayerDeathListener extends BeaconzPluginDependent implements Liste
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onRespawn(final PlayerRespawnEvent event) {
         if (!deadPlayers.containsKey(event.getPlayer().getUniqueId())) {
+            System.out.println("1");
             return;
         }
-        
+        System.out.println("2");
         // Set respawn location to Beaconz lobby
         event.setRespawnLocation(getGameMgr().getLobby().getSpawnPoint());
         deadPlayers.remove(event.getPlayer().getUniqueId());

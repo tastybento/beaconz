@@ -7,6 +7,7 @@ import java.util.logging.Logger;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.ServerMock;
+import org.mockbukkit.mockbukkit.attribute.AttributeInstanceMock;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -25,6 +27,7 @@ import org.mockito.quality.Strictness;
 
 import com.wasteofplastic.beaconz.BeaconObj;
 import com.wasteofplastic.beaconz.Beaconz;
+import com.wasteofplastic.beaconz.BeaconzStore;
 import com.wasteofplastic.beaconz.Game;
 import com.wasteofplastic.beaconz.GameMgr;
 import com.wasteofplastic.beaconz.Lang;
@@ -40,7 +43,7 @@ import com.wasteofplastic.beaconz.Scorecard;
  * Lang static strings are initialized to prevent NPEs during message formatting.
  */
 @MockitoSettings(strictness = Strictness.LENIENT)
-public abstract class BeaconzListenerTestBase {
+public abstract class CommonTestBase {
 
     // Core plugin dependencies
     @Mock
@@ -53,6 +56,8 @@ public abstract class BeaconzListenerTestBase {
     protected Messages messages;
     @Mock
     protected Logger logger;
+    @Mock
+    protected BeaconzStore store;
 
     // Game & scoring
     @Mock
@@ -93,6 +98,7 @@ public abstract class BeaconzListenerTestBase {
     // Server mock
     protected ServerMock server;
     private AutoCloseable closeable;
+    
 
     /**
      * Sets up common mocks before each test.
@@ -180,6 +186,7 @@ public abstract class BeaconzListenerTestBase {
         when(plugin.getRegister()).thenReturn(register);
         when(plugin.getMessages()).thenReturn(messages);
         when(plugin.getBeaconzWorld()).thenReturn(world);
+        when(plugin.getBeaconzStore()).thenReturn(store);
     }
 
     /**
@@ -200,8 +207,12 @@ public abstract class BeaconzListenerTestBase {
      * Setup player, team, and inventory mocks.
      */
     protected void setupPlayerMocks() {
+        when(player.getWorld()).thenReturn(world);
+        when(player.getLocation()).thenReturn(location);
         when(player.getDisplayName()).thenReturn("playerA");
         when(player.getInventory()).thenReturn(inventory);
+        AttributeInstanceMock health = new AttributeInstanceMock(Attribute.MAX_HEALTH, 20D);
+        when(player.getAttribute(Attribute.MAX_HEALTH)).thenReturn(health);
 
         when(team.getDisplayName()).thenReturn("teamA");
         when(otherTeam.getDisplayName()).thenReturn("teamB");
@@ -210,6 +221,8 @@ public abstract class BeaconzListenerTestBase {
         when(game.getScorecard()).thenReturn(scorecard);
         when(scorecard.getTeam(player)).thenReturn(team);
         when(scorecard.getBlockID(team)).thenReturn(Material.RED_WOOL);
+        
+        
     }
 
     /**

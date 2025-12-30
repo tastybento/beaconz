@@ -41,7 +41,7 @@ import com.wasteofplastic.beaconz.Settings;
  * <p>Tests cover: explosion protection, piston protection, block placement validation,
  * defense block breaking rules, damage handling, and liquid flow prevention.
  */
-class BeaconPassiveDefenseListenerTest extends BeaconzListenerTestBase {
+class BeaconPassiveDefenseListenerTest extends CommonTestBase {
 
     private BeaconPassiveDefenseListener listener;
 

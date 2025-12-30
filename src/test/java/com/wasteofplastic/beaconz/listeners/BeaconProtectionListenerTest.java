@@ -49,7 +49,7 @@ import com.wasteofplastic.beaconz.BeaconObj;
 import com.wasteofplastic.beaconz.Game;
 import com.wasteofplastic.beaconz.Lang;
 
-class BeaconProtectionListenerTest extends BeaconzListenerTestBase {
+class BeaconProtectionListenerTest extends CommonTestBase {
     private MockedStatic<Bukkit> bukkitStatic;
 
     private BeaconProtectionListener listener;

@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Test;
 import com.wasteofplastic.beaconz.Lang;
 import com.wasteofplastic.beaconz.Region;
 
-class LobbyListenerTest extends BeaconzListenerTestBase {
+class LobbyListenerTest extends CommonTestBase {
 
     private LobbyListener ll;
     
