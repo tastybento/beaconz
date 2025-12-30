@@ -34,6 +34,7 @@ import com.wasteofplastic.beaconz.Lang;
 import com.wasteofplastic.beaconz.Messages;
 import com.wasteofplastic.beaconz.Register;
 import com.wasteofplastic.beaconz.Scorecard;
+import com.wasteofplastic.beaconz.TinyDB;
 
 /**
  * Base class for listener tests providing common mocks and setup.
@@ -58,6 +59,8 @@ public abstract class CommonTestBase {
     protected Logger logger;
     @Mock
     protected BeaconzStore store;
+    @Mock
+    protected TinyDB nameStore;
 
     // Game & scoring
     @Mock
@@ -98,6 +101,7 @@ public abstract class CommonTestBase {
     // Server mock
     protected ServerMock server;
     private AutoCloseable closeable;
+    
     
 
     /**
@@ -187,6 +191,8 @@ public abstract class CommonTestBase {
         when(plugin.getMessages()).thenReturn(messages);
         when(plugin.getBeaconzWorld()).thenReturn(world);
         when(plugin.getBeaconzStore()).thenReturn(store);
+        when(plugin.getNameStore()).thenReturn(nameStore);
+        when(plugin.getServer()).thenReturn(server);
     }
 
     /**
