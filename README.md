@@ -1,7 +1,6 @@
 # 🔺 Beaconz
 ### _Strategic Territory Control for Minecraft_
 
-[![Build Status](https://travis-ci.org/tastybento/beaconz.svg?branch=master)](https://travis-ci.org/tastybento/beaconz)
 ![Minecraft](https://img.shields.io/badge/Minecraft-1.21.11-brightgreen)
 ![Java](https://img.shields.io/badge/Java-21-orange)
 ![Paper](https://img.shields.io/badge/Paper-1.21.10-blue)
