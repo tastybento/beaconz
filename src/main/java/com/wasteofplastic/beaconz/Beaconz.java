@@ -137,7 +137,6 @@ public class Beaconz extends JavaPlugin {
             teleportListener = new PlayerTeleportListener(plugin);
             getServer().getPluginManager().registerEvents(teleportListener, plugin);
             getServer().getPluginManager().registerEvents(new SkyListeners(plugin), plugin);
-            //getServer().getPluginManager().registerEvents(new WorldListener(plugin), plugin);
             getServer().getPluginManager().registerEvents(new BeaconSurroundListener(plugin), plugin);
             getServer().getPluginManager().registerEvents(new LobbyListener(plugin), plugin);
             ignoreChunkLoad = false; // used in WorldListener and other classes
