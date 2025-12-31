@@ -5,7 +5,6 @@ import java.util.Iterator;
 
 import org.bukkit.Material;
 import org.bukkit.block.Block;
-import org.bukkit.material.MaterialData;
 import org.bukkit.scheduler.BukkitRunnable;
 
 /**
@@ -16,8 +15,8 @@ import org.bukkit.scheduler.BukkitRunnable;
 public class LineVisualizer extends BeaconzPluginDependent {
     private final static int BLOCKS_TO_SET = 100;
     private Point2D current;
-    private Iterator<Point2D> it;
-    private Iterator<Point2D> it2;
+    private final Iterator<Point2D> it;
+    private final Iterator<Point2D> it2;
 
     public LineVisualizer(Beaconz beaconzPlugin, final BeaconLink beaconPair, final boolean addLink) {
         super(beaconzPlugin);
@@ -26,7 +25,6 @@ public class LineVisualizer extends BeaconzPluginDependent {
         // Run a repeating task to set a number of blocks on this line. When the line is done, stop
         new BukkitRunnable() {
 
-            @SuppressWarnings("deprecation")
             @Override
             public void run() {
                 int count = 0;
@@ -36,27 +34,27 @@ public class LineVisualizer extends BeaconzPluginDependent {
                     return;
                 }
                 // Set air to the team's block
-                MaterialData from = new MaterialData(Material.AIR);
-                MaterialData to = game.getScorecard().getBlockID(beaconPair.getOwner());
+                Material from = Material.AIR;
+                Material to = game.getScorecard().getBlockID(beaconPair.getOwner());
                 if (!addLink) {
                     // Removal
                     from = to;
-                    to = new MaterialData(Material.AIR);
+                    to = Material.AIR;
                 }
                 while(it.hasNext() && count++ < BLOCKS_TO_SET) {
                     current = it.next();
                     Block b = getBeaconzWorld().getBlockAt((int)current.getX(), getBeaconzWorld().getMaxHeight()-1, (int)current.getY());
-                    if (b.getType().equals(from.getItemType()) && b.getData() == from.getData()) {
-                        b.setType(to.getItemType());
-                        b.setData(to.getData());
+                    if (b.getType().equals(from)) {
+                        b.setType(to);
+                        //b.setData(to.getData());
                     }
                 }
                 while(it2.hasNext() && count++ < BLOCKS_TO_SET) {
                     current = it2.next();
                     Block b = getBeaconzWorld().getBlockAt((int)current.getX(), getBeaconzWorld().getMaxHeight()-1, (int)current.getY());
-                    if (b.getType().equals(from.getItemType()) && b.getData() == from.getData()) {
-                        b.setType(to.getItemType());
-                        b.setData(to.getData());
+                    if (b.getType().equals(from)) {
+                        b.setType(to);
+                        //b.setData(to.getData());
                     }
                 }
                 if (!it.hasNext() && !it2.hasNext()) {

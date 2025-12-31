@@ -76,95 +76,90 @@ beacon:
   YouMustCapturedBeacon: "You must capture the beacon first!"
   YouNeedThisMuchExp: "You need [number] exp points to link these beacons."
   YouReceivedAReward: "You received a reward!"
-defenseText: 
-  BEDROCK: "Ultimate defense! Hope you didn't make a mistake!"
-  BED_BLOCK: "Sleep, sleep, sleep"
-  BOOKSHELF: "Knowledge is power!"
-  BREWING_STAND: "Potion attack!"
-  CAKE_BLOCK: "Hunger benefits"
-  CARPET: "Hmm, pretty!"
-  CAULDRON: "Witch's brew!"
-  CHEST: "I wonder what you will put in it"
-  COAL_BLOCK: "Energy up!"
-  DAYLIGHT_DETECTOR: "Let night be day!"
-  DETECTOR_RAIL: "Detect what?"
-  DIAMOND_BLOCK: "Fortune will smile upon you!"
-  DISPENSER: "Load it up with ammo to make an auto turret!"
-  DRAGON_EGG: "The end is nigh!"
-  DROPPER: "Drip, drop, drip"
-  EMERALD_BLOCK: "Place adjacent to the beacon base to extend the beacon!"
-  EMERALD_ORE: "Where did that come from?"
-  ENCHANTMENT_TABLE: "Magic will occur"
-  ENDER_CHEST: "I wonder what is inside?"
-  ENDER_STONE: "End attack!"
-  FLOWER_POT: "I wonder what this will do..."
-  FURNACE: "Fire attack! If it's hot."
-  GLASS: "I can see clearly now"
-  GLOWSTONE: "Glow, glow"
-  GOLD_BLOCK: "Money, money, money"
-  ICE: "Brrr, it's cold"
-  IRON_BLOCK: Protection
-  IRON_DOOR_BLOCK: "Knock, knock"
-  JACK_O_LANTERN: Boo!
-  LADDER: "Up we go!"
-  LAPIS_BLOCK: "Everything is blue!"
-  LAVA: "Hot stuff!"
-  LEAVES: Camoflage
-  LEAVES_2: Camoflage
-  LEVER: "I wonder what this does!"
-  LOG: "It's a tree!"
-  LOG_2: "It's a tree!"
-  MELON_BLOCK: Hungry?
-  MOB_SPAWNER: "That's what I'm talking about!"
-  MYCEL: Smelly!
-  NETHERRACK: "That's not from around here!"
-  NETHER_BRICK: "That's not from around here!"
-  NETHER_BRICK_STAIRS: "That's not from around here!"
-  NETHER_FENCE: "That's not from around here!"
-  NOTE_BLOCK: "I hear things?"
-  OBSIDIAN: "Tough protection!"
-  PACKED_ICE: "Cold, so cold..."
-  PISTON_BASE: Pushy!
-  PISTON_STICKY_BASE: Pushy!
-  POWERED_RAIL: "Power to the people!"
-  PRISMARINE: Aqua
-  PUMPKIN: Farming?
-  QUARTZ_BLOCK: Pretty
-  RAILS: "Where do they go?"
-  REDSTONE_BLOCK: "Power up!"
-  REDSTONE_COMPARATOR: "What's the question?"
-  REDSTONE_COMPARATOR_OFF: "What's the question?"
-  REDSTONE_COMPARATOR_ON: "What's the question?"
-  REDSTONE_LAMP_OFF: Light?
-  REDSTONE_LAMP_ON: Light?
-  REDSTONE_TORCH_OFF: "Power gen"
-  REDSTONE_TORCH_ON: "Power gen"
-  REDSTONE_WIRE: "Does it glow?"
-  RED_SANDSTONE: "&cIt's red"
-  RED_SANDSTONE_STAIRS: "&cIt's red"
-  SAND: Weak
-  SANDSTONE: "&eIt's yellow"
-  SANDSTONE_STAIRS: "&eIt's yellow"
-  SEA_LANTERN: "Nice! Sea attack!"
-  SIGN_POST: "Warning message set!"
-  SKULL: "Death to this entity!"
-  SLIME_BLOCK: "Boing, boing, boing!"
-  SNOW_BLOCK: Cold!
-  SOUL_SAND: <scream>
-  SPONGE: Slurp!
-  STAINED_GLASS: Pretty!
-  STAINED_GLASS_PANE: Pretty!
-  STANDING_BANNER: "Be proud!"
-  STATIONARY_LAVA: "A moat?"
-  STATIONARY_WATER: "A moat?"
-  STONE_PLATE: "A trap?"
-  THIN_GLASS: "Not much protection..."
-  TNT: "Explosive protection!"
-  WALL_SIGN: "Send a message!"
-  WEB: "Slow down the enemy!"
-  WOOD_PLATE: Trap?
-  WOOL: "Keep warm!"
-  WORKBENCH: "That's helpful!"
+defenseText:
+    BEDROCK: "Ultimate defense! Hope you didn't make a mistake!"
+    WHITE_BED: "Sleep, sleep, sleep" # WHITE is default
+    BOOKSHELF: "Knowledge is power!"
+    BREWING_STAND: "Potion attack!"
+    CAKE: "Hunger benefits" 
+    WHITE_CARPET: "Hmm, pretty!"
+    CAULDRON: "Witch's brew!"
+    CHEST: "I wonder what you will put in it"
+    COAL_BLOCK: "Energy up!"
+    DAYLIGHT_DETECTOR: "Let night be day!"
+    DETECTOR_RAIL: "Detect what?"
+    DIAMOND_BLOCK: "Fortune will smile upon you!"
+    DISPENSER: "Load it up with ammo to make an auto turret!"
+    DRAGON_EGG: "The end is nigh!"
+    DROPPER: "Drip, drop, drip"
+    EMERALD_BLOCK: "Place adjacent to the beacon base to extend the beacon!"
+    EMERALD_ORE: "Where did that come from?"
+    ENCHANTING_TABLE: "Magic will occur" 
+    ENDER_CHEST: "I wonder what is inside?"
+    END_STONE: "End attack!" 
+    FLOWER_POT: "I wonder what this will do..."
+    FURNACE: "Fire attack! If it's hot."
+    GLASS: "I can see clearly now"
+    GLOWSTONE: "Glow, glow"
+    GOLD_BLOCK: "Money, money, money"
+    ICE: "Brrr, it's cold"
+    IRON_BLOCK: Protection
+    IRON_DOOR: "Knock, knock"
+    JACK_O_LANTERN: Boo!
+    LADDER: "Up we go!"
+    LAPIS_BLOCK: "Everything is blue!"
+    LAVA: "Hot stuff!"
+    OAK_LEAVES: Camoflage # LEAVES -> Specific wood type
+    DARK_OAK_LEAVES: Camoflage # LEAVES_2 -> Specific wood type
+    LEVER: "I wonder what this does!"
+    OAK_LOG: "It's a tree!" # LOG -> Specific wood type
+    ACACIA_LOG: "It's a tree!" # LOG_2 -> Specific wood type
+    MELON: Hungry?
+    SPAWNER: "That's what I'm talking about!"
+    MYCELIUM: Smelly!
+    NETHERRACK: "That's not from around here!"
+    NETHER_BRICK: "That's not from around here!"
+    NETHER_BRICK_STAIRS: "That's not from around here!"
+    NETHER_BRICK_FENCE: "That's not from around here!"
+    NOTE_BLOCK: "I hear things?"
+    OBSIDIAN: "Tough protection!"
+    PACKED_ICE: "Cold, so cold..."
+    PISTON: Pushy!
+    STICKY_PISTON: Pushy!
+    POWERED_RAIL: "Power to the people!"
+    PRISMARINE: Aqua
+    PUMPKIN: Farming?
+    QUARTZ_BLOCK: Pretty
+    RAIL: "Where do they go?" # RAILS -> RAIL
+    REDSTONE_BLOCK: "Power up!"
+    COMPARATOR: "What's the question?"
+    REDSTONE_LAMP: Light?
+    REDSTONE_TORCH: "Power gen"
+    REDSTONE: "Does it glow?"
+    RED_SANDSTONE: "&cIt's red"
+    RED_SANDSTONE_STAIRS: "&cIt's red"
+    SAND: Weak
+    SANDSTONE: "&eIt's yellow"
+    SANDSTONE_STAIRS: "&eIt's yellow"
+    SEA_LANTERN: "Nice! Sea attack!"
+    OAK_SIGN: "Warning message set!"
+    SKELETON_SKULL: "Death to this entity!"
+    SLIME_BLOCK: "Boing, boing, boing!"
+    SNOW_BLOCK: Cold!
+    SOUL_SAND: <scream>
+    SPONGE: Slurp!
+    WHITE_STAINED_GLASS: Pretty!
+    WHITE_STAINED_GLASS_PANE: Pretty!
+    WHITE_BANNER: "Be proud!"
+    WATER: "A moat?"
+    STONE_PRESSURE_PLATE: "A trap?"
+    GLASS_PANE: "Not much protection..."
+    TNT: "Explosive protection!"
+    OAK_WALL_SIGN: "Send a message!"
+    COBWEB: "Slow down the enemy!"
+    OAK_PRESSURE_PLATE: Trap?
+    WHITE_WOOL: "Keep warm!"
+    CRAFTING_TABLE: "That's helpful!"
 error: 
   AlreadyExists: "[name] already exists!"
   CanOnlyPlaceBlocks: "You can only place blocks on a captured beacon!"

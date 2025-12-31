@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 - 2016
+ * Copyright (c) 2015 - 2025
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -37,15 +37,15 @@ import com.wasteofplastic.beaconz.listeners.PlayerMovementListener;
 
 /**
  * Base class for classes that depend on a {@link org.bukkit.plugin.Plugin}.
- *
+ * <p>
  * Delegates the often-used methods to the plugin so subclasses don't have to refer to the field when
  * logging, getting the register, etc.
- *
+ * <p>
  * Sadly this cannot be used universally as some classes (BeaconMap, BeaconPopulator) need to extend existing
  * classes and Java does not (yet?) support multiple inheritance.
  */
 public abstract class BeaconzPluginDependent {
-    private final Beaconz beaconzPlugin;
+    protected final Beaconz beaconzPlugin;
 
     public final Beaconz getBeaconzPlugin() {
         return beaconzPlugin;
@@ -87,8 +87,8 @@ public abstract class BeaconzPluginDependent {
         return this.beaconzPlugin.getMessages();
     }
 
-    public final Boolean senderMsg(CommandSender sender, String msg) {
-        return this.beaconzPlugin.senderMsg(sender, msg);
+    public final void senderMsg(CommandSender sender, String msg) {
+        this.beaconzPlugin.senderMsg(sender, msg);
     }
 
     /**

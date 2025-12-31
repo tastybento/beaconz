@@ -26,7 +26,7 @@ public class TriangleScorer {
      */
     public static double getScore(Set<TriangleField> triangleFields, Team team) {
         // Get the team's triangles
-        Set<TriangleField> teamTriangles = new HashSet<TriangleField>();
+        Set<TriangleField> teamTriangles = new HashSet<>();
 
         for (TriangleField triangle : triangleFields) {
             if (triangle.getOwner() != null && triangle.getOwner().equals(team)) {
@@ -45,7 +45,7 @@ public class TriangleScorer {
     public static double getTriangleSetArea(Set<TriangleField> teamTriangles) {
         double area = 0;
         //int count = 0;
-        Set<TriangleField> alreadyCounted = new HashSet<TriangleField>();
+        Set<TriangleField> alreadyCounted = new HashSet<>();
         // Run through the list and gather the areas
         Iterator<TriangleField> mainIt = teamTriangles.iterator();
         while (mainIt.hasNext()) {
@@ -85,9 +85,7 @@ public class TriangleScorer {
                 //System.out.println("DEBUG: Checking this triangle against others ");
                 // Iterate through all remaining triangles
                 //System.out.println("DEBUG: Iterate through all remaining triangles - there are " + teamTriangles.size() + " left");
-                Iterator<TriangleField> internalIt = teamTriangles.iterator();
-                while (internalIt.hasNext()) {
-                    TriangleField tri = internalIt.next();
+                for (TriangleField tri : teamTriangles) {
                     if (alreadyCounted.contains(tri)) {
                         continue;
                     }
@@ -116,7 +114,7 @@ public class TriangleScorer {
             // Now calculate the area of the resulting polygon
             PathIterator pathIterator = polyArea.getPathIterator(null);
             float[] floats = new float[6];
-            List<Point2D> poly = new ArrayList<Point2D>();
+            List<Point2D> poly = new ArrayList<>();
             while (!pathIterator.isDone()) {
                 pathIterator.currentSegment(floats);
                 Point2D point = new Point2D.Float(floats[0], floats[1]);
@@ -125,7 +123,7 @@ public class TriangleScorer {
                 poly.add(point);
                 pathIterator.next();
             }
-            double pArea = polygonArea(poly.toArray(new Point2D[poly.size()]));
+            double pArea = polygonArea(poly.toArray(new Point2D[0]));
             //System.out.println("ploygon area = " + pArea);
             area = area + pArea;
         }

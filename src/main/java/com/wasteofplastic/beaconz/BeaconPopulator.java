@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 - 2016 tastybento, planetguy
+ * Copyright (c) 2015 - 2025 tastybento, planetguy
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +27,7 @@ import java.util.Random;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Material;
+import org.bukkit.Tag;
 import org.bukkit.World;
 import org.bukkit.block.Biome;
 import org.bukkit.block.Block;
@@ -39,14 +40,14 @@ import com.wasteofplastic.include.it.unimi.dsi.util.XorShift;
 /**
  * BeaconPopulator class
  * @author TastyBento
- *
+ * <p>
  * This is called every time a chunk is (re)generated in the world
  * The idea is to place a single beacon on a chunk if a XorShift
  * generates a random number below the Settings.distribution threshold
  * If Settings.distribution were 1, every chunk would get a single beacon;
  * the lower it is, the fewer chunks get a beacon and the beacons
  * are more spread out in the world.
- *
+ * <p>
  * Note added by EBaldino: in order to be able to regenerate and repopulate chunks for specific game regions,
  * and considering that other plugins may regenerate a chunk in an active game area, I am removing this from
  * the world's populators and calling it explicitly in WorldListener.onChunkLoad
@@ -62,7 +63,7 @@ public class BeaconPopulator extends BlockPopulator {
 
     @Override
     public void populate(World world, Random unused, Chunk source) {
-        Boolean cornerBeacon = false;
+        boolean cornerBeacon = false;
         Integer cornerX = null;
         Integer cornerZ = null;
         
@@ -79,18 +80,18 @@ public class BeaconPopulator extends BlockPopulator {
             if (plugin.getGameMgr().getLobby() == null) {
                 // No lobby yet
                 if (DEBUG)
-                    Bukkit.getLogger().info("DEBUG:no lobby yet");
+                    plugin.getLogger().info("DEBUG:no lobby yet");
                 return;
             }
             // Don't do anything in the lobby
             if (plugin.getGameMgr().getLobby().containsPoint(X * 16, Z * 16)) {
                 if (DEBUG)
-                    Bukkit.getLogger().info("DEBUG: no beaconz in lobby");
+                    plugin.getLogger().info("DEBUG: no beaconz in lobby");
                 return;
             }
             if (plugin.getGameMgr().getLobby().containsPoint(X * 16 + 15, Z * 16 + 15)) {
                 if (DEBUG)
-                    Bukkit.getLogger().info("DEBUG: no beaconz in lobby");
+                    plugin.getLogger().info("DEBUG: no beaconz in lobby");
                 return;
             }            
             
@@ -99,14 +100,14 @@ public class BeaconPopulator extends BlockPopulator {
             Region region1 = plugin.getGameMgr().getRegion(X * 16, Z * 16);
             if (region1 == null) {
                 if (DEBUG)
-                    Bukkit.getLogger().info("DEBUG: non-region");
+                    plugin.getLogger().info("DEBUG: non-region");
                 return;
             }
             // Check max coords of this chunk
             Region region2 = plugin.getGameMgr().getRegion(X * 16 + 15, Z * 16 + 15);
             if (region2 == null || region1 != region2) {
                 if (DEBUG)
-                    Bukkit.getLogger().info("DEBUG: non-region");
+                    plugin.getLogger().info("DEBUG: non-region");
                 return;
             }
             // If we're in the corner chunk of a region, get the coordinates offset to build the corner beacon
@@ -175,8 +176,7 @@ public class BeaconPopulator extends BlockPopulator {
                 // There can be snow in trees, so need to move down to ground level
                 while (y > 0 && (source.getBlock(x, y, z).getType().equals(Material.SNOW) 
                         || source.getBlock(x, y, z).getType().equals(Material.AIR)
-                        || source.getBlock(x, y, z).getType().equals(Material.LEAVES)
-                        || source.getBlock(x, y, z).getType().equals(Material.LEAVES_2))) {
+                        || Tag.LEAVES.isTagged(source.getBlock(x, y, z).getType()))) {
                     y--;
                 }
                 b = source.getBlock(x, y, z);
@@ -186,8 +186,11 @@ public class BeaconPopulator extends BlockPopulator {
             if (b.getBiome().equals(Biome.OCEAN) || b.getBiome().equals(Biome.DEEP_OCEAN)) {
                 return;
             }
-            while (b.getType().equals(Material.AIR) || b.getType().equals(Material.LEAVES) || b.getType().equals(Material.LEAVES_2)
-                    || b.getType().equals(Material.HUGE_MUSHROOM_1) || b.getType().equals(Material.HUGE_MUSHROOM_2) || b.getType().equals(Material.OBSIDIAN)) {
+            while (b.getType().equals(Material.AIR) 
+                    || Tag.LEAVES.isTagged(b.getType())
+                    || b.getType().equals(Material.BROWN_MUSHROOM_BLOCK) 
+                    || b.getType().equals(Material.RED_MUSHROOM_BLOCK) 
+                    || b.getType().equals(Material.OBSIDIAN)) {
                 // if found an obsidian, we only keep going down if it's NOT capping a beacon .. this shouldn't really happen either, since we're regenerating the chunk... 
                 // ... but, just in case, it should help avoid the creation of diamond towers, which were plentiful during testing...
                 if (b.getType().equals(Material.OBSIDIAN) && !b.getRelative(BlockFace.DOWN).getType().equals(Material.BEACON)) {

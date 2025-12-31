@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 - 2016 tastybento
+ * Copyright (c) 2015 - 2025 tastybento
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,7 +22,6 @@
 
 package com.wasteofplastic.beaconz.listeners;
 
-import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.UUID;
@@ -76,7 +75,7 @@ public class BeaconProtectionListener extends BeaconzPluginDependent implements 
     /**
      * A bi-drectional hashmap to track players standing on beaconz
      */
-    private static BiMap<UUID, BeaconObj> standingOn = HashBiMap.create();
+    private static final BiMap<UUID, BeaconObj> standingOn = HashBiMap.create();
 
     public BeaconProtectionListener(Beaconz plugin) {
         super(plugin);
@@ -97,17 +96,15 @@ public class BeaconProtectionListener extends BeaconzPluginDependent implements 
         new BukkitRunnable() {
             @Override
             public void run() {
-                Iterator<Entry<UUID, BeaconObj>> it = standingOn.entrySet().iterator();
-                while (it.hasNext()) { 
-                    Entry<UUID, BeaconObj> entry = it.next();
+                for (Entry<UUID, BeaconObj> entry : standingOn.entrySet()) {
                     Player player = getServer().getPlayer(entry.getKey());
                     if (player != null && player.isOnline() && player.getWorld().equals(getBeaconzWorld()) && !getGameMgr().isPlayerInLobby(player)
                             && player.getLocation().getBlockY() > entry.getValue().getY() && player.getLocation().getBlockY() < entry.getValue().getY() + Settings.defenseHeight) {
                         // Do something
                         Random rand = new Random();
-                        player.setVelocity(new Vector(rand.nextGaussian(),1.2,rand.nextGaussian()));
-                        getBeaconzWorld().playSound(player.getLocation(), Sound.BLOCK_NOTE_HARP, 1F, 1F);
-                    } 
+                        player.setVelocity(new Vector(rand.nextGaussian(), 1.2, rand.nextGaussian()));
+                        getBeaconzWorld().playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_HARP, 1F, 1F);
+                    }
                 }
             }
         }.runTaskTimer(getBeaconzPlugin(), 0L, 20L);
@@ -162,11 +159,10 @@ public class BeaconProtectionListener extends BeaconzPluginDependent implements 
             if (getRegister().isBeacon(block.getRelative(BlockFace.DOWN))) {
                 // It is a real beacon
                 // Check that the beacon is clear of blocks
-                if (!beacon.isClear() && (beacon.getOwnership() == null || !beacon.getOwnership().equals(team))) {
+                if (beacon.isNotClear() && (beacon.getOwnership() == null || !beacon.getOwnership().equals(team))) {
                     // You can't capture an uncleared beacon
                     player.sendMessage(ChatColor.GOLD + Lang.errorClearAroundBeacon);
                     event.setCancelled(true);
-                    return;
                 }
             }
         } else {
@@ -188,12 +184,7 @@ public class BeaconProtectionListener extends BeaconzPluginDependent implements 
             return;
         }
         // Check if the block is a beacon or the surrounding pyramid and remove it from the damaged blocks
-        Iterator<Block> it = event.blockList().iterator();
-        while (it.hasNext()) {
-            if (getRegister().isBeacon(it.next())) {
-                it.remove();
-            }
-        }
+        event.blockList().removeIf(block -> getRegister().isBeacon(block));
     }
 
     /**
@@ -208,16 +199,10 @@ public class BeaconProtectionListener extends BeaconzPluginDependent implements 
         }
         BeaconObj beacon = getRegister().getBeaconAt(event.getBlock().getX(),event.getBlock().getZ());
         if (beacon != null && beacon.getY() < event.getBlock().getY()) {
-            switch (event.getBlock().getType()) {
-            // Allow leaves to grow over the beacon
-            case LEAVES:
-            case LEAVES_2:
-                break;
-            default:
+            // TODO if (!Tag.LEAVES.isTagged(event.getBlock().getType())) {
                 // For everything else, make sure there is air
                 event.getBlock().setType(Material.AIR);
-            }
-
+           // }
         }
     }
 
@@ -341,7 +326,6 @@ public class BeaconProtectionListener extends BeaconzPluginDependent implements 
             Game game = getGameMgr().getGame(event.getBlock().getLocation());
             if (game == null) {
                 event.setCancelled(true);
-                return;
             }
         }
     }
@@ -399,7 +383,6 @@ public class BeaconProtectionListener extends BeaconzPluginDependent implements 
         if (beacon != null && beacon.getY() < event.getBlock().getY()) {
             event.setCancelled(true);
             event.getPlayer().sendMessage(ChatColor.RED + Lang.errorYouCannotBuildThere);
-            return;
         }
     }
 
@@ -423,17 +406,15 @@ public class BeaconProtectionListener extends BeaconzPluginDependent implements 
         BeaconObj beacon = getRegister().getBeaconAt(event.getEntity().getLocation());
         if (beacon != null && beacon.getOwnership() != null) {
             //getLogger().info("DEBUG: beacon found");
-            if (event.getDamager() instanceof Player) {
+            if (event.getDamager() instanceof Player player) {
                 //getLogger().info("DEBUG: damager is player");
                 // Prevent enemies from hurting animals on beacons
-                Player player = (Player)event.getDamager();
                 Game game = getGameMgr().getGame(player.getLocation());
                 if (game != null) {
                     Team team = game.getScorecard().getTeam(player); 
                     if (!beacon.getOwnership().equals(team)) {
                         player.sendMessage(ChatColor.RED + Lang.triangleThisBelongsTo.replace("[team]", beacon.getOwnership().getDisplayName()));
                         event.setCancelled(true);
-                        return;
                     }
                 }          
             } else {
@@ -501,7 +482,6 @@ public class BeaconProtectionListener extends BeaconzPluginDependent implements 
                 if (!beacon.getOwnership().equals(team)) {
                     player.sendMessage(ChatColor.RED + Lang.triangleThisBelongsTo.replace("[team]", beacon.getOwnership().getDisplayName()));
                     event.setCancelled(true);
-                    return;
                 }
             }
             // Check triangle

@@ -71,6 +71,8 @@ public class PlayerJoinLeaveListener extends BeaconzPluginDependent implements L
                         getLogger().info("DEBUG: Player is in team - " + game.getScorecard().getTeam(player));
                         getLogger().info("DEBUG: Player is in team - " + game.getScorecard().getTeam(player).getDisplayName());
                     }
+                    // Set inventory
+                    //getBeaconzStore().getInventory(event.getPlayer(), game.getName());   
                     // Join the game but stay at the last location
                     game.join(player, false);
                 }
@@ -82,17 +84,14 @@ public class PlayerJoinLeaveListener extends BeaconzPluginDependent implements L
             final List<String> messages = getMessages().getMessages(playerUUID);
             if (messages != null) {
                 // plugin.getLogger().info("DEBUG: Messages waiting!");
-                getServer().getScheduler().runTaskLater(getBeaconzPlugin(), new Runnable() {
-                    @Override
-                    public void run() {
-                        player.sendMessage(ChatColor.AQUA + Lang.titleBeaconzNews);
-                        int i = 1;
-                        for (String message : messages) {
-                            player.sendMessage(i++ + ": " + message);
-                        }
-                        // Clear the messages
-                        getMessages().clearMessages(playerUUID);
+                getServer().getScheduler().runTaskLater(getBeaconzPlugin(), () -> {
+                    player.sendMessage(ChatColor.AQUA + Lang.titleBeaconzNews);
+                    int i = 1;
+                    for (String message : messages) {
+                        player.sendMessage(i++ + ": " + message);
                     }
+                    // Clear the messages
+                    getMessages().clearMessages(playerUUID);
                 }, 40L);
             }
             if (DEBUG)
@@ -113,7 +112,7 @@ public class PlayerJoinLeaveListener extends BeaconzPluginDependent implements L
         }
         final Game fromGame = getGameMgr().getGame(event.getPlayer().getLocation());
         if (fromGame != null) {
-            getBeaconzStore().storeInventory(event.getPlayer(), fromGame.getName(), null);   
+            //getBeaconzStore().storeInventory(event.getPlayer(), fromGame.getName(), null);   
         }
     }
 

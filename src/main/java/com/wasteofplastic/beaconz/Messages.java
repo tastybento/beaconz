@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 - 2016 tastybento
+ * Copyright (c) 2015 - 2025 tastybento
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,7 +24,7 @@ package com.wasteofplastic.beaconz;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
@@ -44,7 +44,7 @@ import org.bukkit.scoreboard.Team;
 public class Messages extends BeaconzPluginDependent {
 
     // Offline Messages
-    private HashMap<UUID, List<String>> messages = new HashMap<UUID, List<String>>();
+    private final HashMap<UUID, List<String>> messages = new HashMap<>();
     private YamlConfiguration messageStore;
 
 
@@ -62,8 +62,7 @@ public class Messages extends BeaconzPluginDependent {
      * @return
      */
     public List<String> getMessages(UUID playerUUID) {
-        List<String> playerMessages = messages.get(playerUUID);
-        return playerMessages;
+        return messages.get(playerUUID);
     }
 
     /**
@@ -82,7 +81,7 @@ public class Messages extends BeaconzPluginDependent {
         getLogger().info("Saving offline messages...");
         try {
             // Convert to a serialized string
-            final HashMap<String, Object> offlineMessages = new HashMap<String, Object>();
+            final HashMap<String, Object> offlineMessages = new HashMap<>();
             for (UUID p : messages.keySet()) {
                 offlineMessages.put(p.toString(), messages.get(p));
             }
@@ -90,10 +89,8 @@ public class Messages extends BeaconzPluginDependent {
             messageStore.set("messages", offlineMessages);
             File messageFile = new File(getDataFolder(), "messages.yml");
             messageStore.save(messageFile);
-            return;
         } catch (Exception e) {
             e.printStackTrace();
-            return;
         }
     }
 
@@ -144,8 +141,8 @@ public class Messages extends BeaconzPluginDependent {
     /**
      * Tells all of a player's team members (online or offline) that something happened. Only works if the player is in the game area.
      *
-     * @param playerUUID - the originating player, always an online player
-     * @param message
+     * @param player - the originating player, always an online player
+     * @param message - the message to send
      */
     public void tellTeam(Player player, String message) {
         Scorecard sc = getGameMgr().getSC(player);
@@ -214,18 +211,17 @@ public class Messages extends BeaconzPluginDependent {
     /**
      * Sets a message for the player to receive next time they login
      *
-     * @param player
-     * @param message
-     * @return true if player is offline, false if online
+     * @param playerUUID the player's UUID
+     * @param message the message to store
      */
-    public boolean setMessage(UUID playerUUID, String message) {
+    public void setMessage(UUID playerUUID, String message) {
         // getLogger().info("DEBUG: received message - " + message);
         Player player = getServer().getPlayer(playerUUID);
         // Check if player is online
         if (player != null) {
             if (player.isOnline()) {
                 // player.sendMessage(message);
-                return false;
+                return;
             }
         }
         // Player is offline so store the message
@@ -234,9 +230,8 @@ public class Messages extends BeaconzPluginDependent {
         if (playerMessages != null) {
             playerMessages.add(message);
         } else {
-            playerMessages = new ArrayList<String>(Arrays.asList(message));
+            playerMessages = new ArrayList<>(Collections.singletonList(message));
         }
         put(playerUUID, playerMessages);
-        return true;
     }
 }

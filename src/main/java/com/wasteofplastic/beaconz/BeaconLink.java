@@ -64,15 +64,11 @@ public class BeaconLink implements Comparable<Object> {
     
     @Override
     public boolean equals(Object o) {
-        if (!(o instanceof BeaconLink)) {
+        if (!(o instanceof BeaconLink otherPair)) {
             return false;             
-        } 
-        BeaconLink otherPair = (BeaconLink)o;
-        if ((otherPair.getBeacon1().equals(this.beacon1) && otherPair.getBeacon2().equals(this.beacon2))
-                || (otherPair.getBeacon1().equals(this.beacon2) && otherPair.getBeacon2().equals(this.beacon1))) {
-            return true;
         }
-        return false;
+        return (otherPair.getBeacon1().equals(this.beacon1) && otherPair.getBeacon2().equals(this.beacon2))
+                || (otherPair.getBeacon1().equals(this.beacon2) && otherPair.getBeacon2().equals(this.beacon1));
     }
     
     public Team getOwner() {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 - 2016 tastybento
+ * Copyright (c) 2015 - 2025 tastybento
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -42,7 +42,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDamageEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.MapMeta;
 import org.bukkit.map.MapView;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -56,6 +56,8 @@ import com.wasteofplastic.beaconz.Lang;
 import com.wasteofplastic.beaconz.Settings;
 import com.wasteofplastic.beaconz.map.BeaconMap;
 import com.wasteofplastic.beaconz.map.TerritoryMapRenderer;
+
+import net.kyori.adventure.text.Component;
 
 public class BeaconCaptureListener extends BeaconzPluginDependent implements Listener {
 
@@ -114,11 +116,10 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
             if (getRegister().isBeacon(block.getRelative(BlockFace.DOWN))) {
                 // It is a real beacon
                 // Check that the beacon is clear of blocks
-                if (!beacon.isClear() && (beacon.getOwnership() == null || !beacon.getOwnership().equals(team))) {
+                if (beacon.isNotClear() && (beacon.getOwnership() == null || !beacon.getOwnership().equals(team))) {
                     // You can't capture an uncleared beacon
                     player.sendMessage(ChatColor.GOLD + Lang.errorClearAroundBeacon);
                     event.setCancelled(true);
-                    return;
                 }
             }
         } else {
@@ -195,7 +196,7 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
                 // It is a real beacon
                 if (block.getType().equals(Material.OBSIDIAN)) {
                     // Check that the beacon is clear of blocks
-                    if (!beacon.isClear()) {
+                    if (beacon.isNotClear()) {
                         // You can't capture an uncleared beacon
                         player.sendMessage(ChatColor.RED + Lang.errorClearAroundBeacon);
                         event.setCancelled(true);
@@ -208,8 +209,8 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
                         getLogger().info("DEBUG: team = " + team.getDisplayName());
                         getLogger().info("DEBUG: block ID = " + game.getScorecard().getBlockID(team));
                     }
-                    block.setType(game.getScorecard().getBlockID(team).getItemType());
-                    block.setData(game.getScorecard().getBlockID(team).getData());
+                    block.setType(game.getScorecard().getBlockID(team));
+                    // TODO block.setData(game.getScorecard().getBlockID(team).getData());
                     // Register the beacon to this team
                     getRegister().setBeaconOwner(beacon,team);
                     player.sendMessage(ChatColor.GREEN + Lang.beaconYouCapturedABeacon);
@@ -230,7 +231,7 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
                             return;
                         }
                         // Check that the beacon is clear of blocks
-                        if (!beacon.isClear()) {
+                        if (beacon.isNotClear()) {
                             // You can't capture an uncleared beacon
                             player.sendMessage(ChatColor.RED + Lang.errorClearAroundBeacon);
                             event.setCancelled(true);
@@ -268,7 +269,7 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
                     // Remove experience
                     if (DEBUG)
                         getLogger().info("DEBUG: player has " + player.getTotalExperience() + " and needs " + Settings.beaconMineExpRequired);
-                    if (!BeaconLinkListener.testForExp(player, Settings.beaconMineExpRequired)) {
+                    if (BeaconLinkListener.testForExp(player, Settings.beaconMineExpRequired)) {
                         player.sendMessage(ChatColor.RED + Lang.errorNotEnoughExperience);
                         player.getWorld().playSound(player.getLocation(), Sound.BLOCK_ANVIL_BREAK, 1F, 1F);
                         return;
@@ -287,14 +288,14 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
                         Entry<Integer, ItemStack> en = Settings.teamGoodies.ceilingEntry(value);
                         //getLogger().info("DEBUG: en = " + en);
                         if (en != null && en.getValue() != null) {
-                            if (en.getValue().getType().equals(Material.MAP)) {
+                            if (en.getValue().getType().equals(Material.FILLED_MAP)) {
                                 giveBeaconMap(player,beacon);                                
                             } else {
                                 player.getWorld().dropItem(event.getPlayer().getLocation(), en.getValue());
                                 if (rand.nextInt(100) < Settings.beaconMineExhaustChance) {
                                     beacon.resetHackTimer();
                                     player.sendMessage(ChatColor.GREEN + Lang.generalSuccess + " " + Lang.beaconIsExhausted.replace("[minutes]", String.valueOf(Settings.mineCoolDown/60000)));
-                                    player.getWorld().playSound(player.getLocation(), Sound.BLOCK_ENDERCHEST_CLOSE, 1F, 1F);
+                                    player.getWorld().playSound(player.getLocation(), Sound.BLOCK_CHEST_CLOSE, 1F, 1F);
                                 } else {
                                     player.sendMessage(ChatColor.GREEN + Lang.generalSuccess);
                                     player.getWorld().playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 1F, 1F);
@@ -314,7 +315,7 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
                             if (rand.nextInt(100) < Settings.beaconMineExhaustChance) {
                                 beacon.resetHackTimer();
                                 player.sendMessage(ChatColor.GREEN + Lang.generalSuccess + Lang.beaconIsExhausted.replace("[minutes]", String.valueOf(Settings.mineCoolDown/60000)));
-                                player.getWorld().playSound(player.getLocation(), Sound.BLOCK_ENDERCHEST_CLOSE, 1F, 1F);
+                                player.getWorld().playSound(player.getLocation(), Sound.BLOCK_CHEST_CLOSE, 1F, 1F);
                             } else {
                                 player.sendMessage(ChatColor.GREEN + Lang.generalSuccess);
                                 player.getWorld().playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 1F, 1F);
@@ -335,7 +336,7 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
                         if (split.length == 2) {
                             int amplifier = 1;
                             if (NumberUtils.isNumber(split[1])) {
-                                amplifier = Integer.valueOf(split[1]);
+                                amplifier = Integer.parseInt(split[1]);
                                 if (DEBUG)
                                     getLogger().info("DEBUG: Amplifier is " + amplifier);
                             }
@@ -344,7 +345,7 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
                                 player.addPotionEffect(new PotionEffect(potionEffectType, num,amplifier));
                                 player.getWorld().playSound(player.getLocation(), Sound.ENTITY_SPLASH_POTION_BREAK, 1F, 1F);
                                 if (DEBUG)
-                                    getLogger().info("DEBUG: Applying " + potionEffectType.toString() + ":" + amplifier + " for " + num + " ticks");
+                                    getLogger().info("DEBUG: Applying " + potionEffectType + ":" + amplifier + " for " + num + " ticks");
                             }
                         } else {
                             getLogger().warning("Unknown hack cooldown effect" + effect);
@@ -364,30 +365,33 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
      */
     @SuppressWarnings("deprecation")
     private void giveBeaconMap(Player player, BeaconObj beacon) {
-        // Make a map!
-        player.sendMessage(ChatColor.GREEN + Lang.beaconYouHaveAMap);
-        MapView map = Bukkit.createMap(getBeaconzWorld());
-        //map.setWorld(getBeaconzWorld());
-        map.setCenterX(beacon.getX());
-        map.setCenterZ(beacon.getZ());
-        map.getRenderers().clear();
-        map.addRenderer(new TerritoryMapRenderer(getBeaconzPlugin()));
-        map.addRenderer(new BeaconMap(getBeaconzPlugin()));
-        ItemStack newMap = new ItemStack(Material.MAP);
-        newMap.setDurability(map.getId());
-        ItemMeta meta = newMap.getItemMeta();
-        meta.setDisplayName("Beacon map for " + beacon.getName());
-        newMap.setItemMeta(meta);
-        // Each map is unique and the durability defines the map ID, register it
-        getRegister().addBeaconMap(map.getId(), beacon);
-        //getLogger().info("DEBUG: beacon id = " + beacon.getId());
-        // Put map into hand
-        //ItemStack inHand = player.getInventory().getItemInMainHand();
+     // Create the MapView
+        MapView mapView = Bukkit.createMap(getBeaconzWorld());
+        mapView.setCenterX(beacon.getX());
+        mapView.setCenterZ(beacon.getZ());
+        mapView.getRenderers().clear();
+        mapView.addRenderer(new TerritoryMapRenderer(getBeaconzPlugin()));
+        mapView.addRenderer(new BeaconMap(getBeaconzPlugin()));
+
+        // Use FILLED_MAP, not MAP
+        ItemStack newMap = new ItemStack(Material.FILLED_MAP);
+
+        // Update the Meta
+        if (newMap.getItemMeta() instanceof MapMeta meta) {
+            meta.displayName(Component.text("Beacon map for " + beacon.getName()));
+            
+            // This connects the ItemStack to the custom MapView and ID
+            meta.setMapView(mapView); 
+            
+            newMap.setItemMeta(meta);
+        }
+
+        // Give to player
         ItemStack offHand = player.getInventory().getItemInOffHand();
-        player.getInventory().setItemInOffHand(newMap);
-        //player.getInventory().setItemInOffHand(inHand);
-        if (offHand != null && !offHand.getType().equals(Material.AIR)) {
-            HashMap<Integer, ItemStack> leftOvers = player.getInventory().addItem(offHand);
+        getLogger().info("offhand = " + offHand);
+                
+        if (!offHand.getType().equals(Material.AIR)) {
+            HashMap<Integer, ItemStack> leftOvers = player.getInventory().addItem(newMap);
             if (!leftOvers.isEmpty()) {
                 player.sendMessage(ChatColor.RED + Lang.errorInventoryFull);
                 for (ItemStack item: leftOvers.values()) {
@@ -395,7 +399,12 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
                     player.getWorld().playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 1F, 0.5F);
                 }
             }
+        } else {
+            player.getInventory().setItemInOffHand(newMap);
         }
+        
+        // Register in system
+        getRegister().addBeaconMap(mapView.getId(), beacon);
+ 
     }
-
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 - 2016 tastybento
+ * Copyright (c) 2015 - 2025 tastybento
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -46,10 +46,9 @@ import com.wasteofplastic.beaconz.map.TerritoryMapRenderer;
 
 public class Game extends BeaconzPluginDependent {
 
-    private Beaconz plugin;
-    private Region region;
-    private String gameName;
-    private Scorecard scorecard;
+    private final Region region;
+    private final String gameName;
+    private final Scorecard scorecard;
     private String gamemode;
     private int gamedistance;
     private double gamedistribution;
@@ -72,7 +71,6 @@ public class Game extends BeaconzPluginDependent {
      */
     public Game(Beaconz beaconzPlugin, int gamedistance, Region region, String gameName, String gamemode, int nbr_teams, String gamegoal, int gamegoalvalue, int countdowntimer, String scoretypes, Double distribution) {
         super(beaconzPlugin);
-        this.plugin = beaconzPlugin;
         this.region = region;
         this.gameName = gameName;
         this.startTime = ((System.currentTimeMillis()+500)/1000)*1000;
@@ -80,7 +78,7 @@ public class Game extends BeaconzPluginDependent {
         region.setGame(this);
         setGameParms(gamemode, gamedistance, nbr_teams, gamegoal, gamegoalvalue, countdowntimer, startTime, gameCreateTime, scoretypes, distribution);
         // Now create the scorecard
-        scorecard = new Scorecard(plugin, this);
+        scorecard = new Scorecard(beaconzPlugin, this);
     }
 
     /**
@@ -110,9 +108,9 @@ public class Game extends BeaconzPluginDependent {
         scorecard.deleteTeamMembers();
         
         // Handle maps 
-        Iterator<Short> it = getRegister().getBeaconMapIndex().iterator();
+        Iterator<Integer> it = getRegister().getBeaconMapIndex().iterator();
         while (it.hasNext()) {
-            short index = it.next();
+            int index = it.next();
             MapView map = Bukkit.getMap(index);
             if (map != null && (map.getWorld().equals(getBeaconzWorld()) && getRegion().containsPoint(map.getCenterX(), map.getCenterZ()))) {
                 for (MapRenderer renderer : map.getRenderers()) {
@@ -372,7 +370,7 @@ public class Game extends BeaconzPluginDependent {
             player.setScoreboard(scorecard.getManager().getNewScoreboard());
             // Remove any maps
             for (ItemStack item: player.getInventory()) {
-                if (item != null && item.getType().equals(Material.MAP)) {
+                if (item != null && item.getType().equals(Material.FILLED_MAP)) {
                     if (getRegister().getBeaconMap(item.getDurability()) != null) {
                         getRegister().removeBeaconMap(item.getDurability());
                     }
@@ -486,7 +484,7 @@ public class Game extends BeaconzPluginDependent {
     }
 
     /**
-     * @param Set when the game is over
+     * @param isOver when the game is over
      */
     public void setOver(boolean isOver) {
         //getLogger().info("DEBUG: game setOver = " + isOver);

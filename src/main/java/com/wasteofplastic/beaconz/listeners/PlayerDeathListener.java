@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 - 2016 tastybento
+ * Copyright (c) 2015 - 2025 tastybento
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.UUID;
 
 import org.bukkit.Location;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -46,8 +47,8 @@ import com.wasteofplastic.beaconz.Game;
  */
 public class PlayerDeathListener extends BeaconzPluginDependent implements Listener {
 
-    private HashMap<UUID, Location> deadPlayers = new HashMap<UUID,Location>();
-    private static final String LOBBY = "Lobby";
+    private final HashMap<UUID, Location> deadPlayers = new HashMap<>();
+    protected static final String LOBBY = "Lobby";
 
     /**
      * @param plugin
@@ -61,7 +62,6 @@ public class PlayerDeathListener extends BeaconzPluginDependent implements Liste
      * for when they reenter the game
      * @param event
      */
-    @SuppressWarnings("deprecation")
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onDeath(final PlayerDeathEvent event) {
 
@@ -106,8 +106,8 @@ public class PlayerDeathListener extends BeaconzPluginDependent implements Liste
             }  
 
             // They are dead, so when they respawn they need to have full health (otherwise they will die repeatedly)
-            getBeaconzStore().setHealth(player, gameName, player.getMaxHealth());
-            getBeaconzStore().setFood(player, gameName, 20); 
+            getBeaconzStore().setHealth(player, gameName, player.getAttribute(Attribute.MAX_HEALTH).getValue());
+            getBeaconzStore().setFood(player, gameName,  20); 
 
             // Make a note of their death status
             deadPlayers.put(player.getUniqueId(), spawnPoint);            
@@ -123,7 +123,6 @@ public class PlayerDeathListener extends BeaconzPluginDependent implements Liste
         if (!deadPlayers.containsKey(event.getPlayer().getUniqueId())) {
             return;
         }
-        
         // Set respawn location to Beaconz lobby
         event.setRespawnLocation(getGameMgr().getLobby().getSpawnPoint());
         deadPlayers.remove(event.getPlayer().getUniqueId());

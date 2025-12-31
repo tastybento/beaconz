@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 - 2016 tastybento
+ * Copyright (c) 2015 - 2025 tastybento
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -67,7 +67,7 @@ import com.wasteofplastic.beaconz.DefenseBlock;
  */
 public class BeaconProjectileDefenseListener extends BeaconzPluginDependent implements Listener {
     private static final int RANGE = 10;
-    private HashMap<UUID, Team> projectiles = new HashMap<UUID, Team>();
+    private final HashMap<UUID, Team> projectiles = new HashMap<>();
     /**
      * @param plugin
      */
@@ -130,7 +130,6 @@ public class BeaconProjectileDefenseListener extends BeaconzPluginDependent impl
             if (playersTeam.equals(team)) {
                 //getLogger().info("DEBUG: prevented damage to friendly team member");
                 event.setCancelled(true);
-                return;
             }
             // Else it's fine to hurt!
             //getLogger().info("DEBUG: die!");
@@ -289,7 +288,7 @@ public class BeaconProjectileDefenseListener extends BeaconzPluginDependent impl
                 //getLogger().info("DEBUG: spectral arrow");
                 projectile = block.getWorld().spawnArrow(from, direction.add(aim), 1F, 10F, SpectralArrow.class);
                 ((SpectralArrow)projectile).setKnockbackStrength(1);
-            } else if (ih.getInventory().contains(Material.FIREBALL)) {
+            } else if (ih.getInventory().contains(Material.FIRE_CHARGE)) {
                 //getLogger().info("DEBUG: fireball");
                 projectile = (Projectile)block.getWorld().spawnEntity(from, EntityType.FIREBALL);
                 ((Fireball)projectile).setDirection(direction.add(aim));
@@ -320,10 +319,9 @@ public class BeaconProjectileDefenseListener extends BeaconzPluginDependent impl
         if (event.getVehicle().getPassenger() == null) {
             return;
         }
-        if (!(event.getVehicle().getPassenger() instanceof Player)) {
+        if (!(event.getVehicle().getPassenger() instanceof Player player)) {
             return;
         }
-        Player player = (Player)event.getVehicle().getPassenger();
         fireOnPlayer(player, event.getFrom(), event.getTo());
     }
 
@@ -359,7 +357,7 @@ public class BeaconProjectileDefenseListener extends BeaconzPluginDependent impl
                     case DISPENSER:
                         InventoryHolder ih = (InventoryHolder)block.getKey().getState();
                         if (ih.getInventory().contains(Material.ARROW) || ih.getInventory().contains(Material.TIPPED_ARROW)
-                                || ih.getInventory().contains(Material.SPECTRAL_ARROW) || ih.getInventory().contains(Material.FIREBALL)) {
+                                || ih.getInventory().contains(Material.SPECTRAL_ARROW) || ih.getInventory().contains(Material.FIRE_CHARGE)) {
                             //getLogger().info("DEBUG: contains arrow");
                             Vector adjust = (to.toVector().subtract(from.toVector()));
                             fireProjectile(block.getKey(), to, adjust, beacon.getOwnership());

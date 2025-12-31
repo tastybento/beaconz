@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 - 2016 tastybento
+ * Copyright (c) 2015 - 2025 tastybento
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -35,7 +35,6 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -67,8 +66,8 @@ import com.wasteofplastic.beaconz.TriangleField;
  */
 public class PlayerMovementListener extends BeaconzPluginDependent implements Listener {
 
-    private HashMap<UUID, Collection<PotionEffect>> triangleEffects = new HashMap<UUID, Collection<PotionEffect>>();
-    private Set<UUID> barrierPlayers = new HashSet<UUID>();
+    private final HashMap<UUID, Collection<PotionEffect>> triangleEffects = new HashMap<>();
+    private final Set<UUID> barrierPlayers = new HashSet<>();
 
     public PlayerMovementListener(Beaconz plugin) {
         super(plugin);
@@ -143,14 +142,13 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
 
     /**
      * Prevents damaging vehicles outside of the game area
-     * @param event
+     * @param event event
      */
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onVehicleDamage(final VehicleDamageEvent event) {
-        if (!(event.getAttacker() instanceof Player)) {
+        if (!(event.getAttacker() instanceof Player player)) {
             return;
         }
-        Player player = (Player)event.getAttacker();
         if (player.getWorld().equals(getBeaconzWorld())) {
             if (getGameMgr().getGame(event.getVehicle().getLocation()) == null) {
                 event.setCancelled(true);
@@ -170,8 +168,7 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
         }
         // Check if a player is in it
         Entity passenger = event.getVehicle().getPassenger();
-        if (passenger != null && passenger instanceof Player) {
-            Player player = (Player)passenger;
+        if (passenger instanceof Player player) {
             Location from = event.getFrom();
             Location to = event.getTo();
             /*
@@ -184,8 +181,8 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
             }*/
             // Check potion effects for boats etc.
             if ((!(event.getVehicle() instanceof LivingEntity))) {
-                for (PotionEffect effect : getPml().getTriangleEffects(player.getUniqueId())) {
-                    if (effect.getType().equals(PotionEffectType.SLOW)) {
+                for (PotionEffect effect : getTriangleEffects(player.getUniqueId())) {
+                    if (effect.getType().equals(PotionEffectType.SLOWNESS)) {
                         double delay = effect.getAmplifier();
                         event.getVehicle().setVelocity(event.getVehicle().getVelocity().divide(new Vector(delay,delay,delay)));
                         break;
@@ -286,9 +283,8 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
             for (PotionEffect effect : player.getActivePotionEffects()) {
                 player.removePotionEffect(effect.getType());
                 // Check vehicle
-                if (player.isInsideVehicle() && player.getVehicle() instanceof LivingEntity) {                    
+                if (player.isInsideVehicle() && player.getVehicle() instanceof LivingEntity le) {
                     //getLogger().info("DEBUG: living vehicle remove");
-                    LivingEntity le = (LivingEntity)player.getVehicle();
                     le.removePotionEffect(effect.getType());
                 }
             }
@@ -317,25 +313,21 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
      * @param toTriangles - list of new triangles player is covered by
      * @return true if the event should be canceled
      */
+    @SuppressWarnings("deprecation")
     public boolean applyTriangleEffects(Player player,
             List<TriangleField> fromTriangles, List<TriangleField> toTriangles) {
         // Get the player's team
         Team team = getGameMgr().getPlayerTeam(player);
         if (team == null) {
-            if (player.isOp()) {
-                return false;
-            } else {
-                return true;
-            }
+            return !player.isOp();
         }
         // Outside any field
         if (fromTriangles.isEmpty() && toTriangles.isEmpty()) {
             for (PotionEffect effect : player.getActivePotionEffects()) {
                 player.removePotionEffect(effect.getType());
                 // Check vehicle
-                if (player.isInsideVehicle() && player.getVehicle() instanceof LivingEntity) {                    
+                if (player.isInsideVehicle() && player.getVehicle() instanceof LivingEntity le) {
                     //getLogger().info("DEBUG: living vehicle remove");
-                    LivingEntity le = (LivingEntity)player.getVehicle();
                     le.removePotionEffect(effect.getType());
                 }
             }
@@ -343,16 +335,15 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
             return false;
         }
         // Check if to is not a triangle
-        if (toTriangles.size() == 0) {
+        if (toTriangles.isEmpty()) {
             // Leaving a control triangle
-            player.sendMessage(Lang.triangleLeaving.replace("[team]", fromTriangles.get(0).getOwner().getDisplayName()));
+            player.sendMessage(Lang.triangleLeaving.replace("[team]", fromTriangles.getFirst().getOwner().getDisplayName()));
             if (triangleEffects.containsKey(player.getUniqueId())) {
                 for (PotionEffect effect : triangleEffects.get(player.getUniqueId())) {
                     player.removePotionEffect(effect.getType());
                     // Check vehicle
-                    if (player.isInsideVehicle() && player.getVehicle() instanceof LivingEntity) {                    
+                    if (player.isInsideVehicle() && player.getVehicle() instanceof LivingEntity le) {
                         //getLogger().info("DEBUG: living vehicle remove");
-                        LivingEntity le = (LivingEntity)player.getVehicle();
                         le.removePotionEffect(effect.getType());
                     }
                 }
@@ -362,21 +353,20 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
         }
         // Entering a field, or moving to a stronger field
         if (fromTriangles.size() < toTriangles.size()) {
-            player.sendMessage((Lang.triangleEntering.replace("[team]", toTriangles.get(0).getOwner().getDisplayName())).replace("[level]",String.valueOf(toTriangles.size())));
+            player.sendMessage((Lang.triangleEntering.replace("[team]", toTriangles.getFirst().getOwner().getDisplayName())).replace("[level]",String.valueOf(toTriangles.size())));
         } else if (toTriangles.size() < fromTriangles.size()) {
             // Remove all current effects - the lower set will be applied below
             if (triangleEffects.containsKey(player.getUniqueId())) {
                 for (PotionEffect effect : triangleEffects.get(player.getUniqueId())) {
                     player.removePotionEffect(effect.getType());
                     // Check vehicle
-                    if (player.isInsideVehicle() && player.getVehicle() instanceof LivingEntity) {                    
+                    if (player.isInsideVehicle() && player.getVehicle() instanceof LivingEntity le) {
                         //getLogger().info("DEBUG: living vehicle remove");
-                        LivingEntity le = (LivingEntity)player.getVehicle();
                         le.removePotionEffect(effect.getType());
                     }
                 }
             }
-            player.sendMessage((Lang.triangleDroppingToLevel.replace("[team]", toTriangles.get(0).getOwner().getDisplayName())).replace("[level]",String.valueOf(toTriangles.size())));
+            player.sendMessage((Lang.triangleDroppingToLevel.replace("[team]", toTriangles.getFirst().getOwner().getDisplayName())).replace("[level]",String.valueOf(toTriangles.size())));
         }
 
         // Apply triangle effects
@@ -397,9 +387,8 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
                 for (PotionEffect effect : triangleEffects.get(player.getUniqueId())) {
                     player.removePotionEffect(effect.getType());                   
                     // Check vehicle
-                    if (player.isInsideVehicle() && player.getVehicle() instanceof LivingEntity) {                    
+                    if (player.isInsideVehicle() && player.getVehicle() instanceof LivingEntity le) {
                         //getLogger().info("DEBUG: living vehicle remove");
-                        LivingEntity le = (LivingEntity)player.getVehicle();
                         le.removePotionEffect(effect.getType());
                     }
                 }
@@ -410,8 +399,8 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
         // Update the active effects on the player
         // Add bad stuff
         // Enemy team
-        Team triangleOwner = to.get(0).getOwner();
-        Collection<PotionEffect> effects = new ArrayList<PotionEffect>();
+        Team triangleOwner = to.getFirst().getOwner();
+        Collection<PotionEffect> effects = new ArrayList<>();
         if (triangleOwner != null && !triangleOwner.equals(team)) {
             for (int i = 0; i <= to.size(); i++) {
                 if (Settings.enemyFieldEffects.containsKey(i)) {
@@ -420,9 +409,8 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
             }
             player.addPotionEffects(effects);
             // Check vehicle
-            if (player.isInsideVehicle() && player.getVehicle() instanceof LivingEntity) {
+            if (player.isInsideVehicle() && player.getVehicle() instanceof LivingEntity le) {
                 //getLogger().info("DEBUG: living vehicle");
-                LivingEntity le = (LivingEntity)player.getVehicle();
                 le.addPotionEffects(effects);
             }
         }
@@ -435,9 +423,8 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
             }
             player.addPotionEffects(effects);
             // Check vehicle
-            if (player.isInsideVehicle() && player.getVehicle() instanceof LivingEntity) {
+            if (player.isInsideVehicle() && player.getVehicle() instanceof LivingEntity le) {
                 //getLogger().info("DEBUG: living vehicle");
-                LivingEntity le = (LivingEntity)player.getVehicle();
                 le.addPotionEffects(effects);
             }
         }
@@ -448,11 +435,14 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
      * @return the triangleEffects or an empty list if there is none
      */
     public Collection<PotionEffect> getTriangleEffects(UUID playerUUID) {
-        if (triangleEffects.containsKey(playerUUID)) {
-            return triangleEffects.get(playerUUID);
-        } else {
-            return Collections.emptyList();
-        }
+        return triangleEffects.getOrDefault(playerUUID, Collections.emptyList());
+    }
+
+    /**
+     * @return the triangleEffects
+     */
+    public HashMap<UUID, Collection<PotionEffect>> getTriangleEffects() {
+        return triangleEffects;
     }
 
 }

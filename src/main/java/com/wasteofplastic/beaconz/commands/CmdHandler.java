@@ -46,11 +46,10 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
-        if (!(sender instanceof Player)) {
+        if (!(sender instanceof Player player)) {
             sender.sendMessage(Lang.errorOnlyPlayers);
             return true;
         }
-        Player player = (Player)sender;
         if (!player.hasPermission("beaconz.player")) {
             sender.sendMessage(ChatColor.RED + Lang.errorYouDoNotHavePermission);
             return true;
@@ -216,9 +215,9 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
     public List<String> onTabComplete(CommandSender sender, Command command,
             String alias, String[] args) {
         if (!(sender instanceof Player)) {
-            return new ArrayList<String>();
+            return new ArrayList<>();
         }
-        final List<String> options = new ArrayList<String>();
+        final List<String> options = new ArrayList<>();
         String lastArg = (args.length != 0 ? args[args.length - 1] : "");
 
         switch (args.length) {
@@ -238,7 +237,7 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
             //if (args[0].equalsIgnoreCase("join") || args[0].equalsIgnoreCase("leave")) {
             if (sender.hasPermission("beaconz.player.leave") && args[0].equalsIgnoreCase("leave")) {
                 // List all the games this player is in
-                List<String> inGames = new ArrayList<String>();
+                List<String> inGames = new ArrayList<>();
                 for (Game game : getGameMgr().getGames().values()) {
                     if (game.getScorecard().getTeam((Player)sender) != null) {
                         inGames.add(game.getName());
@@ -260,7 +259,7 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
      * @return List of items that start with the letters
      */
     public static List<String> tabLimit(final List<String> list, final String start) {
-        final List<String> returned = new ArrayList<String>();
+        final List<String> returned = new ArrayList<>();
         for (String s : list) {
             if (s.toLowerCase().startsWith(start.toLowerCase())) {
                 returned.add(s);

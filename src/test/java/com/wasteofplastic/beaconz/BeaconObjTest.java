@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.wasteofplastic.beaconz;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -8,7 +5,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.awt.geom.Point2D;
 
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 
 /**

@@ -1,6 +1,7 @@
 package com.wasteofplastic.include.it.unimi.dsi.util;
 
 import java.util.Random;
+import java.util.random.RandomGenerator;
 
 /*
  * DSI utilities
@@ -63,7 +64,7 @@ import java.util.Random;
  * <li><samp>MT19937</samp> and its reverse fail 516 tests (the only test failed at all points is LinearComp);
  *
  * <li>{@link Random} and its reverse fail 13564 tests of all kind.
- *
+ * <p>
  * </ul>
  *
  * <p>This class extends {@link Random}, overriding (as usual) the {@link Random#next(int)} method.
@@ -86,7 +87,7 @@ import java.util.Random;
  */
 public class XorShift {
 
-    private static long[] randomnessReserve=new long[]{
+    private static final long[] randomnessReserve=new long[]{
         0x8b654c54c5a25ee5L,
         0x75d986ee758ad676L,
         0xb2cad20309e80705L,
@@ -113,7 +114,7 @@ public class XorShift {
     private static final double NORM_24 = 1. / ( 1L << 24 );
 
     /** The internal state of the algorithm. */
-    private long[] s = new long[] {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+    private final long[] s = new long[] {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
     private int p;
 
     /** Creates a new generator using a given seed.

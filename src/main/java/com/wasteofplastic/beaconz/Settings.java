@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 - 2016 tastybento
+ * Copyright (c) 2015 - 2025 tastybento
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -31,7 +31,6 @@ import java.util.TreeMap;
 
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.material.MaterialData;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.scoreboard.Team;
 
@@ -109,17 +108,17 @@ public class Settings {
      *   Rewards from hacking your own team beacon
      *   Format is "Id#/Material:[Durability/Qty]:Qty:%Chance"
      */
-    public static TreeMap<Integer,ItemStack> teamGoodies = new TreeMap<Integer,ItemStack>();
+    public static final TreeMap<Integer,ItemStack> teamGoodies = new TreeMap<>();
     /**
      *   Rewards from hacking enemy team beacon
      *   Format is "Id#/Material:[Durability/Qty]:Qty:%Chance"
      */
-    public static TreeMap<Integer,ItemStack> enemyGoodies = new TreeMap<Integer,ItemStack>();
+    public static final TreeMap<Integer,ItemStack> enemyGoodies = new TreeMap<>();
     /**
      * Effects from going into enemy triangle fields. Effects are cumulative
      * Integer is the level of triangle overlap.
      */
-    public static HashMap<Integer, List<PotionEffect>> enemyFieldEffects;
+    public static HashMap<Integer, List<PotionEffect>> enemyFieldEffects = new HashMap<>();
     /**
      * Effects from going into friendly triangle fields. Effects are cumulative
      * Integer is the level of triangle overlap.
@@ -130,7 +129,7 @@ public class Settings {
      * What newbies get when they join the game
      * Format is "Id#/Material:[Durability/Qty]:Qty"
      */
-    public static List<ItemStack> newbieKit = new ArrayList<ItemStack>();
+    public static final List<ItemStack> newbieKit = new ArrayList<>();
     
     /**
      * The XP players get when joining a game in minigame mode
@@ -181,7 +180,7 @@ public class Settings {
     /**
      * Coordinates of the chunk we're regenerating via the "reset" command
      */
-    public static Set<Pair> populate = new HashSet<Pair>();
+    public static final Set<Pair> populate = new HashSet<>();
     
     
     /**
@@ -223,7 +222,7 @@ public class Settings {
     /**
      * Team colors
      */
-    public static HashMap<Team, MaterialData> teamBlock;
+    public static HashMap<Team, Material> teamBlock;
     
     /**
      * Commands to run when a player makes a link

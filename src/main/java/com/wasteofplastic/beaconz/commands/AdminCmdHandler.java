@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 - 2016 tastybento
+ * Copyright (c) 2015 - 2025 tastybento
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,8 +22,6 @@
 
 package com.wasteofplastic.beaconz.commands;
 
-import io.github.ebaldino.queuemgr.QueueMgrInterface;
-
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,7 +33,6 @@ import org.apache.commons.lang.math.NumberUtils;
 import org.bukkit.ChatColor;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.block.Sign;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -61,8 +58,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
     @SuppressWarnings("deprecation")
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (sender instanceof Player) {
-            Player player = (Player)sender;
+        if (sender instanceof Player player) {
             if (!player.isOp() && !player.hasPermission("beaconz.admin")) {
                 senderMsg(sender, ChatColor.RED + Lang.errorYouDoNotHavePermission);
                 return true;
@@ -72,7 +68,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
         Game game = null;
         Player player = null;
 
-        if (args.length == 0 || (args.length == 1 && args[0].toLowerCase().equals("help"))) {
+        if (args.length == 0 || (args.length == 1 && args[0].equalsIgnoreCase("help"))) {
             ChatColor cc1 = ChatColor.GREEN;
             ChatColor cc2 = ChatColor.YELLOW;
             ChatColor cc3 = ChatColor.AQUA;
@@ -145,8 +141,8 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                                         // Claim a beacon
                                         //getRegister().getBeaconRegister().get(newClaim).setOwnership(team);
                                         getRegister().setBeaconOwner(beacon, team);
-                                        block.setType(game.getScorecard().getBlockID(team).getItemType());
-                                        block.setData(game.getScorecard().getBlockID(team).getData());
+                                        block.setType(game.getScorecard().getBlockID(team));
+                                        // TODO block.setData(game.getScorecard().getBlockID(team).getData());
                                     }
                                     player.sendMessage(Lang.beaconClaimedForTeam.replace("[team]", args[1]));
                                 }
@@ -161,7 +157,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                     senderMsg(sender, ChatColor.RED + "/" + label + " distribution <fraction between 0 and 1> " + Lang.helpAdminDistribution);
                 } else {
                     try {
-                        double dist = Double.valueOf(args[1]);
+                        double dist = Double.parseDouble(args[1]);
                         if (dist > 0D && dist < 1D) {
                             Settings.distribution = dist;
                             senderMsg(sender, ChatColor.GREEN + Lang.actionsDistributionSettingTo.replace("[value]", String.valueOf(dist)));
@@ -178,7 +174,6 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                 if (args.length == 1) {
                     if (!(sender instanceof Player)) {
                         senderMsg(sender, Lang.errorOnlyPlayers);
-                        return true;
                     } else {
                         player = (Player) sender;
                         team = getGameMgr().getPlayerTeam(player);
@@ -205,13 +200,12 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                             }
                         }
                         senderMsg(sender, ChatColor.RED + Lang.errorNoSuchTeam);
-                        return true;
                     }
+                    return true;
                 } else if (args.length == 2) {
                     player = getServer().getPlayer(args[1]);
                     if (player == null) {
                         senderMsg(sender, Lang.errorUnknownPlayer);
-                        return true;
                     } else {
                         team = getGameMgr().getPlayerTeam(player);
                         if (team == null) {
@@ -239,8 +233,8 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                             }
                         }
                         senderMsg(sender, ChatColor.RED + Lang.errorNoSuchTeam);
-                        return true;
                     }
+                    return true;
                 }
             case "join":
                 if (args.length < 3) {
@@ -414,7 +408,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                     senderMsg(sender, "/" + label + " newgame <gamename> [<parm1:value> <parm2:value>...] - parameters are optional");
                     senderMsg(sender, "/" + label + " do /" + label + " newgame help for a list of the possible parameters");
                 } else {
-                    if (args[1].toLowerCase().equals("help")) {
+                    if (args[1].equalsIgnoreCase("help")) {
                         senderMsg(sender, "/" + label + " newgame <gamename> [<parm1:value> <parm2:value>...]");
                         senderMsg(sender, ChatColor.GREEN  + "The optional parameters and their values are:");
                         senderMsg(sender, ChatColor.YELLOW  + "gamemode -  " + ChatColor.AQUA + " values can be either 'minigame' or 'strategy' - e.g gamemode:strategy");
@@ -565,9 +559,9 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                 if (args.length < 2) {
                     senderMsg(sender, ChatColor.RED + "/" + label + " teams [all | <gamename>] " + Lang.helpAdminTeams);
                 } else {
-                    Boolean foundgame = false;
+                    boolean foundgame = false;
                     for (String gname : getGameMgr().getGames().keySet()) {
-                        if (args[1].toLowerCase().equals("all") || gname.equals(args[1])) {
+                        if (args[1].equalsIgnoreCase("all") || gname.equals(args[1])) {
                             foundgame = true;
                             game = getGameMgr().getGames().get(gname);
                             senderMsg(sender, ChatColor.GREEN + Lang.generalTeams + " - " + gname);
@@ -578,9 +572,9 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                                 HashMap<Team, List<String>> teamMembers = game.getScorecard().getTeamMembers();
                                 for (Team t : teamMembers.keySet()) {
                                     senderMsg(sender, "==== " + t.getDisplayName() + " ====");
-                                    String memberlist = "";
+                                    StringBuilder memberlist = new StringBuilder();
                                     for (String uuid : teamMembers.get(t)) {
-                                        memberlist = memberlist + "[" + getServer().getOfflinePlayer(UUID.fromString(uuid)).getName() + "] ";
+                                        memberlist.append("[").append(getServer().getOfflinePlayer(UUID.fromString(uuid)).getName()).append("] ");
                                     }
                                     senderMsg(sender, ChatColor.WHITE + Lang.generalMembers + ": " + memberlist);
                                 }
@@ -588,7 +582,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                         }
                     }
                     if (!foundgame) {
-                        if (args[1].toLowerCase().equals("all")) {
+                        if (args[1].equalsIgnoreCase("all")) {
                             senderMsg(sender, Lang.errorNoGames);
                         } else {
                             senderMsg(sender, ChatColor.RED + Lang.errorNoSuchGame + "'" + args[1] + "'");
@@ -679,7 +673,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
      * sets a game's parameters accordingly
      * Used by both newgame and setparms commands
      * @param game - if game is null, will set GameMgr's default parms; otherwise, will set the game's parms
-     * @param arguments
+     * @param args - the array of parameters
      * @return an error message if a problem was encountered, null otherwise
      */
     public String setGameParms(Game game, String[] args) {
@@ -690,34 +684,34 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
 
         // If *ALL* arguments are OK, process them into the game
         if (errormsg.isEmpty()) {
-            for (int i=0; i < args.length; i++) {
-                String parm = args[i].split(":")[0];
-                String value = args[i].split(":")[1];
+            for (String arg : args) {
+                String parm = arg.split(":")[0];
+                String value = arg.split(":")[1];
                 if (parm == null || value == null) {
                     errormsg = Lang.adminParmsArgumentsPairs;
                 } else {
 
                     switch (parm.toLowerCase()) {
-                    case "gamemode":
-                        game.setGamemode(value);
-                        break;
-                    case "teams":
-                        game.setNbrTeams(Integer.valueOf(value));
-                        break;
-                    case "goal":
-                        game.setGamegoal(value);
-                        break;
-                    case "goalvalue":
-                        game.setGamegoalvalue(Integer.valueOf(value));
-                        break;
-                    case "countdown":
-                        game.setCountdownTimer(Integer.valueOf(value));
-                        break;
-                    case "scoretypes":
-                        game.setScoretypes(value.replace("-", ":"));
-                        break;
-                    default:
-                        break;
+                        case "gamemode":
+                            game.setGamemode(value);
+                            break;
+                        case "teams":
+                            game.setNbrTeams(Integer.parseInt(value));
+                            break;
+                        case "goal":
+                            game.setGamegoal(value);
+                            break;
+                        case "goalvalue":
+                            game.setGamegoalvalue(Integer.parseInt(value));
+                            break;
+                        case "countdown":
+                            game.setCountdownTimer(Integer.parseInt(value));
+                            break;
+                        case "scoretypes":
+                            game.setScoretypes(value.replace("-", ":"));
+                            break;
+                        default:
+                            break;
                     }
                 }
             }
@@ -738,9 +732,9 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
         // Get default parameters
         String mode = Settings.gamemode;
         int nteams = Settings.defaultTeamNumber;
-        String ggoal = mode.toLowerCase().equals("strategy") ? Settings.strategyGoal: Settings.minigameGoal;
-        int gvalue = mode.toLowerCase().equals("strategy") ? Settings.strategyGoalValue : Settings.minigameGoalValue;
-        int timer = mode.toLowerCase().equals("strategy") ? Settings.strategyTimer : Settings.minigameTimer;
+        String ggoal = mode.equalsIgnoreCase("strategy") ? Settings.strategyGoal: Settings.minigameGoal;
+        int gvalue = mode.equalsIgnoreCase("strategy") ? Settings.strategyGoalValue : Settings.minigameGoalValue;
+        int timer = mode.equalsIgnoreCase("strategy") ? Settings.strategyTimer : Settings.minigameTimer;
         int gdistance = Settings.gameDistance;
         double gdistribution = Settings.distribution;
         String stypes = null;
@@ -750,38 +744,38 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
 
         // If all arguments are OK, set them as the new defaults for creating games
         if (errormsg.isEmpty()) {
-            for (int i=0; i < args.length; i++) {
-                String parm = args[i].split(":")[0];
-                String value = args[i].split(":")[1];
+            for (String arg : args) {
+                String parm = arg.split(":")[0];
+                String value = arg.split(":")[1];
                 if (parm == null || value == null) {
                     errormsg = Lang.adminParmsArgumentsPairs;
                 } else {
                     switch (parm.toLowerCase()) {
-                    case "gamemode":
-                        mode = value;
-                        break;
-                    case "size":
-                        gdistance = Integer.valueOf(value);
-                        break;
-                    case "teams":
-                        nteams = Integer.valueOf(value);
-                        break;
-                    case "goal":
-                        ggoal = value;
-                        break;
-                    case "goalvalue":
-                        gvalue = Integer.valueOf(value);
-                        break;
-                    case "countdown":
-                        timer = Integer.valueOf(value);
-                        break;
-                    case "scoretypes":
-                        stypes = value.replace("-", ":");
-                        break;
-                    case "distribution":
-                        gdistribution = Double.valueOf(value);
-                    default:
-                        break;
+                        case "gamemode":
+                            mode = value;
+                            break;
+                        case "size":
+                            gdistance = Integer.parseInt(value);
+                            break;
+                        case "teams":
+                            nteams = Integer.parseInt(value);
+                            break;
+                        case "goal":
+                            ggoal = value;
+                            break;
+                        case "goalvalue":
+                            gvalue = Integer.parseInt(value);
+                            break;
+                        case "countdown":
+                            timer = Integer.parseInt(value);
+                            break;
+                        case "scoretypes":
+                            stypes = value.replace("-", ":");
+                            break;
+                        case "distribution":
+                            gdistribution = Double.parseDouble(value);
+                        default:
+                            break;
                     }
                 }
             }
@@ -796,102 +790,102 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
     /**
      * Checks that an array of arguments contains valid parameters for a game
      * @param args - the array of parameters
-     * @param gamemode - the game's current gamemode, or the default in Settings
-     * @param timertype - the game's current timer type, or the default in Settings
      * @return an error message if a problem was encountered, null otherwise
      */
     public String checkParms(String[] args) {
-        String errormsg = "";
+        StringBuilder errormsg = new StringBuilder();
 
         // Check that *ALL* arguments are valid parms
-        for (int i=0; i < args.length; i++) {
+        for (String arg : args) {
             String parm = null;
             String value = null;
             try {
-                parm = args[i].split(":")[0];
-                value = args[i].split(":")[1];
-            } catch (Exception e) {}
+                parm = arg.split(":")[0];
+                value = arg.split(":")[1];
+            } catch (Exception e) {
+            }
             if (parm == null || value == null) {
-                errormsg = Lang.adminParmsArgumentsPairs;
+                errormsg = new StringBuilder(Lang.adminParmsArgumentsPairs);
             } else {
                 switch (parm.toLowerCase()) {
-                case "gamemode":
-                    if (!value.equals("strategy") && !value.equals("minigame")) {
-                        errormsg = errormsg + "<< 'gamemode:' has to be either 'strategy' or 'minigame' >>";
-                    }
-                    break;
-                case "size":
-                    if (!NumberUtils.isNumber(value)) {
-                        errormsg = "<< 'size:' value must be a number >>";
-                    }
-                    break;
-                case "teams":
-                    if (!NumberUtils.isNumber(value)) {
-                        errormsg = "<< 'team:' value must be a number >>";
-                    }
-                    int number = NumberUtils.toInt(value);
-                    if (number < 2 || number > 14) {
-                        errormsg = "<< 'team:' value must be between 2 and 14 >>";
-                    }
-                    break;
-                case "goal":
-                    if (!value.equals("area") && !value.equals("beacons") &&
-                            !value.equals("links") && !value.equals("triangles")) {
-                        errormsg = "<< 'goal:' has to be one of 'area', 'beacons', 'links' or 'triangles' >>";
-                    }
-                    break;
-                case "goalvalue":
-                    if (!NumberUtils.isNumber(value)) {
-                        errormsg = "<< 'goalvalue:' value must be a number >>";
-                    }
-                    int number2 = NumberUtils.toInt(value);
-                    if (number2 < 0) {
-                        errormsg = "<< 'goalvalue:' value cannot be negative >>";
-                    }
-                    break;
-                case "countdown":
-                    if (!NumberUtils.isNumber(value)) {
-                        errormsg = "<< 'countdown:' value must be a number >>";
-                    }
-                    break;
-                case "scoretypes":
-                    String stmsg = "<< 'scoretypes:' must be a list of the goals to display on the scoreboard, such as 'area-beacons'. Possible goals are 'area', 'beacons', 'links' and 'triangles' >>";
-                    value = value.replace(" ", "");
-                    String[] stypes = value.split("-");
-                    if (stypes.length == 0) {
-                        errormsg = stmsg;
-                    } else {
-                        for (int st = 0; st < stypes.length; st++) {
-                            if (!stypes[st].equals("area") && !stypes[st].equals("beacons") &&
-                                    !stypes[st].equals("links") && !stypes[st].equals("triangles")) {
-                                errormsg = stmsg;
+                    case "gamemode":
+                        if (!value.equals("strategy") && !value.equals("minigame")) {
+                            errormsg.append("<< 'gamemode:' has to be either 'strategy' or 'minigame' >>");
+                        }
+                        break;
+                    case "size":
+                        if (!NumberUtils.isNumber(value)) {
+                            errormsg = new StringBuilder("<< 'size:' value must be a number >>");
+                        }
+                        break;
+                    case "teams":
+                        if (!NumberUtils.isNumber(value)) {
+                            errormsg = new StringBuilder("<< 'team:' value must be a number >>");
+                        }
+                        int number = NumberUtils.toInt(value);
+                        if (number < 2 || number > 14) {
+                            errormsg = new StringBuilder("<< 'team:' value must be between 2 and 14 >>");
+                        }
+                        break;
+                    case "goal":
+                        if (!value.equals("area") && !value.equals("beacons") &&
+                                !value.equals("links") && !value.equals("triangles")) {
+                            errormsg = new StringBuilder("<< 'goal:' has to be one of 'area', 'beacons', 'links' or 'triangles' >>");
+                        }
+                        break;
+                    case "goalvalue":
+                        if (!NumberUtils.isNumber(value)) {
+                            errormsg = new StringBuilder("<< 'goalvalue:' value must be a number >>");
+                        }
+                        int number2 = NumberUtils.toInt(value);
+                        if (number2 < 0) {
+                            errormsg = new StringBuilder("<< 'goalvalue:' value cannot be negative >>");
+                        }
+                        break;
+                    case "countdown":
+                        if (!NumberUtils.isNumber(value)) {
+                            errormsg = new StringBuilder("<< 'countdown:' value must be a number >>");
+                        }
+                        break;
+                    case "scoretypes":
+                        String stmsg = "<< 'scoretypes:' must be a list of the goals to display on the scoreboard, such as 'area-beacons'. Possible goals are 'area', 'beacons', 'links' and 'triangles' >>";
+                        value = value.replace(" ", "");
+                        String[] stypes = value.split("-");
+                        if (stypes.length == 0) {
+                            errormsg = new StringBuilder(stmsg);
+                        } else {
+                            for (String stype : stypes) {
+                                if (!stype.equals("area") && !stype.equals("beacons") &&
+                                        !stype.equals("links") && !stype.equals("triangles")) {
+                                    errormsg = new StringBuilder(stmsg);
+                                    break;
+                                }
                             }
                         }
-                    }
-                    break;
-                case "distribution":
-                    if (!NumberUtils.isNumber(value)) {
-                        errormsg = "<< 'distribution must be a number between 0.01 and 0.99 >>";
-                    }
-                    double dist = NumberUtils.toDouble(value);
-                    if (dist == 0) {
-                        errormsg = "<< 'distribution must be a number between 0.01 and 0.99 >>";
-                    }
-                    break;
-                default:
-                    errormsg = Lang.adminParmsDoesNotExist.replace("[name]", parm);
-                    break;
+                        break;
+                    case "distribution":
+                        if (!NumberUtils.isNumber(value)) {
+                            errormsg = new StringBuilder("<< 'distribution must be a number between 0.01 and 0.99 >>");
+                        }
+                        double dist = NumberUtils.toDouble(value);
+                        if (dist == 0) {
+                            errormsg = new StringBuilder("<< 'distribution must be a number between 0.01 and 0.99 >>");
+                        }
+                        break;
+                    default:
+                        errormsg = new StringBuilder(Lang.adminParmsDoesNotExist.replace("[name]", parm));
+                        break;
                 }
             }
         }
 
         // All done
-        return errormsg;
+        return errormsg.toString();
     }
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        final List<String> options = new ArrayList<String>();
+        final List<String> options = new ArrayList<>();
         Player player = null;
         if (sender instanceof Player) {
             player = (Player)sender;
@@ -1030,7 +1024,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
      * @return List of items that start with the letters
      */
     public static List<String> tabLimit(final List<String> list, final String start) {
-        final List<String> returned = new ArrayList<String>();
+        final List<String> returned = new ArrayList<>();
         for (String s : list) {
             if (s.toLowerCase().startsWith(start.toLowerCase())) {
                 returned.add(s);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 - 2016 tastybento
+ * Copyright (c) 2015 - 2025 tastybento
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,8 +21,6 @@
  */
 
 package com.wasteofplastic.beaconz.listeners;
-
-import java.util.Iterator;
 
 import org.bukkit.ChatColor;
 import org.bukkit.World;
@@ -87,12 +85,7 @@ public class SkyListeners extends BeaconzPluginDependent implements Listener {
         if (!world.equals(getBeaconzWorld())) {
             return;
         }
-        Iterator<Block> it = event.blockList().iterator();
-        while(it.hasNext()) {
-            if (it.next().getY() == BLOCK_HEIGHT) {
-                it.remove();
-            }
-        }
+        event.blockList().removeIf(block -> block.getY() == BLOCK_HEIGHT);
     }
 
     /**

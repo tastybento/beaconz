@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 - 2016 tastybento
+ * Copyright (c) 2015 - 2025 tastybento
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,11 +29,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
-import java.util.Map.Entry;
 
-import org.apache.commons.lang.StringUtils;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -42,24 +41,26 @@ import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.scoreboard.Team;
 
+import com.destroystokyo.paper.MaterialTags;
+
 /**
  * Represents a beacon
  * @author tastybento
  *
  */
 public class BeaconObj extends BeaconzPluginDependent {
-    private Point2D location;
-    private int x;
-    private int z;
-    private int y;
+    private final Point2D location;
+    private final int x;
+    private final int z;
+    private final int y;
     private long hackTimer;
     private Team ownership;
     //private Set<BeaconObj> links;
     private Integer id = null;
     private boolean newBeacon = true;
-    private static final List<BlockFace> FACES = new ArrayList<BlockFace>(Arrays.asList(BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST, BlockFace.NORTH_EAST, BlockFace.NORTH_WEST, BlockFace.SOUTH_EAST, BlockFace.SOUTH_WEST));
-    private HashMap<Block, DefenseBlock> defenseBlocks = new HashMap<Block,DefenseBlock>();
-    private Set<BeaconObj> links = new HashSet<BeaconObj>();
+    private static final List<BlockFace> FACES = new ArrayList<>(Arrays.asList(BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST, BlockFace.NORTH_EAST, BlockFace.NORTH_WEST, BlockFace.SOUTH_EAST, BlockFace.SOUTH_WEST));
+    private HashMap<Block, DefenseBlock> defenseBlocks = new HashMap<>();
+    private final Set<BeaconObj> links = new HashSet<>();
 
     /**
      * Represents a beacon
@@ -114,7 +115,7 @@ public class BeaconObj extends BeaconzPluginDependent {
 
     /**
      * Add a link from this beacon to another beacon and make a return link
-     * @param beaconPair
+     * @param beacon the beacon to link to
      * @return true if link made, false if not
      */
     public boolean addOutboundLink(BeaconObj beacon) {
@@ -132,7 +133,7 @@ public class BeaconObj extends BeaconzPluginDependent {
 
     /**
      * Called by another beacon. Adds a link
-     * @param beaconPair
+     * @param beacon the beacon to link to
      */
     public void addLink(BeaconObj beacon) {
         links.add(beacon);
@@ -224,26 +225,33 @@ public class BeaconObj extends BeaconzPluginDependent {
 
     /**
      * Checks if a beacon base is clear of blocks and above the blocks all the way to the sky
-     * @return true if clear, false if not
+     * @return false if clear, true if not
      */
-    public boolean isClear() {
+    public boolean isNotClear() {
         Block beacon = getBeaconzWorld().getBlockAt((int)location.getX(), y, (int)location.getY());
-        //getLogger().info("DEBUG: block y = " + beacon.getY() + " " + beacon.getLocation());
+        getLogger().info("DEBUG: block y = " + beacon.getY() + " " + beacon.getLocation());
         for (BlockFace face: FACES) {
             Block block = beacon.getRelative(face);
-            //getLogger().info("DEBUG: highest block at " + block.getX() + "," + block.getZ() + " y = " + getHighestBlockYAt(block.getX(), block.getZ()));
+            getLogger().info("DEBUG: highest block at " + block.getX() + "," + block.getZ() + " y = " + getHighestBlockYAt(block.getX(), block.getZ()));
             if (block.getY() != getHighestBlockYAt(block.getX(), block.getZ())) {
-                return false;
+                getLogger().info("DEBUG: Beacon is not cleared");
+                return true;
             }
         }
+        getLogger().info("DEBUG: Checking defences");
         // Check all the defense blocks too
+        Block block;
         for (Point2D point: getRegister().getDefensesAtBeacon(this)) {
-            beacon = getBeaconzWorld().getBlockAt((int)point.getX(), y, (int)point.getY());
-            if (beacon.getY() != getHighestBlockYAt((int)point.getX(), (int)point.getY())) {
-                return false;
+            getLogger().info("DEBUG: checking = " + (int)point.getX() + "," + y + ", " + (int)point.getY());
+            block = getBeaconzWorld().getBlockAt((int)point.getX(), y, (int)point.getY());
+            getLogger().info("DEBUG: Block Y = " + block.getY() + " and it is " + block.getType());
+            if (block.getY() != getHighestBlockYAt((int)point.getX(), (int)point.getY())) {
+                getLogger().info("DEBUG: Beacon is no cleared");
+                return true;
             }
         }
-        return true;
+        getLogger().info("DEBUG: Beacon is cleared");
+        return false;
     }
 
     /**
@@ -345,10 +353,11 @@ public class BeaconObj extends BeaconzPluginDependent {
             b.getRelative(BlockFace.UP).setType(Material.OBSIDIAN);
         }
         
-        if (ownership != null && (!b.getRelative(BlockFace.UP).getType().equals(Material.STAINED_GLASS) && b.getRelative(BlockFace.UP).getData() != Settings.teamBlock.get(ownership).getData())) {
+        
+        
+        if (ownership != null && (!MaterialTags.STAINED_GLASS.isTagged(b.getRelative(BlockFace.UP)) && b.getRelative(BlockFace.UP).getType() != Settings.teamBlock.get(ownership))) {
             getLogger().severe("Beacon at " + x + " " + y + " " + z + " missing team glass block!");
-            b.getRelative(BlockFace.UP).setType(Material.STAINED_GLASS);
-            b.getRelative(BlockFace.UP).setData(Settings.teamBlock.get(ownership).getData());
+            b.getRelative(BlockFace.UP).setType(Settings.teamBlock.get(ownership));
         }
         // Create the pyramid
         b = b.getRelative(BlockFace.DOWN);
@@ -440,7 +449,7 @@ public class BeaconObj extends BeaconzPluginDependent {
      * @return
      */    
     public Boolean isLocked () {
-        Boolean rc = false;
+        boolean rc = false;
         int maxHeight = getHighestBlockY();
         for (int i = y; i <= maxHeight; i++) {
             if (nbrToLock(i) <= 0) {
@@ -464,7 +473,7 @@ public class BeaconObj extends BeaconzPluginDependent {
     
     public int nbrToLock(int height) {               
         
-        Integer maxLocking = Settings.nbrLockingBlocks;                
+        int maxLocking = Settings.nbrLockingBlocks;
         Material lockingBlock = Material.EMERALD_BLOCK;
         int missing = maxLocking;
                        
@@ -477,8 +486,8 @@ public class BeaconObj extends BeaconzPluginDependent {
             }
             
             // Figure out how many locking blocks we need for the owner team
-            Integer reqLocking = 3;
-            Integer maxSize = ownership.getSize(); 
+            int reqLocking = 3;
+            int maxSize = ownership.getSize();
             /*for (Team t : ownership.getScoreboard().getTeams()) {
                 if (t.getSize() > maxSize) {
                     maxSize = t.getSize();

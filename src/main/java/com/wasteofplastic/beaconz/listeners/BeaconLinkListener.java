@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 - 2016 tastybento
+ * Copyright (c) 2015 - 2025 tastybento
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -40,7 +40,7 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.MapMeta;
 import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
 import org.bukkit.scoreboard.Team;
@@ -52,7 +52,6 @@ import com.wasteofplastic.beaconz.DefenseBlock;
 import com.wasteofplastic.beaconz.Lang;
 import com.wasteofplastic.beaconz.LinkResult;
 import com.wasteofplastic.beaconz.Settings;
-import com.wasteofplastic.beaconz.map.BeaconMap;
 import com.wasteofplastic.beaconz.map.TerritoryMapRenderer;
 
 public class BeaconLinkListener extends BeaconzPluginDependent implements Listener {
@@ -67,6 +66,7 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
      * Handles the event of hitting a beacon with paper or a map
      * @param event
      */
+    @SuppressWarnings("deprecation")
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onPaperMapUse(final PlayerInteractEvent event) {
         if (DEBUG)
@@ -75,8 +75,18 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
         if (!event.hasItem()) {
             return;
         }
-        if (!event.getItem().getType().equals(Material.MAP)) {
+
+        if (!event.getItem().getType().equals(Material.FILLED_MAP)) {
             return;
+        }
+        int mapId = -1;
+        if (event.getItem().getItemMeta() instanceof MapMeta mapMeta) {
+            
+            // Check if the map has an ID associated with it
+            if (mapMeta.hasMapId()) {
+                mapId = mapMeta.getMapId();
+                getLogger().info("DEBUG: The Map ID is: " + mapId);
+            }
         }
         if (!event.getAction().equals(Action.RIGHT_CLICK_BLOCK)) {
             return;
@@ -130,7 +140,7 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
             return;
         } else {*/
         // Map!
-        BeaconObj mappedBeacon = getRegister().getBeaconMap(event.getItem().getDurability());
+        BeaconObj mappedBeacon = getRegister().getBeaconMap(mapId);
         if (mappedBeacon == null) {
             // This is not a beacon map
             return;
@@ -151,9 +161,9 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
             // Check if the player has sufficient experience to link the beacons
             int expRequired = getReqExp(beacon, mappedBeacon); 
             if (expRequired > 0) {
-                if (!testForExp(player, (int)(expRequired))) {
+                if (testForExp(player, expRequired)) {
                     player.sendMessage(ChatColor.RED + Lang.errorNotEnoughExperience);
-                    player.sendMessage(ChatColor.RED + Lang.beaconYouNeedThisMuchExp.replace("[number]", String.format(Locale.US, "%,d",(int)(expRequired))));
+                    player.sendMessage(ChatColor.RED + Lang.beaconYouNeedThisMuchExp.replace("[number]", String.format(Locale.US, "%,d", expRequired)));
                     player.sendMessage(ChatColor.RED + Lang.beaconYouHaveThisMuchExp.replace("[number]", String.format(Locale.US, "%,d",getTotalExperience(player))));
                     return;
                 }
@@ -172,7 +182,7 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
             // No exp required
             if (linkBeacons(player, team, beacon, mappedBeacon)) {
                 player.sendMessage(ChatColor.GREEN + Lang.beaconTheMapDisintegrates);
-                getRegister().removeBeaconMap(event.getItem().getDurability());
+                getRegister().removeBeaconMap(mapId);
                 player.getInventory().setItemInMainHand(null);
                 // Save for safety
                 getRegister().saveRegister();
@@ -219,36 +229,6 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
     }
 
     /**
-     * Puts a beacon map in the player's main hand
-     * @param player
-     * @param beacon
-     */
-    @SuppressWarnings("deprecation")
-    private void giveBeaconMap(Player player, BeaconObj beacon) {
-        // Make a map!
-        player.sendMessage(ChatColor.GREEN + Lang.beaconYouHaveAMap);
-        MapView map = Bukkit.createMap(getBeaconzWorld());
-        //map.setWorld(getBeaconzWorld());
-        map.setCenterX(beacon.getX());
-        map.setCenterZ(beacon.getZ());
-        map.getRenderers().clear();
-        map.addRenderer(new TerritoryMapRenderer(getBeaconzPlugin()));
-        map.addRenderer(new BeaconMap(getBeaconzPlugin()));
-        ItemStack newMap = new ItemStack(Material.MAP);
-        newMap.setDurability(map.getId());
-        ItemMeta meta = newMap.getItemMeta();
-        meta.setDisplayName("Beacon map for " + beacon.getName());
-        newMap.setItemMeta(meta);
-        // Each map is unique and the durability defines the map ID, register it
-        getRegister().addBeaconMap(map.getId(), beacon);
-        //getLogger().info("DEBUG: beacon id = " + beacon.getId());
-        // Put map into hand
-        ItemStack inHand = player.getInventory().getItemInMainHand();
-        player.getInventory().setItemInMainHand(newMap);
-        player.getInventory().addItem(inHand);
-    }
-
-    /**
      * Make sure all player held maps have triangle overlays. (todo: make sure all maps on item frames do as well)
      * There seem to be some bugs around this. It doesn't always take on the first try.
      */
@@ -257,20 +237,30 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
         Player player = event.getPlayer();
         ItemStack itemInHand = player.getInventory().getItem(event.getNewSlot());
         if (itemInHand == null) return;
-        if (!Material.MAP.equals(itemInHand.getType())) {
+        if (!Material.FILLED_MAP.equals(itemInHand.getType())) {
             return;
         }
         if (!player.getWorld().equals(getBeaconzWorld())) {
             return;
         }
-        @SuppressWarnings("deprecation")
-        MapView map = Bukkit.getMap(itemInHand.getDurability());
-        for (MapRenderer renderer : map.getRenderers()) {
-            if (renderer instanceof TerritoryMapRenderer) {
-                return;
+        if (itemInHand.getItemMeta() instanceof MapMeta mapMeta) {
+            
+            // Check if the map has an ID associated with it
+            if (mapMeta.hasMapId()) {
+                int mapId = mapMeta.getMapId();
+                getLogger().info("DEBUG: The Map ID is: " + mapId);
+                MapView map = Bukkit.getMap(mapId);
+                for (MapRenderer renderer : map.getRenderers()) {
+                    if (renderer instanceof TerritoryMapRenderer) {
+                        return;
+                    }
+                }
+                map.addRenderer(new TerritoryMapRenderer(getBeaconzPlugin()));
             }
+        } else {
+            getLogger().info("DEBUG: Item in hand is not a map");
         }
-        map.addRenderer(new TerritoryMapRenderer(getBeaconzPlugin()));
+        
     }
 
     /**
@@ -286,6 +276,7 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
      * @param otherBeacon
      * @return true if link is made successfully
      */
+    @SuppressWarnings("deprecation")
     private boolean linkBeacons(Player player, Team team, BeaconObj beacon,
             BeaconObj otherBeacon) {
         if (beacon.equals(otherBeacon)) {
@@ -320,7 +311,7 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
         if (result.isSuccess()) {
             player.sendMessage(ChatColor.GREEN + Lang.beaconLinkCreated);
             player.sendMessage(ChatColor.GREEN + Lang.beaconNowHasLinks.replace("[number]", String.valueOf(beacon.getNumberOfLinks())));
-            player.getWorld().playSound(player.getLocation(), Sound.ENTITY_FIREWORK_LARGE_BLAST, 1F, 1F);
+            player.getWorld().playSound(player.getLocation(), Sound.ENTITY_FIREWORK_ROCKET_LARGE_BLAST, 1F, 1F);
             // Tell the team
             getMessages().tellTeam(player, ChatColor.GREEN + Lang.beaconNameCreatedALink.replace("[name]", player.getDisplayName()));
         } else {
@@ -334,6 +325,7 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
                 // Taunt other teams
                 getMessages().tellOtherTeams(team, ChatColor.RED + Lang.beaconNameCreateATriangle.replace("[name]", team.getDisplayName()));
             } else {
+                @SuppressWarnings("deprecation")
                 String message = (Lang.beaconNameCreateTriangles.replace("[name]", player.getDisplayName())).replace("[number]", String.valueOf(result.getFieldsMade()));
                 String newScore = Lang.scoreNewScore + " " + String.format(Locale.US, "%,d", getGameMgr().getSC(team).getScore(team, "area"));
                 player.sendMessage(ChatColor.GOLD + message + " " + newScore);
@@ -368,7 +360,7 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
      * @return true if sufficient experience points otherwise false
      */
     public static boolean testForExp(Player player , int xpRequired){
-        return getTotalExperience(player) >= xpRequired ? true : false;
+        return getTotalExperience(player) < xpRequired;
     }
 
     /**

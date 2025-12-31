@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 - 2016 tastybento
+ * Copyright (c) 2015 - 2025 tastybento
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,7 +22,6 @@
 
 package com.wasteofplastic.beaconz.listeners;
 
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
@@ -58,25 +57,10 @@ public class BeaconSurroundListener extends BeaconzPluginDependent implements Li
     // Make breaking blocks 90% harder
     private static final double PROBABILITY = 1D;
     private static final double DAMAGE = 0D;
-    private static final Set<Material> protectedMaterials = new HashSet<Material>();
-    static {
-        protectedMaterials.add(Material.BARRIER);
-        protectedMaterials.add(Material.BEACON);
-        protectedMaterials.add(Material.BEDROCK);
-        protectedMaterials.add(Material.CLAY);
-        protectedMaterials.add(Material.COBBLESTONE);
-        protectedMaterials.add(Material.DIRT);
-        protectedMaterials.add(Material.GRASS);
-        protectedMaterials.add(Material.GRASS_PATH);
-        protectedMaterials.add(Material.HARD_CLAY);
-        protectedMaterials.add(Material.MOSSY_COBBLESTONE);
-        protectedMaterials.add(Material.OBSIDIAN);
-        protectedMaterials.add(Material.RED_SANDSTONE);
-        protectedMaterials.add(Material.SANDSTONE);
-        protectedMaterials.add(Material.SOIL);
-        protectedMaterials.add(Material.STAINED_CLAY);
-        protectedMaterials.add(Material.STONE);
-    }
+    private static final Set<Material> protectedMaterials = Set.of(
+            Material.BARRIER, Material.BEACON, Material.BEDROCK, Material.CLAY, Material.COBBLESTONE, Material.DIRT, Material.GRASS_BLOCK,
+            Material.DIRT_PATH, Material.MOSSY_COBBLESTONE, Material.OBSIDIAN, Material.RED_SANDSTONE, Material.SANDSTONE,
+            Material.TERRACOTTA, Material.STONE);
 
     public BeaconSurroundListener(Beaconz plugin) {
         super(plugin);
@@ -180,7 +164,7 @@ public class BeaconSurroundListener extends BeaconzPluginDependent implements Li
             }
         }
     }
-    
+
     /**
      * Prevent trees from growing above beacons
      * 

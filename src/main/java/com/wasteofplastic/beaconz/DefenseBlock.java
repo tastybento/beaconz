@@ -33,11 +33,10 @@ public class DefenseBlock implements Comparable<Object> {
         if (obj == null) {
             return false;
         }
-        if (!(obj instanceof Block)) {
+        if (!(obj instanceof Block b)) {
             return false;
         }
-        Block block = (Block)obj;
-        return block.equals(this.block);
+        return b.equals(this.block);
     }
     
     /**

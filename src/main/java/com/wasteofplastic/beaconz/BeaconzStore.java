@@ -40,8 +40,8 @@ import com.wasteofplastic.beaconz.listeners.BeaconLinkListener;
  *
  */
 public class BeaconzStore extends BeaconzPluginDependent {
-    private YamlConfiguration ymlIndex;
-    private File invFile;
+    private final YamlConfiguration ymlIndex;
+    private final File invFile;
     private static final boolean DEBUG = false;
 
     public BeaconzStore(Beaconz beaconzPlugin) {
@@ -77,9 +77,9 @@ public class BeaconzStore extends BeaconzPluginDependent {
      */
     public Location getInventory(Player player, String gameName) {
         // Get inventory
-        List<?> items = ymlIndex.getList(gameName + "." + player.getUniqueId().toString() + ".inventory");
-        if (items != null) player.getInventory().setContents(items.toArray(new ItemStack[items.size()]));
-        double health = ymlIndex.getDouble(gameName + "." + player.getUniqueId().toString() + ".health", 20D);
+        List<?> items = ymlIndex.getList(gameName + "." + player.getUniqueId() + ".inventory");
+        if (items != null) player.getInventory().setContents(items.toArray(new ItemStack[0]));
+        double health = ymlIndex.getDouble(gameName + "." + player.getUniqueId() + ".health", 20D);
         if (health > 20D) {
             health = 20D;
         }
@@ -87,7 +87,7 @@ public class BeaconzStore extends BeaconzPluginDependent {
             health = 1D;
         }
         player.setHealth(health);
-        int food = ymlIndex.getInt(gameName + "." + player.getUniqueId().toString() + ".food", 20); 
+        int food = ymlIndex.getInt(gameName + "." + player.getUniqueId() + ".food", 20);
         if (food > 20) {
             food = 20;
         }
@@ -95,9 +95,9 @@ public class BeaconzStore extends BeaconzPluginDependent {
             food = 1;
         }
         player.setFoodLevel(food);
-        BeaconLinkListener.setTotalExperience(player, ymlIndex.getInt(gameName + "." + player.getUniqueId().toString() + ".exp", 0));
+        BeaconLinkListener.setTotalExperience(player, ymlIndex.getInt(gameName + "." + player.getUniqueId() + ".exp", 0));
         // Get Spawn Point
-        return (Location)(ymlIndex.get(gameName + "." + player.getUniqueId().toString() + ".location"));
+        return (Location)(ymlIndex.get(gameName + "." + player.getUniqueId() + ".location"));
     }
 
     /**
@@ -122,11 +122,11 @@ public class BeaconzStore extends BeaconzPluginDependent {
             getLogger().info("DEBUG: storeInventory for " + player.getName() + " leaving " + gameName + " from " + from);
         // Copy the player's items to the chest
         List<ItemStack> contents = Arrays.asList(player.getInventory().getContents());  
-        ymlIndex.set(gameName + "." + player.getUniqueId().toString() + ".inventory", contents);
-        ymlIndex.set(gameName + "." + player.getUniqueId().toString() + ".health", player.getHealth());
-        ymlIndex.set(gameName + "." + player.getUniqueId().toString() + ".food", player.getFoodLevel());
-        ymlIndex.set(gameName + "." + player.getUniqueId().toString() + ".exp", BeaconLinkListener.getTotalExperience(player));
-        ymlIndex.set(gameName + "." + player.getUniqueId().toString() + ".location", player.getLocation());
+        ymlIndex.set(gameName + "." + player.getUniqueId() + ".inventory", contents);
+        ymlIndex.set(gameName + "." + player.getUniqueId() + ".health", player.getHealth());
+        ymlIndex.set(gameName + "." + player.getUniqueId() + ".food", player.getFoodLevel());
+        ymlIndex.set(gameName + "." + player.getUniqueId() + ".exp", BeaconLinkListener.getTotalExperience(player));
+        ymlIndex.set(gameName + "." + player.getUniqueId() + ".location", player.getLocation());
         saveInventories();
         // Clear the player's inventory
         player.getInventory().clear();
@@ -147,13 +147,13 @@ public class BeaconzStore extends BeaconzPluginDependent {
 
     /**
      * Clears all the items for player in game name, sets the respawn point
-     * @param player
-     * @param name
-     * @param spawnPoint
+     * @param player - the player
+     * @param gameName - the game name
+     * @param from - the location to set as respawn point
      */
     public void clearItems(Player player, String gameName, Location from) {
-        ymlIndex.set(gameName + "." + player.getUniqueId().toString() + ".inventory", null);
-        ymlIndex.set(gameName + "." + player.getUniqueId().toString() + ".location", from);
+        ymlIndex.set(gameName + "." + player.getUniqueId() + ".inventory", null);
+        ymlIndex.set(gameName + "." + player.getUniqueId() + ".location", from);
         saveInventories();
     }
 
@@ -164,7 +164,7 @@ public class BeaconzStore extends BeaconzPluginDependent {
      * @param foodLevel
      */
     public void setFood(Player player, String gameName, int foodLevel) {
-        ymlIndex.set(gameName + "." + player.getUniqueId().toString() + ".food", foodLevel);
+        ymlIndex.set(gameName + "." + player.getUniqueId() + ".food", foodLevel);
         saveInventories();
     }
     
@@ -175,7 +175,7 @@ public class BeaconzStore extends BeaconzPluginDependent {
      * @param maxHealth
      */
     public void setHealth(Player player, String gameName, double maxHealth) {
-        ymlIndex.set(gameName + "." + player.getUniqueId().toString() + ".health", maxHealth);
+        ymlIndex.set(gameName + "." + player.getUniqueId() + ".health", maxHealth);
         saveInventories();
     }
 
@@ -186,7 +186,7 @@ public class BeaconzStore extends BeaconzPluginDependent {
      * @param newExp
      */
     public void setExp(Player player, String gameName, int newExp) {
-        ymlIndex.set(gameName + "." + player.getUniqueId().toString() + ".exp", newExp);
+        ymlIndex.set(gameName + "." + player.getUniqueId() + ".exp", newExp);
         saveInventories();
     }
 }

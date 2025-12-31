@@ -88,3 +88,4 @@ local.properties
 .texlipse
 
 /target/
+/.DS_Store

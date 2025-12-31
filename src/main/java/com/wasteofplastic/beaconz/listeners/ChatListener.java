@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 - 2016 tastybento
+ * Copyright (c) 2015 - 2025 tastybento
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -55,18 +55,16 @@ import com.wasteofplastic.beaconz.Settings;
  */
 public class ChatListener extends BeaconzPluginDependent implements Listener {
 
-    private Beaconz plugin;
     // List of which admins are spying or not on team chat
-    private Set<UUID> spies;
+    private final Set<UUID> spies;
 
     /**
-     * @param plugin
-     * @param teamChatOn
+     * @param plugin Beaconz plugin instance
      */
     public ChatListener(Beaconz plugin) {
         super(plugin);
         // Initialize spies
-        spies = new HashSet<UUID>();
+        spies = new HashSet<>();
     }
 
 
@@ -81,11 +79,7 @@ public class ChatListener extends BeaconzPluginDependent implements Listener {
             event.setCancelled(true);
             // Queue the sync task because you cannot use HashMaps asynchronously. Delaying to the next tick
             // won't be a major issue for synch events either.
-            Bukkit.getScheduler().runTask(plugin, new Runnable() {
-                @Override
-                public void run() {
-                    teamChat(event,event.getMessage());
-                }});
+            Bukkit.getScheduler().runTask(beaconzPlugin, () -> teamChat(event,event.getMessage()));
         }
     }
 
@@ -113,7 +107,7 @@ public class ChatListener extends BeaconzPluginDependent implements Listener {
             }
             // Spy function
             if (onLine) {
-                for (Player onlinePlayer: plugin.getServer().getOnlinePlayers()) {
+                for (Player onlinePlayer: beaconzPlugin.getServer().getOnlinePlayers()) {
                     if (spies.contains(onlinePlayer.getUniqueId())) {
                         onlinePlayer.sendMessage(ChatColor.RED + "[TCSpy] " + ChatColor.WHITE + message);
                     }
