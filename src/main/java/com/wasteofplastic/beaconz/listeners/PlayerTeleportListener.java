@@ -73,14 +73,14 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled=true)
     public void onWorldEnter(final PlayerChangedWorldEvent event) {
         final Player player = event.getPlayer();
-        
+
         // Entering Beaconz world
         if (player.getWorld().equals((getBeaconzWorld()))) {
             //getLogger().info("DEBUG: entering world");
-            
+
             // Write this player's name to the database
             getBeaconzPlugin().getNameStore().savePlayerName(player.getName(), player.getUniqueId());
-            
+
             // Check for pending messages
             final List<String> messages = getMessages().getMessages(player.getUniqueId());
             if (messages != null) {
@@ -95,7 +95,7 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
                     getMessages().clearMessages(player.getUniqueId());
                 }, 40L);
             }
-            
+
             // Send player to lobby
             if (!getGameMgr().isPlayerInLobby(event.getPlayer())) {                
                 getGameMgr().getLobby().tpToRegionSpawn(event.getPlayer(), true);
@@ -117,7 +117,7 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
             // Remove player from map and remove his scoreboard
             BeaconProtectionListener.getStandingOn().remove(event.getPlayer().getUniqueId());
             event.getPlayer().setScoreboard(Bukkit.getServer().getScoreboardManager().getNewScoreboard());
-                       
+
             // Remove any potion effects
             //TODO: Save and restore potion effects to keep player from getting rid of them by quickly jumping off-world and back. Same with Lobby.
             for (PotionEffect effect : event.getPlayer().getActivePotionEffects())
@@ -127,10 +127,9 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onTeleport(final PlayerTeleportEvent event) {
-        
+
         // We only handle teleports originating in the BeaconzWorld
-        if (event.getFrom().getWorld() != getBeaconzWorld()) {
-        } else {
+        if (event.getFrom().getWorld().equals(getBeaconzWorld())) {
             // Let's start by getting some bearings
             final Player player  = event.getPlayer();
             final boolean teleporting = teleportingPlayers.containsKey(player.getUniqueId());
@@ -141,34 +140,38 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
 
             // Remove from standing - any teleport 
             BeaconProtectionListener.getStandingOn().remove(player.getUniqueId());                
-            
+
             // If player is pushed back because of the barrier, just return
             if (barrierPlayers.contains(player.getUniqueId())) {
                 barrierPlayers.remove(player.getUniqueId());
 
             } else {
                 // Teleporting out of a game
-                if (fromGame != null) {           
+                if (fromGame != null) {
                     // Ignore teleporting within a game
                     if (fromGame.equals(toGame)) {
                         return;
                     } else {
                         if (!teleporting) { 
                             // Player is exiting a game, see if he needs to be delayed
-                            if (!fromGame.isGameRestart() && !fromGame.isOver() && !directTeleportPlayers.contains(player)) {
+                            if (!fromGame.isGameRestart() && !fromGame.isOver() && !directTeleportPlayers.contains(player.getUniqueId())) {
                                 delayTeleport(player, event.getFrom(), event.getTo(), fromGame.getName(), LOBBY);
                                 event.setCancelled(true);
                                 return;
+                            } else {
+                                // For direct teleporting
+                                fromGame.getRegion().exit(player); // this may clear the inventory, so only store inventory after this line
+                                getBeaconzStore().storeInventory(player, fromGame.getName(), event.getFrom());
                             }
-                        } else {                
+                        } else {
                             // This is either a direct teleport or the final part of the delayed teleport
-                            directTeleportPlayers.remove(player);
+                            directTeleportPlayers.remove(player.getUniqueId());
                             fromGame.getRegion().exit(player); // this may clear the inventory, so only store inventory after this line
                             getBeaconzStore().storeInventory(player, fromGame.getName(), event.getFrom());
                         }                
                     }
                 }
-                
+
                 // Teleporting out of the lobby
                 if (fromLobby) {
                     // Ignore teleporting within the lobby
@@ -179,7 +182,6 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
                         getGameMgr().getLobby().exit(player);
                     }
                 }
-
                 // Teleporting into a game
                 if (toGame != null) {
                     // Ignore teleporting within a game
@@ -188,7 +190,6 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
                     } else {
                         // Make sure player is allowed to enter the game
                         if (toGame.hasPlayer(player) || player.isOp()) {
-                            
                             // Restore inventory and get location
                             Location newTo = getBeaconzStore().getInventory(player, toGame.getName());
                             if (newTo != null) {
@@ -201,15 +202,17 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
                                 // Minigames give starting kit and initialXP every time player reenters
                                 toGame.giveStartingKit(player);
                             }
-     
+
                         } else {
                             // Player is not part of the game, send them to the lobby
                             player.sendMessage(ChatColor.RED + Lang.errorNotInGame.replace("[game]", toGame.getName()));
+                            System.out.println("l = " + getGameMgr().getLobby().getSpawnPoint());
+                            System.out.println(event);
                             event.setTo(getGameMgr().getLobby().getSpawnPoint());
                         }
                     }
                 }
-                                
+
                 // Teleporting into the lobby
                 if (toLobby) {
                     // Ignore teleporting within the lobby
@@ -259,7 +262,6 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
      * @param directTeleportPlayer UUID of player to set for direct teleport
      */
     public void setDirectTeleportPlayer(UUID directTeleportPlayer) {
-        //getLogger().info("DEBUG: added player to direct TP");
         this.directTeleportPlayers.add(directTeleportPlayer);
     }
 
