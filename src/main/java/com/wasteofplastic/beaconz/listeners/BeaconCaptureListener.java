@@ -61,7 +61,7 @@ import net.kyori.adventure.text.Component;
 
 public class BeaconCaptureListener extends BeaconzPluginDependent implements Listener {
 
-    private final static boolean DEBUG = true;
+    private final static boolean DEBUG = false;
 
     public BeaconCaptureListener(Beaconz plugin) {
         super(plugin);

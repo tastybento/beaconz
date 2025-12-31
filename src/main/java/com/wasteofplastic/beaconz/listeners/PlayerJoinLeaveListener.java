@@ -23,7 +23,7 @@ import com.wasteofplastic.beaconz.Lang;
  *
  */
 public class PlayerJoinLeaveListener extends BeaconzPluginDependent implements Listener {
-    private final static boolean DEBUG = true;
+    private final static boolean DEBUG = false;
 
     public PlayerJoinLeaveListener(Beaconz plugin) {
         super(plugin);

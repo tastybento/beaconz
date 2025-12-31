@@ -55,7 +55,7 @@ import com.wasteofplastic.include.it.unimi.dsi.util.XorShift;
  */
 public class BeaconPopulator extends BlockPopulator {
     private final Beaconz plugin;
-    private static final boolean DEBUG = true;
+    private static final boolean DEBUG = false;
 
     public BeaconPopulator(Beaconz plugin) {
         this.plugin = plugin;
