@@ -83,7 +83,6 @@ public class Beaconz extends JavaPlugin {
     private TinyDB nameStore;
     private PlayerTeleportListener teleportListener;
     public Boolean ignoreChunkLoad;
-    private @Nullable ChunkGenerator chunkGenerator;
 
 
     @Override
@@ -605,7 +604,7 @@ public class Beaconz extends JavaPlugin {
      * @return
      */
     public World getBeaconzWorld() {
-        chunkGenerator = new BeaconzChunkGen(this);
+        @Nullable ChunkGenerator chunkGenerator = new BeaconzChunkGen(this);
         // Check to see if the world exists, and if not, make it
         if (beaconzWorld == null) {
             // World doesn't exist, so make it
@@ -674,8 +673,8 @@ public class Beaconz extends JavaPlugin {
         for (String str: strToClean.split(":")) {
             if (!str.isEmpty()) newString.append(str).append(":");
         }
-        if (newString.length() > 0) newString = new StringBuilder(newString.substring(0, newString.length() - 1));
-        if (newString.length() == 0) newString = new StringBuilder(defaultIfEmpty);
+        if (!newString.isEmpty()) newString = new StringBuilder(newString.substring(0, newString.length() - 1));
+        if (newString.isEmpty()) newString = new StringBuilder(defaultIfEmpty);
         return newString.toString();
     }
 
@@ -739,7 +738,7 @@ public class Beaconz extends JavaPlugin {
             final float pitch = Float.intBitsToFloat(Integer.parseInt(parts[5].replace('_', '.')));
             return new Location(w, x, y, z, yaw, pitch);
         } else {
-            Bukkit.getLogger().severe("Format of location string is wrong!");
+            plugin.getLogger().severe("Format of location string is wrong!");
         }
         return null;
     }
@@ -960,17 +959,17 @@ public class Beaconz extends JavaPlugin {
                 PotionData potionData = new PotionData(PotionType.valueOf(element[1].toUpperCase()), extended, level > 1);
                 potionMeta.setBasePotionData(potionData); 
             } catch (IllegalArgumentException iae) {
-                Bukkit.getLogger().severe("Potion parsing problem with " + element[1] +": " + iae.getMessage());
+                plugin.getLogger().severe("Potion parsing problem with " + element[1] +": " + iae.getMessage());
                 potionMeta.setBasePotionData(new PotionData(PotionType.WATER));
             }
             result.setItemMeta(potionMeta);
             return result;
         } catch (Exception e) {
             e.printStackTrace();
-            Bukkit.getLogger().severe("Potion effect '" + element[1] + "' is unknown - skipping!");
-            Bukkit.getLogger().severe("Use one of the following:");
+            plugin.getLogger().severe("Potion effect '" + element[1] + "' is unknown - skipping!");
+            plugin.getLogger().severe("Use one of the following:");
             for (PotionType name : PotionType.values()) {
-                Bukkit.getLogger().severe(name.name());
+                plugin.getLogger().severe(name.name());
             }
             return new ItemStack(Material.POTION, rewardQty);
         } 
@@ -1003,16 +1002,14 @@ public class Beaconz extends JavaPlugin {
     /**
      * Sends a message to the command sender
      * Allows for null senders and messages
+     *
      * @param sender
      * @param msg
-     * @return
      */
-    public Boolean senderMsg(CommandSender sender, String msg) {
+    public void senderMsg(CommandSender sender, String msg) {
         if (sender!=null && msg!=null && !msg.isEmpty()) {
             sender.sendMessage(msg);
-            return true;
         } else {
-            return false;
         }
     }   
 }

@@ -80,18 +80,18 @@ public class BeaconPopulator extends BlockPopulator {
             if (plugin.getGameMgr().getLobby() == null) {
                 // No lobby yet
                 if (DEBUG)
-                    Bukkit.getLogger().info("DEBUG:no lobby yet");
+                    plugin.getLogger().info("DEBUG:no lobby yet");
                 return;
             }
             // Don't do anything in the lobby
             if (plugin.getGameMgr().getLobby().containsPoint(X * 16, Z * 16)) {
                 if (DEBUG)
-                    Bukkit.getLogger().info("DEBUG: no beaconz in lobby");
+                    plugin.getLogger().info("DEBUG: no beaconz in lobby");
                 return;
             }
             if (plugin.getGameMgr().getLobby().containsPoint(X * 16 + 15, Z * 16 + 15)) {
                 if (DEBUG)
-                    Bukkit.getLogger().info("DEBUG: no beaconz in lobby");
+                    plugin.getLogger().info("DEBUG: no beaconz in lobby");
                 return;
             }            
             
@@ -100,14 +100,14 @@ public class BeaconPopulator extends BlockPopulator {
             Region region1 = plugin.getGameMgr().getRegion(X * 16, Z * 16);
             if (region1 == null) {
                 if (DEBUG)
-                    Bukkit.getLogger().info("DEBUG: non-region");
+                    plugin.getLogger().info("DEBUG: non-region");
                 return;
             }
             // Check max coords of this chunk
             Region region2 = plugin.getGameMgr().getRegion(X * 16 + 15, Z * 16 + 15);
             if (region2 == null || region1 != region2) {
                 if (DEBUG)
-                    Bukkit.getLogger().info("DEBUG: non-region");
+                    plugin.getLogger().info("DEBUG: non-region");
                 return;
             }
             // If we're in the corner chunk of a region, get the coordinates offset to build the corner beacon

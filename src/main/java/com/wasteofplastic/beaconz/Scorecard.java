@@ -64,7 +64,7 @@ public class Scorecard extends BeaconzPluginDependent{
     private HashMap<Team, List<String>> teamMembers = new HashMap<>();
     private HashMap<UUID, Team> teamLookup = new HashMap<>();
     private HashMap<Team, Material> teamBlocks = new HashMap<>();
-    private enum Scoretypes {area, links, triangles, beacons};
+    private enum Scoretypes {area, links, triangles, beacons}
 
     /**
      * Scorecard controls all aspects of
@@ -114,10 +114,10 @@ public class Scorecard extends BeaconzPluginDependent{
         // Define the scoreboard
         try {
             scoreboard.clearSlot(DisplaySlot.SIDEBAR);
-        } catch (Exception e){ };
+        } catch (Exception e){ }
         try {
             scoreobjective.unregister();
-        } catch (Exception e){ };
+        } catch (Exception e){ }
 
         scoreboard = manager.getNewScoreboard();
         scoreobjective = scoreboard.registerNewObjective("score", "beaconz");
@@ -807,10 +807,7 @@ public class Scorecard extends BeaconzPluginDependent{
      * @return true if in team, false if not
      */
     public boolean inTeam(Player player) {
-        if (scoreboard.getEntryTeam(player.getName()) != null) {
-            return true;
-        }
-        return false;
+        return scoreboard.getEntryTeam(player.getName()) != null;
     }
 
     /**
