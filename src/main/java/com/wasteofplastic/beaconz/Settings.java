@@ -49,7 +49,7 @@ public class Settings {
      * The density of the random distribution of beacons in the world
      * Number should be between 0 and 1
      */
-    public static Double distribution;
+    public static Double distribution = 0.1;
     /**
      * The default gamemode - "minigame" or "strategy"
      */
