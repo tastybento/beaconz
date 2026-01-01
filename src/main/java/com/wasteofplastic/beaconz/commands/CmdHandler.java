@@ -24,7 +24,8 @@ package com.wasteofplastic.beaconz.commands;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.bukkit.ChatColor;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -47,11 +48,11 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
         if (!(sender instanceof Player player)) {
-            sender.sendMessage(Lang.errorOnlyPlayers);
+            sender.sendMessage(Component.text(Lang.errorOnlyPlayers));
             return true;
         }
         if (!player.hasPermission("beaconz.player")) {
-            sender.sendMessage(ChatColor.RED + Lang.errorYouDoNotHavePermission);
+            sender.sendMessage(Component.text(Lang.errorYouDoNotHavePermission).color(NamedTextColor.RED));
             return true;
         }
         switch (args.length) {
@@ -59,7 +60,7 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
         case 0:
             player.setScoreboard(getServer().getScoreboardManager().getNewScoreboard());
             if (getGameMgr().getLobby() == null) {
-                player.sendMessage(ChatColor.RED + Lang.errorNoLobbyYet);
+                player.sendMessage(Component.text(Lang.errorNoLobbyYet).color(NamedTextColor.RED));
                 return true;
             }
             getGameMgr().getLobby().tpToRegionSpawn(player, false);
@@ -69,69 +70,28 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
         case 1:
             switch (args[0].toLowerCase()) {
             case "help":
-                sender.sendMessage("/" + label + " help " + Lang.helpHelp);
-                /* sender.sendMessage("/" + label + " join <game> " + Lang.helpJoin); */
+                sender.sendMessage(Component.text("/" + label + " help " + Lang.helpHelp));
                 if (player.hasPermission("beaconz.player.leave")) {
-                    sender.sendMessage("/" + label + " leave <game> " + Lang.helpLeave);
+                    sender.sendMessage(Component.text("/" + label + " leave <game> " + Lang.helpLeave));
                 }
-                //sender.sendMessage("/" + label + " lobby " + Lang.helpLobby);
-                //sender.sendMessage("/" + label + " location " + Lang.helpLocation);
-                sender.sendMessage("/" + label + " score " + Lang.helpScore);
-                sender.sendMessage("/" + label + " sb " + Lang.helpScoreboard);
+                sender.sendMessage(Component.text("/" + label + " score " + Lang.helpScore));
+                sender.sendMessage(Component.text("/" + label + " sb " + Lang.helpScoreboard));
                 break;
-                /*
-            case "lobby":
-                player.setScoreboard(Bukkit.getServer().getScoreboardManager().getNewScoreboard());
-                getGameMgr().getLobby().tpToRegionSpawn(player);
-                break;
-            case "location":
-                if (getGameMgr().isPlayerInLobby(player)) {
-                    sender.sendMessage(ChatColor.AQUA + Lang.cmdLocation);
-                    sender.sendMessage(ChatColor.AQUA + getGameMgr().getLobby().displayCoords());
-                } else {
-                    Game game = getGameMgr().getGame(player.getLocation());
-                    if (game != null) {
-                        sender.sendMessage(ChatColor.AQUA + Lang.cmdYourePlaying.replace("[game]", game.getName()));
-                        Scorecard sc = game.getScorecard();
-                        if (sc != null && sc.getTeam(player) != null) {
-                            sender.sendMessage(ChatColor.AQUA + Lang.youAreInTeam.replace("[team]", sc.getTeam(player).getDisplayName()));
-                        } else {
-                            sender.sendMessage(ChatColor.AQUA + Lang.errorYouMustBeInATeam);
-                        }
-                        sender.sendMessage(ChatColor.AQUA + game.getRegion().displayCoords());
-                    } else {
-                        sender.sendMessage(ChatColor.YELLOW + "You're in the Beaconz world, but not participating in a game.");
-                        sender.sendMessage(ChatColor.YELLOW + "Return to the lobby with /beacons lobby");
-                    }
-                }
-                break;
-                 */
             case "score":
-                /*
-                if (sender.isOp()) {
-                    int gamecnt = 0;
-                    for (Game game : getGameMgr().getGames().values()) {
-                        sender.sendMessage(ChatColor.GREEN + "Game: " + game.getName());
-                        showGameScores(sender, game);
-                        gamecnt++;
-                    }
-                    if (gamecnt ==0 ) {
-                        sender.sendMessage(ChatColor.GREEN + "No games are currently defined.");
-                    }
-                } else {*/
                 Game game = getGameMgr().getGame(player.getLocation());
                 if (game == null || game.getScorecard() == null || game.getScorecard().getTeam(player) == null) {
-                    sender.sendMessage(ChatColor.GREEN + Lang.errorYouMustBeInAGame);
+                    sender.sendMessage(Component.text(Lang.errorYouMustBeInAGame).color(NamedTextColor.GREEN));
                 } else {
-                    sender.sendMessage(ChatColor.GREEN + Lang.generalGame + ": " + ChatColor.YELLOW + game.getName());
+                    sender.sendMessage(Component.text(Lang.generalGame + ": ").color(NamedTextColor.GREEN)
+                        .append(Component.text(game.getName()).color(NamedTextColor.YELLOW)));
                     Team team = game.getScorecard().getTeam(player);
                     if (team != null){
-                        sender.sendMessage(ChatColor.GREEN + Lang.actionsYouAreInTeam.replace("[team]", team.getDisplayName()));
+                        sender.sendMessage(Component.text(Lang.actionsYouAreInTeam)
+                                .replaceText(builder -> builder.matchLiteral("[team]").replacement(team.displayName()))
+                                .color(NamedTextColor.GREEN));
                     }
                     showGameScores(sender, game);
                 }
-                //}
-
                 break;
             case "sb":
                 if (player.getScoreboard().getEntries().isEmpty()) {
@@ -147,9 +107,9 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
                 break;
             case "leave":
                 if (player.hasPermission("beaconz.player.leave")) {
-                    sender.sendMessage("/" + label + " leave <game> " + Lang.helpLeave);
+                    sender.sendMessage(Component.text("/" + label + " leave <game> " + Lang.helpLeave));
                 } else {
-                    player.sendMessage(ChatColor.RED +  Lang.errorYouDoNotHavePermission);
+                    player.sendMessage(Component.text(Lang.errorYouDoNotHavePermission).color(NamedTextColor.RED));
                 }
                 break;
             default:
@@ -165,7 +125,7 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
                     String gamename = args[1];
                     game = getGameMgr().getGame(gamename);
                     if (game == null) {
-                        sender.sendMessage(ChatColor.AQUA + Lang.errorNoSuchGame + " '" + gamename + "'");
+                        sender.sendMessage(Component.text(Lang.errorNoSuchGame + " '" + gamename + "'").color(NamedTextColor.AQUA));
                     } else {
                         game.join(player);
                     }                   
@@ -175,12 +135,12 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
                 if (player.hasPermission("beaconz.player.leave")) {
                     game = getGameMgr().getGame(args[1]);
                     if (game == null) {
-                        sender.sendMessage(ChatColor.AQUA + Lang.errorNoSuchGame + " '" + args[1] + "'");
+                        sender.sendMessage(Component.text(Lang.errorNoSuchGame + " '" + args[1] + "'").color(NamedTextColor.AQUA));
                     } else {
                         game.leave(player);
                     }
                 } else {
-                    player.sendMessage(ChatColor.RED +  Lang.errorYouDoNotHavePermission);
+                    player.sendMessage(Component.text(Lang.errorYouDoNotHavePermission).color(NamedTextColor.RED));
                 }
                 break;
             default:
@@ -188,7 +148,7 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
             }
             break;
         default:
-            sender.sendMessage(ChatColor.RED + Lang.errorUnknownCommand);
+            sender.sendMessage(Component.text(Lang.errorUnknownCommand).color(NamedTextColor.RED));
             return false;
         }
         return true;
@@ -198,16 +158,14 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
      * Displays the scores for a game
      */
     public void showGameScores(CommandSender sender, Game game) {
-        //sender.sendMessage(ChatColor.AQUA + "Game mode: " + game.getGamemode());
-        //sender.sendMessage(ChatColor.AQUA + "Game time: " + game.getScorecard().getDisplayTime("long"));
-        // Referesh scores
+        // Refresh scores
         game.getScorecard().refreshScores();
-        sender.sendMessage(ChatColor.AQUA + Lang.scoreScores);
+        sender.sendMessage(Component.text(Lang.scoreScores).color(NamedTextColor.AQUA));
         for (Team t : game.getScorecard().getScoreboard().getTeams()) {
-            sender.sendMessage(ChatColor.AQUA + "  " + t.getDisplayName() + ChatColor.AQUA + ": " + game.getScorecard().getScore(t, "beacons") + " beacons");
-            sender.sendMessage(ChatColor.AQUA + "  " + t.getDisplayName() + ChatColor.AQUA + ": " + game.getScorecard().getScore(t, "links") + " links");
-            sender.sendMessage(ChatColor.AQUA + "  " + t.getDisplayName() + ChatColor.AQUA + ": " + game.getScorecard().getScore(t, "triangles") + " triangles");
-            sender.sendMessage(ChatColor.AQUA + "  " + t.getDisplayName() + ChatColor.AQUA + ": " + game.getScorecard().getScore(t, "area") + " total area");
+            sender.sendMessage(Component.text("  " + t.displayName() + ": " + game.getScorecard().getScore(t, "beacons") + " beacons").color(NamedTextColor.AQUA));
+            sender.sendMessage(Component.text("  " + t.displayName() + ": " + game.getScorecard().getScore(t, "links") + " links").color(NamedTextColor.AQUA));
+            sender.sendMessage(Component.text("  " + t.displayName() + ": " + game.getScorecard().getScore(t, "triangles") + " triangles").color(NamedTextColor.AQUA));
+            sender.sendMessage(Component.text("  " + t.displayName() + ": " + game.getScorecard().getScore(t, "area") + " total area").color(NamedTextColor.AQUA));
         }
     }
 
@@ -224,17 +182,13 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
         case 0:
         case 1:
             options.add("help");
-            //options.add("join");
             if (sender.hasPermission("beaconz.player.leave")) {
                 options.add("leave");
             }
-            //options.add("lobby");
-            //options.add("location");
             options.add("score");
             options.add("scoreboard");
             break;
         case 2:
-            //if (args[0].equalsIgnoreCase("join") || args[0].equalsIgnoreCase("leave")) {
             if (sender.hasPermission("beaconz.player.leave") && args[0].equalsIgnoreCase("leave")) {
                 // List all the games this player is in
                 List<String> inGames = new ArrayList<>();
@@ -269,3 +223,4 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
         return returned;
     }
 }
+
