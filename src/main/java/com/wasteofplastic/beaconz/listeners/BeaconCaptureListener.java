@@ -75,7 +75,7 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onBeaconDamage(BlockDamageEvent event) {
         if (DEBUG)
-            getLogger().info("DEBUG: " + event.getEventName());
+            getLogger().info("DEBUG: " + event.getEventName() + " BeaconCaptureListener");
         World world = event.getBlock().getWorld();
         if (!world.equals(getBeaconzWorld())) {
             return;

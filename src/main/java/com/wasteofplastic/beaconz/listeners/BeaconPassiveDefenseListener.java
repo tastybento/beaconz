@@ -301,7 +301,7 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
      */
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onBeaconBreak(BlockBreakEvent event) {
-        //getLogger().info("DEBUG: " + event.getEventName());
+        //getLogger().info("BPD DEBUG: " + event.getEventName());
         World world = event.getBlock().getWorld();
         if (!world.equals(getBeaconzWorld())) {
             //getLogger().info("DEBUG: not right world");
@@ -334,7 +334,7 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
         Team team = sc.getTeam(player);
         // Check if the block is a beacon or the surrounding pyramid
         Block block = event.getBlock();
-        BeaconObj beacon = getRegister().getBeaconAt(new Point2D.Double(block.getX(), block.getZ()));
+        BeaconObj beacon = getRegister().getBeacon(block);
         if (beacon == null || beacon.getOwnership() == null) {
             return;
         }

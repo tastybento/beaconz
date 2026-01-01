@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import java.util.List;
+import java.util.Random;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -12,7 +13,7 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.entity.Player;
-import org.bukkit.event.block.BlockDamageEvent;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.world.StructureGrowEvent;
 import org.bukkit.inventory.ItemStack;
@@ -38,7 +39,7 @@ class BeaconSurroundListenerTest extends CommonTestBase {
     @Test
     void testOnBeaconDamageWrongWorld() {
         BeaconSurroundListener listener = new BeaconSurroundListener(plugin);
-        BlockDamageEvent event = mock(BlockDamageEvent.class);
+        BlockBreakEvent event = mock(BlockBreakEvent.class);
         Block otherBlock = mock(Block.class);
         World otherWorld = mock(World.class);
         when(event.getBlock()).thenReturn(otherBlock);
@@ -54,7 +55,7 @@ class BeaconSurroundListenerTest extends CommonTestBase {
     @Test
     void testOnBeaconDamageNonProtectedMaterial() {
         BeaconSurroundListener listener = new BeaconSurroundListener(plugin);
-        BlockDamageEvent event = mock(BlockDamageEvent.class);
+        BlockBreakEvent event = mock(BlockBreakEvent.class);
         Block target = mock(Block.class);
         when(event.getBlock()).thenReturn(target);
         when(target.getWorld()).thenReturn(world);
@@ -70,7 +71,7 @@ class BeaconSurroundListenerTest extends CommonTestBase {
     @Test
     void testOnBeaconDamageNoNearbyBeacons() {
         BeaconSurroundListener listener = new BeaconSurroundListener(plugin);
-        BlockDamageEvent event = mock(BlockDamageEvent.class);
+        BlockBreakEvent event = mock(BlockBreakEvent.class);
         Block target = mock(Block.class);
         when(event.getBlock()).thenReturn(target);
         when(target.getWorld()).thenReturn(world);
@@ -87,7 +88,7 @@ class BeaconSurroundListenerTest extends CommonTestBase {
     @Test
     void testOnBeaconDamageAboveOrBelowRangeAllowed() {
         BeaconSurroundListener listener = new BeaconSurroundListener(plugin);
-        BlockDamageEvent event = mock(BlockDamageEvent.class);
+        BlockBreakEvent event = mock(BlockBreakEvent.class);
         Block target = mock(Block.class);
         BeaconObj beaconObj = mock(BeaconObj.class);
         when(event.getBlock()).thenReturn(target);
@@ -111,7 +112,7 @@ class BeaconSurroundListenerTest extends CommonTestBase {
     @Test
     void testOnBeaconDamageWithinRangeCancelled() {
         BeaconSurroundListener listener = new BeaconSurroundListener(plugin);
-        BlockDamageEvent event = mock(BlockDamageEvent.class);
+        BlockBreakEvent event = mock(BlockBreakEvent.class);
         Block target = mock(Block.class);
         Player p = mock(Player.class);
         ItemStack hand = new ItemStack(Material.IRON_PICKAXE);
@@ -127,8 +128,11 @@ class BeaconSurroundListenerTest extends CommonTestBase {
         when(target.getY()).thenReturn(68); // lowestY=70 -> within protected band (>=60 and <69)
         BeaconObj beaconObj = mock(BeaconObj.class);
         when(beaconObj.getY()).thenReturn(70);
-        when(register.getNearbyBeacons(location, 10)).thenReturn(List.of(beaconObj));
-
+        when(register.getNearbyBeacons(location, BeaconSurroundListener.RANGE)).thenReturn(List.of(beaconObj));
+        Random mockRand = mock(Random.class);
+        listener.rand = mockRand;
+        when(mockRand.nextDouble()).thenReturn(0D); // Always successful
+        
         listener.onBeaconDamage(event);
 
         verify(event).setCancelled(true);
@@ -169,7 +173,7 @@ class BeaconSurroundListenerTest extends CommonTestBase {
 
         listener.onExplode(event);
 
-        assertEquals(1, event.blockList().size());
+        assertEquals(2, event.blockList().size());
         assertTrue(event.blockList().contains(otherBlock));
     }
 

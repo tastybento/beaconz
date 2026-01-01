@@ -35,7 +35,7 @@ import org.bukkit.block.BlockState;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.BlockDamageEvent;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.world.StructureGrowEvent;
 import org.bukkit.inventory.ItemStack;
@@ -78,13 +78,15 @@ public class BeaconSurroundListener extends BeaconzPluginDependent implements Li
      * Horizontal range (in blocks) around beacons where blocks become harder to break.
      * Forms a cylinder of protection around each beacon.
      */
-    private static final int RANGE = 10;
+    static final int RANGE = 5;
 
     /**
      * Probability that a block break attempt will be cancelled (1.0 = 100% protection).
      * This makes blocks extremely difficult to break near beacons.
      */
-    private static final double PROBABILITY = 1D;
+    private static final double PROBABILITY = 0.9D;
+    
+    protected Random rand = new Random();
 
     /**
      * Percentage of tool durability damage applied on failed break attempts (0.0 = no damage).
@@ -157,7 +159,7 @@ public class BeaconSurroundListener extends BeaconzPluginDependent implements Li
      * @param event the block damage event
      */
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
-    public void onBeaconDamage(BlockDamageEvent event) {
+    public void onBeaconDamage(BlockBreakEvent event) {
         // Debug logging to track when this event fires
         if (DEBUG)
             getLogger().info("DEBUG: " + event.getEventName());
@@ -198,13 +200,14 @@ public class BeaconSurroundListener extends BeaconzPluginDependent implements Li
 
         // Step 6: Apply probabilistic protection
         // Use random chance to determine if this break attempt succeeds
-        Random rand = new Random();
         if (rand.nextDouble() < PROBABILITY) {
             // Block the damage - player cannot break this block
             event.setCancelled(true);
-
-            // Visual feedback would go here (particle effects, etc.)
-            //ParticleEffect.PORTAL.display(0F, 0F, 0F, 1F, 10, event.getBlock().getLocation(), 10D);
+            getLogger().info("DEBUG: cancel");
+            event.getBlock().getWorld().playSound(event.getBlock().getLocation(), Sound.BLOCK_ANVIL_HIT, 1F, 1F);
+            // Visual feedback - show particle effect when block fails to break
+            event.getBlock().getWorld().spawnParticle(org.bukkit.Particle.CRIT,
+                    event.getBlock().getLocation().add(0.5, 0.5, 0.5), 15, 0.3, 0.3, 0.3, 0.1);
 
             // Step 7: Optional tool durability damage
             // Punish failed break attempts by damaging the player's tool
