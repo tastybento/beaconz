@@ -7,6 +7,37 @@
 
 ---
 
+## 📑 Table of Contents
+
+- [What is Beaconz?](#-what-is-beaconz)
+  - [Core Gameplay Loop](#-core-gameplay-loop)
+  - [What Makes It Special](#-what-makes-it-special)
+- [Architecture Overview](#-architecture-overview)
+  - [Package Structure](#-package-structure)
+  - [Key Components](#-key-components)
+  - [Design Patterns Used](#-design-patterns-used)
+  - [Modern Java Features](#-modern-java-features)
+- [Getting Started](#-getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Building](#building)
+  - [Running](#running)
+  - [Quick Start Example](#quick-start-example)
+- [Commands Reference](#-commands-reference)
+  - [Player Commands](#-player-commands)
+  - [Admin Commands](#-admin-commands)
+- [Permissions](#-permissions)
+- [For Developers](#-for-developers)
+  - [Contributing](#contributing)
+  - [Code Style](#code-style)
+  - [Learning from the Code](#learning-from-the-code)
+  - [API Highlights](#api-highlights)
+- [History](#-history)
+- [Credits](#-credits)
+- [License](#-license)
+- [Links](#-links)
+
+---
+
 ## 🎮 What is Beaconz?
 
 **Beaconz** is a competitive territory control minigame that transforms Minecraft beacons into strategic objectives. Born from the **Silicon Valley Minecraft Meetup** over a decade ago, this 2.0 rewrite brings the classic gameplay into the modern era with cutting-edge Paper API integration and Java 21 features.
@@ -146,12 +177,179 @@ The compiled JAR will be in `target/Beaconz-2.0.0-SNAPSHOT.jar`
 1. Copy the JAR to your Paper server's `plugins/` folder
 2. Start/restart the server
 3. Configure `plugins/Beaconz/config.yml` to your liking
-4. Use `/badmin newgame <name>` to create a game
-5. Players join with `/beaconz join <game>`
+4. Use `/badmin newgame <name>` to create a game (see [Commands Reference](#-commands-reference) for details)
+5. Set team spawns with `/badmin setspawn <team>`
+6. Players teleport to lobby with `/beaconz` and are auto-assigned to teams
 
 ### Optional Dependencies
 - **Dynmap** – Territory overlay on Dynmap web interface
 - **Vault** – Economy integration (planned)
+
+### Quick Start Example
+
+```bash
+# As an admin, create a simple 2-team game
+/badmin newgame quickmatch teams:2 goal:triangles goalvalue:5
+
+# Set spawns for each team (stand at desired location)
+/badmin setspawn red
+/badmin setspawn blue
+
+# As a player, join the game
+/beaconz                    # Teleport to lobby
+/beaconz score              # Check your team assignment and scores
+```
+
+See the complete [Commands Reference](#-commands-reference) below for all available commands and options.
+
+---
+
+## 📋 Commands Reference
+
+### 🎮 Player Commands
+
+Players use the `/beaconz` (or `/bz`) command to interact with the game:
+
+| Command | Permission | Description |
+|---------|-----------|-------------|
+| `/beaconz` | `beaconz.player` | Teleport to the lobby spawn point |
+| `/beaconz help` | `beaconz.player` | Display help for all available player commands |
+| `/beaconz score` | `beaconz.player` | View current game scores and your team |
+| `/beaconz sb` | `beaconz.player` | Toggle scoreboard display on/off |
+| `/beaconz leave <game>` | `beaconz.player.leave` | Leave a game and return to lobby |
+| `/beaconz join <game>` | Operator only | Admin bypass to force join any game (undocumented) |
+
+**Examples:**
+```
+/beaconz                    # Teleport to lobby
+/beaconz score              # Check your team and game scores
+/beaconz sb                 # Show/hide scoreboard
+/beaconz leave mygame       # Leave the game "mygame"
+```
+
+### 🛠️ Admin Commands
+
+Admins use the `/badmin` (or `/bzadmin`) command to manage games and players:
+
+#### Game Management
+
+| Command | Description |
+|---------|-------------|
+| `/badmin newgame <name> [params...]` | Create a new game with optional custom parameters |
+| `/badmin delete <gamename>` | Permanently delete a game (cannot be undone!) |
+| `/badmin games` | List all active games and their regions |
+| `/badmin listparms <gamename>` | Display all parameters for a specific game |
+| `/badmin force_end <gamename>` | Immediately end a game and declare winner |
+| `/badmin reload` | Save state and reload all configuration files |
+
+**Game Creation Parameters:**
+
+When creating a new game with `/badmin newgame`, you can specify these optional parameters:
+
+- `gamemode:minigame|strategy` - Set game mode (default: minigame)
+- `size:<number>` - Set region size (e.g., `size:500`)
+- `teams:<number>` - Number of teams (e.g., `teams:2`)
+- `goal:area|beacons|links|triangles` - Victory condition
+- `goalvalue:<number>` - Target value for goal (0 = unlimited)
+- `countdown:<seconds>` - Game timer (0 = count up, >0 = countdown)
+- `scoretypes:<types>` - Scores to display (e.g., `area-triangles-beacons-links`)
+- `distribution:<0.01-0.99>` - Beacon spawn probability per chunk
+
+**Examples:**
+```
+/badmin newgame pvp1                                    # Create game with defaults
+/badmin newgame ctf teams:2 goal:beacons goalvalue:10   # Capture 10 beacons to win
+/badmin newgame mega size:1000 teams:4 goal:area        # Large 4-team area control
+/badmin listparms pvp1                                  # View game settings
+/badmin delete oldgame                                  # Remove a game
+```
+
+#### Player Management
+
+| Command | Description |
+|---------|-------------|
+| `/badmin join <gamename> <team>` | Force yourself to join a specific team |
+| `/badmin kick <player> <gamename>` | Remove a player from a game (sends to lobby) |
+| `/badmin kick all <gamename>` | Remove all players from a game |
+| `/badmin switch` | Switch yourself to another team in your current game |
+| `/badmin switch <player>` | Switch another player to a different team |
+| `/badmin teams all` | Display rosters for all games |
+| `/badmin teams <gamename>` | Display team rosters for a specific game |
+
+**Examples:**
+```
+/badmin join pvp1 red                # Join the red team in pvp1
+/badmin kick PlayerName pvp1         # Kick a player from pvp1
+/badmin switch                       # Switch to another team
+/badmin teams pvp1                   # View team rosters
+```
+
+#### Beacon Management
+
+| Command | Description |
+|---------|-------------|
+| `/badmin claim <team>` | Assign beacon you're standing on to a team |
+| `/badmin claim unowned` | Mark beacon you're standing on as unowned |
+| `/badmin list all [team]` | List all beacons, optionally filtered by team |
+| `/badmin list <gamename> [team]` | List beacons in a game, optionally by team |
+| `/badmin distribution <0.0-1.0>` | Set beacon spawn probability |
+
+**Examples:**
+```
+/badmin claim red                    # Claim beacon for red team (stand on it)
+/badmin claim unowned                # Unclaim the beacon
+/badmin list pvp1                    # List all beacons in pvp1
+/badmin list pvp1 blue               # List blue team's beacons in pvp1
+/badmin distribution 0.3             # 30% chance per chunk
+```
+
+#### World & Spawn Management
+
+| Command | Description |
+|---------|-------------|
+| `/badmin setspawn` | Set lobby spawn point (stand where you want spawn) |
+| `/badmin setspawn <team>` | Set team spawn point for current game |
+
+**Examples:**
+```
+/badmin setspawn                     # Set lobby spawn to your location
+/badmin setspawn red                 # Set red team spawn (in game region)
+```
+
+---
+
+## 🔐 Permissions
+
+### Player Permissions
+
+| Permission | Default | Description |
+|-----------|---------|-------------|
+| `beaconz.player` | true | Basic player access - use `/beaconz` commands |
+| `beaconz.player.leave` | op | Ability to leave games with `/beaconz leave` |
+
+### Admin Permissions
+
+| Permission | Default | Description |
+|-----------|---------|-------------|
+| `beaconz.admin` | op | Full admin access - use all `/badmin` commands |
+
+**Notes:**
+- Server operators have all permissions by default
+- Non-op players can participate in games with just `beaconz.player`
+- The `leave` permission can be granted to all players if desired
+- Use your permission plugin (LuckPerms, PermissionsEx, etc.) to customize access
+
+**Example Permission Setup (LuckPerms):**
+```bash
+# Give all players basic access
+/lp group default permission set beaconz.player true
+
+# Allow players to leave games on their own
+/lp group default permission set beaconz.player.leave true
+
+# Grant admin access to moderators
+/lp group moderator permission set beaconz.admin true
+```
 
 ---
 
