@@ -35,6 +35,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Tag;
 import org.bukkit.World;
+import org.bukkit.WorldBorder;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
@@ -288,60 +289,14 @@ public class Region extends BeaconzPluginDependent {
      * @param player player to show to
      * @param radius size of barrier
      */
-    @SuppressWarnings("deprecation")
     public void showBarrier(Player player, int radius) {
-        Location loc = player.getLocation();
-        final Material barrier = Material.BARRIER;
-        final byte color = 0;
-        //Set<Block> result = new HashSet<Block>();
-        int xMin = (int)corners[0].getX();
-        int zMin = (int)corners[0].getY();
-        int xMax = (int)corners[1].getX();
-        int zMax = (int)corners[1].getY();
-        if (loc.getBlockX() - xMin < radius) {
-            // Close to min x
-            for (int z = -radius; z < radius; z++) {
-                for (int y = -radius; y < radius; y++) {
-                    Block b = getBeaconzWorld().getBlockAt(xMin-1, loc.getBlockY() + y, loc.getBlockZ() + z);
-                    if (b.getType().equals(Material.AIR)) {
-                        player.sendBlockChange(b.getLocation(), barrier, color);
-                    }
-                }
-            }
-        }
-        if (loc.getBlockZ() - zMin < radius) {
-            // Close to min z
-            for (int x = -radius; x < radius; x++) {
-                for (int y = -radius; y < radius; y++) {
-                    Block b = getBeaconzWorld().getBlockAt(loc.getBlockX() + x, loc.getBlockY() + y, zMin-1);
-                    if (b.getType().equals(Material.AIR)) {
-                        player.sendBlockChange(b.getLocation(), barrier, color);
-                    }
-                }
-            }
-        }
-        if (xMax - loc.getBlockX() < radius) {
-            // Close to max x
-            for (int z = -radius; z < radius; z++) {
-                for (int y = -radius; y < radius; y++) {
-                    Block b = getBeaconzWorld().getBlockAt(xMax, loc.getBlockY() + y, loc.getBlockZ() + z); // not xMax+1, that's outside the region
-                    if (b.getType().equals(Material.AIR)) {
-                        player.sendBlockChange(b.getLocation(), barrier, color);
-                    }
-                }
-            }
-        }
-        if (zMax - loc.getBlockZ() < radius) {
-            // Close to max z
-            for (int x = -radius; x < radius; x++) {
-                for (int y = -radius; y < radius; y++) {
-                    Block b = getBeaconzWorld().getBlockAt(loc.getBlockX() + x, loc.getBlockY() + y, zMax); // not zMax+1, that's outside the region
-                    if (b.getType().equals(Material.AIR)) {
-                        player.sendBlockChange(b.getLocation(), barrier, color);
-                    }
-                }
-            }
-        }
+        Location center = new Location(plugin.getBeaconzWorld(), getCenter().getX(), 0, getCenter().getY());
+        WorldBorder wb = Bukkit.createWorldBorder();
+        wb.setCenter(center);
+        double size = getRadius() * 2;
+        wb.setSize(size);
+        wb.setWarningDistance(radius);
+        player.setWorldBorder(wb);
     }
 
 

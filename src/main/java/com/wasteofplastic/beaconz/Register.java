@@ -480,7 +480,7 @@ public class Register extends BeaconzPluginDependent {
     public BeaconObj addBeacon(Team owner, int x, int y, int z) {
         // Create a beacon
         BeaconObj beacon = new BeaconObj(getBeaconzPlugin(), x, y, z, owner);
-        getLogger().info("DEBUG: registered beacon at " + x + "," + y + ", " + z + " owner " + owner);
+        // getLogger().info("DEBUG: registered beacon at " + x + "," + y + ", " + z + " owner " + owner);
         for (int xx = x-1; xx <= x + 1; xx++) {
             for (int zz = z - 1; zz <= z + 1; zz++) {
                 Point2D location = new Point2D.Double(xx,zz);

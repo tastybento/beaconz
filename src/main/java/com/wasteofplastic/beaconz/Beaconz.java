@@ -52,6 +52,7 @@ import org.bukkit.potion.PotionData;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.potion.PotionType;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import com.wasteofplastic.beaconz.commands.AdminCmdHandler;
@@ -1010,5 +1011,15 @@ public class Beaconz extends JavaPlugin {
             sender.sendMessage(msg);
         } else {
         }
+    }
+
+
+    /**
+     * Check if world is covered by Beaconz
+     * @param world world
+     * @return True if world is a Beaconz world.
+     */
+    public boolean inWorld(@NotNull World world) {
+        return world.equals(getBeaconzWorld());
     }   
 }
