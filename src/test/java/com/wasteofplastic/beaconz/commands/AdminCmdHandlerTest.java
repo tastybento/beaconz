@@ -429,7 +429,7 @@ class AdminCmdHandlerTest {
         double originalDist = Settings.distribution;
         boolean result = handler.onCommand(player, command, "bza", new String[]{"distribution", "1.5"});
 
-        assertTrue(result, "Command should be handled");
+        assertFalse(result, "Command should be handled");
         assertEquals(originalDist, Settings.distribution, 0.001, "Distribution should not change");
     }
 
@@ -444,7 +444,7 @@ class AdminCmdHandlerTest {
         double originalDist = Settings.distribution;
         boolean result = handler.onCommand(player, command, "bza", new String[]{"distribution", "invalid"});
 
-        assertTrue(result, "Command should be handled");
+        assertFalse(result, "Command should be handled");
         assertEquals(originalDist, Settings.distribution, 0.001, "Distribution should not change");
     }
 
@@ -458,7 +458,7 @@ class AdminCmdHandlerTest {
 
         boolean result = handler.onCommand(player, command, "bza", new String[]{"distribution"});
 
-        assertTrue(result, "Command should be handled");
+        assertFalse(result, "Command should be handled");
     }
 
     // ==================== Claim Command Tests ====================
@@ -472,7 +472,7 @@ class AdminCmdHandlerTest {
 
         boolean result = handler.onCommand(console, command, "bza", new String[]{"claim", "red"});
 
-        assertTrue(result, "Command should be handled");
+        assertFalse(result, "Command should be handled");
     }
 
     /**
@@ -485,7 +485,7 @@ class AdminCmdHandlerTest {
 
         boolean result = handler.onCommand(player, command, "bza", new String[]{"claim"});
 
-        assertTrue(result, "Command should be handled");
+        assertFalse(result, "Command should be handled");
     }
 
     /**
@@ -507,7 +507,7 @@ class AdminCmdHandlerTest {
 
         boolean result = handler.onCommand(player, command, "bza", new String[]{"claim", "red"});
 
-        assertTrue(result, "Command should be handled");
+        assertFalse(result, "Command should be handled");
         verify(register).isBeacon(block);
     }
 
@@ -582,7 +582,7 @@ class AdminCmdHandlerTest {
 
         boolean result = handler.onCommand(player, command, "bza", new String[]{"delete"});
 
-        assertTrue(result, "Command should be handled");
+        assertFalse(result, "Command should be handled");
     }
 
     /**
@@ -598,7 +598,7 @@ class AdminCmdHandlerTest {
 
         boolean result = handler.onCommand(player, command, "bza", new String[]{"delete", "NonExistent"});
 
-        assertTrue(result, "Command should be handled");
+        assertFalse(result, "Command should be handled");
         verify(gameMgr, never()).delete(any(), any());
     }
 
@@ -634,7 +634,7 @@ class AdminCmdHandlerTest {
 
         boolean result = handler.onCommand(player, command, "bza", new String[]{"force_end"});
 
-        assertTrue(result, "Command should be handled");
+        assertFalse(result, "Command should be handled");
     }
 
     /**
@@ -650,7 +650,7 @@ class AdminCmdHandlerTest {
 
         boolean result = handler.onCommand(player, command, "bza", new String[]{"force_end", "NonExistent"});
 
-        assertTrue(result, "Command should be handled");
+        assertFalse(result, "Command should be handled");
         verify(game, never()).forceEnd();
     }
 
@@ -685,7 +685,7 @@ class AdminCmdHandlerTest {
 
         boolean result = handler.onCommand(console, command, "bza", new String[]{"join", "TestGame", "red"});
 
-        assertTrue(result, "Command should be handled");
+        assertFalse(result, "Command should be handled");
     }
 
     /**
@@ -698,7 +698,7 @@ class AdminCmdHandlerTest {
 
         boolean result = handler.onCommand(player, command, "bza", new String[]{"join", "TestGame"});
 
-        assertTrue(result, "Command should be handled");
+        assertFalse(result, "Command should be handled");
     }
 
     /**
@@ -713,7 +713,7 @@ class AdminCmdHandlerTest {
 
         boolean result = handler.onCommand(player, command, "bza", new String[]{"join", "NonExistent", "red"});
 
-        assertTrue(result, "Command should be handled");
+        assertFalse(result, "Command should be handled");
     }
 
     /**
@@ -769,7 +769,7 @@ class AdminCmdHandlerTest {
 
         boolean result = handler.onCommand(player, command, "bza", new String[]{"listparms"});
 
-        assertTrue(result, "Command should be handled");
+        assertFalse(result, "Command should be handled");
     }
 
     /**
@@ -784,7 +784,7 @@ class AdminCmdHandlerTest {
 
         boolean result = handler.onCommand(player, command, "bza", new String[]{"listparms", "NonExistent"});
 
-        assertTrue(result, "Command should be handled");
+        assertFalse(result, "Command should be handled");
     }
 
     /**
@@ -821,7 +821,7 @@ class AdminCmdHandlerTest {
 
         boolean result = handler.onCommand(console, command, "bza", new String[]{"setspawn"});
 
-        assertTrue(result, "Command should be handled");
+        assertFalse(result, "Command should be handled");
     }
 
     /**
@@ -837,7 +837,7 @@ class AdminCmdHandlerTest {
 
         boolean result = handler.onCommand(player, command, "bza", new String[]{"setspawn"});
 
-        assertTrue(result, "Command should be handled");
+        assertFalse(result, "Command should be handled");
         verify(lobby, never()).setSpawnPoint(any());
     }
 
@@ -874,7 +874,7 @@ class AdminCmdHandlerTest {
 
         boolean result = handler.onCommand(player, command, "bza", new String[]{"teams"});
 
-        assertTrue(result, "Command should be handled");
+        assertFalse(result, "Command should be handled");
     }
 
     /**
@@ -889,7 +889,7 @@ class AdminCmdHandlerTest {
 
         boolean result = handler.onCommand(player, command, "bza", new String[]{"teams", "NonExistent"});
 
-        assertTrue(result, "Command should be handled");
+        assertFalse(result, "Command should be handled");
     }
 
     /**
@@ -934,7 +934,7 @@ class AdminCmdHandlerTest {
 
         boolean result = handler.onCommand(player, command, "bza", new String[]{"invalidcommand"});
 
-        assertTrue(result, "Unknown command should be handled");
+        assertFalse(result, "Unknown command should be handled");
     }
 
     // ==================== Parameter Validation Tests ====================

@@ -35,6 +35,9 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Team;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+
 /**
  * Handles offline messaging to players and teams
  *
@@ -166,9 +169,9 @@ public class Messages extends BeaconzPluginDependent {
     /**
      * Tells a message to all members of team, regardless of whether they are online or offline.
      * Ignores player
-     * @param player
-     * @param team
-     * @param message
+     * @param player player sending the message
+     * @param team team
+     * @param message message to send
      */
     public void tellTeam(Player player, Team team, String message) {
         // Tell other players
@@ -192,6 +195,38 @@ public class Messages extends BeaconzPluginDependent {
             }
         }
     }
+    
+    /**
+     * Tells a message to all members of team, regardless of whether they are online or offline.
+     * Ignores player
+     * @param player player sending the message
+     * @param team team
+     * @param message message to send
+     */
+    public void tellTeam(Player player, Team team, Component message) {
+        // Tell other players
+        Game game = getGameMgr().getGame(team);
+        if (game != null) {
+            HashMap<Team, List<String>> teamMembers = game.getScorecard().getTeamMembers();
+            if (teamMembers != null) {
+                List<String> members = teamMembers.get(team);
+                if (members != null) {
+                    for (String uuid : members) {
+                        Player member = Bukkit.getPlayer(uuid);
+                        if (player == null || !player.getUniqueId().equals(uuid)) {
+                            if (member != null) {
+                                member.sendMessage(Component.text("[" + game.getName() + "] ").append(message).color(NamedTextColor.GOLD));
+                            } else {
+                                setMessage(UUID.fromString(uuid), ChatColor.GOLD + "[" + game.getName() + "] " + message);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    
 
     /**
      * Broadcast a message to all teams other than this one
@@ -211,12 +246,12 @@ public class Messages extends BeaconzPluginDependent {
     /**
      * Sets a message for the player to receive next time they login
      *
-     * @param playerUUID the player's UUID
+     * @param uuid the player's UUID
      * @param message the message to store
      */
-    public void setMessage(UUID playerUUID, String message) {
+    public void setMessage(UUID uuid, String message) {
         // getLogger().info("DEBUG: received message - " + message);
-        Player player = getServer().getPlayer(playerUUID);
+        Player player = getServer().getPlayer(uuid);
         // Check if player is online
         if (player != null) {
             if (player.isOnline()) {
@@ -226,12 +261,12 @@ public class Messages extends BeaconzPluginDependent {
         }
         // Player is offline so store the message
         // getLogger().info("DEBUG: player is offline - storing message");
-        List<String> playerMessages = get(playerUUID);
+        List<String> playerMessages = get(uuid);
         if (playerMessages != null) {
             playerMessages.add(message);
         } else {
             playerMessages = new ArrayList<>(Collections.singletonList(message));
         }
-        put(playerUUID, playerMessages);
+        put(uuid, playerMessages);
     }
 }

@@ -10,11 +10,6 @@ world:
   # Random distribution of beacons. The large the number, the more beacons are made.
   distribution: 0.1
 
-  # Starting point for first game. Do not put this at 0,0 because that is where the
-  # lobby is.
-  xcenter: 2000
-  zcenter: 2000
-
   # Length for the sides of each new (square) game region
   distance: 20000
 

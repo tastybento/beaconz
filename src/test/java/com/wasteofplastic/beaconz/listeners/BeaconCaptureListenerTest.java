@@ -3,7 +3,7 @@ package com.wasteofplastic.beaconz.listeners;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -11,35 +11,17 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import org.bukkit.ChatColor;
-import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
-import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDamageEvent;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.scoreboard.Team;
-import org.jetbrains.annotations.NotNull;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
 
-import com.wasteofplastic.beaconz.BeaconObj;
-import com.wasteofplastic.beaconz.Beaconz;
-import com.wasteofplastic.beaconz.Game;
-import com.wasteofplastic.beaconz.GameMgr;
 import com.wasteofplastic.beaconz.Lang;
-import com.wasteofplastic.beaconz.Messages;
-import com.wasteofplastic.beaconz.Register;
-import com.wasteofplastic.beaconz.Scorecard;
-import org.mockito.junit.jupiter.MockitoExtension;
+
+import net.kyori.adventure.text.Component;
 
 /**
  * Exercises BeaconCaptureListener behaviors for beacon damage/break events with mocked plugin context.
@@ -186,7 +168,7 @@ class BeaconCaptureListenerTest extends CommonTestBase {
         bcl.onBeaconDamage(e);
 
         verify(beacon).checkIntegrity();
-        verify(player, times(1)).sendMessage(anyString());
+        verify(player, times(1)).sendMessage(any(Component.class));
         assertTrue(e.isCancelled());
     }
 
@@ -200,7 +182,7 @@ class BeaconCaptureListenerTest extends CommonTestBase {
         bcl.onBeaconDamage(e);
 
         verify(beacon).checkIntegrity();
-        verify(player, times(1)).sendMessage(anyString());
+        verify(player, times(1)).sendMessage(any(Component.class));
         assertTrue(e.isCancelled());
     }
 
@@ -256,7 +238,7 @@ class BeaconCaptureListenerTest extends CommonTestBase {
         bcl.onBeaconBreak(e);
 
         assertTrue(e.isCancelled());
-        verify(player).sendMessage(anyString());
+        verify(player).sendMessage(any(Component.class));
     }
 
     /** No team for non-op: break blocked. */

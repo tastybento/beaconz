@@ -58,6 +58,7 @@ import com.wasteofplastic.beaconz.map.BeaconMap;
 import com.wasteofplastic.beaconz.map.TerritoryMapRenderer;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 
 public class BeaconCaptureListener extends BeaconzPluginDependent implements Listener {
 
@@ -118,7 +119,7 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
                 // Check that the beacon is clear of blocks
                 if (beacon.isNotClear() && (beacon.getOwnership() == null || !beacon.getOwnership().equals(team))) {
                     // You can't capture an uncleared beacon
-                    player.sendMessage(ChatColor.GOLD + Lang.errorClearAroundBeacon);
+                    player.sendMessage(Component.text(Lang.errorClearAroundBeacon).color(NamedTextColor.GOLD));
                     event.setCancelled(true);
                 }
             }
@@ -154,7 +155,7 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
                 return;
             }
         }
-        
+
         // Prevent breakage of blocks outside the game area
         Game game = getGameMgr().getGame(event.getBlock().getLocation());
         if (DEBUG) {
@@ -166,7 +167,7 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
         }
         if (game == null && !player.isOp()) {
             event.setCancelled(true);
-            player.sendMessage(ChatColor.RED + Lang.errorYouCannotDoThat);
+            player.sendMessage(Component.text(Lang.errorYouCannotDoThat).color(NamedTextColor.RED));
             return;
         }
         // Get the player's team
@@ -206,14 +207,16 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
                         getLogger().info("DEBUG: obsidian");
                         //Claiming unowned beacon
                         getLogger().info("DEBUG: team = " + team);
-                        getLogger().info("DEBUG: team = " + team.getDisplayName());
+                        getLogger().info("DEBUG: team = " + team.displayName().toString());
                         getLogger().info("DEBUG: block ID = " + game.getScorecard().getBlockID(team));
                     }
-                    block.setType(game.getScorecard().getBlockID(team));
+                    if (game != null) {
+                        block.setType(game.getScorecard().getBlockID(team));
+                    }
                     // TODO block.setData(game.getScorecard().getBlockID(team).getData());
                     // Register the beacon to this team
                     getRegister().setBeaconOwner(beacon,team);
-                    player.sendMessage(ChatColor.GREEN + Lang.beaconYouCapturedABeacon);
+                    player.sendMessage(Component.text(Lang.beaconYouCapturedABeacon).color(NamedTextColor.GREEN));
                     giveBeaconMap(player,beacon);
                     // Save for safety
                     getRegister().saveRegister();
@@ -365,7 +368,7 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
      */
     @SuppressWarnings("deprecation")
     private void giveBeaconMap(Player player, BeaconObj beacon) {
-     // Create the MapView
+        // Create the MapView
         MapView mapView = Bukkit.createMap(getBeaconzWorld());
         mapView.setCenterX(beacon.getX());
         mapView.setCenterZ(beacon.getZ());
@@ -379,17 +382,17 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
         // Update the Meta
         if (newMap.getItemMeta() instanceof MapMeta meta) {
             meta.displayName(Component.text("Beacon map for " + beacon.getName()));
-            
+
             // This connects the ItemStack to the custom MapView and ID
             meta.setMapView(mapView); 
-            
+
             newMap.setItemMeta(meta);
         }
 
         // Give to player
         ItemStack offHand = player.getInventory().getItemInOffHand();
         getLogger().info("offhand = " + offHand);
-                
+
         if (!offHand.getType().equals(Material.AIR)) {
             HashMap<Integer, ItemStack> leftOvers = player.getInventory().addItem(newMap);
             if (!leftOvers.isEmpty()) {
@@ -402,9 +405,9 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
         } else {
             player.getInventory().setItemInOffHand(newMap);
         }
-        
+
         // Register in system
         getRegister().addBeaconMap(mapView.getId(), beacon);
- 
+
     }
 }

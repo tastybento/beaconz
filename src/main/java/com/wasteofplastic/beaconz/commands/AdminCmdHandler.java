@@ -125,584 +125,615 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
             }
         }
 
-        // Initialize variables for command processing
-        Team team = null;      // Current team being worked with
-        Game game = null;      // Current game being worked with
-        Player player = null;  // Current player being worked with
-
         // Display help menu if no arguments or "help" command
         if (args.length == 0 || (args.length == 1 && args[0].equalsIgnoreCase("help"))) {
-            // Define colors for help messages (GREEN for command, YELLOW for syntax, AQUA for description)
-            NamedTextColor green = NamedTextColor.GREEN;
-            NamedTextColor yellow = NamedTextColor.YELLOW;
-            NamedTextColor aqua = NamedTextColor.AQUA;
+            return showHelp(sender, label);
+        } else {
+            // Process specific commands
+            return switch (args[0].toLowerCase()) {
+            case "claim" -> onClaim(sender, label, args);          
+            case "distribution" -> onDistribution(sender, label, args);
+            case "switch" -> onSwitch(sender, label, args);
+            case "join" -> onJoin(sender, label, args);         
+            case "games" -> onGames(sender, label, args);
+            case "kick" -> onKick(sender, label, args);
+            case "delete" -> onDelete(sender, label, args);
+            case "force_end" -> onForceEnd(sender, label, args);
+            case "list" -> onList(sender, label, args);
+            case "newgame" -> onNewGame(sender, label, args);
+            case "reload" -> onReload(sender, label, args);
+            case "listparms" -> onListParms(sender, label, args);
+            case "setspawn" -> onSetSpawn(sender, label, args);
+            case "teams" ->  onTeams(sender, label, args);
+            default -> {
+                // Unknown command - show error
+                sender.sendMessage(Component.text(Lang.errorUnknownCommand).color(NamedTextColor.RED));
+                yield false;
+            }
+            };
+        }
+    }
 
-            // Display help header
-            sender.sendMessage(Component.text(Lang.helpLine).color(green));
-            sender.sendMessage(Component.text(Lang.helpAdminTitle).color(yellow));
-            sender.sendMessage(Component.text(Lang.helpLine).color(green));
+    /**
+     * Handle the switch command
+     * @param sender command sender
+     * @param label label
+     * @param args arguments
+     * @return true if successful
+     */
+    private boolean onSwitch(CommandSender sender, String label, String[] args) {
+        // SWITCH COMMAND: Move a player to a different team within their current game
+        // Can be used on self (1 arg) or on another player (2 args)
+        if (args.length == 1) {
+            // Switch sender's own team
+            if (!(sender instanceof Player)) {
+                sender.sendMessage(Component.text(Lang.errorOnlyPlayers));
+                return false;
+            } else {
+                Player player = (Player) sender;
+                Team team = getGameMgr().getPlayerTeam(player);
 
-            // Player-only commands (require physical presence in game world)
-            if (sender instanceof Player) {
-                sender.sendMessage(Component.text("/" + label).color(green)
-                    .append(Component.text(" claim [unowned | <team>]").color(yellow))
-                    .append(Component.text(Lang.helpAdminClaim).color(aqua)));
+                // Validate player is in a team
+                if (team == null) {
+                    sender.sendMessage(Component.text(Lang.errorYouMustBeInATeam).color(NamedTextColor.RED));
+                    return false;
+                }
+
+                // Get the game from current team
+                Game game = getGameMgr().getGame(team);
+                if (game == null) {
+                    sender.sendMessage(Component.text(Lang.errorYouMustBeInAGame).color(NamedTextColor.RED));
+                    return false;
+                }
+
+                // Find next available team (first team that isn't the current one)
+                for (Team newTeam : game.getScorecard().getTeams()) {
+                    if (!newTeam.equals(team)) {
+                        // Found an alternative team - switch to it
+                        game.getScorecard().addTeamPlayer(newTeam, player);
+                        sender.sendMessage(Component.text(Lang.actionsSwitchedToTeam)
+                                .replaceText(builder -> builder.matchLiteral("[team]").replacement(newTeam.displayName()))
+                                .color(NamedTextColor.GREEN));
+
+                        // Clear all potion effects when switching teams
+                        for (PotionEffect effect : player.getActivePotionEffects())
+                            player.removePotionEffect(effect.getType());
+                        return true;
+                    }
+                }
+                sender.sendMessage(Component.text(Lang.errorNoSuchTeam).color(NamedTextColor.RED));
+            }
+            return false;
+        } else if (args.length == 2) {
+            // Switch another player's team (admin forcing a switch)
+            Player player = getServer().getPlayer(args[1]);
+            if (player == null) {
+                sender.sendMessage(Component.text(Lang.errorUnknownPlayer));
+                return false;
+            } else {
+                Team team = getGameMgr().getPlayerTeam(player);
+                if (team == null) {
+                    sender.sendMessage(Component.text(Lang.errorNoSuchTeam).color(NamedTextColor.RED));
+                    return false;
+                }
+                Game game = getGameMgr().getGame(team);
+                if (game == null) {
+                    sender.sendMessage(Component.text(Lang.errorNoSuchGame).color(NamedTextColor.RED));
+                    return false;
+                }
+
+                // Get the next team in this game
+                for (Team newTeam : game.getScorecard().getTeams()) {
+                    if (!newTeam.equals(team)) {
+                        // Found an alternative - switch the player
+                        game.getScorecard().addTeamPlayer(newTeam, player);
+
+                        // Notify both admin and player
+                        sender.sendMessage(Component.text(player.getName() + ": ")
+                                .append(Component.text(Lang.actionsSwitchedToTeam)
+                                        .replaceText(builder -> builder.matchLiteral("[team]").replacement(newTeam.displayName())))
+                                .color(NamedTextColor.GREEN));
+                        player.sendMessage(Component.text(Lang.actionsSwitchedToTeam)
+                                .replaceText(builder -> builder.matchLiteral("[team]").replacement(newTeam.displayName()))
+                                .color(NamedTextColor.GREEN));
+
+                        // Remove any potion effects
+                        for (PotionEffect effect : player.getActivePotionEffects())
+                            player.removePotionEffect(effect.getType());
+                        return true;
+                    }
+                }
+                sender.sendMessage(Component.text(Lang.errorNoSuchTeam).color(NamedTextColor.RED));
+            }
+            return false;
+        }
+        return false;
+    }
+
+    private boolean onJoin(CommandSender sender, String label, String[] args) {
+        // JOIN COMMAND: Force a player to join a specific team in a specific game
+        // Admin bypass for normal join restrictions
+        if (args.length < 3) {
+            sender.sendMessage(Component.text("/" + label + " join <gamename> <team>" + Lang.helpAdminJoin).color(NamedTextColor.RED));
+            return false;
+        } else {
+            if (!(sender instanceof Player)) {
+                sender.sendMessage(Component.text(Lang.errorOnlyPlayers));
+                return false;
+            } else {
+                Player player = (Player) sender;
+                Game game = getGameMgr().getGame(args[1]);
+
+                // Validate game exists
+                if (game != null) {
+                    if (game.getScorecard().getTeam(args[2]) != null) {
+                        // Team exists - add player to it
+                        final Team joinTeam = game.getScorecard().getTeam(args[2]);
+                        game.getScorecard().addTeamPlayer(joinTeam, player);
+                        player.setScoreboard(game.getScorecard().getScoreboard());
+                        game.getScorecard().sendPlayersHome(player, false);
+                        sender.sendMessage(Component.text(Lang.actionsYouAreInTeam)
+                                .replaceText(builder -> builder.matchLiteral("[team]").replacement(joinTeam.displayName()))
+                                .color(NamedTextColor.GREEN));
+                        return true;
+                    }
+                } else {
+                    sender.sendMessage(Component.text("/" + label + " join <gamename> <team> - " + Lang.errorNoSuchGame));
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean onGames(CommandSender sender, String label, String[] args) {
+        // GAMES COMMAND: List all active games and their regions including the lobby
+        sender.sendMessage(Component.text(Lang.adminGamesDefined).color(NamedTextColor.GREEN));
+        sender.sendMessage(Component.text(Lang.adminGamesTheLobby + " - " + getGameMgr().getLobby().displayCoords()).color(NamedTextColor.AQUA));
+
+        // Count and display all games
+        int cnt = 0;
+        for (Game g : getGameMgr().getGames().values()) {
+            cnt ++;
+            sender.sendMessage(Component.text(g.getName() + " - " + g.getRegion().displayCoords()).color(NamedTextColor.AQUA));
+        }
+        if (cnt == 0) sender.sendMessage(Component.text(Lang.adminGamesNoOthers).color(NamedTextColor.AQUA));
+        return true;
+    }
+
+    private boolean onKick(CommandSender sender, String label, String[] args) {
+        // KICK COMMAND: Remove a player from a game (sends them to lobby)
+        if (args.length < 3) {
+            sender.sendMessage(Component.text("/" + label + Lang.helpAdminKick).color(NamedTextColor.RED));
+            return false;
+        } else {
+            Player player = getServer().getPlayer(args[1]);
+
+            // Check if player exists or if "all" was specified
+            if (player == null && !args[1].equals("all")) {
+                sender.sendMessage(Component.text(Lang.errorUnknownPlayer));
+                return false;
+            } else {
+                Game game = getGameMgr().getGame(args[2]);
+                if (game == null) {
+                    sender.sendMessage(Component.text(Lang.errorNoSuchGame));
+                    return false;
+                } else {
+                    // Process kick - either all players or specific player
+                    if (args[2].equals("all")) {
+                        game.kickAll();
+                        sender.sendMessage(Component.text(Lang.adminKickAllPlayers.replace("[name]", game.getName())));
+                        return true;
+                    } else {
+                        if (player != null) {
+                            game.kick(sender, player);
+                            sender.sendMessage(Component.text(Lang.adminKickPlayer.replace("[player]", player.getName()).replace("[name]", game.getName())));
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean onDelete(CommandSender sender, String label, String[] args) {
+        // DELETE COMMAND: Permanently delete a game and its region
+        // WARNING: This cannot be undone!
+        if (args.length < 2) {
+            sender.sendMessage(Component.text("/" + label + " delete <gamename> - " + Lang.helpAdminDelete).color(NamedTextColor.RED));
+            return false;
+        } else {
+            Game game = getGameMgr().getGames().get(args[1]);
+            if (game == null) {
+                sender.sendMessage(Component.text(Lang.errorNoSuchGame + "'" + args[1] + "'").color(NamedTextColor.RED));
+                return false;
+            } else {
+                // Confirm deletion started
+                sender.sendMessage(Component.text(Lang.adminDeletingGame.replace("[name]", game.getName())).color(NamedTextColor.GREEN));
+                getGameMgr().delete(sender, game);
+                // Confirm deletion completed
+                sender.sendMessage(Component.text(Lang.adminDeletedGame.replace("[name]", game.getName())).color(NamedTextColor.GREEN));
+                return true;
+            }
+        }
+    }
+
+    private boolean onForceEnd(CommandSender sender, String label, String[] args) {
+        // FORCE_END COMMAND: Immediately end a game and declare a winner
+        // Useful for testing or ending stalled games
+        if (args.length < 2) {
+            sender.sendMessage(Component.text("/" + label + " force_end <gamename>" + Lang.helpAdminForceEnd).color(NamedTextColor.RED));
+            return false;
+        } else {
+            Game game = getGameMgr().getGames().get(args[1]);
+            if (game == null) {
+                sender.sendMessage(Component.text(Lang.errorNoSuchGame + "'" + args[1] + "'").color(NamedTextColor.RED));
+                return false;
+            } else {
+                game.forceEnd();
+                sender.sendMessage(Component.text(Lang.adminForceEnd.replace("[name]", game.getName())).color(NamedTextColor.GREEN));
+                return true;
+            }
+        }
+
+    }
+
+    private boolean onList(CommandSender sender, String label, String[] args) {
+        // LIST COMMAND: Display all beacons in a game or across all games
+        // Optional filter by team name or "unowned"
+        if (args.length < 2) {
+            sender.sendMessage(Component.text("/" + label + " list [all |<gamename>] [team] " + Lang.helpAdminList).color(NamedTextColor.RED));
+            return false;
+        } else if (args.length == 3) {
+            // List with team filter
+            listBeacons(sender, args[1], args[2]);
+            return true;
+        } else {
+            // List all beacons in game
+            listBeacons(sender, args[1]);
+            return true;
+        }
+    }
+
+    private boolean onNewGame(CommandSender sender, String label, String[] args) {
+        // NEWGAME COMMAND: Create a new game with optional custom parameters
+        // Parameters can override defaults: gamemode, size, teams, goal, goalvalue, countdown, scoretypes, distribution
+        if (args.length < 2) {
+            sender.sendMessage(Component.text("/" + label + " newgame <gamename> [<parm1:value> <parm2:value>...] - parameters are optional"));
+            sender.sendMessage(Component.text("/" + label + " do /" + label + " newgame help for a list of the possible parameters"));
+            return false;
+        } else {
+            if (args[1].equalsIgnoreCase("help")) {
+                // Display detailed help for all game parameters
+                sender.sendMessage(Component.text("/" + label + " newgame <gamename> [<parm1:value> <parm2:value>...]"));
+                sender.sendMessage(Component.text("The optional parameters and their values are:").color(NamedTextColor.GREEN));
+
+                // Document each parameter with examples
+                sender.sendMessage(Component.text("gamemode -  ").color(NamedTextColor.YELLOW)
+                        .append(Component.text(" values can be either 'minigame' or 'strategy' - e.g gamemode:strategy").color(NamedTextColor.AQUA)));
+                sender.sendMessage(Component.text("size -  ").color(NamedTextColor.YELLOW)
+                        .append(Component.text(" length for the side of the game region - e.g. size:500").color(NamedTextColor.AQUA)));
+                sender.sendMessage(Component.text("teams -  ").color(NamedTextColor.YELLOW)
+                        .append(Component.text(" the number of teams in the game - e.g. teams:2").color(NamedTextColor.AQUA)));
+                sender.sendMessage(Component.text("goal -  ").color(NamedTextColor.YELLOW)
+                        .append(Component.text("  one of 'area', 'beacons', 'links', 'triangles' - e.g. goal:links").color(NamedTextColor.AQUA)));
+                sender.sendMessage(Component.text("goalvalue -  ").color(NamedTextColor.YELLOW)
+                        .append(Component.text("  the number objective for the goal - e.g goalvalue:100").color(NamedTextColor.AQUA)));
+                sender.sendMessage(Component.text("countdown -  ").color(NamedTextColor.YELLOW)
+                        .append(Component.text("  the game's timer, in seconds. 0 means the timer runs up, open-ended; any other value meands the timer runs a countdown from that time. - e.g. countdown:600").color(NamedTextColor.AQUA)));
+                sender.sendMessage(Component.text("scoretypes -  ").color(NamedTextColor.YELLOW)
+                        .append(Component.text("  the scores to be displayed on the sidebar. Can be any combination of goal names separated by '-' e.g scoretypes:area-triangles-beacons-links").color(NamedTextColor.AQUA)));
+                sender.sendMessage(Component.text("distribution -  ").color(NamedTextColor.YELLOW)
+                        .append(Component.text("  overrides the system's default beacon distribution - specify a number between 0.01 and 0.99 for the probability of any one chunk containing a beacon.").color(NamedTextColor.AQUA)));
+                return true;
+            } else {
+                // Parse and create game with parameters
+                String [] parmargs = new String [args.length-2];
+                System.arraycopy(args, 2, parmargs, 0, parmargs.length);
+                Game game = getGameMgr().getGame(args[1]);
+
+                // Check if game name already exists
+                if (game != null) {
+                    sender.sendMessage(Component.text(Lang.errorAlreadyExists.replace("[name]", game.getName())).color(NamedTextColor.RED));
+                    return false;
+                } else {
+                    // Check and validate parameters if provided
+                    if (parmargs.length > 0) {
+                        String errormsg = setDefaultParms(parmargs);  // temporarily set up the given parameters as default
+                        if (!errormsg.isEmpty()) {
+                            sender.sendMessage(Component.text(Lang.errorError + errormsg).color(NamedTextColor.RED));
+                            getGameMgr().setGameDefaultParms();      // restore the default parameters (just in case)
+                            return false;
+                        } else {
+                            sender.sendMessage(Component.text(Lang.adminNewGameBuilding).color(NamedTextColor.GREEN));
+                            getGameMgr().newGame(args[1]);           // create the new game
+                            getGameMgr().setGameDefaultParms();      // restore the default parameters
+                            sender.sendMessage(Component.text(Lang.generalSuccess).color(NamedTextColor.GREEN));
+                            return true;
+                        }
+                    } else {
+                        // Create game with default parameters
+                        sender.sendMessage(Component.text(Lang.adminNewGameBuilding).color(NamedTextColor.GREEN));
+                        getGameMgr().newGame(args[1]);
+                        sender.sendMessage(Component.text(Lang.generalSuccess).color(NamedTextColor.GREEN));
+                        return true;
+                    }
+                }
+            }
+        }
+
+    }
+
+    private boolean onReload(CommandSender sender, String label, String[] args) {
+        // RELOAD COMMAND: Save current state and reload all configuration
+        // Saves: beacon register, game data
+        // Reloads: config.yml, game parameters, beacon register
+        getRegister().saveRegister();
+        getGameMgr().saveAllGames();
+        this.getBeaconzPlugin().reloadConfig();
+        this.getBeaconzPlugin().loadConfig();
+        getGameMgr().reload();
+        getRegister().loadRegister();
+        sender.sendMessage(Component.text(Lang.adminReload).color(NamedTextColor.RED));
+        return true;
+
+    }
+
+    private boolean onListParms(CommandSender sender, String label, String[] args) {
+        // LISTPARMS COMMAND: Display all parameters for a specific game
+        // Shows: mode, teams, goal, goal value, score types
+        if (args.length < 2) {
+            sender.sendMessage(Component.text("/" + label + " listparms <gamename> " + Lang.helpAdminListParms));
+            return false;
+        } else {
+            Game game = getGameMgr().getGame(args[1]);
+            if (game == null) {
+                sender.sendMessage(Component.text(Lang.errorNoSuchGame + "'" + args[1] + "'").color(NamedTextColor.RED));
+                return false;
+            } else {
+                // Display each game parameter with color formatting
+                sender.sendMessage(Component.text(Lang.adminParmsMode + ": ").color(NamedTextColor.YELLOW)
+                        .append(Component.text(game.getGamemode()).color(NamedTextColor.AQUA)));
+                sender.sendMessage(Component.text(Lang.adminParmsTeams + ": ").color(NamedTextColor.YELLOW)
+                        .append(Component.text(String.valueOf(game.getNbrTeams())).color(NamedTextColor.AQUA)));
+                sender.sendMessage(Component.text(Lang.adminParmsGoal + ": ").color(NamedTextColor.YELLOW)
+                        .append(Component.text(game.getGamegoal()).color(NamedTextColor.AQUA)));
+                sender.sendMessage(Component.text(Lang.adminParmsGoalValue + ": ").color(NamedTextColor.YELLOW)
+                        .append(Component.text(game.getGamegoalvalue() == 0 ? Lang.adminParmsUnlimited : String.format(Locale.US, "%,d", game.getGamegoalvalue())).color(NamedTextColor.AQUA)));
+                sender.sendMessage(Component.text(Lang.adminParmsScoreTypes + ": ").color(NamedTextColor.YELLOW)
+                        .append(Component.text(game.getScoretypes()).color(NamedTextColor.AQUA)));
+                return true;
+            }
+        }
+
+
+    }
+
+    private boolean onSetSpawn(CommandSender sender, String label, String[] args) {
+        // SETSPAWN COMMAND: Set the lobby spawn point where players teleport when joining
+        // Must be executed by a player standing in the lobby region
+        if (args.length > 2) {
+            sender.sendMessage(Component.text("/" + label + " setspawn " + Lang.helpAdminSetLobbySpawn).color(NamedTextColor.RED));
+            return false;
+        } else {
+            // Admin set team spawn
+            if (!(sender instanceof Player)) {
+                sender.sendMessage(Component.text(Lang.errorOnlyPlayers).color(NamedTextColor.RED));
+                return false;
+            }
+            // Check if the player is in the lobby region
+            Player player = (Player) sender;
+            if (args.length == 1 && getGameMgr().getLobby().isPlayerInRegion(player)) {
+                // Set spawn to player's current location
+                getGameMgr().getLobby().setSpawnPoint(player.getLocation());
+                sender.sendMessage(Component.text(Lang.generalSuccess + " (" + player.getLocation().getBlockX() + ","
+                        + player.getLocation().getBlockY() + "," + player.getLocation().getBlockZ() + ")").color(NamedTextColor.GREEN));
+                return true;
+            } else {
+                sender.sendMessage(Component.text(Lang.helpAdminSetLobbySpawn).color(NamedTextColor.RED));
+                return false;
+            }
+        }
+    }
+
+    private boolean onTeams(CommandSender sender, String label, String[] args) {
+        // TEAMS COMMAND: Display team rosters showing all team members
+        // Can view a specific game or all games
+        if (args.length < 2) {
+            sender.sendMessage(Component.text("/" + label + " teams [all | <gamename>] " + Lang.helpAdminTeams).color(NamedTextColor.RED));
+            return false;
+        } else {
+            boolean foundgame = false;
+
+            // Iterate through games to find matches
+            for (String gname : getGameMgr().getGames().keySet()) {
+                if (args[1].equalsIgnoreCase("all") || gname.equals(args[1])) {
+                    foundgame = true;
+                    Game game = getGameMgr().getGames().get(gname);
+                    sender.sendMessage(Component.text(Lang.generalTeams + " - " + gname).color(NamedTextColor.GREEN));
+
+                    Scoreboard sb = game.getScorecard().getScoreboard();
+                    if (sb == null) {
+                        sender.sendMessage(Component.text(Lang.errorNoSuchGame + "'" + args[1] + "'").color(NamedTextColor.RED));
+                        return false;
+                    } else {
+                        // Display each team and its members
+                        HashMap<Team, List<String>> teamMembers = game.getScorecard().getTeamMembers();
+                        for (Team t : teamMembers.keySet()) {
+                            sender.sendMessage(Component.text("==== ")
+                                    .append(t.displayName())
+                                    .append(Component.text(" ====")));
+
+                            // Build member list from UUIDs
+                            StringBuilder memberlist = new StringBuilder();
+                            for (String uuid : teamMembers.get(t)) {
+                                memberlist.append("[").append(getServer().getOfflinePlayer(UUID.fromString(uuid)).getName()).append("] ");
+                            }
+                            sender.sendMessage(Component.text(Lang.generalMembers + ": " + memberlist).color(NamedTextColor.WHITE));
+                        }
+                        return true;
+                    }
+                }
             }
 
-            // Console-compatible commands
+            // Handle case where no matching game was found
+            if (!foundgame) {
+                if (args[1].equalsIgnoreCase("all")) {
+                    sender.sendMessage(Component.text(Lang.errorNoGames));
+                } else {
+                    sender.sendMessage(Component.text(Lang.errorNoSuchGame + "'" + args[1] + "'").color(NamedTextColor.RED));
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean onDistribution(CommandSender sender, String label, String[] args) {
+        // DISTRIBUTION COMMAND: Set beacon spawn probability (0.0 to 1.0)
+        // Controls how frequently beacons generate in chunks
+        if (args.length < 2) {
+            sender.sendMessage(Component.text("/" + label + " distribution <fraction between 0 and 1> " + Lang.helpAdminDistribution).color(NamedTextColor.RED));
+            return false;
+        } else {
+            try {
+                double dist = Double.parseDouble(args[1]);
+                if (dist > 0D && dist < 1D) {
+                    Settings.distribution = dist;
+                    sender.sendMessage(Component.text(Lang.actionsDistributionSettingTo.replace("[value]", String.valueOf(dist))).color(NamedTextColor.GREEN));
+                    return true;
+                }
+            } catch (Exception e) {
+                sender.sendMessage(Component.text(label + " distribution <fraction> - must be less than 1").color(NamedTextColor.RED));
+            }
+        }
+        return false;
+    }
+
+    private boolean onClaim(CommandSender sender, String label, String[] args) {
+        // CLAIM COMMAND: Admin beacon claim - forcibly assign beacons to teams or mark as unowned
+        // Requires player to be standing on the beacon block
+        if (args.length < 2) {
+            sender.sendMessage(Component.text("/" + label + " claim [unowned | <team>]").color(NamedTextColor.RED));
+            return false;
+        } else {
+            if (!(sender instanceof Player player)) {
+                sender.sendMessage(Component.text(Lang.errorOnlyPlayers));
+                return false;
+            } else {
+                // Check the argument
+                Game game = getGameMgr().getGame(player.getLocation());
+                Team team = game.getScorecard().getTeam(args[1]);
+                if (team == null && !args[1].equalsIgnoreCase("unowned")) {
+                    sender.sendMessage(Component.text("/" + label + " claim [unowned, " + game.getScorecard().getTeamListString() + "]").color(NamedTextColor.RED));
+                    return false;
+                } else {
+                    // Check if player is standing on a beacon
+                    Block block = player.getLocation().getBlock().getRelative(BlockFace.DOWN);
+                    if (!getRegister().isBeacon(block)) {
+                        sender.sendMessage(Component.text(Lang.errorYouHaveToBeStandingOnABeacon));
+                        return false;
+                    } else {
+                        Point2D newClaim = new Point2D.Double(block.getX(), block.getZ());
+                        player.sendMessage(Component.text(Lang.beaconClaimingBeaconAt.replace("[location]", newClaim.toString())));
+
+                        // Verify beacon is registered
+                        if (!getRegister().getBeaconRegister().containsKey(newClaim)) {
+                            player.sendMessage(Component.text(Lang.errorNotInRegister + newClaim).color(NamedTextColor.RED));
+                            return false;
+                        } else {
+                            BeaconObj beacon = getRegister().getBeaconRegister().get(newClaim);
+
+                            // Process claim or unclaim
+                            if (args[1].equalsIgnoreCase("unowned")) {
+                                getRegister().removeBeaconOwnership(beacon);
+                            } else {
+                                // Claim beacon for team and update block color
+                                getRegister().setBeaconOwner(beacon, team);
+                                block.setType(game.getScorecard().getBlockID(team));
+                            }
+                            player.sendMessage(Component.text(Lang.beaconClaimedForTeam.replace("[team]", args[1])));
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+
+    }
+
+    private boolean showHelp(CommandSender sender, String label) {
+        // Define colors for help messages (GREEN for command, YELLOW for syntax, AQUA for description)
+        NamedTextColor green = NamedTextColor.GREEN;
+        NamedTextColor yellow = NamedTextColor.YELLOW;
+        NamedTextColor aqua = NamedTextColor.AQUA;
+
+        // Display help header
+        sender.sendMessage(Component.text(Lang.helpLine).color(green));
+        sender.sendMessage(Component.text(Lang.helpAdminTitle).color(yellow));
+        sender.sendMessage(Component.text(Lang.helpLine).color(green));
+
+        // Player-only commands (require physical presence in game world)
+        if (sender instanceof Player) {
             sender.sendMessage(Component.text("/" + label).color(green)
+                    .append(Component.text(" claim [unowned | <team>]").color(yellow))
+                    .append(Component.text(Lang.helpAdminClaim).color(aqua)));
+        }
+
+        // Console-compatible commands
+        sender.sendMessage(Component.text("/" + label).color(green)
                 .append(Component.text(" delete <gamename>").color(yellow))
                 .append(Component.text(Lang.helpAdminDelete).color(aqua)));
 
-            if (sender instanceof Player) {
-                sender.sendMessage(Component.text("/" + label).color(green)
+        if (sender instanceof Player) {
+            sender.sendMessage(Component.text("/" + label).color(green)
                     .append(Component.text(" join <gamename> <team>").color(yellow))
                     .append(Component.text(Lang.helpAdminJoin).color(aqua)));
-            }
+        }
 
-            sender.sendMessage(Component.text("/" + label).color(green)
+        sender.sendMessage(Component.text("/" + label).color(green)
                 .append(Component.text(" games").color(yellow))
                 .append(Component.text(Lang.helpAdminGames).color(aqua)));
 
-            sender.sendMessage(Component.text("/" + label).color(green)
+        sender.sendMessage(Component.text("/" + label).color(green)
                 .append(Component.text(" force_end <gamename>").color(yellow))
                 .append(Component.text(Lang.helpAdminForceEnd).color(aqua)));
 
-            sender.sendMessage(Component.text("/" + label).color(green)
+        sender.sendMessage(Component.text("/" + label).color(green)
                 .append(Component.text(" list [all |<gamename>] [team]").color(yellow))
                 .append(Component.text(Lang.helpAdminList).color(aqua)));
 
-            sender.sendMessage(Component.text("/" + label).color(green)
+        sender.sendMessage(Component.text("/" + label).color(green)
                 .append(Component.text(" listparms <gamename>").color(yellow))
                 .append(Component.text(Lang.helpAdminListParms).color(aqua)));
 
-            sender.sendMessage(Component.text("/" + label).color(green)
+        sender.sendMessage(Component.text("/" + label).color(green)
                 .append(Component.text(" newgame <gamename> [<parm1:value> <parm2:value>...]").color(yellow))
                 .append(Component.text(Lang.helpAdminNewGame.replace("[label]", label)).color(aqua)));
 
-            sender.sendMessage(Component.text("/" + label).color(green)
+        sender.sendMessage(Component.text("/" + label).color(green)
                 .append(Component.text(" reload").color(yellow))
                 .append(Component.text(Lang.helpAdminReload).color(aqua)));
 
-            // Spawn-related commands (player-only)
-            if (sender instanceof Player) {
-                sender.sendMessage(Component.text("/" + label).color(green)
+        // Spawn-related commands (player-only)
+        if (sender instanceof Player) {
+            sender.sendMessage(Component.text("/" + label).color(green)
                     .append(Component.text(" setspawn <team>").color(yellow))
                     .append(Component.text(Lang.helpAdminSetTeamSpawn).color(aqua)));
-                sender.sendMessage(Component.text("/" + label).color(green)
+            sender.sendMessage(Component.text("/" + label).color(green)
                     .append(Component.text(" setspawn ").color(yellow))
                     .append(Component.text(Lang.helpAdminSetLobbySpawn).color(aqua)));
-                sender.sendMessage(Component.text("/" + label).color(green)
+            sender.sendMessage(Component.text("/" + label).color(green)
                     .append(Component.text(" switch ").color(yellow))
                     .append(Component.text(Lang.helpAdminSwitch).color(aqua)));
-            }
+        }
 
-            sender.sendMessage(Component.text("/" + label).color(green)
+        sender.sendMessage(Component.text("/" + label).color(green)
                 .append(Component.text(" switch <online playername> ").color(yellow))
                 .append(Component.text(Lang.helpAdminSwitch).color(aqua)));
 
-            sender.sendMessage(Component.text("/" + label).color(green)
+        sender.sendMessage(Component.text("/" + label).color(green)
                 .append(Component.text(" teams [all | <gamename>]").color(yellow))
                 .append(Component.text(Lang.helpAdminTeams).color(aqua)));
-
-        } else {
-            // Process specific commands
-            switch (args[0].toLowerCase()) {
-            case "claim":
-                // CLAIM COMMAND: Admin beacon claim - forcibly assign beacons to teams or mark as unowned
-                // Requires player to be standing on the beacon block
-                if (args.length < 2) {
-                    sender.sendMessage(Component.text("/" + label + " claim [unowned | <team>]").color(NamedTextColor.RED));
-                } else {
-                    if (!(sender instanceof Player)) {
-                        sender.sendMessage(Component.text(Lang.errorOnlyPlayers));
-                    } else {
-                        // Check the argument
-                        player = (Player) sender;
-                        game = getGameMgr().getGame(player.getLocation());
-                        team = game.getScorecard().getTeam(args[1]);
-                        if (team == null && !args[1].equalsIgnoreCase("unowned")) {
-                            sender.sendMessage(Component.text("/" + label + " claim [unowned, " + game.getScorecard().getTeamListString() + "]").color(NamedTextColor.RED));
-                        } else {
-                            // Check if player is standing on a beacon
-                            Block block = player.getLocation().getBlock().getRelative(BlockFace.DOWN);
-                            if (!getRegister().isBeacon(block)) {
-                                sender.sendMessage(Component.text(Lang.errorYouHaveToBeStandingOnABeacon));
-                            } else {
-                                Point2D newClaim = new Point2D.Double(block.getX(), block.getZ());
-                                player.sendMessage(Component.text(Lang.beaconClaimingBeaconAt.replace("[location]", newClaim.toString())));
-
-                                // Verify beacon is registered
-                                if (!getRegister().getBeaconRegister().containsKey(newClaim)) {
-                                    player.sendMessage(Component.text(Lang.errorNotInRegister + newClaim).color(NamedTextColor.RED));
-                                } else {
-                                    BeaconObj beacon = getRegister().getBeaconRegister().get(newClaim);
-
-                                    // Process claim or unclaim
-                                    if (args[1].equalsIgnoreCase("unowned")) {
-                                        getRegister().removeBeaconOwnership(beacon);
-                                    } else {
-                                        // Claim beacon for team and update block color
-                                        getRegister().setBeaconOwner(beacon, team);
-                                        block.setType(game.getScorecard().getBlockID(team));
-                                    }
-                                    player.sendMessage(Component.text(Lang.beaconClaimedForTeam.replace("[team]", args[1])));
-                                }
-                            }
-                        }
-                    }
-                }
-                break;
-                
-            case "distribution":
-                // DISTRIBUTION COMMAND: Set beacon spawn probability (0.0 to 1.0)
-                // Controls how frequently beacons generate in chunks
-                if (args.length < 2) {
-                    sender.sendMessage(Component.text("/" + label + " distribution <fraction between 0 and 1> " + Lang.helpAdminDistribution).color(NamedTextColor.RED));
-                } else {
-                    try {
-                        double dist = Double.parseDouble(args[1]);
-                        if (dist > 0D && dist < 1D) {
-                            Settings.distribution = dist;
-                            sender.sendMessage(Component.text(Lang.actionsDistributionSettingTo.replace("[value]", String.valueOf(dist))).color(NamedTextColor.GREEN));
-                            return true;
-                        }
-                    } catch (Exception e) {
-                        sender.sendMessage(Component.text(label + " distribution <fraction> - must be less than 1").color(NamedTextColor.RED));
-                    }
-                }
-                break;
-                 
-            case "switch":
-                // SWITCH COMMAND: Move a player to a different team within their current game
-                // Can be used on self (1 arg) or on another player (2 args)
-                if (args.length == 1) {
-                    // Switch sender's own team
-                    if (!(sender instanceof Player)) {
-                        sender.sendMessage(Component.text(Lang.errorOnlyPlayers));
-                    } else {
-                        player = (Player) sender;
-                        team = getGameMgr().getPlayerTeam(player);
-
-                        // Validate player is in a team
-                        if (team == null) {
-                            sender.sendMessage(Component.text(Lang.errorYouMustBeInATeam).color(NamedTextColor.RED));
-                            return true;
-                        }
-
-                        // Get the game from current team
-                        game = getGameMgr().getGame(team);
-                        if (game == null) {
-                            sender.sendMessage(Component.text(Lang.errorYouMustBeInAGame).color(NamedTextColor.RED));
-                            return true;
-                        }
-
-                        // Find next available team (first team that isn't the current one)
-                        for (Team newTeam : game.getScorecard().getTeams()) {
-                            if (!newTeam.equals(team)) {
-                                // Found an alternative team - switch to it
-                                game.getScorecard().addTeamPlayer(newTeam, player);
-                                sender.sendMessage(Component.text(Lang.actionsSwitchedToTeam)
-                                    .replaceText(builder -> builder.matchLiteral("[team]").replacement(newTeam.displayName()))
-                                    .color(NamedTextColor.GREEN));
-
-                                // Clear all potion effects when switching teams
-                                for (PotionEffect effect : player.getActivePotionEffects())
-                                    player.removePotionEffect(effect.getType());
-                                return true;
-                            }
-                        }
-                        sender.sendMessage(Component.text(Lang.errorNoSuchTeam).color(NamedTextColor.RED));
-                    }
-                    return true;
-                } else if (args.length == 2) {
-                    // Switch another player's team (admin forcing a switch)
-                    player = getServer().getPlayer(args[1]);
-                    if (player == null) {
-                        sender.sendMessage(Component.text(Lang.errorUnknownPlayer));
-                    } else {
-                        team = getGameMgr().getPlayerTeam(player);
-                        if (team == null) {
-                            sender.sendMessage(Component.text(Lang.errorNoSuchTeam).color(NamedTextColor.RED));
-                            return true;
-                        }
-                        game = getGameMgr().getGame(team);
-                        if (game == null) {
-                            sender.sendMessage(Component.text(Lang.errorNoSuchGame).color(NamedTextColor.RED));
-                            return true;
-                        }
-
-                        // Get the next team in this game
-                        for (Team newTeam : game.getScorecard().getTeams()) {
-                            if (!newTeam.equals(team)) {
-                                // Found an alternative - switch the player
-                                game.getScorecard().addTeamPlayer(newTeam, player);
-
-                                // Notify both admin and player
-                                sender.sendMessage(Component.text(player.getName() + ": ")
-                                    .append(Component.text(Lang.actionsSwitchedToTeam)
-                                        .replaceText(builder -> builder.matchLiteral("[team]").replacement(newTeam.displayName())))
-                                    .color(NamedTextColor.GREEN));
-                                player.sendMessage(Component.text(Lang.actionsSwitchedToTeam)
-                                    .replaceText(builder -> builder.matchLiteral("[team]").replacement(newTeam.displayName()))
-                                    .color(NamedTextColor.GREEN));
-
-                                // Remove any potion effects
-                                for (PotionEffect effect : player.getActivePotionEffects())
-                                    player.removePotionEffect(effect.getType());
-                                return true;
-                            }
-                        }
-                        sender.sendMessage(Component.text(Lang.errorNoSuchTeam).color(NamedTextColor.RED));
-                    }
-                    return true;
-                }
-            case "join":
-                // JOIN COMMAND: Force a player to join a specific team in a specific game
-                // Admin bypass for normal join restrictions
-                if (args.length < 3) {
-                    sender.sendMessage(Component.text("/" + label + " join <gamename> <team>" + Lang.helpAdminJoin).color(NamedTextColor.RED));
-                } else {
-                    if (!(sender instanceof Player)) {
-                        sender.sendMessage(Component.text(Lang.errorOnlyPlayers));
-                    } else {
-                        player = (Player) sender;
-                        game = getGameMgr().getGame(args[1]);
-
-                        // Validate game exists
-                        if (game != null) {
-                            if (game.getScorecard().getTeam(args[2]) != null) {
-                                // Team exists - add player to it
-                                final Team joinTeam = game.getScorecard().getTeam(args[2]);
-                                game.getScorecard().addTeamPlayer(joinTeam, player);
-                                player.setScoreboard(game.getScorecard().getScoreboard());
-                                game.getScorecard().sendPlayersHome(player, false);
-                                sender.sendMessage(Component.text(Lang.actionsYouAreInTeam)
-                                    .replaceText(builder -> builder.matchLiteral("[team]").replacement(joinTeam.displayName()))
-                                    .color(NamedTextColor.GREEN));
-                            }
-                        } else {
-                            sender.sendMessage(Component.text("/" + label + " join <gamename> <team> - " + Lang.errorNoSuchGame));
-                        }
-                    }
-                }
-                break;                
-
-            case "games":
-                // GAMES COMMAND: List all active games and their regions including the lobby
-                sender.sendMessage(Component.text(Lang.adminGamesDefined).color(NamedTextColor.GREEN));
-                sender.sendMessage(Component.text(Lang.adminGamesTheLobby + " - " + getGameMgr().getLobby().displayCoords()).color(NamedTextColor.AQUA));
-
-                // Count and display all games
-                int cnt = 0;
-                for (Game g : getGameMgr().getGames().values()) {
-                    cnt ++;
-                    sender.sendMessage(Component.text(g.getName() + " - " + g.getRegion().displayCoords()).color(NamedTextColor.AQUA));
-                }
-                if (cnt == 0) sender.sendMessage(Component.text(Lang.adminGamesNoOthers).color(NamedTextColor.AQUA));
-                break;
-                
-            case "kick":
-                // KICK COMMAND: Remove a player from a game (sends them to lobby)
-                if (args.length < 3) {
-                    sender.sendMessage(Component.text("/" + label + Lang.helpAdminKick).color(NamedTextColor.RED));
-                } else {
-                    player = getServer().getPlayer(args[1]);
-
-                    // Check if player exists or if "all" was specified
-                    if (player == null && !args[1].equals("all")) {
-                        sender.sendMessage(Component.text(Lang.errorUnknownPlayer));
-                    } else {
-                        game = getGameMgr().getGame(args[2]);
-                        if (game == null) {
-                            sender.sendMessage(Component.text(Lang.errorNoSuchGame));
-                        } else {
-                            // Process kick - either all players or specific player
-                            if (args[2].equals("all")) {
-                                game.kickAll();
-                                sender.sendMessage(Component.text(Lang.adminKickAllPlayers.replace("[name]", game.getName())));
-                            } else {
-                                if (player != null) {
-                                    game.kick(sender, player);
-                                    sender.sendMessage(Component.text(Lang.adminKickPlayer.replace("[player]", player.getName()).replace("[name]", game.getName())));
-                                }
-                            }
-                        }
-                    }
-                }
-                break;
-
-            case "delete":
-                // DELETE COMMAND: Permanently delete a game and its region
-                // WARNING: This cannot be undone!
-                if (args.length < 2) {
-                    sender.sendMessage(Component.text("/" + label + " delete <gamename> - " + Lang.helpAdminDelete).color(NamedTextColor.RED));
-                } else {
-                    game = getGameMgr().getGames().get(args[1]);
-                    if (game == null) {
-                        sender.sendMessage(Component.text(Lang.errorNoSuchGame + "'" + args[1] + "'").color(NamedTextColor.RED));
-                    } else {
-                        // Confirm deletion started
-                        sender.sendMessage(Component.text(Lang.adminDeletingGame.replace("[name]", game.getName())).color(NamedTextColor.GREEN));
-                        getGameMgr().delete(sender, game);
-                        // Confirm deletion completed
-                        sender.sendMessage(Component.text(Lang.adminDeletedGame.replace("[name]", game.getName())).color(NamedTextColor.GREEN));
-                    }
-                }
-                break;
-
-            case "force_end":
-                // FORCE_END COMMAND: Immediately end a game and declare a winner
-                // Useful for testing or ending stalled games
-                if (args.length < 2) {
-                    sender.sendMessage(Component.text("/" + label + " force_end <gamename>" + Lang.helpAdminForceEnd).color(NamedTextColor.RED));
-                } else {
-                    game = getGameMgr().getGames().get(args[1]);
-                    if (game == null) {
-                        sender.sendMessage(Component.text(Lang.errorNoSuchGame + "'" + args[1] + "'").color(NamedTextColor.RED));
-                    } else {
-                        game.forceEnd();
-                        sender.sendMessage(Component.text(Lang.adminForceEnd.replace("[name]", game.getName())).color(NamedTextColor.GREEN));
-                    }
-                }
-                break;
-            case "list":
-                // LIST COMMAND: Display all beacons in a game or across all games
-                // Optional filter by team name or "unowned"
-                if (args.length < 2) {
-                    sender.sendMessage(Component.text("/" + label + " list [all |<gamename>] [team] " + Lang.helpAdminList).color(NamedTextColor.RED));
-                } else if (args.length == 3) {
-                    // List with team filter
-                    listBeacons(sender, args[1], args[2]);
-                } else {
-                    // List all beacons in game
-                    listBeacons(sender, args[1]);
-                }
-                break;
-
-            case "newgame":
-                // NEWGAME COMMAND: Create a new game with optional custom parameters
-                // Parameters can override defaults: gamemode, size, teams, goal, goalvalue, countdown, scoretypes, distribution
-                if (args.length < 2) {
-                    sender.sendMessage(Component.text("/" + label + " newgame <gamename> [<parm1:value> <parm2:value>...] - parameters are optional"));
-                    sender.sendMessage(Component.text("/" + label + " do /" + label + " newgame help for a list of the possible parameters"));
-                } else {
-                    if (args[1].equalsIgnoreCase("help")) {
-                        // Display detailed help for all game parameters
-                        sender.sendMessage(Component.text("/" + label + " newgame <gamename> [<parm1:value> <parm2:value>...]"));
-                        sender.sendMessage(Component.text("The optional parameters and their values are:").color(NamedTextColor.GREEN));
-
-                        // Document each parameter with examples
-                        sender.sendMessage(Component.text("gamemode -  ").color(NamedTextColor.YELLOW)
-                            .append(Component.text(" values can be either 'minigame' or 'strategy' - e.g gamemode:strategy").color(NamedTextColor.AQUA)));
-                        sender.sendMessage(Component.text("size -  ").color(NamedTextColor.YELLOW)
-                            .append(Component.text(" length for the side of the game region - e.g. size:500").color(NamedTextColor.AQUA)));
-                        sender.sendMessage(Component.text("teams -  ").color(NamedTextColor.YELLOW)
-                            .append(Component.text(" the number of teams in the game - e.g. teams:2").color(NamedTextColor.AQUA)));
-                        sender.sendMessage(Component.text("goal -  ").color(NamedTextColor.YELLOW)
-                            .append(Component.text("  one of 'area', 'beacons', 'links', 'triangles' - e.g. goal:links").color(NamedTextColor.AQUA)));
-                        sender.sendMessage(Component.text("goalvalue -  ").color(NamedTextColor.YELLOW)
-                            .append(Component.text("  the number objective for the goal - e.g goalvalue:100").color(NamedTextColor.AQUA)));
-                        sender.sendMessage(Component.text("countdown -  ").color(NamedTextColor.YELLOW)
-                            .append(Component.text("  the game's timer, in seconds. 0 means the timer runs up, open-ended; any other value meands the timer runs a countdown from that time. - e.g. countdown:600").color(NamedTextColor.AQUA)));
-                        sender.sendMessage(Component.text("scoretypes -  ").color(NamedTextColor.YELLOW)
-                            .append(Component.text("  the scores to be displayed on the sidebar. Can be any combination of goal names separated by '-' e.g scoretypes:area-triangles-beacons-links").color(NamedTextColor.AQUA)));
-                        sender.sendMessage(Component.text("distribution -  ").color(NamedTextColor.YELLOW)
-                            .append(Component.text("  overrides the system's default beacon distribution - specify a number between 0.01 and 0.99 for the probability of any one chunk containing a beacon.").color(NamedTextColor.AQUA)));
-                    } else {
-                        // Parse and create game with parameters
-                        String [] parmargs = new String [args.length-2];
-                        System.arraycopy(args, 2, parmargs, 0, parmargs.length);
-                        game = getGameMgr().getGame(args[1]);
-
-                        // Check if game name already exists
-                        if (game != null) {
-                            sender.sendMessage(Component.text(Lang.errorAlreadyExists.replace("[name]", game.getName())));
-                        } else {
-                            // Check and validate parameters if provided
-                            if (parmargs.length > 0) {
-                                String errormsg = setDefaultParms(parmargs);  // temporarily set up the given parameters as default
-                                if (!errormsg.isEmpty()) {
-                                    sender.sendMessage(Component.text(Lang.errorError + errormsg).color(NamedTextColor.RED));
-                                    getGameMgr().setGameDefaultParms();      // restore the default parameters (just in case)
-                                } else {
-                                    sender.sendMessage(Component.text(Lang.adminNewGameBuilding).color(NamedTextColor.GREEN));
-                                    getGameMgr().newGame(args[1]);           // create the new game
-                                    getGameMgr().setGameDefaultParms();      // restore the default parameters
-                                    sender.sendMessage(Component.text(Lang.generalSuccess).color(NamedTextColor.GREEN));
-                                }
-                            } else {
-                                // Create game with default parameters
-                                sender.sendMessage(Component.text(Lang.adminNewGameBuilding).color(NamedTextColor.GREEN));
-                                getGameMgr().newGame(args[1]);
-                                sender.sendMessage(Component.text(Lang.generalSuccess).color(NamedTextColor.GREEN));
-                            }
-                        }
-                    }
-                }
-                break;
-
-            case "reload":
-                // RELOAD COMMAND: Save current state and reload all configuration
-                // Saves: beacon register, game data
-                // Reloads: config.yml, game parameters, beacon register
-                getRegister().saveRegister();
-                getGameMgr().saveAllGames();
-                this.getBeaconzPlugin().reloadConfig();
-                this.getBeaconzPlugin().loadConfig();
-                getGameMgr().reload();
-                getRegister().loadRegister();
-                sender.sendMessage(Component.text(Lang.adminReload).color(NamedTextColor.RED));
-                break;
-
-            case "listparms":
-                // LISTPARMS COMMAND: Display all parameters for a specific game
-                // Shows: mode, teams, goal, goal value, score types
-                if (args.length < 2) {
-                    sender.sendMessage(Component.text("/" + label + " listparms <gamename> " + Lang.helpAdminListParms));
-                } else {
-                    game = getGameMgr().getGame(args[1]);
-                    if (game == null) {
-                        sender.sendMessage(Component.text(Lang.errorNoSuchGame + "'" + args[1] + "'"));
-                    } else {
-                        // Display each game parameter with color formatting
-                        sender.sendMessage(Component.text(Lang.adminParmsMode + ": ").color(NamedTextColor.YELLOW)
-                            .append(Component.text(game.getGamemode()).color(NamedTextColor.AQUA)));
-                        sender.sendMessage(Component.text(Lang.adminParmsTeams + ": ").color(NamedTextColor.YELLOW)
-                            .append(Component.text(String.valueOf(game.getNbrTeams())).color(NamedTextColor.AQUA)));
-                        sender.sendMessage(Component.text(Lang.adminParmsGoal + ": ").color(NamedTextColor.YELLOW)
-                            .append(Component.text(game.getGamegoal()).color(NamedTextColor.AQUA)));
-                        sender.sendMessage(Component.text(Lang.adminParmsGoalValue + ": ").color(NamedTextColor.YELLOW)
-                            .append(Component.text(game.getGamegoalvalue() == 0 ? Lang.adminParmsUnlimited : String.format(Locale.US, "%,d", game.getGamegoalvalue())).color(NamedTextColor.AQUA)));
-                        sender.sendMessage(Component.text(Lang.adminParmsScoreTypes + ": ").color(NamedTextColor.YELLOW)
-                            .append(Component.text(game.getScoretypes()).color(NamedTextColor.AQUA)));
-                    }
-                }
-                return true;
-                /*
-            case "setgameparms":
-                if (args.length < 2) {
-                    senderMsg(sender, "/" + label + " setgameparms <gamename> <parm1:value> <parm2:value>");
-                    senderMsg(sender, "setgameparms defines the game parameters, it DOES NOT restart the game");
-                    senderMsg(sender, "use /" + label + " setgameparms help for a list of the possible parameters");
-                    senderMsg(sender, "use /" + label + " restart <game> to restart a game using the new parameters");
-                } else {
-                    if (args[1].toLowerCase().equals("help")) {
-                        senderMsg(sender, ChatColor.RED  + "/" + label + " setgameparms <gamename> <parm1:value> <parm2:value>... ");
-                        senderMsg(sender, ChatColor.GREEN  + "The possible parameters and their values are:");
-                        //senderMsg(sender, ChatColor.YELLOW  + "gamemode -  " + ChatColor.AQUA + " values can be either 'minigame' or 'strategy' - e.g gamemode:strategy");
-                        senderMsg(sender, ChatColor.YELLOW  + "teams -  " + ChatColor.AQUA + " the number of teams in the game - e.g. teams:3");
-                        senderMsg(sender, ChatColor.YELLOW  + "goal -  " + ChatColor.AQUA + "  one of 'area', 'beacons', 'links', 'triangles' - e.g. goal:links");
-                        senderMsg(sender, ChatColor.YELLOW  + "goalvalue -  " + ChatColor.AQUA + "  the number objective for the goal - e.g goalvalue:100");
-                        //senderMsg(sender, ChatColor.YELLOW  + "countdown -  " + ChatColor.AQUA + "  the game's timer, in seconds. 0 means the timer runs up, open-ended; any other value meands the timer runs a countdown from that time. - e.g. countdown:600");
-                        senderMsg(sender, ChatColor.YELLOW  + "scoretypes -  " + ChatColor.AQUA + "  the scores to be displayed on the sidebar. Can be any combination of goal names separated by '-' e.g scoretypes:area-triangles-beacons-links");
-                    } else {
-                        String [] parmargs = new String [args.length-2];
-                        System.arraycopy(args, 2, parmargs, 0, parmargs.length);
-                        game = getGameMgr().getGame(args[1]);
-                        if (game == null) {
-                            senderMsg(sender, ChatColor.RED + Lang.errorNoSuchGame + "'" + args[1] + "'");
-                        } else {
-                            String errormsg = this.setGameParms(game, parmargs);
-                            if (!errormsg.isEmpty()) {
-                                senderMsg(sender, ChatColor.RED + Lang.errorError + errormsg);
-                            } else {
-                                senderMsg(sender, ChatColor.GREEN + "Game parameters set.");
-                                if (!(sender instanceof Player)) {
-                                    // Console
-                                    senderMsg(sender, "use " + ChatColor.GREEN + label + " restart " + game.getName() + ChatColor.RESET + " to restart the game using the new parameters");
-                                } else {
-                                    senderMsg(sender, "use " + ChatColor.GREEN + "/" + label + " restart " + game.getName() + ChatColor.RESET +" to restart the game using the new parameters");
-                                }
-                            }
-                        }
-                    }
-
-                }
-                break;
-                 */
-            case "setspawn":
-                // SETSPAWN COMMAND: Set the lobby spawn point where players teleport when joining
-                // Must be executed by a player standing in the lobby region
-                if (args.length > 2) {
-                    sender.sendMessage(Component.text("/" + label + " setspawn " + Lang.helpAdminSetLobbySpawn).color(NamedTextColor.RED));
-                } else {
-                    // Admin set team spawn
-                    if (!(sender instanceof Player)) {
-                        sender.sendMessage(Component.text(Lang.errorOnlyPlayers).color(NamedTextColor.RED));
-                        return true;
-                    }
-                    // Check if the player is in the lobby region
-                    player = (Player) sender;
-                    if (args.length == 1 && getGameMgr().getLobby().isPlayerInRegion(player)) {
-                        // Set spawn to player's current location
-                        getGameMgr().getLobby().setSpawnPoint(player.getLocation());
-                        sender.sendMessage(Component.text(Lang.generalSuccess + " (" + player.getLocation().getBlockX() + ","
-                                + player.getLocation().getBlockY() + "," + player.getLocation().getBlockZ() + ")").color(NamedTextColor.GREEN));
-                        return true;
-                    } else {
-                        sender.sendMessage(Component.text(Lang.helpAdminSetLobbySpawn).color(NamedTextColor.RED));
-                        return true;
-                    }
-                }
-                break;
-
-            case "teams":
-                // TEAMS COMMAND: Display team rosters showing all team members
-                // Can view a specific game or all games
-                if (args.length < 2) {
-                    sender.sendMessage(Component.text("/" + label + " teams [all | <gamename>] " + Lang.helpAdminTeams).color(NamedTextColor.RED));
-                } else {
-                    boolean foundgame = false;
-
-                    // Iterate through games to find matches
-                    for (String gname : getGameMgr().getGames().keySet()) {
-                        if (args[1].equalsIgnoreCase("all") || gname.equals(args[1])) {
-                            foundgame = true;
-                            game = getGameMgr().getGames().get(gname);
-                            sender.sendMessage(Component.text(Lang.generalTeams + " - " + gname).color(NamedTextColor.GREEN));
-
-                            Scoreboard sb = game.getScorecard().getScoreboard();
-                            if (sb == null) {
-                                sender.sendMessage(Component.text(Lang.errorNoSuchGame + "'" + args[1] + "'").color(NamedTextColor.RED));
-                            } else {
-                                // Display each team and its members
-                                HashMap<Team, List<String>> teamMembers = game.getScorecard().getTeamMembers();
-                                for (Team t : teamMembers.keySet()) {
-                                    sender.sendMessage(Component.text("==== ")
-                                        .append(t.displayName())
-                                        .append(Component.text(" ====")));
-
-                                    // Build member list from UUIDs
-                                    StringBuilder memberlist = new StringBuilder();
-                                    for (String uuid : teamMembers.get(t)) {
-                                        memberlist.append("[").append(getServer().getOfflinePlayer(UUID.fromString(uuid)).getName()).append("] ");
-                                    }
-                                    sender.sendMessage(Component.text(Lang.generalMembers + ": " + memberlist).color(NamedTextColor.WHITE));
-                                }
-                            }
-                        }
-                    }
-
-                    // Handle case where no matching game was found
-                    if (!foundgame) {
-                        if (args[1].equalsIgnoreCase("all")) {
-                            sender.sendMessage(Component.text(Lang.errorNoGames));
-                        } else {
-                            sender.sendMessage(Component.text(Lang.errorNoSuchGame + "'" + args[1] + "'").color(NamedTextColor.RED));
-                        }
-                    }
-                }
-                break;
-
-            default:
-                // Unknown command - show error
-                sender.sendMessage(Component.text(Lang.errorUnknownCommand).color(NamedTextColor.RED));
-                break;
-            }
-
-        }
-
         return true;
     }
 
@@ -755,23 +786,23 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
 
                 // Check if this beacon matches the team filter
                 if (search.isEmpty() ||
-                    (search.equalsIgnoreCase("unowned") && b.getOwnership() == null) ||
-                    (b.getOwnership() != null && b.getOwnership().getName().equalsIgnoreCase(search))) {
+                        (search.equalsIgnoreCase("unowned") && b.getOwnership() == null) ||
+                        (b.getOwnership() != null && b.getOwnership().getName().equalsIgnoreCase(search))) {
 
                     none = false;
 
                     // Serialize team display name to plain text for display
                     String ownershipDisplay = b.getOwnership() == null ?
-                        Lang.generalUnowned :
-                        PlainTextComponentSerializer.plainText().serialize(b.getOwnership().displayName());
+                            Lang.generalUnowned :
+                                PlainTextComponentSerializer.plainText().serialize(b.getOwnership().displayName());
 
                     // Display beacon information
                     sender.sendMessage(Component.text(game.getName() + ": " +
-                        b.getLocation().getBlockX() + "," +
-                        b.getLocation().getBlockY() + "," +
-                        b.getLocation().getBlockZ() + " >> " +
-                        Lang.generalTeam + ": " + ownershipDisplay + " >> " +
-                        Lang.generalLinks + ": " + b.getLinks().size()));
+                            b.getLocation().getBlockX() + "," +
+                            b.getLocation().getBlockY() + "," +
+                            b.getLocation().getBlockZ() + " >> " +
+                            Lang.generalTeam + ": " + ownershipDisplay + " >> " +
+                            Lang.generalLinks + ": " + b.getLinks().size()));
                 }
             }
         }
@@ -828,27 +859,27 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                 } else {
                     // Apply each parameter
                     switch (parm.toLowerCase()) {
-                        case "gamemode":
-                            game.setGamemode(value);
-                            break;
-                        case "teams":
-                            game.setNbrTeams(Integer.parseInt(value));
-                            break;
-                        case "goal":
-                            game.setGamegoal(value);
-                            break;
-                        case "goalvalue":
-                            game.setGamegoalvalue(Integer.parseInt(value));
-                            break;
-                        case "countdown":
-                            game.setCountdownTimer(Integer.parseInt(value));
-                            break;
-                        case "scoretypes":
-                            // Convert dash-separated to colon-separated format
-                            game.setScoretypes(value.replace("-", ":"));
-                            break;
-                        default:
-                            break;
+                    case "gamemode":
+                        game.setGamemode(value);
+                        break;
+                    case "teams":
+                        game.setNbrTeams(Integer.parseInt(value));
+                        break;
+                    case "goal":
+                        game.setGamegoal(value);
+                        break;
+                    case "goalvalue":
+                        game.setGamegoalvalue(Integer.parseInt(value));
+                        break;
+                    case "countdown":
+                        game.setCountdownTimer(Integer.parseInt(value));
+                        break;
+                    case "scoretypes":
+                        // Convert dash-separated to colon-separated format
+                        game.setScoretypes(value.replace("-", ":"));
+                        break;
+                    default:
+                        break;
                     }
                 }
             }
@@ -914,32 +945,32 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                 } else {
                     // Override defaults based on parameter type
                     switch (parm.toLowerCase()) {
-                        case "gamemode":
-                            mode = value;
-                            break;
-                        case "size":
-                            gdistance = Integer.parseInt(value);
-                            break;
-                        case "teams":
-                            nteams = Integer.parseInt(value);
-                            break;
-                        case "goal":
-                            ggoal = value;
-                            break;
-                        case "goalvalue":
-                            gvalue = Integer.parseInt(value);
-                            break;
-                        case "countdown":
-                            timer = Integer.parseInt(value);
-                            break;
-                        case "scoretypes":
-                            // Convert dash-separated to colon-separated format
-                            stypes = value.replace("-", ":");
-                            break;
-                        case "distribution":
-                            gdistribution = Double.parseDouble(value);
-                        default:
-                            break;
+                    case "gamemode":
+                        mode = value;
+                        break;
+                    case "size":
+                        gdistance = Integer.parseInt(value);
+                        break;
+                    case "teams":
+                        nteams = Integer.parseInt(value);
+                        break;
+                    case "goal":
+                        ggoal = value;
+                        break;
+                    case "goalvalue":
+                        gvalue = Integer.parseInt(value);
+                        break;
+                    case "countdown":
+                        timer = Integer.parseInt(value);
+                        break;
+                    case "scoretypes":
+                        // Convert dash-separated to colon-separated format
+                        stypes = value.replace("-", ":");
+                        break;
+                    case "distribution":
+                        gdistribution = Double.parseDouble(value);
+                    default:
+                        break;
                     }
                 }
             }
@@ -998,73 +1029,73 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
             } else {
                 // Validate specific parameter values
                 switch (parm.toLowerCase()) {
-                    case "gamemode":
-                        if (!value.equals("strategy") && !value.equals("minigame")) {
-                            errormsg.append("<< 'gamemode:' has to be either 'strategy' or 'minigame' >>");
-                        }
-                        break;
-                    case "size":
-                        if (!NumberUtils.isNumber(value)) {
-                            errormsg = new StringBuilder("<< 'size:' value must be a number >>");
-                        }
-                        break;
-                    case "teams":
-                        if (!NumberUtils.isNumber(value)) {
-                            errormsg = new StringBuilder("<< 'team:' value must be a number >>");
-                        }
-                        int number = NumberUtils.toInt(value);
-                        if (number < 2 || number > 14) {
-                            errormsg = new StringBuilder("<< 'team:' value must be between 2 and 14 >>");
-                        }
-                        break;
-                    case "goal":
-                        if (!value.equals("area") && !value.equals("beacons") &&
-                                !value.equals("links") && !value.equals("triangles")) {
-                            errormsg = new StringBuilder("<< 'goal:' has to be one of 'area', 'beacons', 'links' or 'triangles' >>");
-                        }
-                        break;
-                    case "goalvalue":
-                        if (!NumberUtils.isNumber(value)) {
-                            errormsg = new StringBuilder("<< 'goalvalue:' value must be a number >>");
-                        }
-                        int number2 = NumberUtils.toInt(value);
-                        if (number2 < 0) {
-                            errormsg = new StringBuilder("<< 'goalvalue:' value cannot be negative >>");
-                        }
-                        break;
-                    case "countdown":
-                        if (!NumberUtils.isNumber(value)) {
-                            errormsg = new StringBuilder("<< 'countdown:' value must be a number >>");
-                        }
-                        break;
-                    case "scoretypes":
-                        String stmsg = "<< 'scoretypes:' must be a list of the goals to display on the scoreboard, such as 'area-beacons'. Possible goals are 'area', 'beacons', 'links' and 'triangles' >>";
-                        value = value.replace(" ", "");
-                        String[] stypes = value.split("-");
-                        if (stypes.length == 0) {
-                            errormsg = new StringBuilder(stmsg);
-                        } else {
-                            for (String stype : stypes) {
-                                if (!stype.equals("area") && !stype.equals("beacons") &&
-                                        !stype.equals("links") && !stype.equals("triangles")) {
-                                    errormsg = new StringBuilder(stmsg);
-                                    break;
-                                }
+                case "gamemode":
+                    if (!value.equals("strategy") && !value.equals("minigame")) {
+                        errormsg.append("<< 'gamemode:' has to be either 'strategy' or 'minigame' >>");
+                    }
+                    break;
+                case "size":
+                    if (!NumberUtils.isNumber(value)) {
+                        errormsg = new StringBuilder("<< 'size:' value must be a number >>");
+                    }
+                    break;
+                case "teams":
+                    if (!NumberUtils.isNumber(value)) {
+                        errormsg = new StringBuilder("<< 'team:' value must be a number >>");
+                    }
+                    int number = NumberUtils.toInt(value);
+                    if (number < 2 || number > 14) {
+                        errormsg = new StringBuilder("<< 'team:' value must be between 2 and 14 >>");
+                    }
+                    break;
+                case "goal":
+                    if (!value.equals("area") && !value.equals("beacons") &&
+                            !value.equals("links") && !value.equals("triangles")) {
+                        errormsg = new StringBuilder("<< 'goal:' has to be one of 'area', 'beacons', 'links' or 'triangles' >>");
+                    }
+                    break;
+                case "goalvalue":
+                    if (!NumberUtils.isNumber(value)) {
+                        errormsg = new StringBuilder("<< 'goalvalue:' value must be a number >>");
+                    }
+                    int number2 = NumberUtils.toInt(value);
+                    if (number2 < 0) {
+                        errormsg = new StringBuilder("<< 'goalvalue:' value cannot be negative >>");
+                    }
+                    break;
+                case "countdown":
+                    if (!NumberUtils.isNumber(value)) {
+                        errormsg = new StringBuilder("<< 'countdown:' value must be a number >>");
+                    }
+                    break;
+                case "scoretypes":
+                    String stmsg = "<< 'scoretypes:' must be a list of the goals to display on the scoreboard, such as 'area-beacons'. Possible goals are 'area', 'beacons', 'links' and 'triangles' >>";
+                    value = value.replace(" ", "");
+                    String[] stypes = value.split("-");
+                    if (stypes.length == 0) {
+                        errormsg = new StringBuilder(stmsg);
+                    } else {
+                        for (String stype : stypes) {
+                            if (!stype.equals("area") && !stype.equals("beacons") &&
+                                    !stype.equals("links") && !stype.equals("triangles")) {
+                                errormsg = new StringBuilder(stmsg);
+                                break;
                             }
                         }
-                        break;
-                    case "distribution":
-                        if (!NumberUtils.isNumber(value)) {
-                            errormsg = new StringBuilder("<< 'distribution must be a number between 0.01 and 0.99 >>");
-                        }
-                        double dist = NumberUtils.toDouble(value);
-                        if (dist == 0) {
-                            errormsg = new StringBuilder("<< 'distribution must be a number between 0.01 and 0.99 >>");
-                        }
-                        break;
-                    default:
-                        errormsg = new StringBuilder(Lang.adminParmsDoesNotExist.replace("[name]", parm));
-                        break;
+                    }
+                    break;
+                case "distribution":
+                    if (!NumberUtils.isNumber(value)) {
+                        errormsg = new StringBuilder("<< 'distribution must be a number between 0.01 and 0.99 >>");
+                    }
+                    double dist = NumberUtils.toDouble(value);
+                    if (dist == 0) {
+                        errormsg = new StringBuilder("<< 'distribution must be a number between 0.01 and 0.99 >>");
+                    }
+                    break;
+                default:
+                    errormsg = new StringBuilder(Lang.adminParmsDoesNotExist.replace("[name]", parm));
+                    break;
                 }
             }
         }

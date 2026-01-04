@@ -404,14 +404,17 @@ public class Beaconz extends JavaPlugin {
         }
         Settings.teamChat = getConfig().getBoolean("general.teamchat", false);
         Settings.worldName = getConfig().getString("world.name", "beaconz");
-        Settings.distribution = getConfig().getDouble("world.distribution", 0.03D);
+        Settings.distribution = getConfig().getDouble("world.distribution", 0.1D);
         if (Settings.distribution < 0.001D) {
             Settings.distribution = 0.001D;
         }
-        Settings.gameDistance = getConfig().getInt("world.distance", 2000);
-        Settings.xCenter = getConfig().getInt("world.xcenter",2000);
-        Settings.zCenter = getConfig().getInt("world.zcenter",2000);
-        Settings.seedAdjustment = getConfig().getLong("world.seedadjustment", 0);
+        // Distance should always be a multiple of 512
+        int alignment = 512;
+        Settings.gameDistance = (getConfig().getInt("world.distance", 20000) + (alignment - 1)) & ~(alignment - 1);
+        // Place center of the game based on gameDistance and region boundaries        
+        Settings.xCenter = getConfig().getInt("world.xcenter", Settings.gameDistance + alignment);
+        Settings.zCenter = getConfig().getInt("world.zcenter", Settings.gameDistance + alignment);
+        Settings.seedAdjustment = getConfig().getLong("world.seedadjustment", System.currentTimeMillis());
         Settings.mineCoolDown = getConfig().getInt("mining.minecooldown", 1) * 60000L; // Minutes in millis
         ConfigurationSection enemyFieldSection = getConfig().getConfigurationSection("triangles.enemyfieldeffects");
         // Step through the numbers

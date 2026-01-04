@@ -89,3 +89,6 @@ local.properties
 
 /target/
 /.DS_Store
+/AdminCmdHandlerTest_Summary.md
+/AdminCmdHandler_Documentation_Summary.md
+/AdminCmdHandler_Kyori_Conversion_Summary.md
