@@ -58,6 +58,7 @@ import org.jetbrains.annotations.Nullable;
 import com.wasteofplastic.beaconz.commands.AdminCmdHandler;
 import com.wasteofplastic.beaconz.commands.CmdHandler;
 import com.wasteofplastic.beaconz.dynmap.OurServerListener;
+import com.wasteofplastic.beaconz.generator.BeaconzChunkGen;
 import com.wasteofplastic.beaconz.listeners.BeaconCaptureListener;
 import com.wasteofplastic.beaconz.listeners.BeaconLinkListener;
 import com.wasteofplastic.beaconz.listeners.BeaconPassiveDefenseListener;
