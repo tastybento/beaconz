@@ -51,6 +51,7 @@ import com.wasteofplastic.beaconz.BeaconzPluginDependent;
 import com.wasteofplastic.beaconz.Game;
 import com.wasteofplastic.beaconz.Lang;
 import com.wasteofplastic.beaconz.Settings;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Handles all administrative commands for the Beaconz plugin.
@@ -116,7 +117,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
      * @return true if the command was handled, false otherwise
      */
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String[] args) {
         // Permission check: Only OPs or players with admin permission can use these commands
         if (sender instanceof Player player) {
             if (!player.isOp() && !player.hasPermission("beaconz.admin")) {
@@ -133,15 +134,15 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
             return switch (args[0].toLowerCase()) {
             case "claim" -> onClaim(sender, label, args);          
             case "distribution" -> onDistribution(sender, label, args);
-            case "switch" -> onSwitch(sender, label, args);
+            case "switch" -> onSwitch(sender, args);
             case "join" -> onJoin(sender, label, args);         
-            case "games" -> onGames(sender, label, args);
+            case "games" -> onGames(sender);
             case "kick" -> onKick(sender, label, args);
             case "delete" -> onDelete(sender, label, args);
             case "force_end" -> onForceEnd(sender, label, args);
             case "list" -> onList(sender, label, args);
             case "newgame" -> onNewGame(sender, label, args);
-            case "reload" -> onReload(sender, label, args);
+            case "reload" -> onReload(sender);
             case "listparms" -> onListParms(sender, label, args);
             case "setspawn" -> onSetSpawn(sender, label, args);
             case "teams" ->  onTeams(sender, label, args);
@@ -155,22 +156,26 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
     }
 
     /**
-     * Handle the switch command
-     * @param sender command sender
-     * @param label label
-     * @param args arguments
-     * @return true if successful
+     * Handles the switch command to move a player between teams.
+     *
+     * <p>Switches a player to an alternative team in their current game.
+     * If no arguments are provided, switches the command sender.
+     * If a player name is provided, an admin can switch another player.
+     * Clears all potion effects when a player switches teams.
+     *
+     * @param sender the command sender
+     * @param args arguments: either empty (self) or player name (other player)
+     * @return true if the switch was successful, false otherwise
      */
-    private boolean onSwitch(CommandSender sender, String label, String[] args) {
+    private boolean onSwitch(CommandSender sender, String[] args) {
         // SWITCH COMMAND: Move a player to a different team within their current game
         // Can be used on self (1 arg) or on another player (2 args)
         if (args.length == 1) {
             // Switch sender's own team
-            if (!(sender instanceof Player)) {
+            if (!(sender instanceof Player player)) {
                 sender.sendMessage(Component.text(Lang.errorOnlyPlayers));
                 return false;
             } else {
-                Player player = (Player) sender;
                 Team team = getGameMgr().getPlayerTeam(player);
 
                 // Validate player is in a team
@@ -250,6 +255,20 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
         return false;
     }
 
+    /**
+     * Handles the join command to force a player into a specific team.
+     *
+     * <p>Forces the command sender to join a specified team in a specified game.
+     * This is an admin bypass that doesn't respect normal join restrictions.
+     * Sets the player's scoreboard and sends them to their team spawn.
+     *
+     * <p><b>Usage:</b> /admin join &lt;gamename&gt; &lt;team&gt;
+     *
+     * @param sender the command sender (must be a player)
+     * @param label the command label
+     * @param args arguments: [1] = game name, [2] = team name
+     * @return true if the join was successful, false otherwise
+     */
     private boolean onJoin(CommandSender sender, String label, String[] args) {
         // JOIN COMMAND: Force a player to join a specific team in a specific game
         // Admin bypass for normal join restrictions
@@ -257,11 +276,10 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
             sender.sendMessage(Component.text("/" + label + " join <gamename> <team>" + Lang.helpAdminJoin).color(NamedTextColor.RED));
             return false;
         } else {
-            if (!(sender instanceof Player)) {
+            if (!(sender instanceof Player player)) {
                 sender.sendMessage(Component.text(Lang.errorOnlyPlayers));
                 return false;
             } else {
-                Player player = (Player) sender;
                 Game game = getGameMgr().getGame(args[1]);
 
                 // Validate game exists
@@ -285,7 +303,17 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
         return false;
     }
 
-    private boolean onGames(CommandSender sender, String label, String[] args) {
+    /**
+     * Handles the games command to list all active games.
+     *
+     * <p>Displays all currently active games with their region coordinates,
+     * along with the lobby region. Useful for administrators monitoring
+     * active game instances.
+     *
+     * @param sender the command sender to receive the game listing
+     * @return always returns true
+     */
+    private boolean onGames(CommandSender sender) {
         // GAMES COMMAND: List all active games and their regions including the lobby
         sender.sendMessage(Component.text(Lang.adminGamesDefined).color(NamedTextColor.GREEN));
         sender.sendMessage(Component.text(Lang.adminGamesTheLobby + " - " + getGameMgr().getLobby().displayCoords()).color(NamedTextColor.AQUA));
@@ -300,6 +328,19 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
         return true;
     }
 
+    /**
+     * Handles the kick command to remove a player from a game.
+     *
+     * <p>Removes a player from a game and sends them to the lobby.
+     * Can kick a specific player or all players from a game.
+     *
+     * <p><b>Usage:</b> /admin kick &lt;player|all&gt; &lt;gamename&gt;
+     *
+     * @param sender the command sender
+     * @param label the command label
+     * @param args arguments: [1] = player name or "all", [2] = game name
+     * @return true if the kick was successful, false otherwise
+     */
     private boolean onKick(CommandSender sender, String label, String[] args) {
         // KICK COMMAND: Remove a player from a game (sends them to lobby)
         if (args.length < 3) {
@@ -336,6 +377,19 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
         return false;
     }
 
+    /**
+     * Handles the delete command to permanently remove a game.
+     *
+     * <p>Deletes a game and all its associated data and regions.
+     * This operation cannot be undone. All players in the game are kicked.
+     *
+     * <p><b>Usage:</b> /admin delete &lt;gamename&gt;
+     *
+     * @param sender the command sender
+     * @param label the command label
+     * @param args arguments: [1] = game name to delete
+     * @return true if deletion was successful, false otherwise
+     */
     private boolean onDelete(CommandSender sender, String label, String[] args) {
         // DELETE COMMAND: Permanently delete a game and its region
         // WARNING: This cannot be undone!
@@ -358,6 +412,19 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
         }
     }
 
+    /**
+     * Handles the force_end command to immediately end a game.
+     *
+     * <p>Forces a game to end immediately, declares the winning team,
+     * and cleans up the game. Useful for testing or ending stalled games.
+     *
+     * <p><b>Usage:</b> /admin force_end &lt;gamename&gt;
+     *
+     * @param sender the command sender
+     * @param label the command label
+     * @param args arguments: [1] = game name to force end
+     * @return true if the command was successful, false otherwise
+     */
     private boolean onForceEnd(CommandSender sender, String label, String[] args) {
         // FORCE_END COMMAND: Immediately end a game and declare a winner
         // Useful for testing or ending stalled games
@@ -378,6 +445,19 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
 
     }
 
+    /**
+     * Handles the list command to display beacons in a game.
+     *
+     * <p>Lists all beacons in a specified game or all games.
+     * Optionally filters by team ownership.
+     *
+     * <p><b>Usage:</b> /admin list [all|&lt;gamename&gt;] [team]
+     *
+     * @param sender the command sender to receive the beacon listing
+     * @param label the command label
+     * @param args arguments: [1] = game name or "all", [2] = optional team filter
+     * @return true if the command was successful, false otherwise
+     */
     private boolean onList(CommandSender sender, String label, String[] args) {
         // LIST COMMAND: Display all beacons in a game or across all games
         // Optional filter by team name or "unowned"
@@ -395,6 +475,21 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
         }
     }
 
+    /**
+     * Handles the newgame command to create a new game with optional parameters.
+     *
+     * <p>Creates a new game with optional custom parameters. Parameters override
+     * the default game settings. Supports gamemode, size, teams, goal, goalvalue,
+     * countdown, scoretypes, and distribution parameters.
+     *
+     * <p><b>Usage:</b> /admin newgame &lt;gamename&gt; [&lt;parm:value&gt; ...]
+     * <p><b>Example:</b> /admin newgame MyGame gamemode:strategy teams:4 goal:links
+     *
+     * @param sender the command sender
+     * @param label the command label
+     * @param args arguments: [1] = game name, [2+] = optional parameters
+     * @return true if the game was created successfully, false otherwise
+     */
     private boolean onNewGame(CommandSender sender, String label, String[] args) {
         // NEWGAME COMMAND: Create a new game with optional custom parameters
         // Parameters can override defaults: gamemode, size, teams, goal, goalvalue, countdown, scoretypes, distribution
@@ -464,7 +559,17 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
 
     }
 
-    private boolean onReload(CommandSender sender, String label, String[] args) {
+    /**
+     * Handles the reload command to save and reload plugin configuration.
+     *
+     * <p>Saves all beacon registrations and game data, then reloads the
+     * plugin configuration and all registered games. Useful after editing
+     * configuration files or to recover from corrupted game state.
+     *
+     * @param sender the command sender
+     * @return always returns true
+     */
+    private boolean onReload(CommandSender sender) {
         // RELOAD COMMAND: Save current state and reload all configuration
         // Saves: beacon register, game data
         // Reloads: config.yml, game parameters, beacon register
@@ -479,6 +584,20 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
 
     }
 
+    /**
+     * Handles the listparms command to display game parameters.
+     *
+     * <p>Shows detailed parameters for a specific game including gamemode,
+     * number of teams, game goal, goal value, and score types displayed
+     * on the scoreboard.
+     *
+     * <p><b>Usage:</b> /admin listparms &lt;gamename&gt;
+     *
+     * @param sender the command sender to receive the parameter listing
+     * @param label the command label
+     * @param args arguments: [1] = game name
+     * @return true if successful, false if game not found
+     */
     private boolean onListParms(CommandSender sender, String label, String[] args) {
         // LISTPARMS COMMAND: Display all parameters for a specific game
         // Shows: mode, teams, goal, goal value, score types
@@ -509,6 +628,19 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
 
     }
 
+    /**
+     * Handles the setspawn command to set the lobby spawn point.
+     *
+     * <p>Sets the spawn point where players teleport when joining the lobby.
+     * The command sender must be standing in the lobby region.
+     *
+     * <p><b>Usage:</b> /admin setspawn
+     *
+     * @param sender the command sender (must be a player in the lobby)
+     * @param label the command label
+     * @param args unused
+     * @return true if spawn point was set, false if not in lobby region
+     */
     private boolean onSetSpawn(CommandSender sender, String label, String[] args) {
         // SETSPAWN COMMAND: Set the lobby spawn point where players teleport when joining
         // Must be executed by a player standing in the lobby region
@@ -517,12 +649,11 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
             return false;
         } else {
             // Admin set team spawn
-            if (!(sender instanceof Player)) {
+            if (!(sender instanceof Player player)) {
                 sender.sendMessage(Component.text(Lang.errorOnlyPlayers).color(NamedTextColor.RED));
                 return false;
             }
             // Check if the player is in the lobby region
-            Player player = (Player) sender;
             if (args.length == 1 && getGameMgr().getLobby().isPlayerInRegion(player)) {
                 // Set spawn to player's current location
                 getGameMgr().getLobby().setSpawnPoint(player.getLocation());
@@ -536,6 +667,19 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
         }
     }
 
+    /**
+     * Handles the teams command to display team rosters.
+     *
+     * <p>Lists all teams in a specific game or all games, showing each team's
+     * members. Useful for monitoring team composition and player assignments.
+     *
+     * <p><b>Usage:</b> /admin teams [all|&lt;gamename&gt;]
+     *
+     * @param sender the command sender to receive the team listing
+     * @param label the command label
+     * @param args arguments: [1] = "all" or specific game name
+     * @return true if successful, false if no games found
+     */
     private boolean onTeams(CommandSender sender, String label, String[] args) {
         // TEAMS COMMAND: Display team rosters showing all team members
         // Can view a specific game or all games
@@ -548,7 +692,6 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
             // Iterate through games to find matches
             for (String gname : getGameMgr().getGames().keySet()) {
                 if (args[1].equalsIgnoreCase("all") || gname.equals(args[1])) {
-                    foundgame = true;
                     Game game = getGameMgr().getGames().get(gname);
                     sender.sendMessage(Component.text(Lang.generalTeams + " - " + gname).color(NamedTextColor.GREEN));
 
@@ -588,6 +731,19 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
         return false;
     }
 
+    /**
+     * Handles the distribution command to set beacon spawn probability.
+     *
+     * <p>Sets the probability (0.01 to 0.99) that any given chunk will contain
+     * a beacon. This controls how densely beacons are distributed across the game region.
+     *
+     * <p><b>Usage:</b> /admin distribution &lt;value&gt;
+     *
+     * @param sender the command sender
+     * @param label the command label
+     * @param args arguments: [1] = distribution value (0.01 to 0.99)
+     * @return true if the distribution was set successfully, false otherwise
+     */
     private boolean onDistribution(CommandSender sender, String label, String[] args) {
         // DISTRIBUTION COMMAND: Set beacon spawn probability (0.0 to 1.0)
         // Controls how frequently beacons generate in chunks
@@ -609,6 +765,19 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
         return false;
     }
 
+    /**
+     * Handles the claim command to forcibly claim a beacon for a team.
+     *
+     * <p>Allows admins to claim or unclaim beacons for teams. The player must be
+     * standing on the beacon block. Claimed beacons change color to match the team.
+     *
+     * <p><b>Usage:</b> /admin claim [unowned|&lt;team&gt;]
+     *
+     * @param sender the command sender (must be a player)
+     * @param label the command label
+     * @param args arguments: [1] = "unowned" or team name
+     * @return true if claim was successful, false otherwise
+     */
     private boolean onClaim(CommandSender sender, String label, String[] args) {
         // CLAIM COMMAND: Admin beacon claim - forcibly assign beacons to teams or mark as unowned
         // Requires player to be standing on the beacon block
@@ -661,6 +830,23 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
 
     }
 
+    /**
+     * Displays the admin command help menu.
+     *
+     * <p>Shows a formatted list of all available admin commands with their syntax
+     * and descriptions. Uses color-coded formatting for readability:
+     * <ul>
+     *   <li>GREEN for command names</li>
+     *   <li>YELLOW for command syntax</li>
+     *   <li>AQUA for command descriptions</li>
+     * </ul>
+     *
+     * <p>Dynamically filters commands based on sender type (player vs. console).
+     *
+     * @param sender the command sender to receive the help menu
+     * @param label the command label/alias used
+     * @return always returns true
+     */
     private boolean showHelp(CommandSender sender, String label) {
         // Define colors for help messages (GREEN for command, YELLOW for syntax, AQUA for description)
         NamedTextColor green = NamedTextColor.GREEN;
@@ -844,7 +1030,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
      * @return error message describing the problem, or empty string if successful
      */
     public String setGameParms(Game game, String[] args) {
-        String errormsg = "";
+        String errormsg;
 
         // Check the parameters given - validate all before applying any
         errormsg = checkParms(args);
@@ -920,7 +1106,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
      * @return error message describing the problem, or empty string if successful
      */
     public String setDefaultParms(String[] args) {
-        String errormsg = "";
+        String errormsg;
 
         // Get current default parameters as starting point
         String mode = Settings.gamemode;
@@ -1135,7 +1321,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
      * @return list of matching completion suggestions, filtered by the last argument
      */
     @Override
-    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, String[] args) {
         final List<String> options = new ArrayList<>();
         Player player = null;
 
@@ -1165,11 +1351,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
             options.add("delete");
             options.add("distribution");
             options.add("games");
-            //options.add("kick");
-            //options.add("restart");
             options.add("regenerate");
-            //options.add("pause");
-            //options.add("resume");
             options.add("force_end");
             options.add("list");
             options.add("listparms");
@@ -1221,7 +1403,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                 // List all the games
                 options.add("all");
             }
-            if (args[0].equalsIgnoreCase("setspawn")) {
+            if (args[0].equalsIgnoreCase("setspawn") && game != null) {
                 // List all the teams
                 options.addAll(game.getScorecard().getTeamsNames());
             }
@@ -1236,11 +1418,6 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                     }
                 }
             }
-            /*
-            if (args[0].equalsIgnoreCase("kick") ) {
-                // List all the games
-                options.addAll(getGameMgr().getGames().keySet());
-            }*/
             if (args[0].equalsIgnoreCase("list") && !args[1].equalsIgnoreCase("all")) {
                 // List all the teams in the game
                 game = getGameMgr().getGame(args[1]);
@@ -1250,7 +1427,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                 options.add("unowned");
             }
             // For arguments 3+, provide parameter templates for newgame command
-            if (args.length > 2 && args[0].equalsIgnoreCase("newgame")) {
+            if (args[0].equalsIgnoreCase("newgame")) {
                 // Provide template suggestions for game creation parameters
                 options.add("gamemode:strategy");
                 options.add("gamemode:minigame");
@@ -1301,4 +1478,6 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
         return returned;
     }
 }
+
+
 
