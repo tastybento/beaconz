@@ -25,11 +25,14 @@ package com.wasteofplastic.beaconz.commands;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 
 import org.apache.commons.lang.math.NumberUtils;
+import org.bukkit.Bukkit;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.command.Command;
@@ -40,10 +43,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
-
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import org.jetbrains.annotations.NotNull;
 
 import com.wasteofplastic.beaconz.BeaconObj;
 import com.wasteofplastic.beaconz.Beaconz;
@@ -51,7 +51,10 @@ import com.wasteofplastic.beaconz.BeaconzPluginDependent;
 import com.wasteofplastic.beaconz.Game;
 import com.wasteofplastic.beaconz.Lang;
 import com.wasteofplastic.beaconz.Settings;
-import org.jetbrains.annotations.NotNull;
+
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
 /**
  * Handles all administrative commands for the Beaconz plugin.
@@ -90,6 +93,8 @@ import org.jetbrains.annotations.NotNull;
  * @since 1.0
  */
 public class AdminCmdHandler extends BeaconzPluginDependent implements CommandExecutor, TabCompleter {
+    
+    private Set<UUID> deleteConfirm = new HashSet<>();
 
     /**
      * Constructs a new AdminCmdHandler.
@@ -402,6 +407,19 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                 sender.sendMessage(Component.text(Lang.errorNoSuchGame + "'" + args[1] + "'").color(NamedTextColor.RED));
                 return false;
             } else {
+                // Check if this has been entered twice
+                UUID uuid = (sender instanceof Player player) ? player.getUniqueId() : null;
+                if (!this.deleteConfirm.contains(uuid)) {
+                    this.deleteConfirm.add(uuid);
+                    Bukkit.getScheduler().runTaskLater(beaconzPlugin, () -> {
+                        if (deleteConfirm.remove(uuid)) {
+                            sender.sendMessage(Component.text(Lang.errorRequestCanceled).color(NamedTextColor.RED));
+                        }
+                    }, 200); // 10 seconds
+                    return false;
+                }
+                this.deleteConfirm.remove(uuid);
+
                 // Confirm deletion started
                 sender.sendMessage(Component.text(Lang.adminDeletingGame.replace("[name]", game.getName())).color(NamedTextColor.GREEN));
                 getGameMgr().delete(sender, game);

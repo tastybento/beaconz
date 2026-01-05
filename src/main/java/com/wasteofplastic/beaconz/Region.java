@@ -97,14 +97,10 @@ public class Region extends BeaconzPluginDependent {
      * @param sender
      * @param delete - true if this is a deletion only.
      */
-    @SuppressWarnings("removal")
-    public void regenerate_THIS_IS_NO_LONG_USED_AND_CAN_BE_REMOVED(final CommandSender sender, final String delete) {
+    public void regenerate(final CommandSender sender, final String delete) {
         if (this != getGameMgr().getLobby()) {
-            if (!getBeaconzWorld().getPlayers().isEmpty()) {
-                sender.sendMessage("Regeneration can only occur when there are no players in the world");
-                return;
-            }
-            // TODO mark all offline players in this game/region as needing to teleport to spawn next login.
+            // Check if there are any players in the region and move them to the lobby
+            this.sendAllPlayersToLobby(false);
 
             getLogger().info("Regenerating region at Ctr:Rad [" + this.getCenter().getX() + ", " + this.getCenter().getY() + "] : " + this.getRadius() + " ==> xMin: " + corners[0].getX() + " zMin: " +  corners[1].getX() + " xMax: " + corners[0].getY() + " zMax: " + corners[1].getY());
 
@@ -394,7 +390,6 @@ public class Region extends BeaconzPluginDependent {
      * @param directly - if true player will go to spawn directly and not experience the delay teleport
      */
     public void tpToRegionSpawn(Player player, boolean directly) {
-        //getLogger().info("DEBUG: tpToRegionSpawnPoint");
         if (directly) {
             getBeaconzPlugin().getTeleportListener().setDirectTeleportPlayer(player.getUniqueId());
         }

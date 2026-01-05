@@ -7,6 +7,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.jetbrains.annotations.NotNull;
 
 
 /**
@@ -204,6 +205,7 @@ public class Lang extends BeaconzPluginDependent {
     public static String triangleYourTeamLostATriangle;
     public static String triangleTeamLostATriangle;
     public static String errorNoLobbyYet;
+    public static String errorRequestCanceled;
     
    
     public void loadLocale(String localeName) {
@@ -336,6 +338,7 @@ public class Lang extends BeaconzPluginDependent {
         errorNotReady = ChatColor.translateAlternateColorCodes('&', locale.getString("error.notReady", "Sorry, that is not ready yet."));
         errorOnlyPlayers = ChatColor.translateAlternateColorCodes('&', locale.getString("error.OnlyPlayers", "Only players can do that!"));
         errorRegionLimit = ChatColor.translateAlternateColorCodes('&', locale.getString("error.RegionLimit", "That's the limit of the game region, you can't go any further that way."));
+        errorRequestCanceled = ChatColor.translateAlternateColorCodes('&', locale.getString("error.RequestCanceled", "Request canceled."));
         errorTooFar = ChatColor.translateAlternateColorCodes('&', locale.getString("error.TooFar", "That beacon is too far away. To link over [max] blocks, use gold or diamond range extender blocks."));
         errorUnknownCommand = ChatColor.translateAlternateColorCodes('&', locale.getString("error.UnknownCommand", "Unknown command!"));
         errorUnknownPlayer = ChatColor.translateAlternateColorCodes('&', locale.getString("error.UnknownPlayer", "Unknown or offline player!"));

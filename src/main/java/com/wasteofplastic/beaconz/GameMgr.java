@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
 
 import org.bukkit.Location;
 import org.bukkit.block.Biome;
@@ -355,35 +356,29 @@ public class GameMgr extends BeaconzPluginDependent {
      *
      * @param gameName unique identifier for the new game
      */
-    public void newGame(String gameName) {
-
+    public CompletableFuture<Boolean> newGame(String gameName) {
+        CompletableFuture<Boolean> result = new CompletableFuture<>();
         // Get the location for creating the new region
         Point2D ctr = nextRegionLocation();
         Double radius = rup16(gamedistance / 2.0);
         if (ctr == null) {
             getLogger().warning("Could not find a location to create the next region.");
-
+            result.complete(false);
         } else {
             // Calculate region corners aligned to chunk boundaries
             Point2D c1 = new Point2D.Double(rup16(ctr.getX() - radius), rup16(ctr.getY() - radius));
             Point2D c2 = new Point2D.Double(rup16(ctr.getX() + radius), rup16(ctr.getY() + radius));
             Point2D [] corners = {c1, c2};
 
-            // Temporarily disable chunk load processing to prevent premature terrain generation
-            getBeaconzPlugin().ignoreChunkLoad = true;
-
             // Create the region and evacuate any players currently in that area
             Region region = new Region(plugin, corners);
             region.sendAllPlayersToLobby(false);
-
-            // Re-enable chunk load processing and unload chunks so they regenerate later
-            getBeaconzPlugin().ignoreChunkLoad = false;
-            region.unloadRegionChunks();
 
             // Validate game creation preconditions and create the game
             boolean nametaken = (getGames().get(gameName) != null);
             if (region == null || nametaken || gameName == null) {
                 getLogger().warning("Could not create new game.");
+                result.complete(false);
             } else {
                 // Create the game with current default parameters
                 Game game = new Game(plugin, gamedistance, region, gameName, gamemode, nbr_teams, gamegoal, gamegoalvalue, timer, scoretypes, gamedistribution);
@@ -391,6 +386,7 @@ public class GameMgr extends BeaconzPluginDependent {
                 regions.put(region.corners(), region);
             }
         }
+        return result;
     }
 
     /**
@@ -570,7 +566,7 @@ public class GameMgr extends BeaconzPluginDependent {
         outerloop:
             for (int x = minx; x <= maxx; x = x + increment) {
                 for (int z = minz; z <= maxz; z = z  + increment) {
-                    Biome biome = getBeaconzWorld().getHighestBlockAt(x, z).getBiome();
+                    Biome biome = getBeaconzWorld().getBiome(x, getBeaconzWorld().getSeaLevel(), z);
                     if (BeaconzChunkGen.OCEANS.contains(biome)) {
                         unsafeBiomes ++;
                     }

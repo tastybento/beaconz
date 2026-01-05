@@ -29,7 +29,6 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -45,6 +44,9 @@ import com.wasteofplastic.beaconz.BeaconzPluginDependent;
 import com.wasteofplastic.beaconz.Game;
 import com.wasteofplastic.beaconz.Lang;
 import com.wasteofplastic.beaconz.Settings;
+
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 
 /**
  * Handles all teleportation events, e.g., player teleporting into world
@@ -86,7 +88,7 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
             if (messages != null) {
                 // plugin.getLogger().info("DEBUG: Messages waiting!");
                 getServer().getScheduler().runTaskLater(getBeaconzPlugin(), () -> {
-                    player.sendMessage(ChatColor.AQUA + Lang.titleBeaconzNews);
+                    player.sendMessage(Component.text( Lang.titleBeaconzNews).color(NamedTextColor.AQUA));
                     int i = 1;
                     for (String message : messages) {
                         player.sendMessage(i++ + ": " + message);
@@ -205,9 +207,7 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
 
                         } else {
                             // Player is not part of the game, send them to the lobby
-                            player.sendMessage(ChatColor.RED + Lang.errorNotInGame.replace("[game]", toGame.getName()));
-                            System.out.println("l = " + getGameMgr().getLobby().getSpawnPoint());
-                            System.out.println(event);
+                            player.sendMessage(Component.text(Lang.errorNotInGame.replace("[game]", toGame.getName())).color(NamedTextColor.RED));
                             event.setTo(getGameMgr().getLobby().getSpawnPoint());
                         }
                     }
@@ -240,7 +240,7 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
         if  (player.isOp()) {
             delay = 0L;
         } else {
-            player.sendMessage(ChatColor.RED + Lang.teleportDoNotMove.replace("[number]", String.valueOf(Settings.teleportDelay)));
+            player.sendMessage(Component.text(Lang.teleportDoNotMove.replace("[number]", String.valueOf(Settings.teleportDelay))).color(NamedTextColor.RED));
         }
         teleportingPlayers.put(player.getUniqueId(), player.getLocation().toVector());
         getServer().getScheduler().runTaskLater(getBeaconzPlugin(), () -> {
@@ -248,10 +248,10 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
             if (player != null && !player.isDead() && teleportingPlayers.containsKey(player.getUniqueId())) {
                 if (player.getLocation().toVector().equals(teleportingPlayers.get(player.getUniqueId()))) {
 
-                    player.teleport(to);
+                    player.teleportAsync(to);
 
                 } else {
-                    player.sendMessage(ChatColor.RED + Lang.teleportYouMoved);
+                    player.sendMessage(Component.text(Lang.teleportYouMoved).color(NamedTextColor.RED));
                 }
             }
             teleportingPlayers.remove(player.getUniqueId());

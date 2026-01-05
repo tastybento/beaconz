@@ -177,6 +177,7 @@ error:
   NotInGame: "You are not in the game '[game]'! Going to the lobby..."
   OnlyPlayers: "Only players can do that!"
   RegionLimit: "That's the limit of the game region, you can't go any further that way."
+  RequestCanceled: "Request canceled."
   TooFar: "That beacon is too far away. To link over [max] blocks, use gold or diamond range extender blocks."
   UnknownCommand: "Unknown command!"
   UnknownPlayer: "Unknown or offline player!"
