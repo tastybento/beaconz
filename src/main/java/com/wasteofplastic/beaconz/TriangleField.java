@@ -65,11 +65,9 @@ public class TriangleField {
         sides.add(new Line2D.Double(a,b));
         sides.add(new Line2D.Double(b,c));
         sides.add(new Line2D.Double(c,a));
-        //System.out.println("DEBUG: Control field made " + a.toString() + " " + b.toString() + " " + c.toString());
         double d = (a.getX() * (b.getY() - c.getY()) + b.getX() * (c.getY() - a.getY())
                 + c.getX() * (a.getY() - b.getY())) / 2D;
         this.area = Math.abs(d);
-        //System.out.println("DEBUG: area = " + area);
     }
 
     /* (non-Javadoc)
@@ -77,7 +75,6 @@ public class TriangleField {
      */
     @Override
     public int hashCode() {
-        //System.out.println("DEBUG: hashCode " + a.toString() + " " + b.toString() + " " + c.toString());
         final int prime = 31;
         int result = 1;
         result = prime * result + ((owner == null) ? 0 : owner.hashCode());

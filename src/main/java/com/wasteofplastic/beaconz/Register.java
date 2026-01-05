@@ -683,7 +683,6 @@ public class Register extends BeaconzPluginDependent {
                 && !block.getType().equals(Material.EMERALD_BLOCK)) {
             return null;
         }
-        getLogger().info("DEBUG: correct material");
         Point2D point = new Point2D.Double(block.getLocation().getBlockX(),block.getLocation().getBlockZ());
 
         // Check plinth blocks
@@ -699,7 +698,6 @@ public class Register extends BeaconzPluginDependent {
                 }
             }
         }
-        getLogger().info("DEBUG: checking point " + point);
 
         // Check glass or obsidian
         if (block.getType().equals(Material.OBSIDIAN) || block.getType().name().endsWith("STAINED_GLASS")) {
@@ -710,19 +708,11 @@ public class Register extends BeaconzPluginDependent {
             }
             point = new Point2D.Double(below.getLocation().getBlockX(),below.getLocation().getBlockZ());
             // Beacon below
-            //getLogger().info("DEBUG: found in register");
-            //getLogger().info("DEBUG: not found in register");
             return beaconRegister.getOrDefault(point, null);
         }
         // Check beacons
         if (block.getType().equals(Material.BEACON)) {
-            //getLogger().info("DEBUG: found in register");
-            /*
-                getLogger().info("DEBUG: not found in register. Known points are:");
-                for (Point2D points : beaconRegister.keySet()) {
-                    getLogger().info("DEBUG: " + points);
-                }*/
-            return beaconRegister.getOrDefault(point, null);
+           return beaconRegister.getOrDefault(point, null);
         }
         // Check the pyramid around the beacon
         // Look for a beacon

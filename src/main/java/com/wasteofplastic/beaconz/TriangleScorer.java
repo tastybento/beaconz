@@ -33,7 +33,6 @@ public class TriangleScorer {
                 teamTriangles.add(triangle);
             }
         }
-        //System.out.println("DEBUG: there are " + teamTriangles.size() + " team triangles");
         return getTriangleSetArea(teamTriangles);
     }
 
@@ -52,27 +51,11 @@ public class TriangleScorer {
             // Grab a triangle
             TriangleField mainTriangle = mainIt.next();
             if (alreadyCounted.contains(mainTriangle)) {
-                //System.out.println("DEBUG: Removing already counted triangle");
                 mainIt.remove();
                 continue;
             }
-            //count++;
-            //System.out.println("DEBUG: count = " + count);
-
             // Temp area that will hold all unions of this triangle
-            //System.out.println("DEBUG: Triangle points " + mainTriangle.a + " " + mainTriangle.b + " " + mainTriangle.c);
             Area polyArea = new Area(mainTriangle.getTriangle());
-            /*
-            PathIterator pathIterator = polyArea.getPathIterator(null);
-            float[] floats = new float[6];
-            List<Point2D> poly = new ArrayList<Point2D>();
-            while (!pathIterator.isDone()) {
-                pathIterator.currentSegment(floats);
-                Point2D point = new Point2D.Float(floats[0], floats[1]);
-                //System.out.println("DEBUG: Initial Poly area point " + point);
-                poly.add(point);
-                pathIterator.next();
-            } */
             // Remove it from the list as its area will be counted even if there are no unions
             mainIt.remove();
             // Flag to track the status of unions
@@ -82,35 +65,26 @@ public class TriangleScorer {
             // unions.
             do {
                 noMoreUnions = true;
-                //System.out.println("DEBUG: Checking this triangle against others ");
                 // Iterate through all remaining triangles
-                //System.out.println("DEBUG: Iterate through all remaining triangles - there are " + teamTriangles.size() + " left");
                 for (TriangleField tri : teamTriangles) {
                     if (alreadyCounted.contains(tri)) {
                         continue;
                     }
                     // Try to union this triangle with the others
-                    //System.out.println("DEBUG: Try to union this triangle with the others");
                     Area tempUnion = new Area(polyArea);
                     tempUnion.add(new Area(tri.getTriangle()));
                     // If a triangle becomes part of the polygon, then it will form another polygon
                     // isSingular checks if the resulting polygon has a single path or not
                     if (tempUnion.isSingular()) {
-                        //System.out.println("DEBUG: is Singular");
                         // It's a good union - remove the triangle
                         polyArea = tempUnion;
                         // Add it to the already counted set
                         alreadyCounted.add(tri);
                         noMoreUnions = false;
                     }
-                    /*else {
-                        System.out.println("DEBUG: is not singular");
-                    }*/
                 }
             } while (!noMoreUnions);
-            //System.out.println("DEBUG: No more unions");
             // Now add the area to the total
-            //System.out.println("DEBUG: Add area to total");
             // Now calculate the area of the resulting polygon
             PathIterator pathIterator = polyArea.getPathIterator(null);
             float[] floats = new float[6];
@@ -118,17 +92,12 @@ public class TriangleScorer {
             while (!pathIterator.isDone()) {
                 pathIterator.currentSegment(floats);
                 Point2D point = new Point2D.Float(floats[0], floats[1]);
-
-                //System.out.println("Adding point " + point);
                 poly.add(point);
                 pathIterator.next();
             }
             double pArea = polygonArea(poly.toArray(new Point2D[0]));
-            //System.out.println("ploygon area = " + pArea);
             area = area + pArea;
         }
-
-        //System.out.println("Total area = " + area);
         return area;
     }
 

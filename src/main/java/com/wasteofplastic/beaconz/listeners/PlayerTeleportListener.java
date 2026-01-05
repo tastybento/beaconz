@@ -49,79 +49,163 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 
 /**
- * Handles all teleportation events, e.g., player teleporting into world
- * 
- * @author tastybento
+ * Manages all player teleportation and world transition events in the Beaconz game system.
+ * <p>
+ * This listener handles the complex logic of moving players between different game areas:
+ * <ul>
+ *   <li>World entry/exit - Managing transitions in/out of the Beaconz world</li>
+ *   <li>Game-to-game teleportation - Moving between different game instances</li>
+ *   <li>Game-to-lobby transitions - Exiting games to return to the lobby</li>
+ *   <li>Lobby-to-game teleportation - Entering games from the lobby</li>
+ * </ul>
+ * <p>
+ * Key responsibilities include:
+ * <ul>
+ *   <li><b>Inventory Management</b> - Stores and restores player inventories for each game/lobby context</li>
+ *   <li><b>Teleport Delays</b> - Enforces waiting periods when leaving active games (prevents combat logging)</li>
+ *   <li><b>Permission Validation</b> - Ensures players can only enter games they're part of</li>
+ *   <li><b>State Cleanup</b> - Removes potion effects, scoreboards, and tracking data during transitions</li>
+ *   <li><b>Message Delivery</b> - Shows pending messages when players enter the world</li>
+ *   <li><b>Safe Spawning</b> - Finds safe locations when restoring player positions</li>
+ *   <li><b>Region Callbacks</b> - Triggers enter/exit handlers for regions</li>
+ * </ul>
+ * <p>
+ * The class maintains three tracking sets:
+ * <ul>
+ *   <li>barrierPlayers - Players being pushed back by region barriers (no-op teleports)</li>
+ *   <li>teleportingPlayers - Players in the middle of delayed teleports (tracks position to detect movement)</li>
+ *   <li>directTeleportPlayers - Players with admin/op privileges who can teleport instantly</li>
+ * </ul>
+ * <p>
+ * Teleport flow example: Player leaving an active game
+ * <ol>
+ *   <li>Player initiates teleport (e.g., /spawn)</li>
+ *   <li>Event is cancelled and delay timer starts (unless op/admin)</li>
+ *   <li>Player must stand still for configured duration</li>
+ *   <li>After delay, inventory is saved with game context</li>
+ *   <li>Region exit handler is called</li>
+ *   <li>Player is teleported to destination</li>
+ *   <li>Destination inventory is restored (lobby or other game)</li>
+ *   <li>Region enter handler is called</li>
+ * </ol>
  *
+ * @author tastybento
  */
 public class PlayerTeleportListener extends BeaconzPluginDependent implements Listener {
 
+    /**
+     * Set of players currently being pushed back by region barriers.
+     * These teleports should be processed without triggering normal teleport logic.
+     */
     private final Set<UUID> barrierPlayers = new HashSet<>();
+
+    /**
+     * Maps player UUIDs to their locations when they initiated a delayed teleport.
+     * Used to detect if player moved during the waiting period (which cancels the teleport).
+     */
     private final HashMap<UUID, Vector> teleportingPlayers = new HashMap<>();
+
+    /**
+     * Set of players who should teleport directly without delay.
+     * Used for ops and admin commands that need instant teleportation.
+     */
     private final Set<UUID> directTeleportPlayers = new HashSet<>();
+
+    /** Constant identifier for lobby inventory storage */
     private static final String LOBBY = "Lobby";
 
     /**
-     * @param plugin
+     * Constructs a new PlayerTeleportListener.
+     *
+     * @param plugin the Beaconz plugin instance
      */
     public PlayerTeleportListener(Beaconz plugin) {
         super(plugin);
     }
 
     /**
-     * Handles player entering the world
-     * @param event
+     * Handles player entering the Beaconz world.
+     * <p>
+     * This method:
+     * <ul>
+     *   <li>Saves the player's name to the database for UUID lookup</li>
+     *   <li>Delivers any pending messages queued while player was offline</li>
+     *   <li>Teleports player to lobby if they're not already there</li>
+     *   <li>Removes all potion effects to start with clean state</li>
+     * </ul>
+     * <p>
+     * Messages are delivered after a 2-second delay (40 ticks) to allow the world to fully load.
+     *
+     * @param event the player changed world event
      */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled=true)
     public void onWorldEnter(final PlayerChangedWorldEvent event) {
         final Player player = event.getPlayer();
 
-        // Entering Beaconz world
+        // Only process when entering the Beaconz world
         if (player.getWorld().equals((getBeaconzWorld()))) {
-            //getLogger().info("DEBUG: entering world");
-
-            // Write this player's name to the database
+            // Save player name to database for future UUID->name lookups
             getBeaconzPlugin().getNameStore().savePlayerName(player.getName(), player.getUniqueId());
 
-            // Check for pending messages
+            // Check if there are any messages queued for this player
             final List<String> messages = getMessages().getMessages(player.getUniqueId());
             if (messages != null) {
-                // plugin.getLogger().info("DEBUG: Messages waiting!");
+                // Deliver messages after a delay to ensure world is fully loaded
                 getServer().getScheduler().runTaskLater(getBeaconzPlugin(), () -> {
+                    // Show header
                     player.sendMessage(Component.text( Lang.titleBeaconzNews).color(NamedTextColor.AQUA));
+                    // Show each message with a number prefix
                     int i = 1;
                     for (String message : messages) {
                         player.sendMessage(i++ + ": " + message);
                     }
-                    // Clear the messages
+                    // Clear the messages now that they've been delivered
                     getMessages().clearMessages(player.getUniqueId());
-                }, 40L);
+                }, 40L); // 2 second delay (40 ticks)
             }
 
-            // Send player to lobby
-            if (!getGameMgr().isPlayerInLobby(event.getPlayer())) {                
+            // Ensure player is sent to lobby if not already there
+            if (!getGameMgr().isPlayerInLobby(event.getPlayer())) {
                 getGameMgr().getLobby().tpToRegionSpawn(event.getPlayer(), true);
                 getGameMgr().getLobby().enterLobby(event.getPlayer());
             }
+
+            // Remove all potion effects when entering world
+            // This ensures clean state and prevents effect exploitation
             for (PotionEffect effect : event.getPlayer().getActivePotionEffects())
                 event.getPlayer().removePotionEffect(effect.getType());
         }
     }
 
     /**
-     * Removes the scoreboard from the player, resets other world-specific items
-     * @param event
+     * Handles player exiting the Beaconz world.
+     * <p>
+     * This method performs cleanup when a player leaves the Beaconz world:
+     * <ul>
+     *   <li>Removes the player from beacon tracking (standing on beacon data)</li>
+     *   <li>Resets the player's scoreboard to a clean state</li>
+     *   <li>Removes all active potion effects</li>
+     * </ul>
+     * <p>
+     * Note: Potion effects are removed to prevent players from keeping game buffs/debuffs
+     * in other worlds. Consider saving and restoring effects in future versions to prevent
+     * exploit of jumping between worlds to clear negative effects.
+     *
+     * @param event the player changed world event
      */
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onWorldExit(final PlayerChangedWorldEvent event) {
-        // Exiting Beaconz world
+        // Only process when exiting the Beaconz world
         if (event.getFrom().equals((getBeaconzWorld()))) {
-            // Remove player from map and remove his scoreboard
+            // Remove player from beacon tracking map
             BeaconProtectionListener.getStandingOn().remove(event.getPlayer().getUniqueId());
+
+            // Reset scoreboard to prevent conflicts in other worlds
             event.getPlayer().setScoreboard(Bukkit.getServer().getScoreboardManager().getNewScoreboard());
 
-            // Remove any potion effects
-            //TODO: Save and restore potion effects to keep player from getting rid of them by quickly jumping off-world and back. Same with Lobby.
+            // Remove all potion effects
+            // TODO: Save and restore potion effects to prevent exploit where players
+            // jump to another world and back to clear negative effects
             for (PotionEffect effect : event.getPlayer().getActivePotionEffects())
                 event.getPlayer().removePotionEffect(effect.getType());
         }

@@ -72,7 +72,7 @@ import com.wasteofplastic.beaconz.BeaconzPluginDependent;
 public class BeaconSurroundListener extends BeaconzPluginDependent implements Listener {
 
     /** Debug mode flag - set to false in production */
-    private final static boolean DEBUG = true;
+    private final static boolean DEBUG = false;
 
     /**
      * Horizontal range (in blocks) around beacons where blocks become harder to break.

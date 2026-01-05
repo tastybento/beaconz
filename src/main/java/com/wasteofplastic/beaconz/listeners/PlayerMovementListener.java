@@ -60,32 +60,59 @@ import com.wasteofplastic.beaconz.Settings;
 import com.wasteofplastic.beaconz.TriangleField;
 
 /**
- * Handles movement by the player and game boundary protection
- * @author tastybento
+ * Handles player and vehicle movement within the game world, enforcing territorial boundaries and effects.
+ * <p>
+ * This listener is responsible for:
+ * <ul>
+ *   <li>Preventing players from leaving game regions (enforcing invisible barriers)</li>
+ *   <li>Applying team-specific potion effects when players enter/exit triangle fields</li>
+ *   <li>Managing region transitions (enter/exit callbacks)</li>
+ *   <li>Restricting certain actions (leashing, shearing, entity interaction) outside game areas</li>
+ *   <li>Tracking and applying potion effects to both players and their vehicles</li>
+ *   <li>Teleporting players who escape the valid play area back to the lobby</li>
+ * </ul>
+ * <p>
+ * Triangle field effects scale based on field overlap - the more fields stacked, the stronger the effects.
+ * Enemy fields apply debuffs while friendly fields provide buffs, creating strategic territorial gameplay.
+ * <p>
+ * The listener maintains state for:
+ * <ul>
+ *   <li>Active potion effects per player (to properly remove them when leaving fields)</li>
+ *   <li>Players near barriers (to show barrier particles)</li>
+ * </ul>
  *
+ * @author tastybento
  */
 public class PlayerMovementListener extends BeaconzPluginDependent implements Listener {
 
+    /**
+     * Maps player UUIDs to their currently active triangle field effects.
+     * Used to track and remove effects when players leave fields.
+     */
     private final HashMap<UUID, Collection<PotionEffect>> triangleEffects = new HashMap<>();
+
+    /**
+     * Set of player UUIDs who are currently near region barriers.
+     * Used to show barrier particles and prevent spam.
+     */
     private final Set<UUID> barrierPlayers = new HashSet<>();
 
+    /**
+     * Constructs a new PlayerMovementListener.
+     *
+     * @param plugin the Beaconz plugin instance
+     */
     public PlayerMovementListener(Beaconz plugin) {
         super(plugin);
     }
 
-    /*
-    @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
-    public void onInteractBlock(final PlayerInteractEvent event) {
-        if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK) && event.getClickedBlock().getWorld().equals(getBeaconzWorld())
-                && getGameMgr().getGame(event.getClickedBlock().getLocation()) == null) {
-            event.setCancelled(true);
-            event.getPlayer().sendMessage(ChatColor.RED + Lang.errorYouCannotDoThat);
-        }
-    }
-     */
     /**
-     * Prevents use of leashes outside the game area
-     * @param event
+     * Prevents players from using leashes on entities outside the game area.
+     * <p>
+     * This ensures players can only interact with mobs within designated game regions,
+     * preventing resource exploitation in the lobby or undefined areas.
+     *
+     * @param event the leash entity event
      */
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onLeashUse(final PlayerLeashEntityEvent event) {
@@ -98,8 +125,12 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
     }
 
     /**
-     * Prevents hitting items outside the game area
-     * @param event
+     * Prevents players from interacting with entities outside the game area.
+     * <p>
+     * This blocks right-click interactions (feeding, mounting, trading, etc.)
+     * on entities in the lobby or other non-game areas.
+     *
+     * @param event the player interact entity event
      */
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onPlayerHitEntity(final PlayerInteractEntityEvent event) {
@@ -112,8 +143,12 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
     }
 
     /**
-     * Prevents hanging items outside the game area
-     * @param event
+     * Prevents placing hanging entities (item frames, paintings) outside the game area.
+     * <p>
+     * This ensures players can only place decorative items within designated
+     * game regions, preventing modification of lobby areas.
+     *
+     * @param event the hanging place event
      */
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onHangingPlace(final HangingPlaceEvent event) {
@@ -127,8 +162,12 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
 
 
     /**
-     * Prevents shearing outside the game area
-     * @param event
+     * Prevents shearing entities (sheep, mooshrooms, snow golems) outside the game area.
+     * <p>
+     * This ensures players can only gather resources from entities within
+     * designated game regions.
+     *
+     * @param event the player shear entity event
      */
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onShear(final PlayerShearEntityEvent event) {
@@ -141,8 +180,12 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
     }
 
     /**
-     * Prevents damaging vehicles outside of the game area
-     * @param event event
+     * Prevents damaging vehicles (boats, minecarts) outside of the game area.
+     * <p>
+     * This protects vehicles in lobby areas and prevents players from
+     * destroying vehicles outside designated game regions.
+     *
+     * @param event the vehicle damage event
      */
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onVehicleDamage(final VehicleDamageEvent event) {
@@ -158,42 +201,51 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
     }
 
     /**
-     * Handles movement inside a vehicle (or on a vehicle)
-     * @param event
+     * Handles movement inside a vehicle (boat, minecart, horse, etc.).
+     * <p>
+     * This method:
+     * <ul>
+     *   <li>Checks if vehicles are in the Beaconz world</li>
+     *   <li>Applies slowness effects from triangle fields to non-living vehicles (boats, minecarts)</li>
+     *   <li>Processes movement checks for all passengers in multi-passenger vehicles</li>
+     * </ul>
+     * <p>
+     * Living vehicles (horses, pigs) automatically inherit potion effects from their riders,
+     * but non-living vehicles need manual velocity adjustments.
+     *
+     * @param event the vehicle move event
      */
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onVehicleMove(final VehicleMoveEvent event) {
+        // Only process vehicles in the Beaconz world
         if (!event.getVehicle().getWorld().equals(getBeaconzWorld())) {
             return;
         }
-        // Check if a player is in it
+
+        // Check if a player is driving the vehicle
         Entity passenger = event.getVehicle().getPassenger();
         if (passenger instanceof Player player) {
             Location from = event.getFrom();
             Location to = event.getTo();
-            /*
-            if (checkMove(player, event.getVehicle().getWorld(), from, to)) {
-                // Vehicle should stop moving
-                Vector direction = event.getVehicle().getLocation().getDirection();
-                event.getVehicle().teleport(event.getVehicle().getLocation().add(from.toVector().subtract(to.toVector()).normalize()));
-                event.getVehicle().getLocation().setDirection(direction);
-                event.getVehicle().setVelocity(new Vector(0,0,0));
-            }*/
-            // Check potion effects for boats etc.
+
+            // Apply slowness effects to non-living vehicles (boats, minecarts)
+            // Living vehicles (horses, etc.) inherit effects automatically
             if ((!(event.getVehicle() instanceof LivingEntity))) {
                 for (PotionEffect effect : getTriangleEffects(player.getUniqueId())) {
                     if (effect.getType().equals(PotionEffectType.SLOWNESS)) {
+                        // Calculate slowdown based on effect amplifier
                         double delay = effect.getAmplifier();
                         event.getVehicle().setVelocity(event.getVehicle().getVelocity().divide(new Vector(delay,delay,delay)));
                         break;
                     }
                 }
             }
-            // Check if there are any other passengers
+
+            // Check if there are any other passengers in the vehicle
+            // (e.g., multiple players in a boat)
             for (Player pl : getBeaconzWorld().getPlayers()) {
                 if (!pl.equals(player) && pl.isInsideVehicle() && pl.getVehicle().getEntityId() == event.getVehicle().getEntityId()) {
-                    //getLogger().info(pl.getName() + " inside vehicle of id " + pl.getVehicle().getEntityId());
-                    //getLogger().info("Event id = " + event.getVehicle().getEntityId());
+                    // Process movement checks for each passenger
                     checkMove(pl, event.getVehicle().getWorld(), from, to);
                 }
             }
@@ -201,76 +253,101 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
     }
 
     /**
-     * Handle player movement
-     * @param event
+     * Handles player movement events in the game world.
+     * <p>
+     * This is the main movement handler that:
+     * <ul>
+     *   <li>Only processes significant horizontal movement (X/Z coordinate changes)</li>
+     *   <li>Filters to only handle the Beaconz world</li>
+     *   <li>Delegates to checkMove for actual movement validation</li>
+     * </ul>
+     * <p>
+     * Note: This does NOT detect teleportation - use PlayerTeleportListener for that.
+     * Also note: Vertical (Y) only movement is ignored for performance.
+     *
+     * @param event the player move event
      */
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onPlayerMove(PlayerMoveEvent event) {
-        // Remember that teleporting is not detected as player movement..
-        // If we want to catch movement by teleportation, we have to keep track of the players to-from by ourselves
-        // Only proceed if there's been a change in X or Z coords
+        // Only proceed if there's been a change in X or Z coords (horizontal movement)
+        // Ignore vertical-only movement (jumping, falling) for performance
         if (event.getFrom().getBlockX() == event.getTo().getBlockX() && event.getFrom().getBlockZ() == event.getTo().getBlockZ()) {
             return;
         }
+
         World world = event.getTo().getWorld();
+        // Only process movement in the Beaconz world
         if (!world.equals(getBeaconzWorld())) {
             return;
         }
+
         Player player = event.getPlayer();
         Location from = event.getFrom();
         Location to = event.getTo();
+
+        // Delegate to checkMove and cancel event if needed
         event.setCancelled(checkMove(player, world, from, to));
     }
 
     /**
-     * Handles checking of player movement.
-     * @param player
-     * @param world
-     * @param from
-     * @param to
-     * @return true if the event should be canceled
+     * Validates and processes player movement between locations.
+     * <p>
+     * This method performs multiple checks:
+     * <ol>
+     *   <li>Shows barrier particles if player is near region boundary</li>
+     *   <li>Prevents players from crossing region boundaries (invisible walls)</li>
+     *   <li>Calls region enter/exit handlers when changing regions</li>
+     *   <li>Teleports players who escape the play area back to lobby</li>
+     *   <li>Removes potion effects when entering lobby</li>
+     *   <li>Applies triangle field effects based on current position</li>
+     * </ol>
+     *
+     * @param player the player who is moving
+     * @param world the world the player is in
+     * @param from the location the player is moving from
+     * @param to the location the player is moving to
+     * @return true if the movement should be canceled (boundary violation)
      */
     private boolean checkMove(Player player, World world, Location from, Location to) {
+        // Determine which game regions the player is in (if any)
         Region regionFrom = getGameMgr().getRegion(from);
         Region regionTo = getGameMgr().getRegion(to);
 
-        // Check if a player is close to a barrier
+        // Show barrier particles if player is near the edge of their region
         if (regionFrom != null) {
             regionFrom.showBarrier(player, 20);
         }
 
+        // Prevent players from crossing region boundaries
         // Check if player is trying to leave a region by moving over a region boundary
-        // And send him back to whence he came
         if (regionFrom != null && regionFrom != regionTo) {
+            // Only prevent crossing if the movement is small (< 2.5 blocks)
+            // Larger movements might be legitimate teleports
             if (from.distanceSquared(to) < 6.25) {
-                //float pitch = player.getLocation().getPitch();
-                //float yaw = player.getLocation().getYaw();
                 Vector direction = player.getLocation().getDirection();
                 barrierPlayers.add(player.getUniqueId());
-                //player.teleport(player.getLocation().add(from.toVector().subtract(to.toVector().multiply(4)).normalize()));
-                //player.getLocation().setPitch(pitch);
-                //player.getLocation().setPitch(yaw);
-                //player.getLocation().setDirection(direction);
-                //player.setVelocity(new Vector(0,0,0));
-                // There's no need to tp the player anywhere, just return true so onPlayerMove can cancel the event
-                // Also, teleporting the player back can cause problems in some situations
+                // Return true to cancel the event (player stays in place)
+                // Note: We don't teleport the player - just block the movement
                 player.sendMessage(ChatColor.YELLOW + Lang.errorRegionLimit);
                 return true;
             }
         }
 
-        // Check if player changed regions and process region exit and enter methods
+        // Process region transitions - call enter/exit handlers
 
-        // Leaving
+        // Leaving a region
         if (regionFrom != null && regionFrom != regionTo) {
             regionFrom.exit(player);
         }
-        // Entering
+
+        // Entering a new region
         if (regionTo != null && regionFrom != regionTo) {
             regionTo.enter(player);
         }
-        // Outside play area
+
+        // Player managed to get outside all defined play areas
         if (regionTo == null && regionFrom == null) {
+            // Non-ops get teleported back to lobby
             if (!player.isOp()) {
                 player.teleport(getGameMgr().getLobby().getSpawnPoint());
                 getLogger().warning(player.getName() + " managed to get outside of the game area and was teleported to the lobby.");
@@ -278,72 +355,88 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
             }
         }
 
-        // Nothing from here on applies to Lobby...
+        // Clear all potion effects when entering the lobby
         if (getGameMgr().isPlayerInLobby(player)) {
+            // Remove all active potion effects
             for (PotionEffect effect : player.getActivePotionEffects()) {
                 player.removePotionEffect(effect.getType());
-                // Check vehicle
+                // Also remove effects from player's vehicle if mounted
                 if (player.isInsideVehicle() && player.getVehicle() instanceof LivingEntity le) {
-                    //getLogger().info("DEBUG: living vehicle remove");
                     le.removePotionEffect(effect.getType());
                 }
             }
             triangleEffects.remove(player.getUniqueId());
             return false;
         }
-        // Check if a player is standing on an enemy beacon
-        /*
-        BeaconObj beacon = getRegister().getBeaconAt(to.getBlockX(), to.getBlockZ());
-        if (beacon != null && beacon.getOwnership() != null) {
-            BeaconProtectionListener.getStandingOn().put(player.getUniqueId(), beacon);
-        } else {
-            BeaconProtectionListener.getStandingOn().remove(player.getUniqueId());
-        }*/
-        // Check the From
+
+        // Check triangle field positions and apply effects
+        // Get list of triangle fields at the "from" location
         List<TriangleField> fromTriangle = getRegister().getTriangle(from.getBlockX(), from.getBlockZ());
-        // Check the To
+        // Get list of triangle fields at the "to" location
         List<TriangleField> toTriangle = getRegister().getTriangle(to.getBlockX(), to.getBlockZ());
+
+        // Apply appropriate potion effects based on triangle field changes
         return applyTriangleEffects(player, fromTriangle, toTriangle);
     }
 
     /**
-     * Correctly affect a player with potions
-     * @param player
-     * @param fromTriangles - list of triangles player is covered by
-     * @param toTriangles - list of new triangles player is covered by
-     * @return true if the event should be canceled
+     * Applies or removes potion effects based on triangle field transitions.
+     * <p>
+     * Triangle fields provide team-based buffs and debuffs:
+     * <ul>
+     *   <li>Friendly fields (owned by player's team) provide beneficial effects</li>
+     *   <li>Enemy fields (owned by opposing teams) apply harmful debuffs</li>
+     *   <li>Effect strength scales with field overlap (more overlapping fields = stronger effects)</li>
+     * </ul>
+     * <p>
+     * This method handles:
+     * <ul>
+     *   <li>Removing effects when leaving fields</li>
+     *   <li>Notifying players of field level changes</li>
+     *   <li>Applying appropriate effects based on team ownership</li>
+     *   <li>Denying access to teamless players (non-ops)</li>
+     * </ul>
+     *
+     * @param player the player moving between fields
+     * @param fromTriangles list of triangle fields at the previous location (stacked fields)
+     * @param toTriangles list of triangle fields at the new location (stacked fields)
+     * @return true if the movement should be canceled (teamless player, non-op)
      */
     @SuppressWarnings("deprecation")
     public boolean applyTriangleEffects(Player player,
             List<TriangleField> fromTriangles, List<TriangleField> toTriangles) {
-        // Get the player's team
+        // Get the player's team (null if not on a team)
         Team team = getGameMgr().getPlayerTeam(player);
         if (team == null) {
+            // Only ops can move without being on a team
             return !player.isOp();
         }
-        // Outside any field
+
+        // Player is outside any triangle field (in open/neutral territory)
         if (fromTriangles.isEmpty() && toTriangles.isEmpty()) {
+            // Remove all active potion effects
             for (PotionEffect effect : player.getActivePotionEffects()) {
                 player.removePotionEffect(effect.getType());
-                // Check vehicle
+                // Also remove effects from player's vehicle if mounted
                 if (player.isInsideVehicle() && player.getVehicle() instanceof LivingEntity le) {
-                    //getLogger().info("DEBUG: living vehicle remove");
                     le.removePotionEffect(effect.getType());
                 }
             }
             triangleEffects.remove(player.getUniqueId());
             return false;
         }
-        // Check if to is not a triangle
+
+        // Player is leaving triangle fields (entering neutral territory)
         if (toTriangles.isEmpty()) {
-            // Leaving a control triangle
+            // Notify player they're leaving the field
             player.sendMessage(Lang.triangleLeaving.replace("[team]", fromTriangles.getFirst().getOwner().getDisplayName()));
+
+            // Remove all triangle field effects that were previously applied
             if (triangleEffects.containsKey(player.getUniqueId())) {
                 for (PotionEffect effect : triangleEffects.get(player.getUniqueId())) {
                     player.removePotionEffect(effect.getType());
-                    // Check vehicle
+                    // Also remove from vehicle
                     if (player.isInsideVehicle() && player.getVehicle() instanceof LivingEntity le) {
-                        //getLogger().info("DEBUG: living vehicle remove");
                         le.removePotionEffect(effect.getType());
                     }
                 }
@@ -351,44 +444,57 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
             triangleEffects.remove(player.getUniqueId());
             return false;
         }
-        // Entering a field, or moving to a stronger field
+
+        // Player is entering a field or moving to a more densely stacked area
         if (fromTriangles.size() < toTriangles.size()) {
+            // Notify player they're entering or powering up in the field
             player.sendMessage((Lang.triangleEntering.replace("[team]", toTriangles.getFirst().getOwner().getDisplayName())).replace("[level]",String.valueOf(toTriangles.size())));
         } else if (toTriangles.size() < fromTriangles.size()) {
-            // Remove all current effects - the lower set will be applied below
+            // Player is moving to less densely stacked area (weaker effects)
+            // Remove current effects first - weaker effects will be applied below
             if (triangleEffects.containsKey(player.getUniqueId())) {
                 for (PotionEffect effect : triangleEffects.get(player.getUniqueId())) {
                     player.removePotionEffect(effect.getType());
-                    // Check vehicle
+                    // Also remove from vehicle
                     if (player.isInsideVehicle() && player.getVehicle() instanceof LivingEntity le) {
-                        //getLogger().info("DEBUG: living vehicle remove");
                         le.removePotionEffect(effect.getType());
                     }
                 }
             }
+            // Notify player of the level drop
             player.sendMessage((Lang.triangleDroppingToLevel.replace("[team]", toTriangles.getFirst().getOwner().getDisplayName())).replace("[level]",String.valueOf(toTriangles.size())));
         }
 
-        // Apply triangle effects
+        // Apply the appropriate effects for the new field(s)
         applyEffects(player, toTriangles, team);
         return false;
     }
 
     /**
-     * Applies triangle effects to a player
-     * @param player
-     * @param to
-     * @param team
+     * Applies the actual potion effects to a player based on triangle field ownership.
+     * <p>
+     * This method determines what effects to apply based on:
+     * <ul>
+     *   <li>Number of overlapping triangle fields (more fields = stronger effects)</li>
+     *   <li>Team ownership (enemy vs friendly)</li>
+     *   <li>Configured effect settings from Settings class</li>
+     * </ul>
+     * <p>
+     * Effects are also applied to the player's vehicle if they are mounted.
+     * The effects collection is stored in triangleEffects map for later removal.
+     *
+     * @param player the player to apply effects to
+     * @param to list of triangle fields the player is now in
+     * @param team the player's team (used to determine friendly vs enemy)
      */
     private void applyEffects(final Player player, final List<TriangleField> to, final Team team) {
-        //getLogger().info("DEBUG: applying effects");
+        // Remove all effects if no valid field or team data
         if (to == null || to.isEmpty() || team == null) {
             if (triangleEffects.containsKey(player.getUniqueId())) {
                 for (PotionEffect effect : triangleEffects.get(player.getUniqueId())) {
                     player.removePotionEffect(effect.getType());                   
-                    // Check vehicle
+                    // Also remove from player's vehicle if mounted
                     if (player.isInsideVehicle() && player.getVehicle() instanceof LivingEntity le) {
-                        //getLogger().info("DEBUG: living vehicle remove");
                         le.removePotionEffect(effect.getType());
                     }
                 }
@@ -396,50 +502,70 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
             triangleEffects.remove(player.getUniqueId());
             return;
         }
-        // Update the active effects on the player
-        // Add bad stuff
-        // Enemy team
+
+        // Determine the team that owns this triangle field
         Team triangleOwner = to.getFirst().getOwner();
         Collection<PotionEffect> effects = new ArrayList<>();
+
+        // Apply debuffs if this is an enemy field
         if (triangleOwner != null && !triangleOwner.equals(team)) {
+            // Accumulate effects based on field overlap count
+            // More overlapping fields = more/stronger effects
             for (int i = 0; i <= to.size(); i++) {
                 if (Settings.enemyFieldEffects.containsKey(i)) {
                     effects.addAll(Settings.enemyFieldEffects.get(i));
                 }
             }
+            // Apply all accumulated effects to the player
             player.addPotionEffects(effects);
-            // Check vehicle
+
+            // Also apply to player's vehicle if they're riding one
             if (player.isInsideVehicle() && player.getVehicle() instanceof LivingEntity le) {
-                //getLogger().info("DEBUG: living vehicle");
                 le.addPotionEffects(effects);
             }
         }
-        // Friendly triangle
+
+        // Apply buffs if this is a friendly field
         if (triangleOwner != null && triangleOwner.equals(team)) {
+            // Accumulate effects based on field overlap count
+            // More overlapping fields = more/stronger buffs
             for (int i = 0; i <= to.size(); i++) {
                 if (Settings.friendlyFieldEffects.containsKey(i)) {
                     effects.addAll(Settings.friendlyFieldEffects.get(i));
                 }
             }
+            // Apply all accumulated effects to the player
             player.addPotionEffects(effects);
-            // Check vehicle
+
+            // Also apply to player's vehicle if they're riding one
             if (player.isInsideVehicle() && player.getVehicle() instanceof LivingEntity le) {
-                //getLogger().info("DEBUG: living vehicle");
                 le.addPotionEffects(effects);
             }
         }
+
+        // Store the applied effects for later removal when player leaves the field
         triangleEffects.put(player.getUniqueId(), effects);
     }
 
     /**
-     * @return the triangleEffects or an empty list if there is none
+     * Gets the active triangle field effects for a specific player.
+     * <p>
+     * Used primarily by the vehicle movement handler to apply slowness effects
+     * to non-living vehicles (boats, minecarts).
+     *
+     * @param playerUUID the UUID of the player
+     * @return the collection of active potion effects, or an empty list if none
      */
     public Collection<PotionEffect> getTriangleEffects(UUID playerUUID) {
         return triangleEffects.getOrDefault(playerUUID, Collections.emptyList());
     }
 
     /**
-     * @return the triangleEffects
+     * Gets the complete map of all players' active triangle field effects.
+     * <p>
+     * This is mainly used for testing and debugging purposes.
+     *
+     * @return the map of player UUIDs to their active potion effects
      */
     public HashMap<UUID, Collection<PotionEffect>> getTriangleEffects() {
         return triangleEffects;

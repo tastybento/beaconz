@@ -110,7 +110,6 @@ public class Scorecard extends BeaconzPluginDependent{
         starttimemilis = game.getStartTime();
         countdownTimer = game.getCountdownTimer();
         timertype = countdownTimer == 0 ? "openended" : "countdown";
-        //getLogger().info("DEBUG: countdownTimer = " + countdownTimer + " timertype = " + timertype);
         // Define the scoreboard
         try {
             scoreboard.clearSlot(DisplaySlot.SIDEBAR);
@@ -125,9 +124,7 @@ public class Scorecard extends BeaconzPluginDependent{
         sidebarline = 15;
 
         // Set up the scoreboard with the goal
-        //getLogger().info("GameMode: " + game.getGamemode());
         scoreobjective.setDisplayName(ChatColor.GREEN + Lang.titleBeaconz + " " + game.getGamemode() + "! 00d 00:00:00");
-        //scoreobjective.setDisplayName(ChatColor.GREEN + Lang.titleBeaconz + " " + game.getGamemode() + "!");
 
         goalstr = "";
         if (game.getGamegoalvalue() == 0) {
