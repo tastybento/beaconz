@@ -92,6 +92,7 @@ class GameMgrTest {
 
         // Setup Settings with default values
         setupSettings();
+        
     }
 
     /**

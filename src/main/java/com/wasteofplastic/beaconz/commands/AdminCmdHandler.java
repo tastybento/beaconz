@@ -416,6 +416,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                             sender.sendMessage(Component.text(Lang.errorRequestCanceled).color(NamedTextColor.RED));
                         }
                     }, 200); // 10 seconds
+                    sender.sendMessage(Component.text(Lang.adminDeleteGameConfirm.replace("[name]", game.getName())).color(NamedTextColor.LIGHT_PURPLE));
                     return false;
                 }
                 this.deleteConfirm.remove(uuid);

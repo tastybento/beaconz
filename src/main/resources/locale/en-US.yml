@@ -12,7 +12,8 @@ actions:
   youAreInTeam: "You are in [team]!"
 admin: 
   DeletedGame: "Deleted [name]."
-  DeletingGame: "Deleting game [name]... (This may take some time)"
+  DeletingGame: "Deleting game [name]..."
+  DeleteGameConfirm: "Enter again to confirm within 10s."
   ForceEnd: "Game [name] has ended."
   GamesDefined: "The following games/regions are defined:"
   GamesNoOthers: "...and no others."

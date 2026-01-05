@@ -677,7 +677,6 @@ public class Register extends BeaconzPluginDependent {
      * @return BeaconObj or null if none
      */
     public BeaconObj getBeacon(Block block) {
-        getLogger().info("DEBUG: material = " + block.getType());
         // Quick check
         if (!block.getType().equals(Material.BEACON) && !block.getType().equals(Material.DIAMOND_BLOCK)
                 && !block.getType().equals(Material.OBSIDIAN) &&  !block.getType().name().endsWith("STAINED_GLASS")

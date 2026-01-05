@@ -176,12 +176,6 @@ public class Settings {
      * List of levels required to attack at each level around a beacon
      */
     public static List<Integer> attackLevels;
-
-    /**
-     * Coordinates of the chunk we're regenerating via the "reset" command
-     */
-    public static final Set<Pair> populate = new HashSet<>();
-    
     
     /**
      * Number of seconds to wait until teleporting player

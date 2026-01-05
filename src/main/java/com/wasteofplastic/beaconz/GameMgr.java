@@ -40,6 +40,9 @@ import org.bukkit.scoreboard.Team;
 
 import com.wasteofplastic.beaconz.generator.BeaconzChunkGen;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+
 /**
  * Manages the lifecycle and spatial organization of Beaconz games and regions.
  *
@@ -1023,8 +1026,8 @@ public class GameMgr extends BeaconzPluginDependent {
         games.remove(game.getName());
         // Clear beacon ownership tracking for this region
         getRegister().clear(game.getRegion());
-        // Unload the region's chunks to free memory
-        game.getRegion().unloadRegionChunks();
+        // Deletes the region from disk
+        game.getRegion().delete(sender);
         // Remove the region from spatial tracking
         regions.remove(game.getRegion().corners());
     }

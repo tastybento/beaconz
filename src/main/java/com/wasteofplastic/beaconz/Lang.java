@@ -206,6 +206,7 @@ public class Lang extends BeaconzPluginDependent {
     public static String triangleTeamLostATriangle;
     public static String errorNoLobbyYet;
     public static String errorRequestCanceled;
+    public static String adminDeleteGameConfirm;
     
    
     public void loadLocale(String localeName) {
@@ -248,7 +249,8 @@ public class Lang extends BeaconzPluginDependent {
         actionsSwitchedToTeam = ChatColor.translateAlternateColorCodes('&', locale.getString("actions.SwitchedToTeam", "Switched to [team]!"));
         actionsYouAreInTeam = ChatColor.translateAlternateColorCodes('&', locale.getString("actions.youAreInTeam", "You are in [team]!" ));
         adminDeletedGame = ChatColor.translateAlternateColorCodes('&', locale.getString("admin.DeletedGame", "Deleted [name]."));
-        adminDeletingGame = ChatColor.translateAlternateColorCodes('&', locale.getString("admin.DeletingGame", "Deleting game [name]... (This may take some time)"));
+        adminDeletingGame = ChatColor.translateAlternateColorCodes('&', locale.getString("admin.DeletingGame", "Deleting game [name]..."));
+        adminDeleteGameConfirm = ChatColor.translateAlternateColorCodes('&', locale.getString("admin.DeleteGameConfirm", "Enter again to confirm within 10s."));
         adminForceEnd = ChatColor.translateAlternateColorCodes('&', locale.getString("admin.ForceEnd", "Game [name] has ended."));
         adminForceRestart = ChatColor.translateAlternateColorCodes('&', locale.getString("admin.ForceRestart", "To restart the game, use " +  "/[label] restart <gamename>"));
         adminGamesDefined = ChatColor.translateAlternateColorCodes('&', locale.getString("admin.GamesDefined", "The following games/regions are defined:"));

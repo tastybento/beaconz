@@ -17,6 +17,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.UUID;
 
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -218,6 +219,7 @@ class AdminCmdHandlerTest {
         Lang.adminKickPlayer = "Kicked [player] from [name]";
         Lang.adminDeletingGame = "Deleting game [name]...";
         Lang.adminDeletedGame = "Game [name] deleted";
+        Lang.adminDeleteGameConfirm = "Enter again to confirm within 10s.";
         Lang.adminForceEnd = "Game [name] force ended";
         Lang.adminListBeaconsInGame = "Beacons in [name]:";
         Lang.adminNewGameBuilding = "Building new game...";

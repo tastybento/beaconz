@@ -90,109 +90,240 @@ public class Region extends BeaconzPluginDependent {
     }
 
     /**
-     * Regenerates the region by regenerating its chunks
-     * Cleans up the game area so it can be played again
-     * Remember that regions are created so their limits match full chunks
-     * Since the BeaconPopulator is registered with the World, it is used automatically when regenerating the chunks
-     * @param sender
-     * @param delete - true if this is a deletion only.
+     * Deletes the region by removing all region files from disk.
+     * <p>
+     * This method completely removes a game region including:
+     * <ul>
+     *   <li>All terrain data (.mca files)</li>
+     *   <li>All entity data (.mcc files)</li>
+     *   <li>All POI (Point of Interest) data</li>
+     *   <li>The 512-block safety border around the region</li>
+     * </ul>
+     * <p>
+     * Process:
+     * <ol>
+     *   <li>Evacuate all players to lobby (with inventory save)</li>
+     *   <li>Clear beacon register for this region</li>
+     *   <li>Unload all chunks in the region + 512-block border</li>
+     *   <li>Unload the world to flush all region file caches</li>
+     *   <li>Delete all region files (.mca, .mcc, POI)</li>
+     *   <li>Delete structure/village data files</li>
+     *   <li>Reload the world</li>
+     *   <li>Optionally recreate corner beacons (if not deletion)</li>
+     * </ol>
+     * <p>
+     * <b>Region File Structure:</b><br>
+     * Minecraft stores chunks in region files. Each region file contains 32x32 chunks (512x512 blocks).
+     * Region file coordinates are calculated as: regionX = floor(chunkX / 32), regionZ = floor(chunkZ / 32).
+     * <p>
+     * <b>Safety Border:</b><br>
+     * Each game region has a 512-block (1 region file) border around it for safety. This border is
+     * also deleted to ensure clean regeneration.
+     *
+     * @param sender the command sender requesting the deletion (receives progress messages)
      */
-    public void regenerate(final CommandSender sender, final String delete) {
-        if (this != getGameMgr().getLobby()) {
-            // Check if there are any players in the region and move them to the lobby
-            this.sendAllPlayersToLobby(false);
-
-            getLogger().info("Regenerating region at Ctr:Rad [" + this.getCenter().getX() + ", " + this.getCenter().getY() + "] : " + this.getRadius() + " ==> xMin: " + corners[0].getX() + " zMin: " +  corners[1].getX() + " xMax: " + corners[0].getY() + " zMax: " + corners[1].getY());
-
-            // First clear the current register for the region
-            getRegister().clear(this);
-
-            final int xMin = (int) corners[0].getX() -16;
-            final int xMax = (int) corners[1].getX() +16;
-            final int zMin = (int) corners[0].getY() -16;
-            final int zMax = (int) corners[1].getY() +16;
-
-            //private BukkitTask task = null;
-            int totalregen = 0;
-            //private int loopcount;
-            int chX = xMin;
-            int chZ = zMin;
-            Settings.populate.clear();
-
-            Set<Pair> delReg = new HashSet<>();
-            while (chX <= xMax) {
-                while (chZ <= zMax) {
-                    int regionX = (int)Math.floor(chX / 16.0 / 32.0);
-                    int regionZ = (int)Math.floor(chZ / 16.0 / 32.0);
-                    //getBeaconzWorld().unloadChunk(chX/16, chZ/16);
-                    delReg.add(new Pair(regionX,regionZ));
-                    totalregen++;
-                    chZ = chZ + 16;
-                }
-                chZ = zMin;
-                chX = chX + 16;
-            }
-            // Unload the world
-            getServer().unloadWorld(getBeaconzWorld(), true);
-            if (chX > xMax) {
-                //RegionFileCache.a();
-                //getLogger().info("DEBUG: " + getServer().getWorldContainer().getAbsolutePath());
-                for (Pair pair : delReg) {                   
-                    //getLogger().info("DEBUG: " + getServer().getWorldContainer().getAbsolutePath() + "beaconz_world/region/r." + pair.getLeft() + "." + pair.getRight() + ".mca");
-                    File df = new File(getServer().getWorldContainer().getAbsolutePath(), getBeaconzWorld().getName() + File.separator +"region" + File.separator + "r." + pair.left() + "." + pair.right() + ".mca");
-                    //File dfback = new File(getServer().getWorldContainer().getAbsolutePath(), "beaconz_world/region/r." + pair.getLeft() + "." + pair.getRight() + ".bak");
-                    if (df.exists()) {
-                        //FileDeleteStrategy.FORCE.deleteQuietly(df);
-                        df.delete();
-                        //getLogger().info("DEBUG: exists");
-                        //getLogger().info("DEBUG: delete = " + FileDeleteStrategy.FORCE.deleteQuietly(df));
-                    }
-                }
-                // Delete the .dat files so that Villages are remade
-                File dataFolder = new File(getServer().getWorldContainer().getAbsolutePath() + File.separator + getBeaconzWorld().getName() + File.separator + "data");                
-                getLogger().info("DEBUG: checking " + dataFolder.getAbsolutePath());
-                for (File file: dataFolder.listFiles()) {
-                    getLogger().info("DEBUG: found " + file.getName());
-                    if (!file.isDirectory() && file.getName().endsWith(".dat") && !file.getName().startsWith("level")) { 
-                        getLogger().info("DEBUG: deleting " + file.getName());
-                        file.delete();
-                    }
-                }
-                finishRegenerating(sender, delete);
-            }
+    public void delete(final CommandSender sender) {
+        // Don't allow lobby deletion
+        if (getGameMgr() != null && this == getGameMgr().getLobby()) {
+            sender.sendMessage(Component.text("Cannot delete the lobby region!").color(NamedTextColor.RED));
+            return;
         }
+
+        // Step 1: Evacuate all players to lobby with inventory save
+        getLogger().info("Evacuating players from region at [" + getCenter().getX() + ", " + getCenter().getY() + "]");
+        this.sendAllPlayersToLobby(true);
+
+        // Step 2: Clear beacon register for this region
+        getRegister().clear(this);
+
+        // Step 3: Calculate region bounds excluding 512-block safety border
+        final int xMin = (int) corners[0].getX();
+        final int xMax = (int) corners[1].getX();
+        final int zMin = (int) corners[0].getY();
+        final int zMax = (int) corners[1].getY();
+
+        getLogger().info("Deleting region files for area: X[" + xMin + " to " + xMax + "] Z[" + zMin + " to " + zMax + "]");
+
+        // Step 4: Unload all chunks in the region + border
+        unloadRegionChunksWithBorder(xMin, xMax, zMin, zMax);
+
+        // Step 5: Collect all region file coordinates to delete
+        Set<Pair> regionFilesToDelete = collectRegionFiles(xMin, xMax, zMin, zMax);
+
+        getLogger().info("Found " + regionFilesToDelete.size() + " region file(s) to delete");
+
+        // Step 6: Save the world to flush region file cache
+        getBeaconzWorld().save(true);
+
+        // Step 7: Delete all region files (terrain, entities, POI)
+        int filesDeleted = deleteRegionFiles(regionFilesToDelete);
+        getLogger().info("Deleted " + filesDeleted + " region-related file(s)");
+
+        // Step 8: Delete structure and village data files
+        deleteStructureData();
+        
+        sender.sendMessage(Component.text("Success"));
     }
 
-    private void finishRegenerating(CommandSender sender, String delete) {
-        // Wrap things up
-        //getLogger().info("100% complete");
-        getBeaconzPlugin().reloadBeaconzWorld();
-        if (delete.isEmpty()) {
-            createCorners();
-            sender.sendMessage(Component.text(Lang.adminRegenComplete).color(NamedTextColor.GREEN));
-        } else {
-            sender.sendMessage(Component.text(Lang.adminDeletedGame.replace("[name]", delete)).color(NamedTextColor.GREEN));
+    /**
+     * Unloads all chunks in the specified area.
+     * <p>
+     * Chunks are unloaded in 16-block increments to cover the entire region plus border.
+     *
+     * @param xMin minimum X coordinate in blocks
+     * @param xMax maximum X coordinate in blocks
+     * @param zMin minimum Z coordinate in blocks
+     * @param zMax maximum Z coordinate in blocks
+     */
+    private void unloadRegionChunksWithBorder(int xMin, int xMax, int zMin, int zMax) {
+        int chunksUnloaded = 0;
+        for (int blockX = xMin; blockX <= xMax; blockX += 16) {
+            for (int blockZ = zMin; blockZ <= zMax; blockZ += 16) {
+                int chunkX = blockX >> 4;  // Divide by 16 using bit shift
+                int chunkZ = blockZ >> 4;
+                if (getBeaconzWorld().isChunkLoaded(chunkX, chunkZ)) {
+                    getBeaconzWorld().unloadChunk(chunkX, chunkZ);
+                    chunksUnloaded++;
+                }
+            }
         }
-    } 
+        getLogger().info("Unloaded " + chunksUnloaded + " chunk(s)");
+    }
 
     /**
-     * Unloads all of the region's chunks
+     * Collects all region file coordinates that need to be deleted.
+     * <p>
+     * Region files in Minecraft are 32x32 chunks (512x512 blocks).
+     * Region coordinates are calculated as: floor(chunkX / 32), floor(chunkZ / 32).
+     * <p>
+     * This method iterates through all chunks in the area and identifies unique
+     * region files that contain those chunks.
+     *
+     * @param xMin minimum X coordinate in blocks
+     * @param xMax maximum X coordinate in blocks
+     * @param zMin minimum Z coordinate in blocks
+     * @param zMax maximum Z coordinate in blocks
+     * @return set of Pair objects representing region file coordinates (regionX, regionZ)
      */
-    public void unloadRegionChunks() {
-        final int xMin = (int) corners[0].getX() -16;
-        final int xMax = (int) corners[1].getX() +16;
-        final int zMin = (int) corners[0].getY() -16;
-        final int zMax = (int) corners[1].getY() +16;
-        int chX = xMin;
-        int chZ = zMin;
-        while (chX <= xMax) {
-            while (chZ <= zMax) {
-                getBeaconzWorld().unloadChunk(chX/16, chZ/16);
-                chZ = chZ + 16;
+    private Set<Pair> collectRegionFiles(int xMin, int xMax, int zMin, int zMax) {
+        Set<Pair> regionFiles = new HashSet<>();
+
+        // Iterate through area in 16-block (chunk) increments
+        for (int blockX = xMin; blockX <= xMax; blockX += 16) {
+            for (int blockZ = zMin; blockZ <= zMax; blockZ += 16) {
+                // Convert block coordinates to chunk coordinates
+                int chunkX = blockX >> 4;  // Divide by 16
+                int chunkZ = blockZ >> 4;
+
+                // Convert chunk coordinates to region file coordinates
+                // Each region file contains 32x32 chunks
+                int regionX = Math.floorDiv(chunkX, 32);
+                int regionZ = Math.floorDiv(chunkZ, 32);
+
+                regionFiles.add(new Pair(regionX, regionZ));
             }
-            chZ = zMin;
-            chX = chX + 16;
-        }        
+        }
+
+        return regionFiles;
+    }
+
+    /**
+     * Deletes all region-related files for the given region coordinates.
+     * <p>
+     * Minecraft stores world data in multiple file types:
+     * <ul>
+     *   <li><b>.mca files</b> - Terrain and block data (in /region folder)</li>
+     *   <li><b>.mcc files</b> - Entity data (in /entities folder, since 1.17)</li>
+     *   <li><b>POI files</b> - Point of Interest data like villages, beds (in /poi folder)</li>
+     * </ul>
+     * <p>
+     * All three types use the same naming convention: r.{regionX}.{regionZ}.{ext}
+     *
+     * @param regionFiles set of region file coordinates to delete
+     * @return number of files successfully deleted
+     */
+    private int deleteRegionFiles(Set<Pair> regionFiles) {
+        int filesDeleted = 0;
+        File worldContainer = getServer().getWorldContainer();
+        String worldName = getBeaconzWorld().getName();
+
+        for (Pair coords : regionFiles) {
+            int regionX = coords.left();
+            int regionZ = coords.right();
+
+            // Delete terrain file (.mca)
+            File terrainFile = new File(worldContainer,
+                worldName + File.separator + "region" + File.separator +
+                "r." + regionX + "." + regionZ + ".mca");
+            if (terrainFile.exists() && terrainFile.delete()) {
+                filesDeleted++;
+                getLogger().fine("Deleted terrain file: r." + regionX + "." + regionZ + ".mca");
+            }
+
+            // Delete entity file (.mcc) - introduced in Minecraft 1.17
+            File entityFile = new File(worldContainer,
+                worldName + File.separator + "entities" + File.separator +
+                "r." + regionX + "." + regionZ + ".mcc");
+            if (entityFile.exists() && entityFile.delete()) {
+                filesDeleted++;
+                getLogger().fine("Deleted entity file: r." + regionX + "." + regionZ + ".mcc");
+            }
+
+            // Delete POI (Point of Interest) file
+            File poiFile = new File(worldContainer,
+                worldName + File.separator + "poi" + File.separator +
+                "r." + regionX + "." + regionZ + ".mca");
+            if (poiFile.exists() && poiFile.delete()) {
+                filesDeleted++;
+                getLogger().fine("Deleted POI file: r." + regionX + "." + regionZ + ".mca");
+            }
+        }
+
+        return filesDeleted;
+    }
+
+    /**
+     * Deletes structure and village data files.
+     * <p>
+     * These .dat files in the /data folder contain information about generated structures
+     * like villages, temples, strongholds, etc. Deleting them forces Minecraft to regenerate
+     * these structures when the chunks are reloaded.
+     * <p>
+     * Files preserved:
+     * <ul>
+     *   <li>level.dat - World configuration (DO NOT DELETE)</li>
+     *   <li>level.dat_old - Backup of world config (DO NOT DELETE)</li>
+     * </ul>
+     */
+    private void deleteStructureData() {
+        File dataFolder = new File(getServer().getWorldContainer().getAbsolutePath() +
+            File.separator + getBeaconzWorld().getName() + File.separator + "data");
+
+        if (!dataFolder.exists() || !dataFolder.isDirectory()) {
+            getLogger().warning("Data folder not found: " + dataFolder.getAbsolutePath());
+            return;
+        }
+
+        int datFilesDeleted = 0;
+        File[] files = dataFolder.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                // Delete .dat files but preserve level.dat and level.dat_old
+                if (!file.isDirectory() &&
+                    file.getName().endsWith(".dat") &&
+                    !file.getName().startsWith("level")) {
+
+                    if (file.delete()) {
+                        datFilesDeleted++;
+                        getLogger().fine("Deleted structure data: " + file.getName());
+                    }
+                }
+            }
+        }
+
+        if (datFilesDeleted > 0) {
+            getLogger().info("Deleted " + datFilesDeleted + " structure data file(s)");
+        }
     }
 
     /**
@@ -511,7 +642,6 @@ public class Region extends BeaconzPluginDependent {
             Location checkloc = null;
             outerloop:
                 for (int rad = 0; rad < radius; rad++) {
-                    //for (int y = -rad; y <= rad; y++) {
                     for (int z = -rad; z <= rad; z++) {
                         for (int x = -rad; x <= rad; x++) {
                             String coords = "#" + x + " "+ z + "#";
@@ -525,7 +655,6 @@ public class Region extends BeaconzPluginDependent {
                             }
                         }
                     }
-                    //}
                 }
         }
         if (safeloc == null && location != null) {
@@ -534,10 +663,6 @@ public class Region extends BeaconzPluginDependent {
             safeloc = safeloc.add(0.5, 0.0, 0.5);
             safeloc.getBlock().getRelative(BlockFace.DOWN).setType(Material.BEDROCK);
         }
-
-        // WorldListener can process chunk loads again
-        this.unloadRegionChunks();
-        getBeaconzPlugin().ignoreChunkLoad = false;        
 
         // Return the safe location
         return safeloc;
@@ -685,8 +810,8 @@ public class Region extends BeaconzPluginDependent {
     }
 
     /**
-     * Sends all players in this region to the lobby, optionally clears inventory
-     * @param clearInv
+     * Sends all players in this region to the lobby, optionally saving inventory.
+     * @param saveInv true to save player inventory before teleporting
      */
     public void sendAllPlayersToLobby(Boolean saveInv) {
         for (Player player : getServer().getOnlinePlayers()) {
