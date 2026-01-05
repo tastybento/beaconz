@@ -921,29 +921,34 @@ public class GameMgr extends BeaconzPluginDependent {
      * Rounds a coordinate to the nearest chunk boundary (multiple of 16).
      *
      * <p>Regions must align to chunk boundaries for proper regeneration. This method
-     * ensures coordinates snap to chunk boundaries. Positive numbers round up,
-     * negative numbers round down (toward more negative).</p>
+     * ensures coordinates snap to chunk boundaries with the following behavior:
+     * <ul>
+     *   <li>Positive numbers: add 8, then floor-divide by 16 (rounds to nearest, favoring lower boundary)</li>
+     *   <li>Negative numbers: floor-divide by 16 directly (rounds down toward negative infinity)</li>
+     *   <li>Zero: stays at zero</li>
+     * </ul>
      *
      * <p>Examples:</p>
      * <ul>
-     *   <li>rup16(10) = 16.0</li>
-     *   <li>rup16(20) = 32.0</li>
-     *   <li>rup16(-10) = -16.0</li>
+     *   <li>rup16(10) = 16.0 → floor((10+8)/16) = floor(1.125) = 1 → 16</li>
+     *   <li>rup16(20) = 16.0 → floor((20+8)/16) = floor(1.75) = 1 → 16</li>
+     *   <li>rup16(-10) = -16.0 → floor(-10/16) = floor(-0.625) = -1 → -16</li>
+     *   <li>rup16(-20) = -32.0 → floor(-20/16) = floor(-1.25) = -2 → -32</li>
      * </ul>
      *
      * @param x the coordinate to round
      * @return the coordinate rounded to the nearest chunk boundary
      */
-    public Double rup16 (double x) {
-        double rnd;
+    public double rup16 (double x) {
         if (x < 0) {
-            // Round down (more negative) for negative numbers
-            rnd = (((int) x - 8) / 16) * 16.0;
+            // For negative: floor-divide directly (no offset)
+            // This rounds down toward more negative values
+            return Math.floor(x / 16.0) * 16.0;
         } else {
-            // Round up for positive numbers
-            rnd = (((int) x + 8) / 16) * 16.0;
+            // For positive: add 8 then floor-divide
+            // This rounds to nearest chunk boundary
+            return Math.floor((x + 8) / 16.0) * 16.0;
         }
-        return rnd;
     }
 
     /**
