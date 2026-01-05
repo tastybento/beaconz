@@ -23,6 +23,8 @@
 package com.wasteofplastic.beaconz;
 
 import java.util.Random;
+import java.util.random.RandomGenerator;
+import java.util.random.RandomGeneratorFactory;
 
 import org.bukkit.Chunk;
 import org.bukkit.Material;
@@ -33,14 +35,12 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.generator.BlockPopulator;
 
-import com.wasteofplastic.include.it.unimi.dsi.util.XorShift;
-
 
 /**
  * BeaconPopulator class
  * @author TastyBento
  * <p>
- * This is called every time a chunk is (re)generated in the world
+ * This is called every time a chunk is generated in the world
  * The idea is to place a single beacon on a chunk if a XorShift
  * generates a random number below the Settings.distribution threshold
  * If Settings.distribution were 1, every chunk would get a single beacon;
@@ -65,7 +65,7 @@ public class BeaconPopulator extends BlockPopulator {
         boolean cornerBeacon = false;
         Integer cornerX = null;
         Integer cornerZ = null;
-        
+
         if (plugin.getRegister() == null) {
             // Not ready!
             return;
@@ -75,7 +75,7 @@ public class BeaconPopulator extends BlockPopulator {
         if (plugin.getGameMgr() != null) {
             int X = source.getX();
             int Z = source.getZ();
-            
+
             if (plugin.getGameMgr().getLobby() == null) {
                 // No lobby yet
                 if (DEBUG)
@@ -93,7 +93,7 @@ public class BeaconPopulator extends BlockPopulator {
                     plugin.getLogger().info("DEBUG: no beaconz in lobby");
                 return;
             }            
-            
+
             // Don't do anything unless inside a region
             // Check min coords
             Region region1 = plugin.getGameMgr().getRegion(X * 16, Z * 16);
@@ -131,18 +131,22 @@ public class BeaconPopulator extends BlockPopulator {
             plugin.getLogger().info("DEBUG: Populating chunk: " + source.getX() + ":" + source.getZ());
 
         // pseudo-randomly place a beacon
-        XorShift gen=new XorShift(new long[] {
-                source.getX(),
-                source.getZ(),
-                //world.getSeed(), world seed is always the same, was causing beacons to be placed always on the same spot - using currentTimeMillis instead...
-                System.currentTimeMillis(),
-                Settings.seedAdjustment
-        });                
+        // Mix all seed components using XOR and bit rotation
+        long seed1 = source.getX();
+        long seed2 = source.getZ();
+        long seed3 = System.currentTimeMillis();
+        long seed4 = Settings.seedAdjustment;
+
+        long combinedSeed = seed1 ^ 
+                Long.rotateLeft(seed2, 17) ^ 
+                Long.rotateLeft(seed3, 31) ^ 
+                Long.rotateLeft(seed4, 42);
+
+        RandomGenerator gen = RandomGeneratorFactory.of("Xoshiro256PlusPlus").create(combinedSeed);
         double nd = gen.nextDouble();
-        
+
         // Compare the pseudo-random double generated with the game's beacon distribution threshold        
         Double distribution = plugin.getGameMgr().getRegion(source.getX() << 4, source.getZ() << 4).getGame().getGamedistribution();
-        if (distribution == null) distribution = Settings.distribution;
         if (nd < distribution || cornerBeacon) {
             int x;
             int z;
@@ -155,7 +159,7 @@ public class BeaconPopulator extends BlockPopulator {
                 x = gen.nextInt(15);
                 z = gen.nextInt(15);
             }
-            
+
             // Check if there is already a beacon here, if so, don't make it again
             // This should never happen...
             if (plugin.getRegister() != null) {
@@ -202,7 +206,7 @@ public class BeaconPopulator extends BlockPopulator {
                 }
                 b = source.getBlock(x, y, z);
             }
-                        
+
             // Else make it into a beacon
             //beacons.add(new Vector(x,y,z));
             //Bukkit.getLogger().info("DEBUG: made beacon at " + (source.getX() * 16 + x) + " " + y + " " + (source.getZ()*16 + z) );
