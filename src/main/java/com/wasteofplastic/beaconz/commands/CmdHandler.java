@@ -116,32 +116,13 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
                 break;
             }
             break;
-        case 2:
-            Game game;            
+        case 2:           
             switch (args[0].toLowerCase()) {
             case "join":
-                // beaconz join command (undocumented) so admins can make players join any game
-                if (player.isOp()) {
-                    String gamename = args[1];
-                    game = getGameMgr().getGame(gamename);
-                    if (game == null) {
-                        sender.sendMessage(Component.text(Lang.errorNoSuchGame + " '" + gamename + "'").color(NamedTextColor.AQUA));
-                    } else {
-                        game.join(player);
-                    }                   
-                }    
+                onJoin(sender, player, args);
                 break;
             case "leave":
-                if (player.hasPermission("beaconz.player.leave")) {
-                    game = getGameMgr().getGame(args[1]);
-                    if (game == null) {
-                        sender.sendMessage(Component.text(Lang.errorNoSuchGame + " '" + args[1] + "'").color(NamedTextColor.AQUA));
-                    } else {
-                        game.leave(player);
-                    }
-                } else {
-                    player.sendMessage(Component.text(Lang.errorYouDoNotHavePermission).color(NamedTextColor.RED));
-                }
+                onLeave(sender, player, args);
                 break;
             default:
                 break;
@@ -152,6 +133,38 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
             return false;
         }
         return true;
+    }
+
+    private boolean onJoin(CommandSender sender, Player player, String[] args) {
+     // beaconz join command (undocumented) so admins can make players join any game
+        if (player.isOp()) {
+            String gamename = args[1];
+            Game game = getGameMgr().getGame(gamename);
+            if (game == null) {
+                sender.sendMessage(Component.text(Lang.errorNoSuchGame + " '" + gamename + "'").color(NamedTextColor.RED));
+                return false;
+            } else {
+                game.join(player);
+                return true;
+            }                   
+        }    
+        return false;
+    }
+
+    private boolean onLeave(CommandSender sender, Player player, String[] args) {
+        if (player.hasPermission("beaconz.player.leave")) {
+            Game game = getGameMgr().getGame(args[1]);
+            if (game == null) {
+                sender.sendMessage(Component.text(Lang.errorNoSuchGame + " '" + args[1] + "'").color(NamedTextColor.RED));
+                return false;
+            } else {
+                game.leave(player);
+                return true;
+            }
+        } else {
+            player.sendMessage(Component.text(Lang.errorYouDoNotHavePermission).color(NamedTextColor.RED));
+        }
+        return false;
     }
 
     /**

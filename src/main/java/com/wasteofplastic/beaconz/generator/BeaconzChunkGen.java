@@ -17,7 +17,7 @@ import com.wasteofplastic.beaconz.Beaconz;
  */
 public class BeaconzChunkGen extends ChunkGenerator {
     
-    private static final Set<Biome> OCEANS = Set.of(Biome.OCEAN, Biome.COLD_OCEAN, Biome.DEEP_COLD_OCEAN, Biome.DEEP_FROZEN_OCEAN,
+    public static final Set<Biome> OCEANS = Set.of(Biome.OCEAN, Biome.COLD_OCEAN, Biome.DEEP_COLD_OCEAN, Biome.DEEP_FROZEN_OCEAN,
             Biome.DEEP_LUKEWARM_OCEAN, Biome.DEEP_OCEAN, Biome.FROZEN_OCEAN, Biome.LUKEWARM_OCEAN, Biome.WARM_OCEAN);
     private static final int X = 7; // Center of chunk
     private static final int Z = 7;
