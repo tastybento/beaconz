@@ -211,12 +211,42 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
         }
     }
 
+    /**
+     * Handles all teleportation events within the Beaconz world.
+     * <p>
+     * This is the main teleportation handler that orchestrates complex multi-stage transitions:
+     * <ul>
+     *   <li>Game-to-game teleportation with inventory swapping</li>
+     *   <li>Game-to-lobby transitions with teleport delays (combat logging prevention)</li>
+     *   <li>Lobby-to-game teleportation with permission checks</li>
+     *   <li>Intra-region teleports (no special handling needed)</li>
+     * </ul>
+     * <p>
+     * The method handles several special cases:
+     * <ul>
+     *   <li>Barrier pushback teleports - Players hitting region boundaries (no-op)</li>
+     *   <li>Delayed teleports - Two-stage teleport with movement detection</li>
+     *   <li>Direct teleports - Admin/op instant teleportation</li>
+     *   <li>Permission denied - Redirects to lobby if player can't access destination</li>
+     * </ul>
+     * <p>
+     * Flow for game exit with delay:
+     * <ol>
+     *   <li>Detect non-admin player leaving active game</li>
+     *   <li>Cancel event and start delay timer</li>
+     *   <li>After delay, trigger new teleport event (teleporting flag set)</li>
+     *   <li>Process inventory save and region exit</li>
+     *   <li>Allow teleport to complete</li>
+     * </ol>
+     *
+     * @param event the player teleport event
+     */
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onTeleport(final PlayerTeleportEvent event) {
 
-        // We only handle teleports originating in the BeaconzWorld
+        // Only handle teleports originating in the Beaconz world
         if (event.getFrom().getWorld().equals(getBeaconzWorld())) {
-            // Let's start by getting some bearings
+            // Gather context information about this teleport
             final Player player  = event.getPlayer();
             final boolean teleporting = teleportingPlayers.containsKey(player.getUniqueId());
             final Game fromGame = getGameMgr().getGame(event.getFrom());
@@ -224,85 +254,96 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
             final boolean fromLobby = getGameMgr().isLocationInLobby(event.getFrom());
             final boolean toLobby = getGameMgr().isLocationInLobby(event.getTo());
 
-            // Remove from standing - any teleport 
-            BeaconProtectionListener.getStandingOn().remove(player.getUniqueId());                
+            // Clear beacon tracking - any teleport removes player from beacon
+            BeaconProtectionListener.getStandingOn().remove(player.getUniqueId());
 
-            // If player is pushed back because of the barrier, just return
+            // Handle barrier pushback teleports (player hitting invisible wall)
+            // These should be processed without any inventory/region logic
             if (barrierPlayers.contains(player.getUniqueId())) {
                 barrierPlayers.remove(player.getUniqueId());
+                return; // Skip all other processing
 
             } else {
-                // Teleporting out of a game
+                // ===== TELEPORTING OUT OF A GAME =====
                 if (fromGame != null) {
-                    // Ignore teleporting within a game
+                    // Ignore teleporting within the same game (no inventory swap needed)
                     if (fromGame.equals(toGame)) {
                         return;
                     } else {
-                        if (!teleporting) { 
-                            // Player is exiting a game, see if he needs to be delayed
+                        // Player is leaving a game
+                        if (!teleporting) {
+                            // First stage: Check if delay is needed
+                            // Skip delay if: game is restarting, game is over, or player is admin
                             if (!fromGame.isGameRestart() && !fromGame.isOver() && !directTeleportPlayers.contains(player.getUniqueId())) {
+                                // Cancel this teleport and start delay timer
                                 delayTeleport(player, event.getFrom(), event.getTo(), fromGame.getName(), LOBBY);
                                 event.setCancelled(true);
                                 return;
                             } else {
-                                // For direct teleporting
-                                fromGame.getRegion().exit(player); // this may clear the inventory, so only store inventory after this line
+                                // Direct teleport (no delay) - process exit immediately
+                                fromGame.getRegion().exit(player); // Call exit handler (may clear inventory)
                                 getBeaconzStore().storeInventory(player, fromGame.getName(), event.getFrom());
                             }
                         } else {
-                            // This is either a direct teleport or the final part of the delayed teleport
+                            // Second stage: This is the completion of a delayed teleport
                             directTeleportPlayers.remove(player.getUniqueId());
-                            fromGame.getRegion().exit(player); // this may clear the inventory, so only store inventory after this line
+                            fromGame.getRegion().exit(player); // Call exit handler (may clear inventory)
                             getBeaconzStore().storeInventory(player, fromGame.getName(), event.getFrom());
                         }                
                     }
                 }
 
-                // Teleporting out of the lobby
+                // ===== TELEPORTING OUT OF THE LOBBY =====
                 if (fromLobby) {
                     // Ignore teleporting within the lobby
                     if (toLobby) {
                         return;
                     } else {
+                        // Leaving lobby - save lobby inventory and call exit handler
                         getBeaconzStore().storeInventory(player, LOBBY, event.getFrom());
                         getGameMgr().getLobby().exit(player);
                     }
                 }
-                // Teleporting into a game
+
+                // ===== TELEPORTING INTO A GAME =====
                 if (toGame != null) {
-                    // Ignore teleporting within a game
+                    // Ignore teleporting within the same game
                     if (fromGame != null && fromGame.equals(toGame)) {
                         return;
                     } else {
-                        // Make sure player is allowed to enter the game
+                        // Verify player is allowed to enter this game
                         if (toGame.hasPlayer(player) || player.isOp()) {
-                            // Restore inventory and get location
+                            // Restore game-specific inventory
                             Location newTo = getBeaconzStore().getInventory(player, toGame.getName());
                             if (newTo != null) {
+                                // Find a safe spawn location near the saved position
                                 newTo = toGame.getRegion().findSafeSpot(newTo, 20);
                                 event.setTo(newTo);
                             }
-                            // Process region enter
+                            // Call region enter handler
                             toGame.getRegion().enter(player);
+
+                            // Minigames always give fresh starting kit when entering
                             if (toGame.getGamemode().equals("minigame")) {
-                                // Minigames give starting kit and initialXP every time player reenters
                                 toGame.giveStartingKit(player);
                             }
 
                         } else {
-                            // Player is not part of the game, send them to the lobby
+                            // Player is not authorized for this game - redirect to lobby
                             player.sendMessage(Component.text(Lang.errorNotInGame.replace("[game]", toGame.getName())).color(NamedTextColor.RED));
                             event.setTo(getGameMgr().getLobby().getSpawnPoint());
                         }
                     }
                 }
 
-                // Teleporting into the lobby
+                // ===== TELEPORTING INTO THE LOBBY =====
                 if (toLobby) {
                     // Ignore teleporting within the lobby
                     if (fromLobby) {
+                        // No action needed
                     } else {
-                        getBeaconzStore().getInventory(player, LOBBY);            
+                        // Entering lobby - restore lobby inventory and call enter handler
+                        getBeaconzStore().getInventory(player, LOBBY);
                         directTeleportPlayers.remove(player.getUniqueId());
                         getGameMgr().getLobby().enterLobby(player);
 
@@ -313,36 +354,75 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
     }
 
     /**
-     * Forces players to wait before they teleport out of the game
-     * @param player
-     * @param from
-     * @param to
-     * @param fromGame
+     * Implements a delayed teleport mechanism to prevent combat logging and instant escapes.
+     * <p>
+     * This method:
+     * <ul>
+     *   <li>Records the player's current position</li>
+     *   <li>Notifies the player to stand still for the configured duration</li>
+     *   <li>Starts a delayed task that checks for movement</li>
+     *   <li>Cancels teleport if player moved, completes it if player stood still</li>
+     * </ul>
+     * <p>
+     * Ops always teleport instantly (0 delay). The delay is configurable via Settings.teleportDelay.
+     * <p>
+     * This prevents players from escaping combat or dangerous situations by teleporting away.
+     * Movement detection uses Vector comparison to catch any position changes.
+     *
+     * @param player the player attempting to teleport
+     * @param from the location the player is teleporting from
+     * @param to the destination location
+     * @param fromGame the name of the game being exited
+     * @param toGame the name of the destination (usually "Lobby")
      */
     private void delayTeleport(final Player player, final Location from, final Location to, final String fromGame, final String toGame) {
-        long delay = 20L;
+        long delay = 20L; // Default: 20 ticks per second of delay
+
+        // Ops get instant teleportation
         if  (player.isOp()) {
             delay = 0L;
         } else {
+            // Notify player they must stand still
             player.sendMessage(Component.text(Lang.teleportDoNotMove.replace("[number]", String.valueOf(Settings.teleportDelay))).color(NamedTextColor.RED));
         }
-        teleportingPlayers.put(player.getUniqueId(), player.getLocation().toVector());
-        getServer().getScheduler().runTaskLater(getBeaconzPlugin(), () -> {
-            // Check if player moved
-            if (player != null && !player.isDead() && teleportingPlayers.containsKey(player.getUniqueId())) {
-                if (player.getLocation().toVector().equals(teleportingPlayers.get(player.getUniqueId()))) {
 
+        // Record player's starting position for movement detection
+        teleportingPlayers.put(player.getUniqueId(), player.getLocation().toVector());
+
+        // Schedule the delayed teleport check
+        getServer().getScheduler().runTaskLater(getBeaconzPlugin(), () -> {
+            // Verify player is still valid and in the teleporting set
+            if (player != null && !player.isDead() && teleportingPlayers.containsKey(player.getUniqueId())) {
+                // Check if player's position is still the same
+                if (player.getLocation().toVector().equals(teleportingPlayers.get(player.getUniqueId()))) {
+                    // Player stood still - proceed with teleport
+                    // This will trigger onTeleport again, but with teleporting flag set
                     player.teleportAsync(to);
 
                 } else {
+                    // Player moved - cancel the teleport
                     player.sendMessage(Component.text(Lang.teleportYouMoved).color(NamedTextColor.RED));
                 }
             }
+            // Clean up tracking data
             teleportingPlayers.remove(player.getUniqueId());
-        }, Settings.teleportDelay * delay);
+        }, Settings.teleportDelay * delay); // Delay in ticks (configurable seconds * 20 ticks/sec)
     }
 
     /**
+     * Marks a player for direct (instant) teleportation, bypassing the delay mechanism.
+     * <p>
+     * This is used by admin commands that need to teleport players immediately without
+     * waiting for the configured delay period. The player will be removed from this set
+     * after their next teleport completes.
+     * <p>
+     * Use cases:
+     * <ul>
+     *   <li>Admin commands forcing player movement</li>
+     *   <li>Emergency teleportation during game issues</li>
+     *   <li>Automatic teleportation during game restart/end</li>
+     * </ul>
+     *
      * @param directTeleportPlayer UUID of player to set for direct teleport
      */
     public void setDirectTeleportPlayer(UUID directTeleportPlayer) {

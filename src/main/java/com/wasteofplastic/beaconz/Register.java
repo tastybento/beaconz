@@ -1,5 +1,4 @@
 /*
- *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
@@ -54,99 +53,211 @@ import com.wasteofplastic.beaconz.map.BeaconMap;
 import com.wasteofplastic.beaconz.map.TerritoryMapRenderer;
 
 /**
- * Enables quick finding of beacons
- * This is the database of all game elements in the world and is saved and loaded to filesystem
- * @author tastybento
+ * Central registry and database for all game elements in the Beaconz world.
+ * <p>
+ * This class serves as the primary data store and provides quick lookup capabilities for:
+ * <ul>
+ *   <li><b>Beacons</b> - Natural diamond block beacons placed in the world</li>
+ *   <li><b>Triangle Fields</b> - Territorial control areas formed by linking three beacons</li>
+ *   <li><b>Beacon Links</b> - Connections between beacons owned by the same team</li>
+ *   <li><b>Base Blocks</b> - Emerald blocks surrounding beacons for expansion and defense</li>
+ *   <li><b>Maps</b> - Territory map items that display beacon ownership</li>
+ * </ul>
+ * <p>
+ * <b>Core Responsibilities:</b>
+ * <ul>
+ *   <li>Persistence - Saves and loads all game data to/from beaconz.yml</li>
+ *   <li>Spatial Indexing - Enables fast lookups by coordinate (Point2D) or block location</li>
+ *   <li>Link Management - Tracks connections between beacons and validates new links</li>
+ *   <li>Triangle Generation - Automatically creates control fields when 3 beacons form a triangle</li>
+ *   <li>Collision Detection - Prevents overlapping enemy triangles and intersecting links</li>
+ *   <li>Score Calculation - Recalculates team scores when territories change</li>
+ * </ul>
+ * <p>
+ * <b>Data Structures:</b>
+ * <ul>
+ *   <li><code>beaconRegister</code> - Maps beacon coordinates (Point2D) to BeaconObj instances</li>
+ *   <li><code>beaconLinks</code> - Maps Game instances to lists of BeaconLink objects</li>
+ *   <li><code>triangleFields</code> - Set of all active TriangleField control areas</li>
+ *   <li><code>baseBlocks</code> - Maps emerald block coordinates to their associated beacon</li>
+ *   <li><code>baseBlocksInverse</code> - Maps beacons to their sets of base block coordinates</li>
+ *   <li><code>beaconMaps</code> - Maps Minecraft map IDs to beacon objects for territory maps</li>
+ * </ul>
+ * <p>
+ * <b>Triangle Field Formation:</b>
+ * When a beacon link is created, the system automatically checks if it completes any triangles:
+ * <ol>
+ *   <li>New link A→B is created</li>
+ *   <li>System checks all beacons linked to B</li>
+ *   <li>For each beacon C linked to B, checks if A is linked to C</li>
+ *   <li>If triangle A-B-C exists with all same-team beacons, attempts to create field</li>
+ *   <li>Validates no enemy beacons/links inside, no intersecting enemy links</li>
+ *   <li>If valid, creates TriangleField and updates team score</li>
+ * </ol>
+ * <p>
+ * <b>File Format (beaconz.yml):</b>
+ * Each beacon stores: location (x:y:z:owner), links to other beacons, defensive blocks,
+ * map IDs, and defensive block details including level and placer UUID.
  *
+ * @author tastybento
  */
 public class Register extends BeaconzPluginDependent {
 
+    /**
+     * Constructs a new Register instance.
+     *
+     * @param beaconzPlugin the main Beaconz plugin instance
+     */
     public Register(Beaconz beaconzPlugin) {
         super(beaconzPlugin);
     }
 
+    /** Maps Minecraft map item IDs to their associated beacon objects for territory display */
     private final HashMap<Integer, BeaconObj> beaconMaps = new HashMap<>();
+
+    /**
+     * Primary beacon lookup table - maps 2D coordinates (x,z) to beacon objects.
+     * This is the authoritative registry of all beacons in the game.
+     */
     private final HashMap<Point2D, BeaconObj> beaconRegister = new HashMap<>();
+
+    /**
+     * Set of all active triangle control fields in the game.
+     * Triangles are formed when three same-team beacons are linked together.
+     */
     private Set<TriangleField> triangleFields = new HashSet<>();
-    //private HashMap<Team, Set<Line2D>> links = new HashMap<Team, Set<Line2D>>();
+
+    /**
+     * Maps each Game instance to its list of beacon links.
+     * Links connect beacons owned by the same team and can form triangle fields.
+     */
     private final HashMap<Game,List<BeaconLink>> beaconLinks = new HashMap<>();
 
     /**
-     * Store of the blocks around a beacon. Starts as the initial 8 blocks adjacent to the
-     * beacon. Can expand as players add emerald blocks to the beacon.
+     * Maps 2D coordinates of base blocks (emerald blocks around beacons) to their parent beacon.
+     * Initially contains the 8 blocks adjacent to each beacon, can expand as players add more.
+     * Used for fast lookup when checking if a block is part of a beacon's base.
      */
     private final HashMap<Point2D, BeaconObj> baseBlocks = new HashMap<>();
+
+    /**
+     * Inverse mapping: beacon to all its base block coordinates.
+     * Used to efficiently retrieve all base blocks belonging to a specific beacon,
+     * which is needed for saving to file and rendering operations.
+     */
     private final HashMap<BeaconObj, Set<Point2D>> baseBlocksInverse = new HashMap<>();
 
+    /**
+     * Persists all game data to the beaconz.yml file.
+     * <p>
+     * This method serializes the entire game state including:
+     * <ul>
+     *   <li>All beacon locations and ownership</li>
+     *   <li>Beacon links (connections between beacons)</li>
+     *   <li>Base blocks (emerald blocks around beacons)</li>
+     *   <li>Defensive blocks with levels and placer UUIDs</li>
+     *   <li>Map item IDs associated with beacons</li>
+     * </ul>
+     * <p>
+     * The method:
+     * <ol>
+     *   <li>Creates a backup of the existing file (beaconz.old)</li>
+     *   <li>Iterates through all beacons in the registry</li>
+     *   <li>Saves each beacon's data to the YAML configuration</li>
+     *   <li>Avoids duplicate link storage (links are bidirectional)</li>
+     *   <li>Writes the complete configuration to disk</li>
+     * </ol>
+     * <p>
+     * <b>File Structure:</b>
+     * <pre>
+     * beacon:
+     *   0:
+     *     game: "GameName"
+     *     location: "x:y:z:ownerTeamName"
+     *     links: ["destX:destZ:timestamp", ...]
+     *     baseblocks: ["x:z", ...]
+     *     defensiveblocks:
+     *       location_string: level
+     *     maps: [mapId1, mapId2, ...]
+     * </pre>
+     * <p>
+     * Links are only stored once (from beacon1 to beacon2) to reduce file size.
+     * The reverse link is automatically created when loading.
+     */
     public void saveRegister() {
         // Save the beacons
         File beaconzFile = new File(getBeaconzPlugin().getDataFolder(),"beaconz.yml");
+
+        // Track which links have been stored to avoid duplicates (links are bidirectional)
         Set<BeaconLink> storedLinks = new HashSet<>();
         YamlConfiguration beaconzYml = new YamlConfiguration();
-        // Backup the beacons file just in case
+
+        // Backup the existing beacons file to prevent data loss
         if (beaconzFile.exists()) {
             File backup = new File(getBeaconzPlugin().getDataFolder(),"beaconz.old");
             beaconzFile.renameTo(backup);
         }
+
+        // Iterate through all beacons and serialize their data
         int count = 0;
         for (BeaconObj beacon : beaconRegister.values()) {
+            // Determine which game this beacon belongs to
             Game game = getGameMgr().getGame(beacon.getPoint());
             String gameName = game == null? "None":game.getName();
             beaconzYml.set("beacon." + count + ".game",gameName);
+
+            // Store beacon ownership (team name or "unowned")
             String owner = "unowned";
             if (beacon.getOwnership() != null) {
                 owner = beacon.getOwnership().getName();
             }
+
+            // Store location as "x:y:z:owner" format
             beaconzYml.set("beacon." + count + ".location", beacon.getX() + ":" + beacon.getY() + ":" + beacon.getZ()
                     + ":" + owner);
-            // Store links
+
+            // Store links to other beacons (only outbound links to avoid duplication)
             if (game != null) {
                 List<String> beaconStringLinks = new ArrayList<>();
                 if (beaconLinks.containsKey(game)) {
                     for (BeaconLink link : beaconLinks.get(game)) {
+                        // Only store each link once - when this beacon is beacon1
+                        // The reverse link will be auto-created during load
                         if (!storedLinks.contains(link) && link.getBeacon1().equals(beacon)) {
                             beaconStringLinks.add(link.getBeacon2().getX() +":" + link.getBeacon2().getZ()+ ":" + link.getTimeStamp());
-                            // Only store the link once. Reduces file size and when it is loaded the reverse link will be auto made.
                             storedLinks.add(link);
                         }
                     }
                     beaconzYml.set("beacon." + count + ".links", beaconStringLinks);
                 }
             }
+
+            // Store map ID if this beacon has an associated map item
             if (beacon.getId() != null) {
                 beaconzYml.set("beacon." + count + ".id", beacon.getId());
             }
-            // Save additional blocks added to beacon
-            //getLogger().info("DEBUG: plinthBlocksInverse = " + plinthBlocksInverse.toString());
+
+            // Save base blocks (emerald blocks around the beacon)
             List<String> plinthBlocksString = new ArrayList<>();
             for (Point2D point: baseBlocksInverse.get(beacon)) {
-                //getLogger().info("DEBUG: writing plinth block " + point);
                 plinthBlocksString.add((int)point.getX() + ":" + (int)point.getY());
             }
             beaconzYml.set("beacon." + count + ".baseblocks", plinthBlocksString);
-            // Save the defenses
+
+            // Save defensive blocks with their levels and placers
             for (DefenseBlock defensiveBlock : beacon.getDefenseBlocks().values()) {
-                beaconzYml.set("beacon." + count + ".defensiveblocks."
-                        + Beaconz.getStringLocation(defensiveBlock.getBlock().getLocation()).replace('.', '_'), defensiveBlock.getLevel());
+                String locationKey = Beaconz.getStringLocation(defensiveBlock.getBlock().getLocation()).replace('.', '_');
+                beaconzYml.set("beacon." + count + ".defensiveblocks." + locationKey, defensiveBlock.getLevel());
                 if (defensiveBlock.getPlacer() != null) {
-                    beaconzYml.set("beacon." + count + ".defensiveblocksowner."
-                            + Beaconz.getStringLocation(defensiveBlock.getBlock().getLocation()).replace('.', '_'), defensiveBlock.getPlacer().toString());
+                    beaconzYml.set("beacon." + count + ".defensiveblocksowner." + locationKey, defensiveBlock.getPlacer().toString());
                 }
             }
-            // Save the defenses
-            for (DefenseBlock defensiveBlock : beacon.getDefenseBlocks().values()) {
-                beaconzYml.set("beacon." + count + ".defensiveblocks."
-                        + Beaconz.getStringLocation(defensiveBlock.getBlock().getLocation()).replace('.', '_'), defensiveBlock.getLevel());
-                if (defensiveBlock.getPlacer() != null) {
-                    beaconzYml.set("beacon." + count + ".defensiveblocksowner."
-                            + Beaconz.getStringLocation(defensiveBlock.getBlock().getLocation()).replace('.', '_'), defensiveBlock.getPlacer().toString());
-                }
-            }
-            // Save maps
+
+            // Save map item IDs associated with this beacon
             List<String> maps = new ArrayList<>();
             for (Integer id : beaconMaps.keySet()) {
                 if (beacon.equals(beaconMaps.get(id))) {
-                    // Check if this map still exists
+                    // Verify the map still exists on the server before saving
                     if (Bukkit.getMap(id) != null) {
                         maps.add(String.valueOf(id));
                     }
@@ -155,6 +266,8 @@ public class Register extends BeaconzPluginDependent {
             beaconzYml.set("beacon." + count + ".maps", maps);
             count++;
         }
+
+        // Write the configuration to disk
         try {
             beaconzYml.save(beaconzFile);
         } catch (IOException e) {
@@ -164,59 +277,97 @@ public class Register extends BeaconzPluginDependent {
     }
 
     /**
-     * Loads register info from a file. Deserializes a the YML
+     * Loads all game data from the beaconz.yml file and reconstructs the game state.
+     * <p>
+     * This method deserializes persisted data and rebuilds all game structures:
+     * <ul>
+     *   <li>Beacons with their locations and ownership</li>
+     *   <li>Base blocks (emerald blocks) around each beacon</li>
+     *   <li>Defensive blocks with levels and placer information</li>
+     *   <li>Map renderers for territory map items</li>
+     *   <li>Beacon links (connections between same-team beacons)</li>
+     *   <li>Triangle fields (automatically generated from links)</li>
+     * </ul>
+     * <p>
+     * <b>Loading Process:</b>
+     * <ol>
+     *   <li>Clear existing data structures</li>
+     *   <li>Load and parse beaconz.yml file</li>
+     *   <li>Create beacon objects for each entry</li>
+     *   <li>Load base blocks and defensive blocks</li>
+     *   <li>Initialize map renderers for territory maps</li>
+     *   <li>Reconstruct links between beacons (stored as strings)</li>
+     *   <li>Sort links by timestamp (creation order)</li>
+     *   <li>Add links in chronological order</li>
+     *   <li>Auto-generate triangle fields from valid link combinations</li>
+     *   <li>Recalculate scores for all games</li>
+     * </ol>
+     * <p>
+     * Links are stored unidirectionally in the file but created bidirectionally in memory.
+     * Triangle fields are not saved explicitly - they're regenerated from beacon links.
+     * <p>
+     * Beacons for deleted games are skipped during loading to prevent orphaned data.
      */
     public void loadRegister() {
-        //int count = 0;
-        // Clear the data
+        // Clear existing data to start fresh
         clear();
 
         File beaconzFile = new File(getBeaconzPlugin().getDataFolder(),"beaconz.yml");
         if (!beaconzFile.exists()) {
             return;
         }
+
+        // Load the YAML configuration from file
         YamlConfiguration beaconzYml = new YamlConfiguration();
         try {
             beaconzYml.load(beaconzFile);
         } catch (IOException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         } catch (InvalidConfigurationException e) {
             getLogger().severe("Problem with beaconz.yml formatting");
             e.printStackTrace();
         }
-        //beacons
+
+        // === PHASE 1: Load all beacons ===
         beaconLinks.clear();
+        // Temporary storage for link data (will be processed after all beacons are loaded)
         HashMap<BeaconObj, List<String>> beaconStringLinks = new HashMap<>();
         ConfigurationSection configSec = beaconzYml.getConfigurationSection("beacon");
+
         if (configSec != null) {
             for (String beacon : configSec.getValues(false).keySet()) {
-
+                // Parse beacon location string "x:y:z:owner"
                 String info = configSec.getString(beacon + ".location","");
                 String[] args = info.split(":");
+
                 if (!info.isEmpty() && args.length == 4) {
                     if (NumberUtils.isNumber(args[0]) && NumberUtils.isNumber(args[1]) && NumberUtils.isNumber(args[2])) {
                         int x = Integer.parseInt(args[0]);
                         int y = Integer.parseInt(args[1]);
                         int z = Integer.parseInt(args[2]);
 
+                        // Verify the game still exists at this location
                         Game game = getGameMgr().getGame(x, z);
                         if (game != null) {
+                            // Resolve team ownership
                             Team team = null;
                             if (!args[3].equalsIgnoreCase("unowned")) {
                                 team = game.getScorecard().getTeam(args[3]);
                             }
+
+                            // Create the beacon object and add to registry
                             BeaconObj newBeacon = addBeacon(team, x, y, z);
-                            //count++;
-                            //BeaconObj newBeacon = new BeaconObj(getBeaconzPlugin(), x,y,z , team));
-                            // Check for links
+
+                            // Store link data for later processing (after all beacons exist)
                             beaconStringLinks.put(newBeacon, configSec.getStringList(beacon + ".links"));
-                            // Initialize the link array if required
+
+                            // Initialize the link array for this game if needed
                             if (beaconLinks.get(game) == null) {
                                 List<BeaconLink> pairs = new ArrayList<>();
                                 beaconLinks.put(game, pairs);
                             }
-                            // Load base blocks
+
+                            // Load base blocks (emerald blocks around the beacon)
                             List<String> baseBlocks = configSec.getStringList(beacon + ".baseblocks");
                             for (String baseBlock : baseBlocks) {
                                 String[] args2 = baseBlock.split(":");
@@ -229,25 +380,27 @@ public class Register extends BeaconzPluginDependent {
                                 }
                             }
 
-                            // Load the defensive blocks
+                            // Load defensive blocks with their levels
                             ConfigurationSection defBlocks = configSec.getConfigurationSection(beacon + ".defensiveblocks");
                             if (defBlocks != null) {
                                 for (String defenseBlock : defBlocks.getKeys(false)) {
-                                    // Get Block
+                                    // Get the block at the stored location
                                     Block b = Beaconz.getLocationString(defenseBlock).getBlock();
                                     int level = defBlocks.getInt(defenseBlock);
-                                    // Try to get owner
+                                    // Try to get the player who placed this defensive block
                                     String owner = configSec.getString(beacon + ".defensiveblocksowner." + defenseBlock);
                                     newBeacon.addDefenseBlock(b,level,owner);
                                 }
                             }
-                            // Load map id's
+
+                            // Load map item IDs and initialize renderers
                             List<String> maps = configSec.getStringList(beacon + ".maps");
                             for (String mapNumber: maps) {
                                 int id = Integer.parseInt(mapNumber);
                                 beaconMaps.put(id, newBeacon);
                                 MapView map = Bukkit.getMap(id);
                                 if (map != null) {
+                                    // Remove old renderers and add fresh ones
                                     for (MapRenderer renderer : map.getRenderers()) {
                                         if (renderer instanceof TerritoryMapRenderer || renderer instanceof BeaconMap) {
                                             map.removeRenderer(renderer);
@@ -259,37 +412,41 @@ public class Register extends BeaconzPluginDependent {
                                     getLogger().severe("Could not load map #" + id + " as it doesn't exist on this server. Skipping...");
                                 }
                             }
-                            //getLogger().info("DEBUG: loaded beacon at " + x + "," + y + "," + z);
-                        } else {
-                            // Game was deleted
-                            //getLogger().warning("Tried to load beacon at " + x + "," + y + "," + z + " but there is no active game there. Skipping...");
                         }
+                        // If game is null, beacon is from a deleted game - skip it
                     }
                 }
             }
         }
-        // Once all beacons have been loaded, add links and make triangles
+
+        // === PHASE 2: Reconstruct beacon links ===
+        // Now that all beacons exist, we can resolve link references
         long count = 0;
         for (BeaconObj beacon: beaconStringLinks.keySet()) {
             for (String link : beaconStringLinks.get(beacon)) {
+                // Parse link string "destX:destZ:timestamp"
                 String[] args = link.split(":");
                 BeaconObj dest = beaconRegister.get(new Point2D.Double(Double.parseDouble(args[0]), Double.parseDouble(args[1])));
                 if (dest != null) {
+                    // Extract timestamp (or assign sequential timestamp if missing from old saves)
                     long linkTime = 0L;
                     if (args.length == 3) {
                         linkTime = Long.parseLong(args[2]);
                     } else {
+                        // Old format without timestamp - assign sequential times
                         count += 1000;
                         linkTime = count;
                     }
+
+                    // Create the link object
                     BeaconLink newBeaconPair = new BeaconLink(beacon, dest, linkTime);
-                    // Duplicates are made when the link is made below
                     Game game = getGameMgr().getGame(beacon.getPoint());
                     if (game != null) {
                         if (beaconLinks.get(game) == null) {
                             List<BeaconLink> pairs = new ArrayList<>();
                             beaconLinks.put(game, pairs);
                         }
+                        // Check for duplicate links before adding
                         if (!beaconLinks.get(game).contains(newBeaconPair)) {
                             beaconLinks.get(game).add(newBeaconPair);
                         } else {
@@ -300,30 +457,49 @@ public class Register extends BeaconzPluginDependent {
             }
         }
 
-        // Make the links game by game
-        for (Entry<Game, List<BeaconLink>> entry : beaconLinks.entrySet()) {           
-            // Sort the list
+        // === PHASE 3: Create beacon links and triangle fields ===
+        // Process each game's links in chronological order
+        for (Entry<Game, List<BeaconLink>> entry : beaconLinks.entrySet()) {
+            // Sort by timestamp to recreate links in the same order they were made
             Collections.sort(entry.getValue());
-            //getLogger().info("DEBUG: number of beacon links: " + entry.getValue().size());
-            // Create the links in the same order they were created
+
+            // Create the actual bidirectional links in the beacon objects
             for (BeaconLink beaconPair: entry.getValue()) {
                 beaconPair.getBeacon1().addOutboundLink(beaconPair.getBeacon2());
             }
-            // Calculate the score for the game
+
+            // Recalculate scores and auto-generate triangle fields
             recalculateScore(entry.getKey());
         }
     }
 
     /**
-     * Clears all the data in the register
+     * Clears all data from the register across all games.
+     * <p>
+     * This removes:
+     * <ul>
+     *   <li>All beacon registrations</li>
+     *   <li>All triangle fields</li>
+     *   <li>All beacon links</li>
+     *   <li>All map associations</li>
+     *   <li>All base blocks</li>
+     * </ul>
+     * <p>
+     * Typically used when reloading the plugin or resetting all games.
      */
     public void clear() {
         clear(null);
     }
     
     /**
-     * Clears data for a region
-     * @param region
+     * Clears data for a specific region/game.
+     * <p>
+     * When a region is specified, only beacons, links, triangles, and maps
+     * associated with that region are removed. Other game data remains intact.
+     * <p>
+     * This is used when deleting a game or regenerating a specific region.
+     *
+     * @param region the region to clear, or null to clear all data
      */
     public void clear(Region region) {
         if (region == null) {
@@ -352,44 +528,81 @@ public class Register extends BeaconzPluginDependent {
     }
 
     /**
-     * Add a link between beacons created now
-     * @param startBeacon
-     * @param endBeacon
-     * @return number of fields made, success/failure and number of fields failed to make
+     * Creates a new link between two beacons and attempts to form triangle fields.
+     * <p>
+     * This is the primary method for establishing beacon connections, which are the
+     * building blocks of territorial control. The process:
+     * <ol>
+     *   <li>Creates a BeaconLink object with current timestamp</li>
+     *   <li>Adds link to the game's link registry</li>
+     *   <li>Adds bidirectional connection to beacon objects</li>
+     *   <li>Shows visual particle line between beacons</li>
+     *   <li>Checks if link completes any triangles with existing links</li>
+     *   <li>Attempts to create triangle fields for valid combinations</li>
+     *   <li>Recalculates team scores if new fields were created</li>
+     * </ol>
+     * <p>
+     * <b>Triangle Detection Algorithm:</b>
+     * <pre>
+     * For new link A→B:
+     *   For each beacon C linked to B:
+     *     If A is also linked to C:
+     *       Triangle A-B-C exists → attempt field creation
+     * </pre>
+     * <p>
+     * Links can fail if:
+     * <ul>
+     *   <li>Beacon already has maximum allowed outbound links (Settings.linkLimit)</li>
+     *   <li>Link would create an invalid triangle (enemy beacons/links inside)</li>
+     *   <li>Link intersects with enemy links</li>
+     * </ul>
+     *
+     * @param startBeacon the source beacon for the link
+     * @param endBeacon the destination beacon for the link
+     * @return LinkResult containing: (fieldsMade, success, fieldsFailed)
      */
     public LinkResult addBeaconLink(BeaconObj startBeacon, BeaconObj endBeacon) {
         Game game = getGameMgr().getGame(startBeacon.getPoint());
+
+        // Create link object with current timestamp
         BeaconLink beaconPair = new BeaconLink(startBeacon, endBeacon);
+
+        // Initialize link list for this game if needed
         beaconLinks.computeIfAbsent(game, k -> new ArrayList<>());
-        // Note that links cannot be duplicated
+
+        // Check for duplicate links (links are compared bidirectionally)
         if (!beaconLinks.get(game).contains(beaconPair)) {
             beaconLinks.get(game).add(beaconPair);
-            // Try to add link - if there are too many already, refuse
+
+            // Try to add the link to the beacon's outbound link list
+            // This can fail if the beacon has reached its link limit
             if (!startBeacon.addOutboundLink(endBeacon)) {
                 return new LinkResult(0,false,0);
             }
-            // Visualize
+
+            // Show visual particle line between the beacons
             new LineVisualizer(this.getBeaconzPlugin(), beaconPair, true);
-            // See if there's a score from this
+
+            // Attempt to create triangle fields from this new link
             int fieldsMade = 0;
             int fieldsFailed = 0;
-            //getLogger().info("DEBUG: recalc score for " + game.getName());
-            //getLogger().info("DEBUG: Checking links from " + startBeacon.getPoint());
-            // Go to all the beacons this beacon is linked to
+
+            // Triangle detection algorithm: check if new link A→B completes any triangles
+            // For each beacon C linked to A:
+            //   If B is also linked to C, then triangle A-B-C exists
+
+            // Iterate through all beacons linked to the start beacon
             for (BeaconObj secondPoint : startBeacon.getLinks()) {
-                //getLogger().info("DEBUG: Linked to " + secondPoint.getPoint());
-                //getLogger().info("DEBUG: This beacon has " + secondPoint.getLinks().size() + " links (one of which should be back)");
-                // Check the next set of links
+                // Check all beacons linked to this second beacon
                 for (BeaconObj thirdPoint : secondPoint.getLinks()) {
-                    // Run through the 1st point's links and see if they include the 3rd point
-                    // Ignore the 3rd point if it is the first point
+                    // Skip if the third point is back to where we started (not a triangle)
                     if (!thirdPoint.equals(startBeacon)) {
-                        //getLogger().info("DEBUG: " + secondPoint.getPoint() + " => " + thirdPoint.getPoint());
+                        // Check if the third point is the end beacon
+                        // If so, we have a complete triangle: start → second → end → start
                         if (thirdPoint.equals(endBeacon)) {
-                            //getLogger().info("DEBUG: Triangle found! ");
-                            // We have a winner
+                            // Triangle found! Attempt to create the field
+                            // This validates no enemy beacons/links inside and no intersections
                             try {
-                                // Result is true if the triangle is made okay, otherwise, don't make the link and return false
                                 if (getRegister().addTriangle(startBeacon.getPoint(), secondPoint.getPoint(),
                                         thirdPoint.getPoint(), startBeacon.getOwnership())) {
                                     fieldsMade++;
@@ -397,10 +610,9 @@ public class Register extends BeaconzPluginDependent {
                                     fieldsFailed++;
                                 }
                             } catch (IllegalArgumentException e) {
-                                // TODO Auto-generated catch block
                                 e.printStackTrace();
                             }
-                            // There could be more than one, so continue
+                            // Continue checking - one link can complete multiple triangles
                         }
                     }
                 }
@@ -431,9 +643,12 @@ public class Register extends BeaconzPluginDependent {
     }
 
     /**
-     * Return all the beacons for a team
-     * @param team
-     * @return set of beacons or empty set if none
+     * Gets all beacons owned by a specific team.
+     * <p>
+     * This iterates through the entire beacon registry and filters by ownership.
+     *
+     * @param team the team whose beacons to retrieve
+     * @return list of BeaconObj instances owned by the team, or empty list if none
      */
     public List<BeaconObj> getTeamBeacons(Team team) {
         List<BeaconObj> teambeacons = new ArrayList<>();
@@ -446,9 +661,12 @@ public class Register extends BeaconzPluginDependent {
     }
 
     /**
-     * Get number the triangles for a team
-     * @param team
-     * @return number of triangles
+     * Counts the number of triangle control fields owned by a team.
+     * <p>
+     * Each triangle field provides territorial control and contributes to team score.
+     *
+     * @param team the team to count triangles for
+     * @return the number of triangle fields owned by the team
      */
     public int getTeamTriangles(Team team) {
         int teamtriangles = 0;
@@ -461,47 +679,74 @@ public class Register extends BeaconzPluginDependent {
     }
 
     /**
-     * Return total area owned by team
-     * @param team
-     * @return total area
+     * Calculates the total area controlled by a team across all their triangle fields.
+     * <p>
+     * This is the primary scoring metric in the game. Larger triangles provide more points.
+     * The area is calculated by summing the areas of all triangles owned by the team.
+     *
+     * @param team the team to calculate area for
+     * @return total area in square blocks controlled by the team
      */
     public int getTeamArea(Team team) {
         return (int)TriangleScorer.getScore(triangleFields, team);
     }
 
     /**
-     * Registers a beacon at a 3D point
-     * @param owner
-     * @param x
-     * @param y
-     * @param z
-     * @return beacon that was created
+     * Registers a new beacon in the game world.
+     * <p>
+     * This method:
+     * <ul>
+     *   <li>Creates a BeaconObj instance</li>
+     *   <li>Registers it at the specified coordinates</li>
+     *   <li>Creates the initial 3x3 grid of base blocks (8 surrounding + center)</li>
+     *   <li>Updates team score if the beacon is owned</li>
+     * </ul>
+     * <p>
+     * <b>Initial Base Block Layout:</b>
+     * <pre>
+     * [E][E][E]
+     * [E][B][E]   where B = beacon center, E = emerald base blocks
+     * [E][E][E]
+     * </pre>
+     * <p>
+     * The 8 surrounding blocks are the initial "base blocks" that can be expanded
+     * by players placing additional emerald blocks adjacent to existing base blocks.
+     *
+     * @param owner the team that owns this beacon, or null for unowned
+     * @param x the X coordinate of the beacon
+     * @param y the Y coordinate (height) of the beacon
+     * @param z the Z coordinate of the beacon
+     * @return the newly created BeaconObj instance
      */
     public BeaconObj addBeacon(Team owner, int x, int y, int z) {
-        // Create a beacon
+        // Create the beacon object
         BeaconObj beacon = new BeaconObj(getBeaconzPlugin(), x, y, z, owner);
-        // getLogger().info("DEBUG: registered beacon at " + x + "," + y + ", " + z + " owner " + owner);
+
+        // Register the beacon and create the 3x3 initial base block grid
         for (int xx = x-1; xx <= x + 1; xx++) {
             for (int zz = z - 1; zz <= z + 1; zz++) {
                 Point2D location = new Point2D.Double(xx,zz);
+
                 if (xx == x && zz == z) {
-                    // Center square = beacon
+                    // Center position - register the beacon itself
                     beaconRegister.put(location, beacon);
                 } else {
-                    // Put the defensive blocks
+                    // Surrounding 8 positions - register as base blocks (emerald blocks)
                     baseBlocks.put(location, beacon);
+
+                    // Also maintain inverse mapping (beacon → set of base blocks)
                     Set<Point2D> points = baseBlocksInverse.get(beacon);
                     if (points == null) {
                         points = new HashSet<>();
                     }
                     points.add(location);
                     baseBlocksInverse.put(beacon, points);
-                    //getLogger().info("DEBUG: registered defense block at " + location + " status " + owner);
                 }
             }
         }
+
+        // Update team scores if this is an owned beacon
         if (owner != null) {
-            // New owned beacon, increment score
             Game game = getGameMgr().getGame(x, z);
             game.getScorecard().refreshScores(owner);
         }
@@ -510,84 +755,86 @@ public class Register extends BeaconzPluginDependent {
     }
 
     /**
-     * Creates a triangular field covering the world between three beacons
-     * @param point2d
-     * @param point2d2
-     * @param point2d3
-     * @return true if the triangle is valid, otherwise false
+     * Creates a triangular control field between three same-team beacons.
+     * <p>
+     * This is the core method for territorial control. It validates that a valid
+     * triangle can be formed and doesn't conflict with enemy territories before creating it.
+     * <p>
+     * <b>Validation Rules:</b>
+     * <ol>
+     *   <li>All three points must be registered beacons</li>
+     *   <li>All three beacons must be owned by the same team</li>
+     *   <li>Triangle cannot overlap enemy triangles (mutual containment check)</li>
+     *   <li>Triangle sides cannot intersect enemy beacon links</li>
+     *   <li>Triangle must not be a duplicate</li>
+     * </ol>
+     * <p>
+     * <b>Overlap Detection:</b>
+     * Two triangles "overlap" if either fully contains the other. Partial overlaps
+     * where triangles share edges or vertices are allowed (this happens with friendly triangles).
+     * <p>
+     * <b>Link Intersection:</b>
+     * Each of the three sides of the new triangle is checked against all enemy links.
+     * If any side crosses an enemy link, the triangle cannot be created.
+     * <p>
+     * Upon successful creation, team scores are automatically recalculated.
+     *
+     * @param point2d first beacon coordinate
+     * @param point2d2 second beacon coordinate
+     * @param point2d3 third beacon coordinate
+     * @param owner the team that owns all three beacons
+     * @return true if triangle was successfully created, false if validation failed
+     * @throws IllegalArgumentException if any point is not a beacon or beacons have different owners
      */
     public Boolean addTriangle(Point2D point2d, Point2D point2d2, Point2D point2d3, Team owner)  throws IllegalArgumentException {
-        //getLogger().info("DEBUG: Adding triangle at " + point2d + " " + point2d2 + " " + point2d3);
-        // Check that locations are known beacons
+        // Verify all three points are registered beacons
         if (beaconRegister.containsKey(point2d) && beaconRegister.containsKey(point2d2) && beaconRegister.containsKey(point2d3)) {
-            //getLogger().info("DEBUG: All three beacons are in the register");
-            // Check the beacons are all owned by the same faction
+            // Verify all three beacons are owned by the same team
             if (beaconRegister.get(point2d).getOwnership().equals(owner)
                     && beaconRegister.get(point2d2).getOwnership().equals(owner)
                     && beaconRegister.get(point2d3).getOwnership().equals(owner)) {
-                //getLogger().info("DEBUG: All beacons are owned by same team");
+
+                // Create the triangle object
                 TriangleField triangle = new TriangleField(point2d, point2d2, point2d3, owner);
-                // Check to see if this control field would overlap enemy-held beacons
-                // Allow this for now
-                /*
-                for (Entry<Point2D,BeaconObj> beacon : getRegister().getBeaconRegister().entrySet()) {
-                    if (beacon.getValue().getOwnership() != null && !beacon.getValue().getOwnership().equals(owner)) {
-                        // Check enemy beacons
-                        if (cf.contains(beacon.getKey())) {
-                            getLogger().info("DEBUG: Enemy beacon found inside potential control field, not making control field");
-                            return false;
-                        }
-                    }
-                }*/
-                // Check if any triangle or lines intersect
+
+                // Check for conflicts with existing triangles
                 for (TriangleField triangleField : triangleFields) {
-                    // Check if triangle is inside any of the known triangles
-                    if (!triangle.getOwner().equals(triangleField.getOwner()) && (triangleField.contains(triangle) || triangle.contains(triangleField))) {
-                        //getLogger().info("DEBUG: Enemy triangle found inside triangle!");
+                    // Prevent enemy triangle overlaps (mutual containment)
+                    // If either triangle fully contains the other, reject
+                    if (!triangle.getOwner().equals(triangleField.getOwner()) &&
+                        (triangleField.contains(triangle) || triangle.contains(triangleField))) {
                         return false;
                     }
-                    // Check if triangle already exists, as links go both ways it's possible and fine
+
+                    // Check for duplicate triangles (links are bidirectional, so this is possible)
                     if (triangle.equals(triangleField)) {
-                        //getLogger().info("DEBUG: duplicate triangle found");
                         return false;
                     }
                 }
-                // Check if this new line intersects with any enemy links
+
+                // Check if any triangle side intersects with enemy beacon links
                 for (Line2D link: getEnemyLinks(owner)) {
                     for (Line2D side : triangle.getSides()) {
                         if (side.intersectsLine(link)) {
-                            //getLogger().info("DEBUG: Enemy beacon link found inside triangle!");
+                            // Enemy link crosses through the triangle - reject
                             return false;
                         }
                     }
                 }
-                /*
-                for (Entry<Team, Set<Line2D>> linkSet : links.entrySet()) {
-                    if (!linkSet.getKey().equals(owner)) {
-                        for (Line2D link : linkSet.getValue()) {
-                            for (Line2D side : triangle.getSides()) {
-                                if (side.intersectsLine(link)) {
-                                    getLogger().info("DEBUG: Enemy beacon link found inside triangle!");
-                                    return false;
-                                }
-                            }
-                        }
-                    }
-                }*/
+
+                // All validations passed - add the triangle to the field set
                 if (triangleFields.add(triangle)) {
-                    //getLogger().info("DEBUG: Added control field!");
-                    // New control field, refresh score
+                    // Successfully added! Update team scores
                     Game game = getGameMgr().getGame(point2d);
                     game.getScorecard().refreshScores(owner);
-                    //getLogger().info("DEBUG: New score is " + game.getScorecard().getScore(owner, "area"));
                     return true;
                 }
             } else {
-                //getLogger().info("DEBUG: beacons are not owned by the same faction");
+                // Beacons have different owners
                 throw new IllegalArgumentException("beacons are not owned by the same team");
             }
         } else {
-            //getLogger().info("DEBUG: Location argument is not a beacon");
+            // One or more points are not beacons
             throw new IllegalArgumentException("Location argument is not a beacon");
         }
         return false;
@@ -859,22 +1106,29 @@ public class Register extends BeaconzPluginDependent {
     }
 
     /**
-     * Gets a set of all the control triangles at this location. Can be overlapping triangles.
-     * @param x
-     * @param y
-     * @return list of triangles at this location
+     * Finds all triangle fields that contain a specific coordinate.
+     * <p>
+     * Since triangle fields can overlap (friendly triangles sharing edges/vertices),
+     * multiple triangles may contain the same point. This is used to:
+     * <ul>
+     *   <li>Determine which team buffs/debuffs to apply to a player at a location</li>
+     *   <li>Calculate effect strength based on field overlap</li>
+     *   <li>Display territory information</li>
+     * </ul>
+     * <p>
+     * <b>Performance Note:</b> Currently uses brute-force iteration through all triangles.
+     * For large numbers of triangles, consider implementing spatial indexing (quadtree, R-tree, etc.).
+     *
+     * @param x the X coordinate to check
+     * @param y the Z coordinate to check (despite parameter name)
+     * @return list of TriangleField objects containing this point (may be empty)
      */
     public List<TriangleField> getTriangle(int x, int y) {
-        // TODO: Brute force check - in the future, will need to be indexed better
         List<TriangleField> result = new ArrayList<>();
-        //int index = 1;
+
+        // Iterate through all triangles and check containment
         for (TriangleField tri: triangleFields) {
             if (tri.contains(x, y) != null) {
-                /*
-                getLogger().info("DEBUG: triangle " + index++);
-                for (Line2D line : tri.getSides()) {
-                    getLogger().info("DEBUG: " + line.getP1().toString() + " to " + line.getP2().toString());
-                } */
                 result.add(tri);
             }
         }
@@ -923,16 +1177,6 @@ public class Register extends BeaconzPluginDependent {
             }
         }
         return result;
-        /*
-        //getLogger().info("DEBUG: There are " + links.keySet().size() + " teams in the link database");
-        for (Team opposition : links.keySet()) {
-            //getLogger().info("DEBUG: checking team " + opposition.getName() + " links");
-            if (!team.equals(opposition)) {
-                result.addAll(links.get(opposition));
-                //getLogger().info("DEBUG: added " + links.get(opposition).size() + " links");
-            }
-        }*/
-
     }
 
     /**
@@ -1037,7 +1281,6 @@ public class Register extends BeaconzPluginDependent {
      * Note that all links should already be in place.
      */
     public void recalculateScore(Game game) {
-        //getLogger().info("DEBUG: recalc score for " + game.getName());
         // Run through the beacon pairs
         if (!beaconLinks.isEmpty() && beaconLinks.get(game) != null) {
             // Sort in order of age
@@ -1045,25 +1288,19 @@ public class Register extends BeaconzPluginDependent {
             // Build the score
             // Go through all the links in this game
             for (BeaconLink firstPoint: beaconLinks.get(game)) {
-                //getLogger().info("DEBUG: Checking links from " + firstPoint.getBeacon1().getPoint());
                 // Go to all the beacons this beacon is linked to
                 for (BeaconObj secondPoint : firstPoint.getBeacon1().getLinks()) {
-                    //getLogger().info("DEBUG: Linked to " + secondPoint.getPoint());
-                    //getLogger().info("DEBUG: This beacon has " + secondPoint.getLinks().size() + " links (one of which should be back)");
                     // Check the next set of links
                     for (BeaconObj thirdPoint : secondPoint.getLinks()) {
                         // Run through the 3rd point's links and see if they include the 1st point
                         if (!thirdPoint.equals(firstPoint)) {
-                            //getLogger().info("DEBUG: " + secondPoint.getPoint() + " => " + thirdPoint.getPoint());
                             if (thirdPoint.equals(firstPoint.getBeacon2())) {
-                                //getLogger().info("DEBUG: Triangle found! ");
                                 // We have a winner
                                 try {
                                     // Result is true if the triangle is made okay, otherwise, don't make the link and return false
                                     getRegister().addTriangle(firstPoint.getBeacon1().getPoint(), secondPoint.getPoint(),
                                             thirdPoint.getPoint(), firstPoint.getOwner());
                                 } catch (IllegalArgumentException e) {
-                                    // TODO Auto-generated catch block
                                     e.printStackTrace();
                                 }
                                 // There could be more than one, so continue
