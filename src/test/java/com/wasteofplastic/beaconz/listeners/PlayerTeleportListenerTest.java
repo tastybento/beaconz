@@ -1,6 +1,8 @@
 package com.wasteofplastic.beaconz.listeners;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -23,7 +25,6 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.util.Vector;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -31,6 +32,8 @@ import org.mockito.Mock;
 import com.wasteofplastic.beaconz.Lang;
 import com.wasteofplastic.beaconz.Region;
 import com.wasteofplastic.beaconz.Settings;
+
+import net.kyori.adventure.text.Component;
 
 class PlayerTeleportListenerTest extends CommonTestBase {
 
@@ -348,7 +351,7 @@ class PlayerTeleportListenerTest extends CommonTestBase {
         PlayerTeleportEvent event = new PlayerTeleportEvent(player, location, gameLocation);
         ptl.onTeleport(event);
 
-        verify(player).sendMessage(anyString());
+        verify(player).sendMessage(any(Component.class));
         assertEquals(lobbyLocation, event.getTo());
     }
 

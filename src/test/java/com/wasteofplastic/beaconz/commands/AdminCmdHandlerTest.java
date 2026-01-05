@@ -618,6 +618,9 @@ class AdminCmdHandlerTest {
 
         boolean result = handler.onCommand(player, command, "bza", new String[]{"delete", "TestGame"});
 
+        assertFalse(result, "Delete should fail becuase it requires confirmation");
+        
+        result = handler.onCommand(player, command, "bza", new String[]{"delete", "TestGame"});
         assertTrue(result, "Delete should succeed");
         verify(gameMgr).delete(player, game);
     }
