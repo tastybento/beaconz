@@ -44,6 +44,7 @@ import org.bukkit.event.block.BlockDamageEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.MapMeta;
 import org.bukkit.map.MapView;
+import org.bukkit.map.MapView.Scale;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scoreboard.Team;
@@ -372,6 +373,7 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
         MapView mapView = Bukkit.createMap(getBeaconzWorld());
         mapView.setCenterX(beacon.getX());
         mapView.setCenterZ(beacon.getZ());
+        mapView.setScale(Scale.NORMAL);
         mapView.getRenderers().clear();
         mapView.addRenderer(new TerritoryMapRenderer(getBeaconzPlugin()));
         mapView.addRenderer(new BeaconMap(getBeaconzPlugin()));

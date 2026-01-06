@@ -1093,8 +1093,7 @@ public class Register extends BeaconzPluginDependent {
     /**
      * @param index the map index to remove
      */
-    public void removeBeaconMap(int index) {  
-        getLogger().info("DEBUG: removing beacon map # " + index );
+    public void removeBeaconMap(int index) {
         this.beaconMaps.remove(index);
     }
 

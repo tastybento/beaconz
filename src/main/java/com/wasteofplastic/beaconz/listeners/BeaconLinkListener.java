@@ -248,7 +248,6 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
             // Check if the map has an ID associated with it
             if (mapMeta.hasMapId()) {
                 int mapId = mapMeta.getMapId();
-                getLogger().info("DEBUG: The Map ID is: " + mapId);
                 MapView map = Bukkit.getMap(mapId);
                 for (MapRenderer renderer : map.getRenderers()) {
                     if (renderer instanceof TerritoryMapRenderer) {
@@ -257,8 +256,6 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
                 }
                 map.addRenderer(new TerritoryMapRenderer(getBeaconzPlugin()));
             }
-        } else {
-            getLogger().info("DEBUG: Item in hand is not a map");
         }
         
     }

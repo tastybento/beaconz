@@ -26,7 +26,6 @@ import java.awt.geom.Point2D;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Iterator;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -36,13 +35,10 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.map.MapRenderer;
-import org.bukkit.map.MapView;
+import org.bukkit.inventory.meta.MapMeta;
 import org.bukkit.scoreboard.Team;
 
 import com.wasteofplastic.beaconz.listeners.BeaconLinkListener;
-import com.wasteofplastic.beaconz.map.BeaconMap;
-import com.wasteofplastic.beaconz.map.TerritoryMapRenderer;
 
 public class Game extends BeaconzPluginDependent {
 
@@ -88,60 +84,6 @@ public class Game extends BeaconzPluginDependent {
      */
     public void reload() {
         scorecard.reload();
-    }
-
-    /**
-     * Resets an existing game
-     * The idea is that all current beacons will be removed
-     * and the region will regenerate "fresh"
-     * THIS IS NO LONGER USED - REGENERATION OF A REGION IS DONE WHEN A GAME IS **DELETED** AND THEREFORE HANDLED BY THE GAMEMGR
-     * @param sender
-     */
-    public void regenerate_THIS_IS_NO_LONGER_USED_AND_CAN_BE_REMOVED(CommandSender sender) {
-        // Set restart flag as true
-        gameRestart = true;
-        
-        // Move all players in game to lobby
-        getRegion().sendAllPlayersToLobby(false);
-        
-        // Delete the teams
-        scorecard.deleteTeamMembers();
-        
-        // Handle maps 
-        Iterator<Integer> it = getRegister().getBeaconMapIndex().iterator();
-        while (it.hasNext()) {
-            int index = it.next();
-            MapView map = Bukkit.getMap(index);
-            if (map != null && (map.getWorld().equals(getBeaconzWorld()) && getRegion().containsPoint(map.getCenterX(), map.getCenterZ()))) {
-                for (MapRenderer renderer : map.getRenderers()) {
-                    if (renderer instanceof TerritoryMapRenderer || renderer instanceof BeaconMap) {
-                        map.removeRenderer(renderer);
-                    }
-                }
-                it.remove();
-            }
-        }
-        // Remove all beacons
-        for (BeaconObj beacon : getRegister().getBeaconRegister().values()) {
-            if (this.getRegion().containsBeacon(beacon)) {
-                getRegister().removeBeaconOwnership(beacon, true); 
-            }
-        }
-        
-        //region.regenerate(sender, ""); // -- no longer used - chunks will be regenerated as needed when loaded
-        
-        
-        // Handle other loose ends
-        getRegister().saveRegister();
-        startTime = ((System.currentTimeMillis()+500)/1000)*1000;
-        scorecard.reload();
-        getBeaconzStore().removeGame(gameName);
-        save();
-        
-        // Set restart flag back to false
-        gameRestart = false;
-        // Game is over
-        isOver = true;
     }
 
     /**
@@ -205,14 +147,6 @@ public class Game extends BeaconzPluginDependent {
     public void save() {
         File gamesFile = new File(getBeaconzPlugin().getDataFolder(),"games.yml");
         YamlConfiguration gamesYml = YamlConfiguration.loadConfiguration(gamesFile);
-
-        // Backup the games file just in case
-        /*
-        if (gamesFile.exists()) {
-            File backup = new File(getBeaconzPlugin().getDataFolder(),"games.old");
-            gamesFile.renameTo(backup);
-        }
-         */
         // Save game name, region and all parameters
         String path = "game." + gameName;
         gamesYml.set(path + ".region", ptsToStrCoord(region.corners()));
@@ -371,8 +305,12 @@ public class Game extends BeaconzPluginDependent {
             // Remove any maps
             for (ItemStack item: player.getInventory()) {
                 if (item != null && item.getType().equals(Material.FILLED_MAP)) {
-                    if (getRegister().getBeaconMap(item.getDurability()) != null) {
-                        getRegister().removeBeaconMap(item.getDurability());
+                    if (item.getItemMeta() instanceof MapMeta mapMeta) {
+                        // Check if the map has an ID associated with it
+                        if (mapMeta.hasMapId()) {
+                            // Remove it from the register
+                            getRegister().removeBeaconMap(mapMeta.getMapId());
+                        }
                     }
                 }
             }            
@@ -487,7 +425,6 @@ public class Game extends BeaconzPluginDependent {
      * @param isOver when the game is over
      */
     public void setOver(boolean isOver) {
-        //getLogger().info("DEBUG: game setOver = " + isOver);
         this.isOver = isOver;
     }
 
