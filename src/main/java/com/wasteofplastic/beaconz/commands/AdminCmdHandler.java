@@ -126,7 +126,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
         // Permission check: Only OPs or players with admin permission can use these commands
         if (sender instanceof Player player) {
             if (!player.isOp() && !player.hasPermission("beaconz.admin")) {
-                sender.sendMessage(Component.text(Lang.errorYouDoNotHavePermission).color(NamedTextColor.RED));
+                sender.sendMessage(Lang.errorYouDoNotHavePermission.color(NamedTextColor.RED);
                 return true;
             }
         }
@@ -153,7 +153,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
             case "teams" ->  onTeams(sender, label, args);
             default -> {
                 // Unknown command - show error
-                sender.sendMessage(Component.text(Lang.errorUnknownCommand).color(NamedTextColor.RED));
+                sender.sendMessage(Lang.errorUnknownCommand.color(NamedTextColor.RED));
                 yield false;
             }
             };
@@ -178,21 +178,21 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
         if (args.length == 1) {
             // Switch sender's own team
             if (!(sender instanceof Player player)) {
-                sender.sendMessage(Component.text(Lang.errorOnlyPlayers));
+                sender.sendMessage(Lang.errorOnlyPlayers);
                 return false;
             } else {
                 Team team = getGameMgr().getPlayerTeam(player);
 
                 // Validate player is in a team
                 if (team == null) {
-                    sender.sendMessage(Component.text(Lang.errorYouMustBeInATeam).color(NamedTextColor.RED));
+                    sender.sendMessage(Lang.errorYouMustBeInATeam.color(NamedTextColor.RED));
                     return false;
                 }
 
                 // Get the game from current team
                 Game game = getGameMgr().getGame(team);
                 if (game == null) {
-                    sender.sendMessage(Component.text(Lang.errorYouMustBeInAGame).color(NamedTextColor.RED));
+                    sender.sendMessage(Lang.errorYouMustBeInAGame.color(NamedTextColor.RED));
                     return false;
                 }
 
@@ -201,9 +201,9 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                     if (!newTeam.equals(team)) {
                         // Found an alternative team - switch to it
                         game.getScorecard().addTeamPlayer(newTeam, player);
-                        sender.sendMessage(Component.text(Lang.actionsSwitchedToTeam)
+                        sender.sendMessage(Lang.actionsSwitchedToTeam)
                                 .replaceText(builder -> builder.matchLiteral("[team]").replacement(newTeam.displayName()))
-                                .color(NamedTextColor.GREEN));
+                                .color(NamedTextColor.GREEN);
 
                         // Clear all potion effects when switching teams
                         for (PotionEffect effect : player.getActivePotionEffects())
@@ -211,24 +211,24 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                         return true;
                     }
                 }
-                sender.sendMessage(Component.text(Lang.errorNoSuchTeam).color(NamedTextColor.RED));
+                sender.sendMessage(Lang.errorNoSuchTeam).color(NamedTextColor.RED);
             }
             return false;
         } else if (args.length == 2) {
             // Switch another player's team (admin forcing a switch)
             Player player = getServer().getPlayer(args[1]);
             if (player == null) {
-                sender.sendMessage(Component.text(Lang.errorUnknownPlayer));
+                sender.sendMessage(Lang.errorUnknownPlayer);
                 return false;
             } else {
                 Team team = getGameMgr().getPlayerTeam(player);
                 if (team == null) {
-                    sender.sendMessage(Component.text(Lang.errorNoSuchTeam).color(NamedTextColor.RED));
+                    sender.sendMessage(Lang.errorNoSuchTeam.color(NamedTextColor.RED);
                     return false;
                 }
                 Game game = getGameMgr().getGame(team);
                 if (game == null) {
-                    sender.sendMessage(Component.text(Lang.errorNoSuchGame).color(NamedTextColor.RED));
+                    sender.sendMessage(Lang.errorNoSuchGame.color(NamedTextColor.RED);
                     return false;
                 }
 
@@ -239,13 +239,13 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                         game.getScorecard().addTeamPlayer(newTeam, player);
 
                         // Notify both admin and player
-                        sender.sendMessage(Component.text(player.getName() + ": ")
-                                .append(Component.text(Lang.actionsSwitchedToTeam)
+                        sender.sendMessage(player.getName() + ": ")
+                                .append(Lang.actionsSwitchedToTeam)
                                         .replaceText(builder -> builder.matchLiteral("[team]").replacement(newTeam.displayName())))
-                                .color(NamedTextColor.GREEN));
-                        player.sendMessage(Component.text(Lang.actionsSwitchedToTeam)
+                                .color(NamedTextColor.GREEN);
+                        player.sendMessage(Lang.actionsSwitchedToTeam)
                                 .replaceText(builder -> builder.matchLiteral("[team]").replacement(newTeam.displayName()))
-                                .color(NamedTextColor.GREEN));
+                                .color(NamedTextColor.GREEN);
 
                         // Remove any potion effects
                         for (PotionEffect effect : player.getActivePotionEffects())
@@ -253,7 +253,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                         return true;
                     }
                 }
-                sender.sendMessage(Component.text(Lang.errorNoSuchTeam).color(NamedTextColor.RED));
+                sender.sendMessage(Lang.errorNoSuchTeam.color(NamedTextColor.RED);
             }
             return false;
         }
@@ -278,11 +278,11 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
         // JOIN COMMAND: Force a player to join a specific team in a specific game
         // Admin bypass for normal join restrictions
         if (args.length < 3) {
-            sender.sendMessage(Component.text("/" + label + " join <gamename> <team>" + Lang.helpAdminJoin).color(NamedTextColor.RED));
+            sender.sendMessage("/" + label + " join <gamename> <team>" + Lang.helpAdminJoin).color(NamedTextColor.RED);
             return false;
         } else {
             if (!(sender instanceof Player player)) {
-                sender.sendMessage(Component.text(Lang.errorOnlyPlayers));
+                sender.sendMessage(Lang.errorOnlyPlayers));
                 return false;
             } else {
                 Game game = getGameMgr().getGame(args[1]);
@@ -295,13 +295,13 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                         game.getScorecard().addTeamPlayer(joinTeam, player);
                         player.setScoreboard(game.getScorecard().getScoreboard());
                         game.getScorecard().sendPlayersHome(player, false);
-                        sender.sendMessage(Component.text(Lang.actionsYouAreInTeam)
+                        sender.sendMessage(Lang.actionsYouAreInTeam)
                                 .replaceText(builder -> builder.matchLiteral("[team]").replacement(joinTeam.displayName()))
-                                .color(NamedTextColor.GREEN));
+                                .color(NamedTextColor.GREEN);
                         return true;
                     }
                 } else {
-                    sender.sendMessage(Component.text("/" + label + " join <gamename> <team> - " + Lang.errorNoSuchGame));
+                    sender.sendMessage("/" + label + " join <gamename> <team> - " + Lang.errorNoSuchGame));
                 }
             }
         }
@@ -320,16 +320,16 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
      */
     private boolean onGames(CommandSender sender) {
         // GAMES COMMAND: List all active games and their regions including the lobby
-        sender.sendMessage(Component.text(Lang.adminGamesDefined).color(NamedTextColor.GREEN));
-        sender.sendMessage(Component.text(Lang.adminGamesTheLobby + " - " + getGameMgr().getLobby().displayCoords()).color(NamedTextColor.AQUA));
+        sender.sendMessage(Lang.adminGamesDefined.color(NamedTextColor.GREEN);
+        sender.sendMessage(Lang.adminGamesTheLobby + " - " + getGameMgr().getLobby().displayCoords()).color(NamedTextColor.AQUA));
 
         // Count and display all games
         int cnt = 0;
         for (Game g : getGameMgr().getGames().values()) {
             cnt ++;
-            sender.sendMessage(Component.text(g.getName() + " - " + g.getRegion().displayCoords()).color(NamedTextColor.AQUA));
+            sender.sendMessage(g.getName() + " - " + g.getRegion().displayCoords()).color(NamedTextColor.AQUA));
         }
-        if (cnt == 0) sender.sendMessage(Component.text(Lang.adminGamesNoOthers).color(NamedTextColor.AQUA));
+        if (cnt == 0) sender.sendMessage(Lang.adminGamesNoOthers.color(NamedTextColor.AQUA));
         return true;
     }
 
@@ -349,30 +349,30 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
     private boolean onKick(CommandSender sender, String label, String[] args) {
         // KICK COMMAND: Remove a player from a game (sends them to lobby)
         if (args.length < 3) {
-            sender.sendMessage(Component.text("/" + label + Lang.helpAdminKick).color(NamedTextColor.RED));
+            sender.sendMessage("/" + label + Lang.helpAdminKick.color(NamedTextColor.RED);
             return false;
         } else {
             Player player = getServer().getPlayer(args[1]);
 
             // Check if player exists or if "all" was specified
             if (player == null && !args[1].equals("all")) {
-                sender.sendMessage(Component.text(Lang.errorUnknownPlayer));
+                sender.sendMessage(Lang.errorUnknownPlayer));
                 return false;
             } else {
                 Game game = getGameMgr().getGame(args[2]);
                 if (game == null) {
-                    sender.sendMessage(Component.text(Lang.errorNoSuchGame));
+                    sender.sendMessage(Lang.errorNoSuchGame));
                     return false;
                 } else {
                     // Process kick - either all players or specific player
                     if (args[2].equals("all")) {
                         game.kickAll();
-                        sender.sendMessage(Component.text(Lang.adminKickAllPlayers.replace("[name]", game.getName())));
+                        sender.sendMessage(Lang.adminKickAllPlayers.replace("[name]", game.getName())));
                         return true;
                     } else {
                         if (player != null) {
                             game.kick(sender, player);
-                            sender.sendMessage(Component.text(Lang.adminKickPlayer.replace("[player]", player.getName()).replace("[name]", game.getName())));
+                            sender.sendMessage(Lang.adminKickPlayer.replace("[player]", player.getName()).replace("[name]", game.getName())));
                             return true;
                         }
                     }
@@ -399,12 +399,12 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
         // DELETE COMMAND: Permanently delete a game and its region
         // WARNING: This cannot be undone!
         if (args.length < 2) {
-            sender.sendMessage(Component.text("/" + label + " delete <gamename> - " + Lang.helpAdminDelete).color(NamedTextColor.RED));
+            sender.sendMessage("/" + label + " delete <gamename> - " + Lang.helpAdminDelete.color(NamedTextColor.RED);
             return false;
         } else {
             Game game = getGameMgr().getGames().get(args[1]);
             if (game == null) {
-                sender.sendMessage(Component.text(Lang.errorNoSuchGame + "'" + args[1] + "'").color(NamedTextColor.RED));
+                sender.sendMessage(Lang.errorNoSuchGame + "'" + args[1] + "'").color(NamedTextColor.RED);
                 return false;
             } else {
                 // Check if this has been entered twice
@@ -413,19 +413,19 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                     this.deleteConfirm.add(uuid);
                     Bukkit.getScheduler().runTaskLater(beaconzPlugin, () -> {
                         if (deleteConfirm.remove(uuid)) {
-                            sender.sendMessage(Component.text(Lang.errorRequestCanceled).color(NamedTextColor.RED));
+                            sender.sendMessage(Lang.errorRequestCanceled.color(NamedTextColor.RED);
                         }
                     }, 200); // 10 seconds
-                    sender.sendMessage(Component.text(Lang.adminDeleteGameConfirm.replace("[name]", game.getName())).color(NamedTextColor.LIGHT_PURPLE));
+                    sender.sendMessage(Lang.adminDeleteGameConfirm.replace("[name]", game.getName())).color(NamedTextColor.LIGHT_PURPLE));
                     return false;
                 }
                 this.deleteConfirm.remove(uuid);
 
                 // Confirm deletion started
-                sender.sendMessage(Component.text(Lang.adminDeletingGame.replace("[name]", game.getName())).color(NamedTextColor.GREEN));
+                sender.sendMessage(Lang.adminDeletingGame.replace("[name]", game.getName())).color(NamedTextColor.GREEN);
                 getGameMgr().delete(sender, game);
                 // Confirm deletion completed
-                sender.sendMessage(Component.text(Lang.adminDeletedGame.replace("[name]", game.getName())).color(NamedTextColor.GREEN));
+                sender.sendMessage(Lang.adminDeletedGame.replace("[name]", game.getName())).color(NamedTextColor.GREEN);
                 return true;
             }
         }
@@ -448,16 +448,16 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
         // FORCE_END COMMAND: Immediately end a game and declare a winner
         // Useful for testing or ending stalled games
         if (args.length < 2) {
-            sender.sendMessage(Component.text("/" + label + " force_end <gamename>" + Lang.helpAdminForceEnd).color(NamedTextColor.RED));
+            sender.sendMessage("/" + label + " force_end <gamename>" + Lang.helpAdminForceEnd.color(NamedTextColor.RED);
             return false;
         } else {
             Game game = getGameMgr().getGames().get(args[1]);
             if (game == null) {
-                sender.sendMessage(Component.text(Lang.errorNoSuchGame + "'" + args[1] + "'").color(NamedTextColor.RED));
+                sender.sendMessage(Lang.errorNoSuchGame + "'" + args[1] + "'").color(NamedTextColor.RED);
                 return false;
             } else {
                 game.forceEnd();
-                sender.sendMessage(Component.text(Lang.adminForceEnd.replace("[name]", game.getName())).color(NamedTextColor.GREEN));
+                sender.sendMessage(Lang.adminForceEnd.replace("[name]", game.getName())).color(NamedTextColor.GREEN);
                 return true;
             }
         }
@@ -481,7 +481,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
         // LIST COMMAND: Display all beacons in a game or across all games
         // Optional filter by team name or "unowned"
         if (args.length < 2) {
-            sender.sendMessage(Component.text("/" + label + " list [all |<gamename>] [team] " + Lang.helpAdminList).color(NamedTextColor.RED));
+            sender.sendMessage("/" + label + " list [all |<gamename>] [team] " + Lang.helpAdminList.color(NamedTextColor.RED);
             return false;
         } else if (args.length == 3) {
             // List with team filter
@@ -513,32 +513,32 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
         // NEWGAME COMMAND: Create a new game with optional custom parameters
         // Parameters can override defaults: gamemode, size, teams, goal, goalvalue, countdown, scoretypes, distribution
         if (args.length < 2) {
-            sender.sendMessage(Component.text("/" + label + " newgame <gamename> [<parm1:value> <parm2:value>...] - parameters are optional"));
-            sender.sendMessage(Component.text("/" + label + " do /" + label + " newgame help for a list of the possible parameters"));
+            sender.sendMessage("/" + label + " newgame <gamename> [<parm1:value> <parm2:value>...] - parameters are optional"));
+            sender.sendMessage("/" + label + " do /" + label + " newgame help for a list of the possible parameters"));
             return false;
         } else {
             if (args[1].equalsIgnoreCase("help")) {
                 // Display detailed help for all game parameters
-                sender.sendMessage(Component.text("/" + label + " newgame <gamename> [<parm1:value> <parm2:value>...]"));
-                sender.sendMessage(Component.text("The optional parameters and their values are:").color(NamedTextColor.GREEN));
+                sender.sendMessage("/" + label + " newgame <gamename> [<parm1:value> <parm2:value>...]"));
+                sender.sendMessage("The optional parameters and their values are:").color(NamedTextColor.GREEN);
 
                 // Document each parameter with examples
-                sender.sendMessage(Component.text("gamemode -  ").color(NamedTextColor.YELLOW)
-                        .append(Component.text(" values can be either 'minigame' or 'strategy' - e.g gamemode:strategy").color(NamedTextColor.AQUA)));
-                sender.sendMessage(Component.text("size -  ").color(NamedTextColor.YELLOW)
-                        .append(Component.text(" length for the side of the game region - e.g. size:500").color(NamedTextColor.AQUA)));
-                sender.sendMessage(Component.text("teams -  ").color(NamedTextColor.YELLOW)
-                        .append(Component.text(" the number of teams in the game - e.g. teams:2").color(NamedTextColor.AQUA)));
-                sender.sendMessage(Component.text("goal -  ").color(NamedTextColor.YELLOW)
-                        .append(Component.text("  one of 'area', 'beacons', 'links', 'triangles' - e.g. goal:links").color(NamedTextColor.AQUA)));
-                sender.sendMessage(Component.text("goalvalue -  ").color(NamedTextColor.YELLOW)
-                        .append(Component.text("  the number objective for the goal - e.g goalvalue:100").color(NamedTextColor.AQUA)));
-                sender.sendMessage(Component.text("countdown -  ").color(NamedTextColor.YELLOW)
-                        .append(Component.text("  the game's timer, in seconds. 0 means the timer runs up, open-ended; any other value meands the timer runs a countdown from that time. - e.g. countdown:600").color(NamedTextColor.AQUA)));
-                sender.sendMessage(Component.text("scoretypes -  ").color(NamedTextColor.YELLOW)
-                        .append(Component.text("  the scores to be displayed on the sidebar. Can be any combination of goal names separated by '-' e.g scoretypes:area-triangles-beacons-links").color(NamedTextColor.AQUA)));
-                sender.sendMessage(Component.text("distribution -  ").color(NamedTextColor.YELLOW)
-                        .append(Component.text("  overrides the system's default beacon distribution - specify a number between 0.01 and 0.99 for the probability of any one chunk containing a beacon.").color(NamedTextColor.AQUA)));
+                sender.sendMessage("gamemode -  ").color(NamedTextColor.YELLOW)
+                        .append(" values can be either 'minigame' or 'strategy' - e.g gamemode:strategy").color(NamedTextColor.AQUA)));
+                sender.sendMessage("size -  ").color(NamedTextColor.YELLOW)
+                        .append(" length for the side of the game region - e.g. size:500").color(NamedTextColor.AQUA)));
+                sender.sendMessage("teams -  ").color(NamedTextColor.YELLOW)
+                        .append(" the number of teams in the game - e.g. teams:2").color(NamedTextColor.AQUA)));
+                sender.sendMessage("goal -  ").color(NamedTextColor.YELLOW)
+                        .append("  one of 'area', 'beacons', 'links', 'triangles' - e.g. goal:links").color(NamedTextColor.AQUA)));
+                sender.sendMessage("goalvalue -  ").color(NamedTextColor.YELLOW)
+                        .append("  the number objective for the goal - e.g goalvalue:100").color(NamedTextColor.AQUA)));
+                sender.sendMessage("countdown -  ").color(NamedTextColor.YELLOW)
+                        .append("  the game's timer, in seconds. 0 means the timer runs up, open-ended; any other value meands the timer runs a countdown from that time. - e.g. countdown:600").color(NamedTextColor.AQUA)));
+                sender.sendMessage("scoretypes -  ").color(NamedTextColor.YELLOW)
+                        .append("  the scores to be displayed on the sidebar. Can be any combination of goal names separated by '-' e.g scoretypes:area-triangles-beacons-links").color(NamedTextColor.AQUA)));
+                sender.sendMessage("distribution -  ").color(NamedTextColor.YELLOW)
+                        .append("  overrides the system's default beacon distribution - specify a number between 0.01 and 0.99 for the probability of any one chunk containing a beacon.").color(NamedTextColor.AQUA)));
                 return true;
             } else {
                 // Parse and create game with parameters
@@ -548,28 +548,28 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
 
                 // Check if game name already exists
                 if (game != null) {
-                    sender.sendMessage(Component.text(Lang.errorAlreadyExists.replace("[name]", game.getName())).color(NamedTextColor.RED));
+                    sender.sendMessage(Lang.errorAlreadyExists.replace("[name]", game.getName())).color(NamedTextColor.RED);
                     return false;
                 } else {
                     // Check and validate parameters if provided
                     if (parmargs.length > 0) {
                         String errormsg = setDefaultParms(parmargs);  // temporarily set up the given parameters as default
                         if (!errormsg.isEmpty()) {
-                            sender.sendMessage(Component.text(Lang.errorError + errormsg).color(NamedTextColor.RED));
+                            sender.sendMessage(Lang.errorError + errormsg).color(NamedTextColor.RED);
                             getGameMgr().setGameDefaultParms();      // restore the default parameters (just in case)
                             return false;
                         } else {
-                            sender.sendMessage(Component.text(Lang.adminNewGameBuilding).color(NamedTextColor.GREEN));
+                            sender.sendMessage(Lang.adminNewGameBuilding.color(NamedTextColor.GREEN);
                             getGameMgr().newGame(args[1]);           // create the new game
                             getGameMgr().setGameDefaultParms();      // restore the default parameters
-                            sender.sendMessage(Component.text(Lang.generalSuccess).color(NamedTextColor.GREEN));
+                            sender.sendMessage(Lang.generalSuccess.color(NamedTextColor.GREEN));
                             return true;
                         }
                     } else {
                         // Create game with default parameters
-                        sender.sendMessage(Component.text(Lang.adminNewGameBuilding).color(NamedTextColor.GREEN));
+                        sender.sendMessage(Lang.adminNewGameBuilding.color(NamedTextColor.GREEN));
                         getGameMgr().newGame(args[1]);
-                        sender.sendMessage(Component.text(Lang.generalSuccess).color(NamedTextColor.GREEN));
+                        sender.sendMessage(Lang.generalSuccess.color(NamedTextColor.GREEN));
                         return true;
                     }
                 }
@@ -598,7 +598,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
         this.getBeaconzPlugin().loadConfig();
         getGameMgr().reload();
         getRegister().loadRegister();
-        sender.sendMessage(Component.text(Lang.adminReload).color(NamedTextColor.RED));
+        sender.sendMessage(Lang.adminReload.color(NamedTextColor.RED));
         return true;
 
     }
@@ -621,25 +621,25 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
         // LISTPARMS COMMAND: Display all parameters for a specific game
         // Shows: mode, teams, goal, goal value, score types
         if (args.length < 2) {
-            sender.sendMessage(Component.text("/" + label + " listparms <gamename> " + Lang.helpAdminListParms));
+            sender.sendMessage("/" + label + " listparms <gamename> " + Lang.helpAdminListParms));
             return false;
         } else {
             Game game = getGameMgr().getGame(args[1]);
             if (game == null) {
-                sender.sendMessage(Component.text(Lang.errorNoSuchGame + "'" + args[1] + "'").color(NamedTextColor.RED));
+                sender.sendMessage(Lang.errorNoSuchGame + "'" + args[1] + "'").color(NamedTextColor.RED);
                 return false;
             } else {
                 // Display each game parameter with color formatting
-                sender.sendMessage(Component.text(Lang.adminParmsMode + ": ").color(NamedTextColor.YELLOW)
-                        .append(Component.text(game.getGamemode()).color(NamedTextColor.AQUA)));
-                sender.sendMessage(Component.text(Lang.adminParmsTeams + ": ").color(NamedTextColor.YELLOW)
-                        .append(Component.text(String.valueOf(game.getNbrTeams())).color(NamedTextColor.AQUA)));
-                sender.sendMessage(Component.text(Lang.adminParmsGoal + ": ").color(NamedTextColor.YELLOW)
-                        .append(Component.text(game.getGamegoal()).color(NamedTextColor.AQUA)));
-                sender.sendMessage(Component.text(Lang.adminParmsGoalValue + ": ").color(NamedTextColor.YELLOW)
-                        .append(Component.text(game.getGamegoalvalue() == 0 ? Lang.adminParmsUnlimited : String.format(Locale.US, "%,d", game.getGamegoalvalue())).color(NamedTextColor.AQUA)));
-                sender.sendMessage(Component.text(Lang.adminParmsScoreTypes + ": ").color(NamedTextColor.YELLOW)
-                        .append(Component.text(game.getScoretypes()).color(NamedTextColor.AQUA)));
+                sender.sendMessage(Lang.adminParmsMode + ": ").color(NamedTextColor.YELLOW)
+                        .append(game.getGamemode()).color(NamedTextColor.AQUA)));
+                sender.sendMessage(Lang.adminParmsTeams + ": ").color(NamedTextColor.YELLOW)
+                        .append(String.valueOf(game.getNbrTeams())).color(NamedTextColor.AQUA)));
+                sender.sendMessage(Lang.adminParmsGoal + ": ").color(NamedTextColor.YELLOW)
+                        .append(game.getGamegoal()).color(NamedTextColor.AQUA)));
+                sender.sendMessage(Lang.adminParmsGoalValue + ": ").color(NamedTextColor.YELLOW)
+                        .append(game.getGamegoalvalue() == 0 ? Lang.adminParmsUnlimited : String.format(Locale.US, "%,d", game.getGamegoalvalue())).color(NamedTextColor.AQUA)));
+                sender.sendMessage(Lang.adminParmsScoreTypes + ": ").color(NamedTextColor.YELLOW)
+                        .append(game.getScoretypes()).color(NamedTextColor.AQUA)));
                 return true;
             }
         }
@@ -664,23 +664,23 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
         // SETSPAWN COMMAND: Set the lobby spawn point where players teleport when joining
         // Must be executed by a player standing in the lobby region
         if (args.length > 2) {
-            sender.sendMessage(Component.text("/" + label + " setspawn " + Lang.helpAdminSetLobbySpawn).color(NamedTextColor.RED));
+            sender.sendMessage("/" + label + " setspawn " + Lang.helpAdminSetLobbySpawn).color(NamedTextColor.RED);
             return false;
         } else {
             // Admin set team spawn
             if (!(sender instanceof Player player)) {
-                sender.sendMessage(Component.text(Lang.errorOnlyPlayers).color(NamedTextColor.RED));
+                sender.sendMessage(Lang.errorOnlyPlayers).color(NamedTextColor.RED);
                 return false;
             }
             // Check if the player is in the lobby region
             if (args.length == 1 && getGameMgr().getLobby().isPlayerInRegion(player)) {
                 // Set spawn to player's current location
                 getGameMgr().getLobby().setSpawnPoint(player.getLocation());
-                sender.sendMessage(Component.text(Lang.generalSuccess + " (" + player.getLocation().getBlockX() + ","
-                        + player.getLocation().getBlockY() + "," + player.getLocation().getBlockZ() + ")").color(NamedTextColor.GREEN));
+                sender.sendMessage(Lang.generalSuccess + " (" + player.getLocation().getBlockX() + ","
+                        + player.getLocation().getBlockY() + "," + player.getLocation().getBlockZ() + ")").color(NamedTextColor.GREEN);
                 return true;
             } else {
-                sender.sendMessage(Component.text(Lang.helpAdminSetLobbySpawn).color(NamedTextColor.RED));
+                sender.sendMessage(Lang.helpAdminSetLobbySpawn).color(NamedTextColor.RED);
                 return false;
             }
         }
@@ -703,7 +703,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
         // TEAMS COMMAND: Display team rosters showing all team members
         // Can view a specific game or all games
         if (args.length < 2) {
-            sender.sendMessage(Component.text("/" + label + " teams [all | <gamename>] " + Lang.helpAdminTeams).color(NamedTextColor.RED));
+            sender.sendMessage("/" + label + " teams [all | <gamename>] " + Lang.helpAdminTeams).color(NamedTextColor.RED);
             return false;
         } else {
             boolean foundgame = false;
@@ -712,26 +712,26 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
             for (String gname : getGameMgr().getGames().keySet()) {
                 if (args[1].equalsIgnoreCase("all") || gname.equals(args[1])) {
                     Game game = getGameMgr().getGames().get(gname);
-                    sender.sendMessage(Component.text(Lang.generalTeams + " - " + gname).color(NamedTextColor.GREEN));
+                    sender.sendMessage(Lang.generalTeams + " - " + gname).color(NamedTextColor.GREEN);
 
                     Scoreboard sb = game.getScorecard().getScoreboard();
                     if (sb == null) {
-                        sender.sendMessage(Component.text(Lang.errorNoSuchGame + "'" + args[1] + "'").color(NamedTextColor.RED));
+                        sender.sendMessage(Lang.errorNoSuchGame + "'" + args[1] + "'").color(NamedTextColor.RED);
                         return false;
                     } else {
                         // Display each team and its members
                         HashMap<Team, List<String>> teamMembers = game.getScorecard().getTeamMembers();
                         for (Team t : teamMembers.keySet()) {
-                            sender.sendMessage(Component.text("==== ")
+                            sender.sendMessage("==== ")
                                     .append(t.displayName())
-                                    .append(Component.text(" ====")));
+                                    .append(" ====")));
 
                             // Build member list from UUIDs
                             StringBuilder memberlist = new StringBuilder();
                             for (String uuid : teamMembers.get(t)) {
                                 memberlist.append("[").append(getServer().getOfflinePlayer(UUID.fromString(uuid)).getName()).append("] ");
                             }
-                            sender.sendMessage(Component.text(Lang.generalMembers + ": " + memberlist).color(NamedTextColor.WHITE));
+                            sender.sendMessage(Lang.generalMembers + ": " + memberlist).color(NamedTextColor.WHITE));
                         }
                         return true;
                     }
@@ -741,9 +741,9 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
             // Handle case where no matching game was found
             if (!foundgame) {
                 if (args[1].equalsIgnoreCase("all")) {
-                    sender.sendMessage(Component.text(Lang.errorNoGames));
+                    sender.sendMessage(Lang.errorNoGames));
                 } else {
-                    sender.sendMessage(Component.text(Lang.errorNoSuchGame + "'" + args[1] + "'").color(NamedTextColor.RED));
+                    sender.sendMessage(Lang.errorNoSuchGame + "'" + args[1] + "'").color(NamedTextColor.RED);
                 }
             }
         }
@@ -774,11 +774,11 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                 double dist = Double.parseDouble(args[1]);
                 if (dist > 0D && dist < 1D) {
                     Settings.distribution = dist;
-                    sender.sendMessage(Component.text(Lang.actionsDistributionSettingTo.replace("[value]", String.valueOf(dist))).color(NamedTextColor.GREEN));
+                    sender.sendMessage(Lang.actionsDistributionSettingTo.replace("[value]", String.valueOf(dist))).color(NamedTextColor.GREEN);
                     return true;
                 }
             } catch (Exception e) {
-                sender.sendMessage(Component.text(label + " distribution <fraction> - must be less than 1").color(NamedTextColor.RED));
+                sender.sendMessage(label + " distribution <fraction> - must be less than 1").color(NamedTextColor.RED);
             }
         }
         return false;
@@ -801,32 +801,32 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
         // CLAIM COMMAND: Admin beacon claim - forcibly assign beacons to teams or mark as unowned
         // Requires player to be standing on the beacon block
         if (args.length < 2) {
-            sender.sendMessage(Component.text("/" + label + " claim [unowned | <team>]").color(NamedTextColor.RED));
+            sender.sendMessage("/" + label + " claim [unowned | <team>]").color(NamedTextColor.RED);
             return false;
         } else {
             if (!(sender instanceof Player player)) {
-                sender.sendMessage(Component.text(Lang.errorOnlyPlayers));
+                sender.sendMessage(Lang.errorOnlyPlayers));
                 return false;
             } else {
                 // Check the argument
                 Game game = getGameMgr().getGame(player.getLocation());
                 Team team = game.getScorecard().getTeam(args[1]);
                 if (team == null && !args[1].equalsIgnoreCase("unowned")) {
-                    sender.sendMessage(Component.text("/" + label + " claim [unowned, " + game.getScorecard().getTeamListString() + "]").color(NamedTextColor.RED));
+                    sender.sendMessage("/" + label + " claim [unowned, " + game.getScorecard().getTeamListString() + "]").color(NamedTextColor.RED);
                     return false;
                 } else {
                     // Check if player is standing on a beacon
                     Block block = player.getLocation().getBlock().getRelative(BlockFace.DOWN);
                     if (!getRegister().isBeacon(block)) {
-                        sender.sendMessage(Component.text(Lang.errorYouHaveToBeStandingOnABeacon));
+                        sender.sendMessage(Lang.errorYouHaveToBeStandingOnABeacon));
                         return false;
                     } else {
                         Point2D newClaim = new Point2D.Double(block.getX(), block.getZ());
-                        player.sendMessage(Component.text(Lang.beaconClaimingBeaconAt.replace("[location]", newClaim.toString())));
+                        player.sendMessage(Lang.beaconClaimingBeaconAt.replace("[location]", newClaim.toString())));
 
                         // Verify beacon is registered
                         if (!getRegister().getBeaconRegister().containsKey(newClaim)) {
-                            player.sendMessage(Component.text(Lang.errorNotInRegister + newClaim).color(NamedTextColor.RED));
+                            player.sendMessage(Lang.errorNotInRegister + newClaim).color(NamedTextColor.RED);
                             return false;
                         } else {
                             BeaconObj beacon = getRegister().getBeaconRegister().get(newClaim);
@@ -839,7 +839,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                                 getRegister().setBeaconOwner(beacon, team);
                                 block.setType(game.getScorecard().getBlockID(team));
                             }
-                            player.sendMessage(Component.text(Lang.beaconClaimedForTeam.replace("[team]", args[1])));
+                            player.sendMessage(Lang.beaconClaimedForTeam.replace("[team]", args[1])));
                             return true;
                         }
                     }
@@ -873,72 +873,72 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
         NamedTextColor aqua = NamedTextColor.AQUA;
 
         // Display help header
-        sender.sendMessage(Component.text(Lang.helpLine).color(green));
-        sender.sendMessage(Component.text(Lang.helpAdminTitle).color(yellow));
-        sender.sendMessage(Component.text(Lang.helpLine).color(green));
+        sender.sendMessage(Lang.helpLine).color(green));
+        sender.sendMessage(Lang.helpAdminTitle).color(yellow));
+        sender.sendMessage(Lang.helpLine).color(green));
 
         // Player-only commands (require physical presence in game world)
         if (sender instanceof Player) {
-            sender.sendMessage(Component.text("/" + label).color(green)
-                    .append(Component.text(" claim [unowned | <team>]").color(yellow))
-                    .append(Component.text(Lang.helpAdminClaim).color(aqua)));
+            sender.sendMessage("/" + label).color(green)
+                    .append(" claim [unowned | <team>]").color(yellow))
+                    .append(Lang.helpAdminClaim).color(aqua)));
         }
 
         // Console-compatible commands
-        sender.sendMessage(Component.text("/" + label).color(green)
-                .append(Component.text(" delete <gamename>").color(yellow))
-                .append(Component.text(Lang.helpAdminDelete).color(aqua)));
+        sender.sendMessage("/" + label).color(green)
+                .append(" delete <gamename>").color(yellow))
+                .append(Lang.helpAdminDelete).color(aqua)));
 
         if (sender instanceof Player) {
-            sender.sendMessage(Component.text("/" + label).color(green)
-                    .append(Component.text(" join <gamename> <team>").color(yellow))
-                    .append(Component.text(Lang.helpAdminJoin).color(aqua)));
+            sender.sendMessage("/" + label).color(green)
+                    .append(" join <gamename> <team>").color(yellow))
+                    .append(Lang.helpAdminJoin).color(aqua)));
         }
 
-        sender.sendMessage(Component.text("/" + label).color(green)
-                .append(Component.text(" games").color(yellow))
-                .append(Component.text(Lang.helpAdminGames).color(aqua)));
+        sender.sendMessage("/" + label).color(green)
+                .append(" games").color(yellow))
+                .append(Lang.helpAdminGames).color(aqua)));
 
-        sender.sendMessage(Component.text("/" + label).color(green)
-                .append(Component.text(" force_end <gamename>").color(yellow))
-                .append(Component.text(Lang.helpAdminForceEnd).color(aqua)));
+        sender.sendMessage("/" + label).color(green)
+                .append(" force_end <gamename>").color(yellow))
+                .append(Lang.helpAdminForceEnd).color(aqua)));
 
-        sender.sendMessage(Component.text("/" + label).color(green)
-                .append(Component.text(" list [all |<gamename>] [team]").color(yellow))
-                .append(Component.text(Lang.helpAdminList).color(aqua)));
+        sender.sendMessage("/" + label).color(green)
+                .append(" list [all |<gamename>] [team]").color(yellow))
+                .append(Lang.helpAdminList).color(aqua)));
 
-        sender.sendMessage(Component.text("/" + label).color(green)
-                .append(Component.text(" listparms <gamename>").color(yellow))
-                .append(Component.text(Lang.helpAdminListParms).color(aqua)));
+        sender.sendMessage("/" + label).color(green)
+                .append(" listparms <gamename>").color(yellow))
+                .append(Lang.helpAdminListParms).color(aqua)));
 
-        sender.sendMessage(Component.text("/" + label).color(green)
-                .append(Component.text(" newgame <gamename> [<parm1:value> <parm2:value>...]").color(yellow))
-                .append(Component.text(Lang.helpAdminNewGame.replace("[label]", label)).color(aqua)));
+        sender.sendMessage("/" + label).color(green)
+                .append(" newgame <gamename> [<parm1:value> <parm2:value>...]").color(yellow))
+                .append(Lang.helpAdminNewGame.replace("[label]", label)).color(aqua)));
 
-        sender.sendMessage(Component.text("/" + label).color(green)
-                .append(Component.text(" reload").color(yellow))
-                .append(Component.text(Lang.helpAdminReload).color(aqua)));
+        sender.sendMessage("/" + label).color(green)
+                .append(" reload").color(yellow))
+                .append(Lang.helpAdminReload).color(aqua)));
 
         // Spawn-related commands (player-only)
         if (sender instanceof Player) {
-            sender.sendMessage(Component.text("/" + label).color(green)
-                    .append(Component.text(" setspawn <team>").color(yellow))
-                    .append(Component.text(Lang.helpAdminSetTeamSpawn).color(aqua)));
-            sender.sendMessage(Component.text("/" + label).color(green)
-                    .append(Component.text(" setspawn ").color(yellow))
-                    .append(Component.text(Lang.helpAdminSetLobbySpawn).color(aqua)));
-            sender.sendMessage(Component.text("/" + label).color(green)
-                    .append(Component.text(" switch ").color(yellow))
-                    .append(Component.text(Lang.helpAdminSwitch).color(aqua)));
+            sender.sendMessage("/" + label).color(green)
+                    .append(" setspawn <team>").color(yellow))
+                    .append(Lang.helpAdminSetTeamSpawn).color(aqua)));
+            sender.sendMessage("/" + label).color(green)
+                    .append(" setspawn ").color(yellow))
+                    .append(Lang.helpAdminSetLobbySpawn).color(aqua)));
+            sender.sendMessage("/" + label).color(green)
+                    .append(" switch ").color(yellow))
+                    .append(Lang.helpAdminSwitch).color(aqua)));
         }
 
-        sender.sendMessage(Component.text("/" + label).color(green)
-                .append(Component.text(" switch <online playername> ").color(yellow))
-                .append(Component.text(Lang.helpAdminSwitch).color(aqua)));
+        sender.sendMessage("/" + label).color(green)
+                .append(" switch <online playername> ").color(yellow))
+                .append(Lang.helpAdminSwitch).color(aqua)));
 
-        sender.sendMessage(Component.text("/" + label).color(green)
-                .append(Component.text(" teams [all | <gamename>]").color(yellow))
-                .append(Component.text(Lang.helpAdminTeams).color(aqua)));
+        sender.sendMessage("/" + label).color(green)
+                .append(" teams [all | <gamename>]").color(yellow))
+                .append(Lang.helpAdminTeams).color(aqua)));
         return true;
     }
 
@@ -975,7 +975,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
      */
     public void listBeacons(CommandSender sender, String name, String search) {
         // Display header
-        sender.sendMessage(Component.text(Lang.adminListBeaconsInGame.replace("[name]", name)).color(NamedTextColor.GREEN));
+        sender.sendMessage(Lang.adminListBeaconsInGame.replace("[name]", name)).color(NamedTextColor.GREEN);
 
         boolean none = true;      // Track if any beacons were found
         boolean noGame = true;    // Track if the specified game exists
@@ -1002,7 +1002,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                                 PlainTextComponentSerializer.plainText().serialize(b.getOwnership().displayName());
 
                     // Display beacon information
-                    sender.sendMessage(Component.text(game.getName() + ": " +
+                    sender.sendMessage(game.getName() + ": " +
                             b.getLocation().getBlockX() + "," +
                             b.getLocation().getBlockY() + "," +
                             b.getLocation().getBlockZ() + " >> " +
@@ -1014,13 +1014,13 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
 
         // Handle cases where no beacons or games were found
         if (none) {
-            sender.sendMessage(Component.text(Lang.generalNone));
+            sender.sendMessage(Lang.generalNone));
         }
         if (noGame) {
             if (name.equals("all")) {
-                sender.sendMessage(Component.text(Lang.errorNoGames));
+                sender.sendMessage(Lang.errorNoGames));
             } else {
-                sender.sendMessage(Component.text(Lang.errorNoSuchGame + " '" + name + "'").color(NamedTextColor.RED));
+                sender.sendMessage(Lang.errorNoSuchGame + " '" + name + "'").color(NamedTextColor.RED);
             }
         }
     }
