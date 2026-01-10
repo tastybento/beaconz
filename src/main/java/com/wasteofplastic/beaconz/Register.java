@@ -52,8 +52,8 @@ import org.bukkit.scoreboard.Team;
 import com.wasteofplastic.beaconz.map.BeaconMap;
 import com.wasteofplastic.beaconz.map.TerritoryMapRenderer;
 
-import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
 /**
  * Central registry and database for all game elements in the Beaconz world.
@@ -206,7 +206,7 @@ public class Register extends BeaconzPluginDependent {
         for (BeaconObj beacon : beaconRegister.values()) {
             // Determine which game this beacon belongs to
             Game game = getGameMgr().getGame(beacon.getPoint());
-            Component gameName = game == null ? Component.text("None"):game.getName();
+            String gameName = game == null ? "None" :  PlainTextComponentSerializer.plainText().serialize(game.getName());
             beaconzYml.set("beacon." + count + ".game",gameName);
 
             // Store beacon ownership (team name or "unowned")
