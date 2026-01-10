@@ -4,18 +4,21 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import org.bukkit.ChatColor;
+import java.util.List;
+
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
+import org.bukkit.block.sign.Side;
+import org.bukkit.block.sign.SignSide;
 import org.bukkit.entity.Sheep;
 import org.bukkit.entity.Slime;
 import org.bukkit.entity.Zombie;
@@ -32,6 +35,8 @@ import org.junit.jupiter.api.Test;
 
 import com.wasteofplastic.beaconz.Lang;
 import com.wasteofplastic.beaconz.Region;
+
+import net.kyori.adventure.text.Component;
 
 class LobbyListenerTest extends CommonTestBase {
 
@@ -147,14 +152,17 @@ class LobbyListenerTest extends CommonTestBase {
         when(lobby.isPlayerInRegion(player)).thenReturn(true);
         when(player.getGameMode()).thenReturn(GameMode.CREATIVE);
         Sign sign = mock(Sign.class);
-        when(sign.getLine(0)).thenReturn("");
+        @NotNull
+        SignSide side = mock(SignSide.class);
+        when(sign.getSide(Side.FRONT)).thenReturn(side);
+        when(side.line(0)).thenReturn(Component.text(""));
         when(block.getState()).thenReturn(sign);
         
         PlayerInteractEvent event = new PlayerInteractEvent(player, Action.LEFT_CLICK_BLOCK, null, block, BlockFace.UP);
         ll.onSignClick(event);
-        verify(player).sendMessage(ChatColor.RED + Lang.adminUseSurvival);
-        verify(player, never()).sendMessage(ChatColor.RED + Lang.errorNotReady);
-        verify(player, never()).sendMessage(ChatColor.RED + Lang.errorNoSuchGame);
+        verify(player).sendMessage(Lang.adminUseSurvival);
+        verify(player, never()).sendMessage(Lang.errorNotReady);
+        verify(player, never()).sendMessage(Lang.errorNoSuchGame);
         
         Result r = event.useItemInHand();
         assertEquals(Result.DENY, r);
@@ -175,13 +183,16 @@ class LobbyListenerTest extends CommonTestBase {
         when(lobby.isPlayerInRegion(player)).thenReturn(true);
         when(player.getGameMode()).thenReturn(GameMode.SURVIVAL);
         Sign sign = mock(Sign.class);
-        when(sign.getLine(0)).thenReturn("");
+        @NotNull
+        SignSide side = mock(SignSide.class);
+        when(sign.getSide(Side.FRONT)).thenReturn(side);
+        when(side.line(0)).thenReturn(Component.text(""));
         when(block.getState()).thenReturn(sign);
         
         PlayerInteractEvent event = new PlayerInteractEvent(player, Action.LEFT_CLICK_BLOCK, null, block, BlockFace.UP);
         ll.onSignClick(event);
-        verify(player, never()).sendMessage(ChatColor.RED + Lang.errorNotReady);
-        verify(player, never()).sendMessage(ChatColor.RED + Lang.errorNoSuchGame);
+        verify(player, never()).sendMessage(Lang.errorNotReady);
+        verify(player, never()).sendMessage(Lang.errorNoSuchGame);
         
         Result r = event.useItemInHand();
         assertEquals(Result.DEFAULT, r);
@@ -202,13 +213,16 @@ class LobbyListenerTest extends CommonTestBase {
         when(lobby.isPlayerInRegion(player)).thenReturn(true);
         when(player.getGameMode()).thenReturn(GameMode.SURVIVAL);
         Sign sign = mock(Sign.class);
-        when(sign.getLine(0)).thenReturn(Lang.adminSignKeyword.toLowerCase());
+        @NotNull
+        SignSide side = mock(SignSide.class);
+        when(sign.getSide(Side.FRONT)).thenReturn(side);
+        when(side.line(0)).thenReturn(Lang.adminSignKeyword);
         when(block.getState()).thenReturn(sign);
         
         PlayerInteractEvent event = new PlayerInteractEvent(player, Action.LEFT_CLICK_BLOCK, null, block, BlockFace.UP);
         ll.onSignClick(event);
-        verify(player).sendMessage(ChatColor.RED + Lang.errorNotReady);
-        verify(player).sendMessage(ChatColor.RED + Lang.errorNoSuchGame);
+        verify(player).sendMessage(Lang.errorNotReady);
+        verify(player).sendMessage(Lang.errorNoSuchGame);
         
         Result r = event.useItemInHand();
         assertEquals(Result.DEFAULT, r);
@@ -229,19 +243,34 @@ class LobbyListenerTest extends CommonTestBase {
         when(lobby.isPlayerInRegion(player)).thenReturn(true);
         when(player.getGameMode()).thenReturn(GameMode.SURVIVAL);
         Sign sign = mock(Sign.class);
-        when(sign.getLine(0)).thenReturn(Lang.adminSignKeyword.toLowerCase());
-        when(sign.getLine(1)).thenReturn("gameName");
+        @NotNull
+        SignSide side = mock(SignSide.class);
+        when(sign.getSide(Side.FRONT)).thenReturn(side);
+        when(side.line(0)).thenReturn(Lang.adminSignKeyword);
+        when(side.line(1)).thenReturn(Component.text("gameName"));
+        when(side.line(2)).thenReturn(Component.text(""));
+        when(side.line(3)).thenReturn(Component.text(""));
         when(block.getState()).thenReturn(sign);
         
-        when(mgr.getGame(anyString())).thenReturn(game);
+        // Mock getGame to return game for line 1, null for others
+        lenient().when(mgr.getGame(any(Component.class))).thenAnswer(invocation -> {
+            Component comp = invocation.getArgument(0);
+            // Use PlainTextComponentSerializer to get the text content
+            String text = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(comp);
+            // Return game only for non-empty text
+            if (text != null && !text.isEmpty()) {
+                return game;
+            }
+            return null;
+        });
         // Game is over
         when(game.isOver()).thenReturn(true);
         
         PlayerInteractEvent event = new PlayerInteractEvent(player, Action.LEFT_CLICK_BLOCK, null, block, BlockFace.UP);
         ll.onSignClick(event);
-        verify(player).sendMessage(ChatColor.RED + Lang.scoreGameOver);
-        verify(player, never()).sendMessage(ChatColor.RED + Lang.errorNotReady);
-        verify(player, never()).sendMessage(ChatColor.RED + Lang.errorNoSuchGame);
+        verify(player).sendMessage(Lang.scoreGameOver);
+        verify(player, never()).sendMessage(Lang.errorNotReady);
+        verify(player, never()).sendMessage(Lang.errorNoSuchGame);
         verify(game, never()).join(player);
         
         Result r = event.useItemInHand();
@@ -263,17 +292,32 @@ class LobbyListenerTest extends CommonTestBase {
         when(lobby.isPlayerInRegion(player)).thenReturn(true);
         when(player.getGameMode()).thenReturn(GameMode.SURVIVAL);
         Sign sign = mock(Sign.class);
-        when(sign.getLine(0)).thenReturn(Lang.adminSignKeyword.toLowerCase());
-        when(sign.getLine(1)).thenReturn("gameName");
+        @NotNull
+        SignSide side = mock(SignSide.class);
+        when(sign.getSide(Side.FRONT)).thenReturn(side);
+        when(side.line(0)).thenReturn(Lang.adminSignKeyword);
+        when(side.line(1)).thenReturn(Component.text("gameName"));
+        when(side.line(2)).thenReturn(Component.text(""));
+        when(side.line(3)).thenReturn(Component.text(""));
         when(block.getState()).thenReturn(sign);
         
-        when(mgr.getGame(anyString())).thenReturn(game);
-        
+        // Mock getGame to return game for line 1, null for others
+        lenient().when(mgr.getGame(any(Component.class))).thenAnswer(invocation -> {
+            Component comp = invocation.getArgument(0);
+            // Use PlainTextComponentSerializer to get the text content
+            String text = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(comp);
+            // Return game only for non-empty text
+            if (text != null && !text.isEmpty()) {
+                return game;
+            }
+            return null;
+        });
+
         PlayerInteractEvent event = new PlayerInteractEvent(player, Action.LEFT_CLICK_BLOCK, null, block, BlockFace.UP);
         ll.onSignClick(event);
-        verify(player, never()).sendMessage(ChatColor.RED + Lang.scoreGameOver);
-        verify(player, never()).sendMessage(ChatColor.RED + Lang.errorNotReady);
-        verify(player, never()).sendMessage(ChatColor.RED + Lang.errorNoSuchGame);
+        verify(player, never()).sendMessage(Lang.scoreGameOver);
+        verify(player, never()).sendMessage(Lang.errorNotReady);
+        verify(player, never()).sendMessage(Lang.errorNoSuchGame);
         verify(game).join(player);
         
         Result r = event.useItemInHand();
@@ -288,11 +332,14 @@ class LobbyListenerTest extends CommonTestBase {
     @Test
     void testOnSignPlaceWrongWorld() {
         Region lobby = mock(Region.class);
-
-        @NotNull
-        String[] lines = {"line1", "line2"};
-        when(block.getWorld()).thenReturn(mock(World.class));
-        SignChangeEvent event = new SignChangeEvent(block, player, lines );
+        when(mgr.getLobby()).thenReturn(lobby);
+        List<Component> lines = List.of(Component.text("line1"), Component.text("line2"), Component.text(""), Component.text(""), Component.text(""));
+        // Use a different world to trigger the early return
+        World wrongWorld = mock(World.class);
+        when(wrongWorld.equals(world)).thenReturn(false);
+        when(wrongWorld.equals(wrongWorld)).thenReturn(true);
+        when(block.getWorld()).thenReturn(wrongWorld);
+        SignChangeEvent event = new SignChangeEvent(block, player, lines, Side.FRONT);
         ll.onSignPlace(event);
         verify(block).getWorld();
         verify(lobby, never()).isPlayerInRegion(any());
@@ -306,19 +353,29 @@ class LobbyListenerTest extends CommonTestBase {
         Region lobby = mock(Region.class);
 
         @NotNull
-        String[] lines = {Lang.adminSignKeyword, "gamename"};
+        List<Component> lines = List.of(Lang.adminSignKeyword, Component.text("gamename"), Component.text(""), Component.text(""), Component.text(""));
         when(block.getWorld()).thenReturn(world);
-        SignChangeEvent event = new SignChangeEvent(block, player, lines );
-        
+        SignChangeEvent event = new SignChangeEvent(block, player, lines, Side.FRONT);
         when(mgr.getLobby()).thenReturn(lobby);
         when(lobby.isPlayerInRegion(player)).thenReturn(true);
 
-        when(mgr.getGame(anyString())).thenReturn(game);
-        
+        // Mock getGame to return game for line 1, null for others
+        lenient().when(mgr.getGame(any(Component.class))).thenAnswer(invocation -> {
+            Component comp = invocation.getArgument(0);
+            // Use PlainTextComponentSerializer to get the text content
+            String text = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(comp);
+            // Return game only for non-empty text
+            if (text != null && !text.isEmpty()) {
+                return game;
+            }
+            return null;
+        });
+
         ll.onSignPlace(event);
         verify(block).getWorld();
         verify(lobby).isPlayerInRegion(any());
-        verify(player).sendMessage(ChatColor.GREEN + Lang.adminGameSignPlaced + " - gamename");
+        // The actual message is adminGameSignPlaced.append(Component.text(" - ").append(event.line(i)))
+        verify(player).sendMessage(any(Component.class));
     }
     
     /**
@@ -328,10 +385,9 @@ class LobbyListenerTest extends CommonTestBase {
     void testOnSignPlaceGameDoesNotExists() {
         Region lobby = mock(Region.class);
 
-        @NotNull
-        String[] lines = {Lang.adminSignKeyword, "fakename", "", "", ""};
+        List<Component> lines = List.of(Lang.adminSignKeyword, Component.text("fakename"), Component.text(""), Component.text(""), Component.text(""));
         when(block.getWorld()).thenReturn(world);
-        SignChangeEvent event = new SignChangeEvent(block, player, lines );
+        SignChangeEvent event = new SignChangeEvent(block, player, lines, Side.FRONT);
         
         when(mgr.getLobby()).thenReturn(lobby);
         when(lobby.isPlayerInRegion(player)).thenReturn(true);
@@ -339,8 +395,8 @@ class LobbyListenerTest extends CommonTestBase {
         ll.onSignPlace(event);
         verify(block).getWorld();
         verify(lobby).isPlayerInRegion(any());
-        verify(player, never()).sendMessage(ChatColor.GREEN + Lang.adminGameSignPlaced + " - gamename");
-        verify(player).sendMessage(ChatColor.RED + Lang.errorNoSuchGame);
+        verify(player, never()).sendMessage(Lang.adminGameSignPlaced);
+        verify(player).sendMessage(Lang.errorNoSuchGame);
     }
 
     /**

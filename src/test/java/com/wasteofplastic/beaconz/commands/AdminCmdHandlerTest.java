@@ -17,7 +17,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.UUID;
 
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -40,6 +39,8 @@ import com.wasteofplastic.beaconz.Beaconz;
 import com.wasteofplastic.beaconz.Game;
 import com.wasteofplastic.beaconz.GameMgr;
 import com.wasteofplastic.beaconz.Lang;
+import com.wasteofplastic.beaconz.Params.GameMode;
+import com.wasteofplastic.beaconz.Params.GameScoreGoal;
 import com.wasteofplastic.beaconz.Region;
 import com.wasteofplastic.beaconz.Register;
 import com.wasteofplastic.beaconz.Scorecard;
@@ -169,78 +170,78 @@ class AdminCmdHandlerTest {
      */
     private void setupLangStrings() {
         // Error messages
-        Lang.errorYouDoNotHavePermission = "You do not have permission";
-        Lang.errorOnlyPlayers = "Only players can use this command";
-        Lang.errorYouMustBeInATeam = "You must be in a team";
-        Lang.errorYouMustBeInAGame = "You must be in a game";
-        Lang.errorNoSuchTeam = "No such team";
-        Lang.errorNoSuchGame = "No such game";
-        Lang.errorUnknownPlayer = "Unknown player";
-        Lang.errorUnknownCommand = "Unknown command";
-        Lang.errorYouHaveToBeStandingOnABeacon = "You must be standing on a beacon";
-        Lang.errorNotInRegister = "Not in register: ";
-        Lang.errorAlreadyExists = "Game already exists: [name]";
-        Lang.errorNoGames = "No games found";
-        Lang.errorError = "Error: ";
+        Lang.errorYouDoNotHavePermission= Component.text("You do not have permission");
+        Lang.errorOnlyPlayers= Component.text("Only players can use this command");
+        Lang.errorYouMustBeInATeam= Component.text("You must be in a team");
+        Lang.errorYouMustBeInAGame= Component.text("You must be in a game");
+        Lang.errorNoSuchTeam= Component.text("No such team");
+        Lang.errorNoSuchGame= Component.text("No such game");
+        Lang.errorUnknownPlayer= Component.text("Unknown player");
+        Lang.errorUnknownCommand= Component.text("Unknown command");
+        Lang.errorYouHaveToBeStandingOnABeacon= Component.text("You must be standing on a beacon");
+        Lang.errorNotInRegister= Component.text("Not in register: ");
+        Lang.errorAlreadyExists= Component.text("Game already exists: [name]");
+        Lang.errorNoGames= Component.text("No games found");
+        Lang.errorError= Component.text("Error: ");
 
         // Help messages
-        Lang.helpLine = "====================";
-        Lang.helpAdminTitle = "Admin Commands";
-        Lang.helpAdminClaim = "- claim a beacon";
-        Lang.helpAdminDelete = "- delete a game";
-        Lang.helpAdminJoin = "- join a team";
-        Lang.helpAdminGames = "- list all games";
-        Lang.helpAdminForceEnd = "- force end a game";
-        Lang.helpAdminList = "- list beacons";
-        Lang.helpAdminListParms = "- list game parameters";
-        Lang.helpAdminNewGame = "- create new game. Use /[label] newgame help for details";
-        Lang.helpAdminReload = "- reload configuration";
-        Lang.helpAdminSetTeamSpawn = "- set team spawn";
-        Lang.helpAdminSetLobbySpawn = "- set lobby spawn";
-        Lang.helpAdminSwitch = "- switch teams";
-        Lang.helpAdminTeams = "- show team rosters";
-        Lang.helpAdminKick = "- kick a player";
-        Lang.helpAdminDistribution = "- set beacon distribution";
+        Lang.helpLine= Component.text("====================");
+        Lang.helpAdminTitle= Component.text("Admin Commands");
+        Lang.helpAdminClaim= Component.text("- claim a beacon");
+        Lang.helpAdminDelete= Component.text("- delete a game");
+        Lang.helpAdminJoin= Component.text("- join a team");
+        Lang.helpAdminGames= Component.text("- list all games");
+        Lang.helpAdminForceEnd= Component.text("- force end a game");
+        Lang.helpAdminList= Component.text("- list beacons");
+        Lang.helpAdminListParms= Component.text("- list game parameters");
+        Lang.helpAdminNewGame= Component.text("- create new game. Use /[label] newgame help for details");
+        Lang.helpAdminReload= Component.text("- reload configuration");
+        Lang.helpAdminSetTeamSpawn= Component.text("- set team spawn");
+        Lang.helpAdminSetLobbySpawn= Component.text("- set lobby spawn");
+        Lang.helpAdminSwitch= Component.text("- switch teams");
+        Lang.helpAdminTeams= Component.text("- show team rosters");
+        Lang.helpAdminKick= Component.text("- kick a player");
+        Lang.helpAdminDistribution= Component.text("- set beacon distribution");
 
         // Action messages
-        Lang.actionsYouAreInTeam = "You are in [team]!";
-        Lang.actionsSwitchedToTeam = "Switched to [team]";
-        Lang.actionsDistributionSettingTo = "Distribution set to [value]";
+        Lang.actionsYouAreInTeam= Component.text("You are in [team]!");
+        Lang.actionsSwitchedToTeam= Component.text("Switched to [team]");
+        Lang.actionsDistributionSettingTo= Component.text("Distribution set to [value]");
 
         // Beacon messages
-        Lang.beaconClaimingBeaconAt = "Claiming beacon at [location]";
-        Lang.beaconClaimedForTeam = "Beacon claimed for [team]";
+        Lang.beaconClaimingBeaconAt= Component.text("Claiming beacon at [location]");
+        Lang.beaconClaimedForTeam= Component.text("Beacon claimed for [team]");
 
         // Admin messages
-        Lang.adminGamesDefined = "Games defined:";
-        Lang.adminGamesTheLobby = "The Lobby";
-        Lang.adminGamesNoOthers = "No other games";
-        Lang.adminKickAllPlayers = "Kicked all players from [name]";
-        Lang.adminKickPlayer = "Kicked [player] from [name]";
-        Lang.adminDeletingGame = "Deleting game [name]...";
-        Lang.adminDeletedGame = "Game [name] deleted";
-        Lang.adminDeleteGameConfirm = "Enter again to confirm within 10s.";
-        Lang.adminForceEnd = "Game [name] force ended";
-        Lang.adminListBeaconsInGame = "Beacons in [name]:";
-        Lang.adminNewGameBuilding = "Building new game...";
-        Lang.adminReload = "Configuration reloaded";
-        Lang.adminParmsMode = "Mode";
-        Lang.adminParmsTeams = "Teams";
-        Lang.adminParmsGoal = "Goal";
-        Lang.adminParmsGoalValue = "Goal Value";
-        Lang.adminParmsScoreTypes = "Score Types";
-        Lang.adminParmsUnlimited = "Unlimited";
-        Lang.adminParmsArgumentsPairs = "Arguments must be in parameter:value pairs";
-        Lang.adminParmsDoesNotExist = "Parameter does not exist: [name]";
+        Lang.adminGamesDefined= Component.text("Games defined:");
+        Lang.adminGamesTheLobby= Component.text("The Lobby");
+        Lang.adminGamesNoOthers= Component.text("No other games");
+        Lang.adminKickAllPlayers= Component.text("Kicked all players from [name]");
+        Lang.adminKickPlayer= Component.text("Kicked [player] from [name]");
+        Lang.adminDeletingGame= Component.text("Deleting game [name]...");
+        Lang.adminDeletedGame= Component.text("Game [name] deleted");
+        Lang.adminDeleteGameConfirm= Component.text("Enter again to confirm within 10s.");
+        Lang.adminForceEnd= Component.text("Game [name] force ended");
+        Lang.adminListBeaconsInGame= Component.text("Beacons in [name]:");
+        Lang.adminNewGameBuilding= Component.text("Building new game...");
+        Lang.adminReload= Component.text("Configuration reloaded");
+        Lang.adminParmsMode= Component.text("Mode");
+        Lang.adminParmsTeams= Component.text("Teams");
+        Lang.adminParmsGoal= Component.text("Goal");
+        Lang.adminParmsGoalValue= Component.text("Goal Value");
+        Lang.adminParmsScoreTypes= Component.text("Score Types");
+        Lang.adminParmsUnlimited= Component.text("Unlimited");
+        Lang.adminParmsArgumentsPairs= Component.text("Arguments must be in parameter:value pairs");
+        Lang.adminParmsDoesNotExist= Component.text("Parameter does not exist: [name]");
 
         // General messages
-        Lang.generalSuccess = "Success";
-        Lang.generalTeams = "Teams";
-        Lang.generalTeam = "Team";
-        Lang.generalMembers = "Members";
-        Lang.generalUnowned = "Unowned";
-        Lang.generalNone = "None";
-        Lang.generalLinks = "Links";
+        Lang.generalSuccess= Component.text("Success");
+        Lang.generalTeams= Component.text("Teams");
+        Lang.generalTeam= Component.text("Team");
+        Lang.generalMembers= Component.text("Members");
+        Lang.generalUnowned= Component.text("Unowned");
+        Lang.generalNone= Component.text("None");
+        Lang.generalLinks= Component.text("Links");
     }
 
     /**
@@ -384,16 +385,16 @@ class AdminCmdHandlerTest {
         var player = server.addPlayer();
         player.setOp(true);
 
-        LinkedHashMap<String, Game> games = new LinkedHashMap<>();
-        games.put("TestGame1", game);
-        games.put("TestGame2", game2);
+        LinkedHashMap<Component, Game> games = new LinkedHashMap<>();
+        games.put(Component.text("TestGame1"), game);
+        games.put(Component.text("TestGame2"), game2);
 
         when(gameMgr.getGames()).thenReturn(games);
         when(gameMgr.getLobby()).thenReturn(lobby);
         when(lobby.displayCoords()).thenReturn("100,100");
-        when(game.getName()).thenReturn("TestGame1");
+        when(game.getName()).thenReturn(Component.text("TestGame1"));
         when(game.getRegion()).thenReturn(gameRegion);
-        when(game2.getName()).thenReturn("TestGame2");
+        when(game2.getName()).thenReturn(Component.text("TestGame2"));
         when(game2.getRegion()).thenReturn(gameRegion);
         when(gameRegion.displayCoords()).thenReturn("500,500");
 
@@ -595,7 +596,7 @@ class AdminCmdHandlerTest {
         var player = server.addPlayer();
         player.setOp(true);
 
-        LinkedHashMap<String, Game> games = new LinkedHashMap<>();
+        LinkedHashMap<Component, Game> games = new LinkedHashMap<>();
         when(gameMgr.getGames()).thenReturn(games);
 
         boolean result = handler.onCommand(player, command, "bza", new String[]{"delete", "NonExistent"});
@@ -612,11 +613,11 @@ class AdminCmdHandlerTest {
         var player = server.addPlayer();
         player.setOp(true);
 
-        LinkedHashMap<String, Game> games = new LinkedHashMap<>();
-        games.put("TestGame", game);
+        LinkedHashMap<Component, Game> games = new LinkedHashMap<>();
+        games.put(Component.text("TestGame"), game);
 
         when(gameMgr.getGames()).thenReturn(games);
-        when(game.getName()).thenReturn("TestGame");
+        when(game.getName()).thenReturn(Component.text("TestGame"));
 
         boolean result = handler.onCommand(player, command, "bza", new String[]{"delete", "TestGame"});
 
@@ -650,7 +651,7 @@ class AdminCmdHandlerTest {
         var player = server.addPlayer();
         player.setOp(true);
 
-        LinkedHashMap<String, Game> games = new LinkedHashMap<>();
+        LinkedHashMap<Component, Game> games = new LinkedHashMap<>();
         when(gameMgr.getGames()).thenReturn(games);
 
         boolean result = handler.onCommand(player, command, "bza", new String[]{"force_end", "NonExistent"});
@@ -667,11 +668,11 @@ class AdminCmdHandlerTest {
         var player = server.addPlayer();
         player.setOp(true);
 
-        LinkedHashMap<String, Game> games = new LinkedHashMap<>();
-        games.put("TestGame", game);
+        LinkedHashMap<Component, Game> games = new LinkedHashMap<>();
+        games.put(Component.text("TestGame"), game);
 
         when(gameMgr.getGames()).thenReturn(games);
-        when(game.getName()).thenReturn("TestGame");
+        when(game.getName()).thenReturn(Component.text("TestGame"));
 
         boolean result = handler.onCommand(player, command, "bza", new String[]{"force_end", "TestGame"});
 
@@ -801,11 +802,11 @@ class AdminCmdHandlerTest {
         player.setOp(true);
 
         when(gameMgr.getGame("TestGame")).thenReturn(game);
-        when(game.getGamemode()).thenReturn("strategy");
+        when(game.getGamemode()).thenReturn(GameMode.STRATEGY);
         when(game.getNbrTeams()).thenReturn(2);
-        when(game.getGamegoal()).thenReturn("area");
+        when(game.getGamegoal()).thenReturn(GameScoreGoal.AREA);
         when(game.getGamegoalvalue()).thenReturn(1000);
-        when(game.getScoretypes()).thenReturn("area:triangles");
+        when(game.getScoretypes()).thenReturn(List.of(GameScoreGoal.AREA, GameScoreGoal.TRIANGLES));
 
         boolean result = handler.onCommand(player, command, "bza", new String[]{"listparms", "TestGame"});
 
@@ -907,8 +908,8 @@ class AdminCmdHandlerTest {
         server.addPlayer(player);
         player.setOp(true);
 
-        LinkedHashMap<String, Game> games = new LinkedHashMap<>();
-        games.put("TestGame", game);
+        LinkedHashMap<Component, Game> games = new LinkedHashMap<>();
+        games.put(Component.text("TestGame"), game);
 
         when(gameMgr.getGames()).thenReturn(games);
         when(game.getScorecard()).thenReturn(scorecard);
@@ -940,79 +941,6 @@ class AdminCmdHandlerTest {
         boolean result = handler.onCommand(player, command, "bza", new String[]{"invalidcommand"});
 
         assertFalse(result, "Unknown command should be handled");
-    }
-
-    // ==================== Parameter Validation Tests ====================
-
-    /**
-     * Test checkParms with valid gamemode parameter.
-     */
-    @Test
-    void testCheckParms_ValidGamemode() {
-        String result = handler.checkParms(new String[]{"gamemode:strategy"});
-
-        assertEquals("", result, "Valid gamemode should pass");
-    }
-
-    /**
-     * Test checkParms with invalid gamemode.
-     */
-    @Test
-    void testCheckParms_InvalidGamemode() {
-        String result = handler.checkParms(new String[]{"gamemode:invalid"});
-
-        assertFalse(result.isEmpty(), "Invalid gamemode should fail");
-        assertTrue(result.contains("gamemode"));
-    }
-
-    /**
-     * Test checkParms with valid teams parameter.
-     */
-    @Test
-    void testCheckParms_ValidTeams() {
-        String result = handler.checkParms(new String[]{"teams:4"});
-
-        assertEquals("", result, "Valid teams should pass");
-    }
-
-    /**
-     * Test checkParms with teams out of range.
-     */
-    @Test
-    void testCheckParms_TeamsOutOfRange() {
-        String result = handler.checkParms(new String[]{"teams:20"});
-
-        assertFalse(result.isEmpty(), "Teams > 14 should fail");
-    }
-
-    /**
-     * Test checkParms with invalid parameter format.
-     */
-    @Test
-    void testCheckParms_InvalidFormat() {
-        String result = handler.checkParms(new String[]{"invalidformat"});
-
-        assertFalse(result.isEmpty(), "Invalid format should fail");
-    }
-
-    /**
-     * Test checkParms with valid goal parameter.
-     */
-    @Test
-    void testCheckParms_ValidGoal() {
-        String result = handler.checkParms(new String[]{"goal:triangles"});
-
-        assertEquals("", result, "Valid goal should pass");
-    }
-
-    /**
-     * Test checkParms with invalid goal.
-     */
-    @Test
-    void testCheckParms_InvalidGoal() {
-        String result = handler.checkParms(new String[]{"goal:invalid"});
-
-        assertFalse(result.isEmpty(), "Invalid goal should fail");
     }
 
     // ==================== Tab Completion Tests ====================
@@ -1056,9 +984,9 @@ class AdminCmdHandlerTest {
         var player = server.addPlayer();
         player.setOp(true);
 
-        LinkedHashMap<String, Game> games = new LinkedHashMap<>();
-        games.put("TestGame1", game);
-        games.put("TestGame2", game2);
+        LinkedHashMap<Component, Game> games = new LinkedHashMap<>();
+        games.put(Component.text("TestGame1"), game);
+        games.put(Component.text("TestGame2"), game2);
         when(gameMgr.getGames()).thenReturn(games);
 
         List<String> completions = handler.onTabComplete(player, command, "bza", new String[]{"delete", ""});

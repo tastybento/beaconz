@@ -20,6 +20,8 @@ import org.mockito.Mock;
 
 import com.wasteofplastic.beaconz.Settings;
 
+import net.kyori.adventure.text.Component;
+
 /**
  * Tests for BeaconLinkListener covering map-based beacon linking and experience management.
  * Extends BeaconzListenerTestBase for common test infrastructure.
@@ -160,7 +162,7 @@ class BeaconLinkListenerTest extends CommonTestBase {
 
         listener.onPaperMapUse(event);
 
-        verify(player).sendMessage(anyString());
+        verify(player).sendMessage(any(Component.class));
         assertTrue(event.isCancelled());
     }
 

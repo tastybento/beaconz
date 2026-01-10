@@ -43,10 +43,12 @@ import com.wasteofplastic.beaconz.Beaconz;
 import com.wasteofplastic.beaconz.BeaconzPluginDependent;
 import com.wasteofplastic.beaconz.Game;
 import com.wasteofplastic.beaconz.Lang;
+import com.wasteofplastic.beaconz.Params.GameMode;
 import com.wasteofplastic.beaconz.Settings;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
 /**
  * Manages all player teleportation and world transition events in the Beaconz game system.
@@ -112,7 +114,7 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
     private final Set<UUID> directTeleportPlayers = new HashSet<>();
 
     /** Constant identifier for lobby inventory storage */
-    private static final String LOBBY = "Lobby";
+    private static final Component LOBBY = Component.text("Lobby");
 
     /**
      * Constructs a new PlayerTeleportListener.
@@ -153,7 +155,7 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
                 // Deliver messages after a delay to ensure world is fully loaded
                 getServer().getScheduler().runTaskLater(getBeaconzPlugin(), () -> {
                     // Show header
-                    player.sendMessage(Component.text( Lang.titleBeaconzNews).color(NamedTextColor.AQUA));
+                    player.sendMessage(Lang.titleBeaconzNews.color(NamedTextColor.AQUA));
                     // Show each message with a number prefix
                     int i = 1;
                     for (String message : messages) {
@@ -276,19 +278,22 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
                             // Skip delay if: game is restarting, game is over, or player is admin
                             if (!fromGame.isGameRestart() && !fromGame.isOver() && !directTeleportPlayers.contains(player.getUniqueId())) {
                                 // Cancel this teleport and start delay timer
-                                delayTeleport(player, event.getFrom(), event.getTo(), fromGame.getName(), LOBBY);
+                                Game lobby = getGameMgr().getGame(LOBBY);
+                                delayTeleport(player, event.getFrom(), event.getTo(), fromGame, lobby);
                                 event.setCancelled(true);
                                 return;
                             } else {
                                 // Direct teleport (no delay) - process exit immediately
                                 fromGame.getRegion().exit(player); // Call exit handler (may clear inventory)
-                                getBeaconzStore().storeInventory(player, fromGame.getName(), event.getFrom());
+                                String gameName = PlainTextComponentSerializer.plainText().serialize(fromGame.getName());
+                                getBeaconzStore().storeInventory(player, gameName, event.getFrom());
                             }
                         } else {
                             // Second stage: This is the completion of a delayed teleport
                             directTeleportPlayers.remove(player.getUniqueId());
                             fromGame.getRegion().exit(player); // Call exit handler (may clear inventory)
-                            getBeaconzStore().storeInventory(player, fromGame.getName(), event.getFrom());
+                            String gameName = PlainTextComponentSerializer.plainText().serialize(fromGame.getName());
+                            getBeaconzStore().storeInventory(player, gameName, event.getFrom());
                         }                
                     }
                 }
@@ -299,8 +304,7 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
                     if (toLobby) {
                         return;
                     } else {
-                        // Leaving lobby - save lobby inventory and call exit handler
-                        getBeaconzStore().storeInventory(player, LOBBY, event.getFrom());
+                        // Leaving lobby - call exit handler
                         getGameMgr().getLobby().exit(player);
                     }
                 }
@@ -314,7 +318,8 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
                         // Verify player is allowed to enter this game
                         if (toGame.hasPlayer(player) || player.isOp()) {
                             // Restore game-specific inventory
-                            Location newTo = getBeaconzStore().getInventory(player, toGame.getName());
+                            String gameName = PlainTextComponentSerializer.plainText().serialize(toGame.getName());
+                            Location newTo = getBeaconzStore().getInventory(player, gameName);
                             if (newTo != null) {
                                 // Find a safe spawn location near the saved position
                                 newTo = toGame.getRegion().findSafeSpot(newTo, 20);
@@ -324,13 +329,13 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
                             toGame.getRegion().enter(player);
 
                             // Minigames always give fresh starting kit when entering
-                            if (toGame.getGamemode().equals("minigame")) {
+                            if (toGame.getGamemode() == GameMode.MINIGAME) {
                                 toGame.giveStartingKit(player);
                             }
 
                         } else {
                             // Player is not authorized for this game - redirect to lobby
-                            player.sendMessage(Component.text(Lang.errorNotInGame.replace("[game]", toGame.getName())).color(NamedTextColor.RED));
+                            player.sendMessage(Lang.errorNotInGame.replaceText("[game]", toGame.getName()).color(NamedTextColor.RED));
                             event.setTo(getGameMgr().getLobby().getSpawnPoint());
                         }
                     }
@@ -342,8 +347,7 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
                     if (fromLobby) {
                         // No action needed
                     } else {
-                        // Entering lobby - restore lobby inventory and call enter handler
-                        getBeaconzStore().getInventory(player, LOBBY);
+                        // Entering lobby - call enter handler
                         directTeleportPlayers.remove(player.getUniqueId());
                         getGameMgr().getLobby().enterLobby(player);
 
@@ -375,7 +379,7 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
      * @param fromGame the name of the game being exited
      * @param toGame the name of the destination (usually "Lobby")
      */
-    private void delayTeleport(final Player player, final Location from, final Location to, final String fromGame, final String toGame) {
+    private void delayTeleport(final Player player, final Location from, final Location to, final Game fromGame, final Game toGame) {
         long delay = 20L; // Default: 20 ticks per second of delay
 
         // Ops get instant teleportation
@@ -383,7 +387,7 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
             delay = 0L;
         } else {
             // Notify player they must stand still
-            player.sendMessage(Component.text(Lang.teleportDoNotMove.replace("[number]", String.valueOf(Settings.teleportDelay))).color(NamedTextColor.RED));
+            player.sendMessage(Lang.teleportDoNotMove.replaceText("[number]", Component.text(String.valueOf(Settings.teleportDelay))).color(NamedTextColor.RED));
         }
 
         // Record player's starting position for movement detection
@@ -401,7 +405,7 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
 
                 } else {
                     // Player moved - cancel the teleport
-                    player.sendMessage(Component.text(Lang.teleportYouMoved).color(NamedTextColor.RED));
+                    player.sendMessage(Lang.teleportYouMoved.color(NamedTextColor.RED));
                 }
             }
             // Clean up tracking data

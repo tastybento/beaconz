@@ -52,6 +52,9 @@ import org.bukkit.scoreboard.Team;
 import com.wasteofplastic.beaconz.map.BeaconMap;
 import com.wasteofplastic.beaconz.map.TerritoryMapRenderer;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+
 /**
  * Central registry and database for all game elements in the Beaconz world.
  * <p>
@@ -203,7 +206,7 @@ public class Register extends BeaconzPluginDependent {
         for (BeaconObj beacon : beaconRegister.values()) {
             // Determine which game this beacon belongs to
             Game game = getGameMgr().getGame(beacon.getPoint());
-            String gameName = game == null? "None":game.getName();
+            Component gameName = game == null ? Component.text("None"):game.getName();
             beaconzYml.set("beacon." + count + ".game",gameName);
 
             // Store beacon ownership (team name or "unowned")
@@ -1038,8 +1041,8 @@ public class Register extends BeaconzPluginDependent {
                 //getLogger().info("DEBUG: this beacon was part of a triangle");
                 // Tell folks what's going on
                 if (!quiet && triangle.getOwner() != null) {
-                    getMessages().tellTeam(triangle.getOwner(), ChatColor.RED + Lang.triangleYourTeamLostATriangle);
-                    getMessages().tellOtherTeams(triangle.getOwner(), ChatColor.GREEN + Lang.triangleTeamLostATriangle.replace("[team]", triangle.getOwner().getDisplayName()));
+                    getMessages().tellTeam(triangle.getOwner(), Lang.triangleYourTeamLostATriangle.color(NamedTextColor.RED));
+                    getMessages().tellOtherTeams(triangle.getOwner(), Lang.triangleTeamLostATriangle.replaceText("[team]", triangle.getOwner().displayName()).color(NamedTextColor.GREEN));
                 }
                 // Find any players in the triangle being removed
                 for (Player player: getServer().getOnlinePlayers()) {

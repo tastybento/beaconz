@@ -173,7 +173,7 @@ public class Lang extends BeaconzPluginDependent {
     public static Component helpScore;
     public static Component helpScoreboard;
     public static Component scoreCongratulations;
-    public static Component scoreGameOver;
+    public static String scoreGameOver;
     public static Component scoreGetTheMostGoal;
     public static Component scoreGetValueGoal;
     public static Component scoreNewScore;
@@ -397,7 +397,7 @@ public class Lang extends BeaconzPluginDependent {
         helpScore = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("help.Score", "- show the team scores"));
         helpScoreboard = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("help.Scoreboard", "- toggles the scoreboard on and off"));
         scoreCongratulations = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("score.Congratulations", "Congratulations"));
-        scoreGameOver = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("score.GameOver", "<< GAME OVER >>"));
+        scoreGameOver = locale.getString("score.GameOver", "<< GAME OVER >>");
         scoreGetTheMostGoal = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("score.GetTheMostGoal", "<< Get the most [goal]!! >>"));
         scoreGetValueGoal = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("score.GetValueGoal", "<< Get [value] [goal]!! >>"));
         scoreNewScore = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("score.NewScore", "New score"));

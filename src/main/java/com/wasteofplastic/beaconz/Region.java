@@ -50,8 +50,11 @@ import org.bukkit.scoreboard.Score;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
+import com.wasteofplastic.beaconz.Params.GameMode;
+
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
 /**
  * Region instantiates the various regions in the world
@@ -539,8 +542,8 @@ public class Region extends BeaconzPluginDependent {
     public void enterLobby(final Player player) {
 
         // Welcome player in chat
-        player.sendMessage(Component.text(Lang.titleWelcome).color(NamedTextColor.GREEN));
-        player.sendMessage(Component.text(Lang.titleSubTitle).color(NamedTextColor.AQUA));
+        player.sendMessage(Lang.titleWelcome.color(NamedTextColor.GREEN));
+        player.sendMessage(Lang.titleSubTitle.color(NamedTextColor.AQUA));
 
         // Welcome player on screen
         getServer().dispatchCommand(getServer().getConsoleSender(),
@@ -565,7 +568,7 @@ public class Region extends BeaconzPluginDependent {
 
                     sbobj = sb.registerNewObjective("text", "dummy");
                     sbobj.setDisplaySlot(DisplaySlot.SIDEBAR);
-                    String[] lobbyInfo = Lang.titleLobbyInfo.split("\\|");
+                    String[] lobbyInfo = Lang.titleLobbyInfo.toString().split("\\|"); // TODO handle this better
                     sbobj.displayName(Component.text(lobbyInfo[0]).color(NamedTextColor.GREEN));
                     for (int line = 1; line < lobbyInfo.length; line++) {
                         scoreline = sbobj.getScore(lobbyInfo[line]);
@@ -583,8 +586,9 @@ public class Region extends BeaconzPluginDependent {
      */
     public void exit(Player player) {
         player.setScoreboard(getServer().getScoreboardManager().getNewScoreboard());
-        if (game !=null && game.getGamemode().equals("minigame"))  {
-            getBeaconzStore().clearItems(player, game.getName(), player.getLocation());
+        if (game !=null && game.getGamemode() == GameMode.MINIGAME)  {
+            String gameName = PlainTextComponentSerializer.plainText().serialize(game.getName());
+            getBeaconzStore().clearItems(player, gameName, player.getLocation());
             player.getInventory().clear();
         }
     }
@@ -606,13 +610,13 @@ public class Region extends BeaconzPluginDependent {
         }
 
         // Welcome player in chat
-        player.sendMessage(Component.text(Lang.titleWelcome).color(NamedTextColor.GREEN));
-        player.sendMessage(Component.text(Lang.startYoureAMember.replace("[name]", ""))
+        player.sendMessage(Lang.titleWelcome.color(NamedTextColor.GREEN));
+        player.sendMessage(Lang.startYoureAMember.replaceText("[name]", Component.text(""))
                 .append(teamname).color(NamedTextColor.AQUA));
         if (game.getGamegoalvalue() > 0) {
-            player.sendMessage(Component.text(Lang.startObjective.replace("[value]", String.format(Locale.US, "%,d", game.getGamegoalvalue())).replace("[goal]", game.getGamegoal())).color(NamedTextColor.AQUA));
+            player.sendMessage(Lang.startObjective.replaceText("[value]",Component.text( String.format(Locale.US, "%,d", game.getGamegoalvalue()).replace("[goal]", game.getGamegoal().name()))).color(NamedTextColor.AQUA));
         } else {
-            player.sendMessage(Component.text(Lang.startMostObjective.replace("[goal]", game.getGamegoal())).color(NamedTextColor.AQUA));
+            player.sendMessage(Lang.startMostObjective.replaceText("[goal]", Component.text(game.getGamegoal().name())).color(NamedTextColor.AQUA));
         }
     }
 
@@ -755,7 +759,7 @@ public class Region extends BeaconzPluginDependent {
         SignSide side = realSign.getSide(Side.FRONT);
         side.line(0, Component.text("[beaconz]"));
         side.line(1, Component.text(Settings.defaultGameName));
-        side.line(2, Component.text(Lang.actionsHitSign));
+        side.line(2, Lang.actionsHitSign);
         realSign.update();
         // Set the spawn point to look at the new sign
         org.bukkit.block.data.type.Sign signData = (org.bukkit.block.data.type.Sign) realSign.getBlockData();
@@ -825,8 +829,8 @@ public class Region extends BeaconzPluginDependent {
      */
     public void sendToLobby(Player player, Boolean saveInv) {
         if (isPlayerInRegion(player)) {
-            String gameName = game != null? game.getName() : null;
-            if (saveInv || gameName != null) {
+            String gameName = PlainTextComponentSerializer.plainText().serialize(game.getName());
+            if (saveInv) {
                 getBeaconzStore().storeInventory(player, gameName, player.getLocation());
             } else {
                 getBeaconzStore().clearItems(player, gameName, null);

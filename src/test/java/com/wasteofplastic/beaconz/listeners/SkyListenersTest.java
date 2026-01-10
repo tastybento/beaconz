@@ -14,7 +14,6 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.entity.EntityType;
 import org.bukkit.entity.TNTPrimed;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDamageEvent;
@@ -30,6 +29,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
 import com.wasteofplastic.beaconz.Lang;
+
+import net.kyori.adventure.text.Component;
 
 /**
  * Test class for {@link SkyListeners}
@@ -61,7 +62,7 @@ class SkyListenersTest extends CommonTestBase {
     @BeforeEach
     void init() {
         listener = new SkyListeners(plugin);
-        Lang.errorYouCannotDoThat = "errorYouCannotDoThat";
+        Lang.errorYouCannotDoThat = Component.text("errorYouCannotDoThat");
     }
 
     /**
@@ -121,7 +122,7 @@ class SkyListenersTest extends CommonTestBase {
         listener.onBlockDamage(blockDamageEvent);
 
         verify(blockDamageEvent).setCancelled(true);
-        verify(player).sendMessage(ChatColor.RED + Lang.errorYouCannotDoThat);
+        verify(player).sendMessage(Lang.errorYouCannotDoThat);
     }
 
     /**
@@ -382,7 +383,7 @@ class SkyListenersTest extends CommonTestBase {
         listener.onBucketEmpty(bucketEmptyEvent);
 
         verify(bucketEmptyEvent).setCancelled(true);
-        verify(player).sendMessage(ChatColor.RED + Lang.errorYouCannotDoThat);
+        verify(player).sendMessage(Lang.errorYouCannotDoThat);
     }
 
     /**
@@ -418,7 +419,7 @@ class SkyListenersTest extends CommonTestBase {
 
         listener.onBlockPlace(event);
 
-        verify(player, never()).sendMessage(ChatColor.RED + Lang.errorYouCannotDoThat);
+        verify(player, never()).sendMessage(Lang.errorYouCannotDoThat);
     }
 
     /**
@@ -439,7 +440,7 @@ class SkyListenersTest extends CommonTestBase {
         listener.onBlockPlace(event);
 
         // Should not be cancelled for ops
-        verify(player, never()).sendMessage(ChatColor.RED + Lang.errorYouCannotDoThat);
+        verify(player, never()).sendMessage(Lang.errorYouCannotDoThat);
     }
 
     /**
@@ -459,7 +460,7 @@ class SkyListenersTest extends CommonTestBase {
 
         listener.onBlockPlace(event);
 
-        verify(player).sendMessage(ChatColor.RED + Lang.errorYouCannotDoThat);
+        verify(player).sendMessage(Lang.errorYouCannotDoThat);
     }
 
     /**
@@ -479,7 +480,7 @@ class SkyListenersTest extends CommonTestBase {
 
         listener.onBlockPlace(event);
 
-        verify(player).sendMessage(ChatColor.RED + Lang.errorYouCannotDoThat);
+        verify(player).sendMessage(Lang.errorYouCannotDoThat);
     }
 
     /**
@@ -499,7 +500,7 @@ class SkyListenersTest extends CommonTestBase {
 
         listener.onBlockPlace(event);
 
-        verify(player, never()).sendMessage(ChatColor.RED + Lang.errorYouCannotDoThat);
+        verify(player, never()).sendMessage(Lang.errorYouCannotDoThat);
     }
 
     // ==================== onBeaconBreak Tests ====================
@@ -551,7 +552,7 @@ class SkyListenersTest extends CommonTestBase {
         listener.onBeaconBreak(blockBreakEvent);
 
         verify(blockBreakEvent).setCancelled(true);
-        verify(player).sendMessage(ChatColor.RED + Lang.errorYouCannotDoThat);
+        verify(player).sendMessage(Lang.errorYouCannotDoThat);
     }
 
     /**

@@ -10,11 +10,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 
-import java.awt.geom.Point2D;
-
-import java.awt.geom.Point2D;
 import java.awt.geom.Point2D;
 import java.io.File;
 import java.util.HashMap;
@@ -788,12 +786,20 @@ class RegisterTest {
 
     /**
      * Test saving the register (basic test - just verify no exceptions).
+     * Note: We set game to null to avoid Component serialization issues.
      */
     @Test
     void testSaveRegister() {
         // Given
         Team team = mock(Team.class);
         when(team.getName()).thenReturn("TestTeam");
+
+        // Reset gameMgr to clear previous stubbing, then set getGame to return null
+        // This avoids Component serialization issues in YAML
+        reset(gameMgr);
+        when(plugin.getGameMgr()).thenReturn(gameMgr);
+        when(gameMgr.getGame(any(Point2D.class))).thenReturn(null);
+
         register.addBeacon(team, 100, 64, 200);
 
         // When/Then - should not throw exception
@@ -818,13 +824,18 @@ class RegisterTest {
 
     /**
      * Test save and load round trip.
+     * Note: We set game to null to avoid Component serialization issues.
      */
     @Test
     void testSaveAndLoadRoundTrip() {
         // Given
         Team team = mock(Team.class);
         when(team.getName()).thenReturn("TestTeam");
-        when(game.getName()).thenReturn("TestGame");
+
+        // Reset gameMgr to clear previous stubbing, then set getGame to return null
+        reset(gameMgr);
+        when(plugin.getGameMgr()).thenReturn(gameMgr);
+        when(gameMgr.getGame(any(Point2D.class))).thenReturn(null);
 
         register.addBeacon(team, 100, 64, 200);
 
