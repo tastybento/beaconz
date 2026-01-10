@@ -5,12 +5,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.BlockFace;
@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import com.wasteofplastic.beaconz.Lang;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 
 /**
  * Exercises BeaconCaptureListener behaviors for beacon damage/break events with mocked plugin context.
@@ -279,7 +280,9 @@ class BeaconCaptureListenerTest extends CommonTestBase {
         bcl.onBeaconBreak(e);
 
         assertTrue(e.isCancelled());
-        verify(player).sendMessage(ChatColor.RED + Lang.errorClearAroundBeacon);
+        verify(player).sendMessage(argThat((Component component) ->
+            component.equals(Lang.errorClearAroundBeacon.color(NamedTextColor.RED))
+        ));
     }
 
     /** Own beacon: prevent destruction and warn. */
@@ -294,7 +297,9 @@ class BeaconCaptureListenerTest extends CommonTestBase {
         bcl.onBeaconBreak(e);
 
         assertTrue(e.isCancelled());
-        verify(player).sendMessage(ChatColor.RED + Lang.beaconYouCannotDestroyYourOwnBeacon);
+        verify(player).sendMessage(argThat((Component component) ->
+            component.equals(Lang.beaconYouCannotDestroyYourOwnBeacon.color(NamedTextColor.RED))
+        ));
         verify(register, never()).removeBeaconOwnership(beacon);
     }
 
@@ -314,7 +319,9 @@ class BeaconCaptureListenerTest extends CommonTestBase {
         bcl.onBeaconBreak(e);
 
         assertTrue(e.isCancelled());
-        verify(player).sendMessage(ChatColor.RED + Lang.errorClearAroundBeacon);
+        verify(player).sendMessage(argThat((Component component) ->
+            component.equals(Lang.errorClearAroundBeacon.color(NamedTextColor.GREEN))
+        ));
         verify(register, never()).removeBeaconOwnership(beacon);
         verify(block, never()).setType(Material.OBSIDIAN);
     }

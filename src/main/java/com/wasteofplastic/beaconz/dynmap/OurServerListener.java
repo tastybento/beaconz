@@ -29,6 +29,8 @@ import com.wasteofplastic.beaconz.BeaconzPluginDependent;
 import com.wasteofplastic.beaconz.Game;
 import com.wasteofplastic.beaconz.TriangleField;
 
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+
 /**
  * Integrates the Beaconz plugin with Dynmap to visualize game areas and team territories.
  * <p>
@@ -369,7 +371,7 @@ public class OurServerListener extends BeaconzPluginDependent implements Listene
      */
     private void handleGames(Game game) {
         World world = getBeaconzWorld();
-        String name = game.getName();
+        String name = PlainTextComponentSerializer.plainText().serialize(game.getName());
 
         // Arrays to hold the 4 corner coordinates of the rectangular game boundary
         double[] x = new double[4];
@@ -408,10 +410,10 @@ public class OurServerListener extends BeaconzPluginDependent implements Listene
         }
 
         /* Set line and fill properties */
-        addStyle(name, world.getName(), m, game.getName());
+        addStyle(name, world.getName(), m, name);
 
         /* Build popup */
-        String desc = formatInfoWindow(game.getName(), m);
+        String desc = formatInfoWindow(name, m);
 
         m.setDescription(desc); /* Set popup */
     }

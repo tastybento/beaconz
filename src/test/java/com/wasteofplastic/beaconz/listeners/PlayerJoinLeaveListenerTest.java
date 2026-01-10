@@ -192,7 +192,7 @@ class PlayerJoinLeaveListenerTest extends CommonTestBase {
         listener.onJoin(event);
         // Advance the scheduler by 40 ticks
         server.getScheduler().performTicks(40L);
-        verify(player).sendMessage(ChatColor.AQUA + Lang.titleBeaconzNews);
+        verify(player).sendMessage(Lang.titleBeaconzNews);
         verify(messages).clearMessages(uuid);
     }
 

@@ -24,15 +24,16 @@ package com.wasteofplastic.beaconz;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.TreeMap;
 
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.scoreboard.Team;
+
+import com.wasteofplastic.beaconz.Params.GameMode;
+import com.wasteofplastic.beaconz.Params.GameScoreGoal;
 
 public class Settings {
     /**
@@ -53,7 +54,7 @@ public class Settings {
     /**
      * The default gamemode - "minigame" or "strategy"
      */
-    public static String gamemode;
+    public static GameMode gamemode = GameMode.STRATEGY;
     /**
      * The default number of teams for a new game
      */
@@ -68,14 +69,14 @@ public class Settings {
     /**
      * The default sidebar options for the two game modes
      */
-    public static String minigameScoreTypes;
-    public static String strategyScoreTypes;
+    public static List<GameScoreGoal> minigameScoreTypes;
+    public static List<GameScoreGoal> strategyScoreTypes;
     /**
      * The default goals for the two game modes
      */
-    public static String minigameGoal;
+    public static GameScoreGoal minigameGoal;
     public static Integer minigameGoalValue;
-    public static String strategyGoal;
+    public static GameScoreGoal strategyGoal;
     public static Integer strategyGoalValue;
     /**
     /**

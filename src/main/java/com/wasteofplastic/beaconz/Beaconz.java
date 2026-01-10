@@ -55,6 +55,8 @@ import org.bukkit.potion.PotionType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import com.wasteofplastic.beaconz.Params.GameMode;
+import com.wasteofplastic.beaconz.Params.GameScoreGoal;
 import com.wasteofplastic.beaconz.commands.AdminCmdHandler;
 import com.wasteofplastic.beaconz.commands.CmdHandler;
 import com.wasteofplastic.beaconz.dynmap.OurServerListener;
@@ -286,20 +288,17 @@ public class Beaconz extends JavaPlugin {
         Settings.defaultTeamNumber = getConfig().getInt("teams.defaultNumber", 2);
 
         // Get the default game mode
-        Settings.gamemode = getConfig().getString("general.gamemode", "strategy");
-        Settings.gamemode = cleanString(Settings.gamemode, "minigame:strategy", "strategy");
+        Settings.gamemode = (GameMode) getConfig().get("general.gamemode", GameMode.STRATEGY);
 
         // Get the default score types to show
-        Settings.minigameScoreTypes = getConfig().getString("scoreboard.sidebar.minigame", "beacons:links:triangles");
-        Settings.minigameScoreTypes = cleanString(Settings.minigameScoreTypes, "beacons:links:triangles:area", "beacons:links:triangles");
-        Settings.strategyScoreTypes = getConfig().getString("scoreboard.sidebar.strategy", "area:triangles");
-        Settings.strategyScoreTypes = cleanString(Settings.strategyScoreTypes, "beacons:links:triangles:area", "beacons:triangles:area");
+        Settings.minigameScoreTypes = (List<GameScoreGoal>) getConfig().getList("scoreboard.sidebar.minigame", List.of(GameScoreGoal.BEACONS, GameScoreGoal.LINKS, GameScoreGoal.TRIANGLES));
+        Settings.strategyScoreTypes = (List<GameScoreGoal>) getConfig().getList("scoreboard.sidebar.strategy", List.of(GameScoreGoal.AREA, GameScoreGoal.TRIANGLES));
 
         // Get the default goals for each game mode
         String mgGoal = getConfig().getString("scoreboard.goal.minigame", "triangles:0");
         String sgGoal = getConfig().getString("scoreboard.goal.strategy", "area:3000000");
-        Settings.minigameGoal = mgGoal.split(":")[0];
-        Settings.strategyGoal = sgGoal.split(":")[0];
+        Settings.minigameGoal = GameScoreGoal.valueOf(mgGoal.split(":")[0].toUpperCase());
+        Settings.strategyGoal = GameScoreGoal.valueOf(sgGoal.split(":")[0].toUpperCase());
         try{
             Settings.minigameGoalValue = Integer.valueOf(mgGoal.split(":")[1]);
         } catch (Exception e) {
@@ -309,17 +308,6 @@ public class Beaconz extends JavaPlugin {
             Settings.strategyGoalValue = Integer.valueOf(sgGoal.split(":")[1]);
         } catch (Exception e) {
             Settings.strategyGoalValue = 10000;
-        }
-        // Check that the goals are actually among the chosen score types; if not, revert to defaults
-        if (!Settings.minigameScoreTypes.contains(Settings.minigameGoal)) {
-            Settings.minigameGoal = "triangles";
-            Settings.minigameGoalValue = 0;
-            if (!Settings.minigameScoreTypes.contains(Settings.minigameGoal)) Settings.minigameScoreTypes = Settings.minigameScoreTypes + ":" + Settings.minigameGoal;
-        }
-        if (!Settings.strategyScoreTypes.contains(Settings.strategyGoal)) {
-            Settings.strategyGoal = "area";
-            Settings.strategyGoalValue = 10000;
-            if (!Settings.strategyScoreTypes.contains(Settings.strategyGoal)) Settings.strategyScoreTypes = Settings.strategyScoreTypes + ":" + Settings.strategyGoal;
         }
 
         // Get the default timers for each game mode
@@ -808,7 +796,7 @@ public class Beaconz extends JavaPlugin {
                     }                  
                     player.getWorld().playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 1F, 1F);                    
                 } catch (Exception e) {
-                    player.sendMessage(ChatColor.RED + Lang.errorError);
+                    player.sendMessage(Lang.errorError);
                     plugin.getLogger().severe("Could not give " + element[0] + ":" + element[1] + " to " + player.getName() + " as reward!");
                     StringBuilder materialList = new StringBuilder();
                     boolean hint = false;

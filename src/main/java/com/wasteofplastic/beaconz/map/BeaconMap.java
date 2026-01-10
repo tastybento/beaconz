@@ -22,6 +22,8 @@
 
 package com.wasteofplastic.beaconz.map;
 
+import java.awt.Color;
+
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -33,6 +35,8 @@ import org.bukkit.map.MinecraftFont;
 import com.wasteofplastic.beaconz.BeaconObj;
 import com.wasteofplastic.beaconz.Beaconz;
 import com.wasteofplastic.beaconz.Lang;
+
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
 
 public class BeaconMap extends MapRenderer {
@@ -46,7 +50,6 @@ public class BeaconMap extends MapRenderer {
     }
 
     @Override
-    @SuppressWarnings("deprecation")
     public void render(MapView map, MapCanvas canvas, Player player) {
         // Only render when on this world
         if (!map.getWorld().equals(plugin.getBeaconzWorld())) {
@@ -56,17 +59,18 @@ public class BeaconMap extends MapRenderer {
         ItemStack inMainHand = player.getInventory().getItemInMainHand();
         ItemStack inOffHand = player.getInventory().getItemInOffHand();
         if (inMainHand.getType().equals(Material.FILLED_MAP) || inOffHand.getType().equals(Material.FILLED_MAP)) {
-            //Bukkit.getLogger().info("DEBUG: render");
             // here's where you do your drawing - see the Javadocs for the MapCanvas class for
             // the methods you can use
-            canvas.drawText(10, 10, MinecraftFont.Font, Lang.beaconMapBeaconMap);
+            String plainText = PlainTextComponentSerializer.plainText().serialize(Lang.beaconMapBeaconMap);
+            canvas.drawText(10, 10, MinecraftFont.Font, plainText);
             // Get the text
             BeaconObj beacon = plugin.getRegister().getBeaconMap(map.getId());
             if (beacon != null) {
                 canvas.drawText(10, 20, MinecraftFont.Font, Lang.generalLocation + ": " + beacon.getName());
-                canvas.setPixel(64, 64, (byte) 64);
+                canvas.setPixelColor(64, 64, Color.WHITE);
             } else {
-                canvas.drawText(10, 20, MinecraftFont.Font, Lang.beaconMapUnknownBeacon);
+                plainText = PlainTextComponentSerializer.plainText().serialize(Lang.beaconMapUnknownBeacon);
+                canvas.drawText(10, 20, MinecraftFont.Font, plainText);
             }
         }
     }

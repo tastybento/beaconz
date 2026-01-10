@@ -1,8 +1,18 @@
 package com.wasteofplastic.beaconz.listeners;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
@@ -11,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -33,6 +42,8 @@ import com.wasteofplastic.beaconz.DefenseBlock;
 import com.wasteofplastic.beaconz.Lang;
 import com.wasteofplastic.beaconz.Region;
 import com.wasteofplastic.beaconz.Settings;
+
+import net.kyori.adventure.text.Component;
 
 /**
  * Comprehensive tests for BeaconPassiveDefenseListener covering defense placement, breaking, and protection mechanics.
@@ -71,27 +82,27 @@ class BeaconPassiveDefenseListenerTest extends CommonTestBase {
         listener = new BeaconPassiveDefenseListener(plugin);
 
         // Setup additional Lang strings for defense listener
-        Lang.errorYouMustBeInAGame = "errorYouMustBeInAGame";
-        Lang.errorYouMustBeInATeam = "errorYouMustBeInATeam";
-        Lang.beaconYouCanOnlyExtend = "beaconYouCanOnlyExtend";
-        Lang.beaconCannotBeExtended = "beaconCannotBeExtended";
-        Lang.errorClearAboveBeacon = "errorClearAboveBeacon";
-        Lang.beaconExtended = "beaconExtended";
-        Lang.beaconLockedJustNow = "beaconLockedJustNow [lockingBlock]";
-        Lang.beaconLockedAlready = "beaconLockedAlready [lockingBlock]";
-        Lang.beaconLockedWithNMoreBlocks = "beaconLockedWithNMoreBlocks [number]";
-        Lang.errorCanOnlyPlaceBlocks = "errorCanOnlyPlaceBlocks";
-        Lang.errorCanOnlyPlaceBlocksUpTo = "errorCanOnlyPlaceBlocksUpTo [value]";
-        Lang.errorYouNeedToBeLevel = "errorYouNeedToBeLevel [value]";
-        Lang.generalLevel = "Level";
-        Lang.beaconLinkBlockPlaced = "beaconLinkBlockPlaced [range]";
-        Lang.beaconDefensePlaced = "beaconDefensePlaced";
-        Lang.beaconLinkBlockBroken = "beaconLinkBlockBroken [range]";
-        Lang.beaconLinkLost = "beaconLinkLost";
-        Lang.beaconDefenseRemoveTopDown = "beaconDefenseRemoveTopDown";
-        Lang.errorYouCannotRemoveOtherPlayersBlocks = "errorYouCannotRemoveOtherPlayersBlocks";
-        Lang.beaconLocked = "beaconLocked";
-        Lang.beaconAmplifierBlocksCannotBeRecovered = "beaconAmplifierBlocksCannotBeRecovered";
+        Lang.errorYouMustBeInAGame = Component.text("errorYouMustBeInAGame");
+        Lang.errorYouMustBeInATeam = Component.text("errorYouMustBeInATeam");
+        Lang.beaconYouCanOnlyExtend = Component.text("beaconYouCanOnlyExtend");
+        Lang.beaconCannotBeExtended = Component.text("beaconCannotBeExtended");
+        Lang.errorClearAboveBeacon = Component.text("errorClearAboveBeacon");
+        Lang.beaconExtended = Component.text("beaconExtended");
+        Lang.beaconLockedJustNow = Component.text("beaconLockedJustNow [lockingBlock]");
+        Lang.beaconLockedAlready = Component.text("beaconLockedAlready [lockingBlock]");
+        Lang.beaconLockedWithNMoreBlocks = Component.text("beaconLockedWithNMoreBlocks [number]");
+        Lang.errorCanOnlyPlaceBlocks = Component.text("errorCanOnlyPlaceBlocks");
+        Lang.errorCanOnlyPlaceBlocksUpTo = Component.text("errorCanOnlyPlaceBlocksUpTo [value]");
+        Lang.errorYouNeedToBeLevel = Component.text("errorYouNeedToBeLevel [value]");
+        Lang.generalLevel = Component.text("Level");
+        Lang.beaconLinkBlockPlaced = Component.text("beaconLinkBlockPlaced [range]");
+        Lang.beaconDefensePlaced = Component.text("beaconDefensePlaced");
+        Lang.beaconLinkBlockBroken = Component.text("beaconLinkBlockBroken [range]");
+        Lang.beaconLinkLost = Component.text("beaconLinkLost");
+        Lang.beaconDefenseRemoveTopDown = Component.text("beaconDefenseRemoveTopDown");
+        Lang.errorYouCannotRemoveOtherPlayersBlocks = Component.text("errorYouCannotRemoveOtherPlayersBlocks");
+        Lang.beaconLocked = Component.text("beaconLocked");
+        Lang.beaconAmplifierBlocksCannotBeRecovered = Component.text("beaconAmplifierBlocksCannotBeRecovered");
 
         // Setup Settings defaults
         Settings.defenseHeight = 10;
@@ -106,9 +117,9 @@ class BeaconPassiveDefenseListenerTest extends CommonTestBase {
 
         // Initialize defenseText HashMap to avoid NPE
         Lang.defenseText = new java.util.HashMap<>();
-        Lang.defenseText.put(Material.STONE, "Stone defense block");
-        Lang.defenseText.put(Material.GLASS, "Glass defense block");
-        Lang.defenseText.put(Material.OBSIDIAN, "Obsidian defense block");
+        Lang.defenseText.put(Material.STONE, Component.text("Stone defense block"));
+        Lang.defenseText.put(Material.GLASS, Component.text("Glass defense block"));
+        Lang.defenseText.put(Material.OBSIDIAN, Component.text("Obsidian defense block"));
 
         // Setup block state mock
         when(block.getState()).thenReturn(blockState);
@@ -306,7 +317,7 @@ class BeaconPassiveDefenseListenerTest extends CommonTestBase {
         listener.onBlockPlace(event);
 
         assertTrue(event.isCancelled());
-        verify(player).sendMessage(anyString());
+        verify(player).sendMessage(any(Component.class));
         verify(lobby).tpToRegionSpawn(player, true);
     }
 
@@ -323,7 +334,7 @@ class BeaconPassiveDefenseListenerTest extends CommonTestBase {
         listener.onBlockPlace(event);
 
         assertFalse(event.isCancelled());
-        verify(player).sendMessage(ChatColor.RED + Lang.errorYouMustBeInATeam);
+        verify(player).sendMessage(Lang.errorYouMustBeInATeam);
     }
 
     /**
@@ -357,7 +368,7 @@ class BeaconPassiveDefenseListenerTest extends CommonTestBase {
         listener.onBlockPlace(event);
 
         verify(register).addBeaconDefenseBlock(any(Location.class), eq(beacon));
-        verify(player).sendMessage(ChatColor.GREEN + Lang.beaconExtended);
+        verify(player).sendMessage(Lang.beaconExtended);
     }
 
     /** Emerald extension but wrong team: cancelled. */
@@ -382,7 +393,7 @@ class BeaconPassiveDefenseListenerTest extends CommonTestBase {
         listener.onBlockPlace(event);
 
         assertTrue(event.isCancelled());
-        verify(player).sendMessage(ChatColor.RED + Lang.beaconYouCanOnlyExtend);
+        verify(player).sendMessage(Lang.beaconYouCanOnlyExtend);
     }
 
     /** Place defense block on own beacon: allowed with level check. */
@@ -442,7 +453,9 @@ class BeaconPassiveDefenseListenerTest extends CommonTestBase {
         listener.onBlockPlace(event);
 
         assertTrue(event.isCancelled());
-        verify(player).sendMessage(contains("§cerrorYouNeedToBeLevel 5"));
+        verify(player).sendMessage(argThat((Component component) ->
+            component.equals(Lang.errorYouNeedToBeLevel.replaceText("[value]", Component.text("5")))
+        ));
     }
 
     /** Place defense block on enemy beacon: cancelled. */
@@ -469,7 +482,7 @@ class BeaconPassiveDefenseListenerTest extends CommonTestBase {
         listener.onBlockPlace(event);
 
         assertTrue(event.isCancelled());
-        verify(player).sendMessage(ChatColor.RED + Lang.errorCanOnlyPlaceBlocks);
+        verify(player).sendMessage(Lang.errorCanOnlyPlaceBlocks);
     }
 
     // ==================== onBeaconBreak Tests ====================
@@ -561,7 +574,7 @@ class BeaconPassiveDefenseListenerTest extends CommonTestBase {
         listener.onBeaconBreak(event);
 
         assertTrue(event.isCancelled());
-        verify(player).sendMessage(ChatColor.RED + Lang.errorYouCannotRemoveOtherPlayersBlocks);
+        verify(player).sendMessage(Lang.errorYouCannotRemoveOtherPlayersBlocks);
     }
 
     /** Break enemy defense block from locked beacon: cancelled. */
@@ -592,7 +605,7 @@ class BeaconPassiveDefenseListenerTest extends CommonTestBase {
         listener.onBeaconBreak(event);
 
         assertTrue(event.isCancelled());
-        verify(player).sendMessage(ChatColor.YELLOW + Lang.beaconLocked);
+        verify(player).sendMessage(Lang.beaconLocked);
     }
 
     /** Break enemy defense block: must have sufficient level. */
@@ -624,7 +637,9 @@ class BeaconPassiveDefenseListenerTest extends CommonTestBase {
         listener.onBeaconBreak(event);
 
         assertTrue(event.isCancelled());
-        verify(player).sendMessage(contains("§cerrorYouNeedToBeLevel 10"));
+        verify(player).sendMessage(argThat((Component component) ->
+            component.equals(Lang.errorYouNeedToBeLevel.replaceText("[value]", Component.text("10")))
+        ));
     }
 
     /** Break enemy defense block not from top: cancelled. */
@@ -656,7 +671,7 @@ class BeaconPassiveDefenseListenerTest extends CommonTestBase {
         listener.onBeaconBreak(event);
 
         assertTrue(event.isCancelled());
-        verify(player).sendMessage(ChatColor.RED + Lang.beaconDefenseRemoveTopDown);
+        verify(player).sendMessage(Lang.beaconDefenseRemoveTopDown);
     }
 
     // ==================== onDefenseDamage Tests ====================
@@ -737,7 +752,7 @@ class BeaconPassiveDefenseListenerTest extends CommonTestBase {
         listener.onDefenseDamage(event);
 
         assertTrue(event.isCancelled());
-        verify(player).sendMessage(ChatColor.RED + Lang.beaconDefenseRemoveTopDown);
+        verify(player).sendMessage(Lang.beaconDefenseRemoveTopDown);
     }
 
     // ==================== onBlockFlow Tests ====================

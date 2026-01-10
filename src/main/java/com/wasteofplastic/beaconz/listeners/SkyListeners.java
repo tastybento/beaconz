@@ -71,7 +71,7 @@ public class SkyListeners extends BeaconzPluginDependent implements Listener {
         Player player = event.getPlayer();
         if (!player.isOp() && event.getBlock().getY() == BLOCK_HEIGHT) {
             event.setCancelled(true);
-            event.getPlayer().sendMessage(ChatColor.RED + Lang.errorYouCannotDoThat);
+            event.getPlayer().sendMessage(Lang.errorYouCannotDoThat);
         }
     }
 
@@ -139,7 +139,7 @@ public class SkyListeners extends BeaconzPluginDependent implements Listener {
         }
         if (event.getBlockClicked().getY() == BLOCK_HEIGHT) {
             event.setCancelled(true);
-            event.getPlayer().sendMessage(ChatColor.RED + Lang.errorYouCannotDoThat);
+            event.getPlayer().sendMessage(Lang.errorYouCannotDoThat);
         }
     }
 
@@ -156,7 +156,7 @@ public class SkyListeners extends BeaconzPluginDependent implements Listener {
         Player player = event.getPlayer();
         if (!player.isOp() && (event.getBlock().getY() == BLOCK_HEIGHT || event.getBlockAgainst().getY() == BLOCK_HEIGHT)) {
             event.setCancelled(true);
-            event.getPlayer().sendMessage(ChatColor.RED + Lang.errorYouCannotDoThat);
+            event.getPlayer().sendMessage(Lang.errorYouCannotDoThat);
         }
     }
 
@@ -174,7 +174,7 @@ public class SkyListeners extends BeaconzPluginDependent implements Listener {
         Player player = event.getPlayer();
         if (!player.isOp() && event.getBlock().getY() == BLOCK_HEIGHT) {
             event.setCancelled(true);
-            event.getPlayer().sendMessage(ChatColor.RED + Lang.errorYouCannotDoThat);
+            event.getPlayer().sendMessage(Lang.errorYouCannotDoThat);
         }
     }
 }

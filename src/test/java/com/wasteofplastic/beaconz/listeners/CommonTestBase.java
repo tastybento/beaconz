@@ -36,6 +36,8 @@ import com.wasteofplastic.beaconz.Register;
 import com.wasteofplastic.beaconz.Scorecard;
 import com.wasteofplastic.beaconz.TinyDB;
 
+import net.kyori.adventure.text.Component;
+
 /**
  * Base class for listener tests providing common mocks and setup.
  * Subclasses can override setupMocks() to customize behavior for specific tests.
@@ -133,55 +135,55 @@ public abstract class CommonTestBase {
      */
     protected void setupLangStrings() {
         // Common error messages
-        Lang.errorYouCannotDoThat = "errorYouCannotDoThat";
-        Lang.errorClearAroundBeacon = "errorClearAroundBeacon";
-        Lang.errorYouMustBeInAGame = "errorYouMustBeInAGame";
-        Lang.errorYouMustBeInATeam = "errorYouMustBeInATeam";
-        Lang.errorCanOnlyPlaceBlocks = "errorCanOnlyPlaceBlocks";
-        Lang.errorCanOnlyPlaceBlocksUpTo = "errorCanOnlyPlaceBlocksUpTo [value]";
-        Lang.errorYouNeedToBeLevel = "errorYouNeedToBeLevel [value]";
-        Lang.errorTooFar = "errorTooFar [max]";
-        Lang.errorNotEnoughExperience = "errorNotEnoughExperience";
-        Lang.errorYouCannotRemoveOtherPlayersBlocks = "errorYouCannotRemoveOtherPlayersBlocks";
+        Lang.errorYouCannotDoThat = Component.text("errorYouCannotDoThat");
+        Lang.errorClearAroundBeacon = Component.text("errorClearAroundBeacon");
+        Lang.errorYouMustBeInAGame = Component.text("errorYouMustBeInAGame");
+        Lang.errorYouMustBeInATeam = Component.text("errorYouMustBeInATeam");
+        Lang.errorCanOnlyPlaceBlocks = Component.text("errorCanOnlyPlaceBlocks");
+        Lang.errorCanOnlyPlaceBlocksUpTo = Component.text("errorCanOnlyPlaceBlocksUpTo [value]");
+        Lang.errorYouNeedToBeLevel = Component.text("errorYouNeedToBeLevel [value]");
+        Lang.errorTooFar = Component.text("errorTooFar [max]");
+        Lang.errorNotEnoughExperience = Component.text("errorNotEnoughExperience");
+        Lang.errorYouCannotRemoveOtherPlayersBlocks = Component.text("errorYouCannotRemoveOtherPlayersBlocks");
 
         // Beacon capture/destroy messages
-        Lang.beaconYouCannotDestroyYourOwnBeacon = "beaconYouCannotDestroyYourOwnBeacon";
-        Lang.beaconTeamDestroyed = "beaconTeamDestroyed [team1] [team2]";
-        Lang.beaconPlayerDestroyed = "beaconPlayerDestroyed [player] [team]";
-        Lang.beaconYouDestroyed = "beaconYouDestroyed [team]";
-        Lang.beaconYouMustCapturedBeacon = "beaconYouMustCapturedBeacon";
+        Lang.beaconYouCannotDestroyYourOwnBeacon = Component.text("beaconYouCannotDestroyYourOwnBeacon");
+        Lang.beaconTeamDestroyed = Component.text("beaconTeamDestroyed [team1] [team2]");
+        Lang.beaconPlayerDestroyed = Component.text("beaconPlayerDestroyed [player] [team]");
+        Lang.beaconYouDestroyed = Component.text("beaconYouDestroyed [team]");
+        Lang.beaconYouMustCapturedBeacon = Component.text("beaconYouMustCapturedBeacon");
 
         // Beacon linking messages
-        Lang.beaconOriginNotOwned = "beaconOriginNotOwned [team]";
-        Lang.beaconYouNeedThisMuchExp = "beaconYouNeedThisMuchExp [number]";
-        Lang.beaconYouHaveThisMuchExp = "beaconYouHaveThisMuchExp [number]";
-        Lang.beaconTheMapDisintegrates = "beaconTheMapDisintegrates";
+        Lang.beaconOriginNotOwned = Component.text("beaconOriginNotOwned [team]");
+        Lang.beaconYouNeedThisMuchExp = Component.text("beaconYouNeedThisMuchExp [number]");
+        Lang.beaconYouHaveThisMuchExp = Component.text("beaconYouHaveThisMuchExp [number]");
+        Lang.beaconTheMapDisintegrates = Component.text("beaconTheMapDisintegrates");
 
         // Defense-related messages
-        Lang.beaconYouCanOnlyExtend = "beaconYouCanOnlyExtend";
-        Lang.beaconCannotBeExtended = "beaconCannotBeExtended";
-        Lang.beaconExtended = "beaconExtended";
-        Lang.beaconLockedJustNow = "beaconLockedJustNow [lockingBlock]";
-        Lang.beaconLockedAlready = "beaconLockedAlready [lockingBlock]";
-        Lang.beaconLockedWithNMoreBlocks = "beaconLockedWithNMoreBlocks [number]";
-        Lang.beaconLinkBlockPlaced = "beaconLinkBlockPlaced [range]";
-        Lang.beaconDefensePlaced = "beaconDefensePlaced";
-        Lang.beaconLinkBlockBroken = "beaconLinkBlockBroken [range]";
-        Lang.beaconLinkLost = "beaconLinkLost";
-        Lang.beaconDefenseRemoveTopDown = "beaconDefenseRemoveTopDown";
-        Lang.beaconLocked = "beaconLocked";
-        Lang.beaconAmplifierBlocksCannotBeRecovered = "beaconAmplifierBlocksCannotBeRecovered";
-        Lang.generalLevel = "Level";
-        Lang.triangleEntering = "[team] triangleEntering";
-        Lang.triangleLeaving = "[team] triangleLeaving";
-        Lang.triangleDroppingToLevel = "[team] triangleDroppingToLevel";
+        Lang.beaconYouCanOnlyExtend = Component.text("beaconYouCanOnlyExtend");
+        Lang.beaconCannotBeExtended = Component.text("beaconCannotBeExtended");
+        Lang.beaconExtended = Component.text("beaconExtended");
+        Lang.beaconLockedJustNow = Component.text("beaconLockedJustNow [lockingBlock]");
+        Lang.beaconLockedAlready = Component.text("beaconLockedAlready [lockingBlock]");
+        Lang.beaconLockedWithNMoreBlocks = Component.text("beaconLockedWithNMoreBlocks [number]");
+        Lang.beaconLinkBlockPlaced = Component.text("beaconLinkBlockPlaced [range]");
+        Lang.beaconDefensePlaced = Component.text("beaconDefensePlaced");
+        Lang.beaconLinkBlockBroken = Component.text("beaconLinkBlockBroken [range]");
+        Lang.beaconLinkLost = Component.text("beaconLinkLost");
+        Lang.beaconDefenseRemoveTopDown = Component.text("beaconDefenseRemoveTopDown");
+        Lang.beaconLocked = Component.text("beaconLocked");
+        Lang.beaconAmplifierBlocksCannotBeRecovered = Component.text("beaconAmplifierBlocksCannotBeRecovered");
+        Lang.generalLevel = Component.text("Level");
+        Lang.triangleEntering = Component.text("[team] triangleEntering");
+        Lang.triangleLeaving = Component.text("[team] triangleLeaving");
+        Lang.triangleDroppingToLevel = Component.text("[team] triangleDroppingToLevel");
         
         // Lobby
-        Lang.adminUseSurvival = "adminUseSurvival";
-        Lang.adminSignKeyword = "adminkeyword";
-        Lang.errorNotReady = "errorNotReady";
-        Lang.errorNoSuchGame = "errorNoSuchGame";
-        Lang.adminGameSignPlaced = "adminGameSignPlaced";
+        Lang.adminUseSurvival = Component.text("adminUseSurvival");
+        Lang.adminSignKeyword = Component.text("adminkeyword");
+        Lang.errorNotReady = Component.text("errorNotReady");
+        Lang.errorNoSuchGame = Component.text("errorNoSuchGame");
+        Lang.adminGameSignPlaced = Component.text("adminGameSignPlaced");
     }
 
     /**
