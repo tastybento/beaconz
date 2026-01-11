@@ -31,6 +31,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 
 import org.apache.commons.lang.math.NumberUtils;
@@ -106,13 +107,15 @@ import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
  */
 public class Register extends BeaconzPluginDependent {
 
+    private static final boolean DEBUG = true;
+
     /**
      * Constructs a new Register instance.
      *
      * @param beaconzPlugin the main Beaconz plugin instance
      */
     public Register(Beaconz beaconzPlugin) {
-        super(beaconzPlugin);
+        super(Objects.requireNonNull(beaconzPlugin));
     }
 
     /** Maps Minecraft map item IDs to their associated beacon objects for territory display */
@@ -217,7 +220,7 @@ public class Register extends BeaconzPluginDependent {
 
             // Store location as "x:y:z:owner" format
             beaconzYml.set("beacon." + count + ".location", beacon.getX() + ":" + beacon.getY() + ":" + beacon.getZ()
-                    + ":" + owner);
+            + ":" + owner);
 
             // Store links to other beacons (only outbound links to avoid duplication)
             if (game != null) {
@@ -493,7 +496,7 @@ public class Register extends BeaconzPluginDependent {
     public void clear() {
         clear(null);
     }
-    
+
     /**
      * Clears data for a specific region/game.
      * <p>
@@ -526,7 +529,7 @@ public class Register extends BeaconzPluginDependent {
             triangleFields.removeIf(tri -> region.containsPoint(tri.a));
             //getLogger().info("DEBUG: triangles done");
             beaconLinks.remove(region.getGame());
-           // getLogger().info("DEBUG: links done");
+            // getLogger().info("DEBUG: links done");
         }
     }
 
@@ -805,7 +808,7 @@ public class Register extends BeaconzPluginDependent {
                     // Prevent enemy triangle overlaps (mutual containment)
                     // If either triangle fully contains the other, reject
                     if (!triangle.getOwner().equals(triangleField.getOwner()) &&
-                        (triangleField.contains(triangle) || triangle.contains(triangleField))) {
+                            (triangleField.contains(triangle) || triangle.contains(triangleField))) {
                         return false;
                     }
 
@@ -927,16 +930,19 @@ public class Register extends BeaconzPluginDependent {
      * @return BeaconObj or null if none
      */
     public BeaconObj getBeacon(Block block) {
+        if (DEBUG) getLogger().info("DEBUG: getBeacon ");
         // Quick check
         if (!block.getType().equals(Material.BEACON) && !block.getType().equals(Material.DIAMOND_BLOCK)
                 && !block.getType().equals(Material.OBSIDIAN) &&  !block.getType().name().endsWith("STAINED_GLASS")
                 && !block.getType().equals(Material.EMERALD_BLOCK)) {
+            if (DEBUG) getLogger().info("DEBUG: wrong type ");
             return null;
         }
         Point2D point = new Point2D.Double(block.getLocation().getBlockX(),block.getLocation().getBlockZ());
 
         // Check plinth blocks
         if (block.getType().equals(Material.EMERALD_BLOCK)) {
+            if (DEBUG) getLogger().info("DEBUG: emerald ");
             if (baseBlocks.containsKey(point)) {
                 // Check height
                 BeaconObj beacon = baseBlocks.get(point);
@@ -951,6 +957,7 @@ public class Register extends BeaconzPluginDependent {
 
         // Check glass or obsidian
         if (block.getType().equals(Material.OBSIDIAN) || block.getType().name().endsWith("STAINED_GLASS")) {
+            if (DEBUG) getLogger().info("DEBUG: obsidian or stained glass ");
             Block below = block.getRelative(BlockFace.DOWN);
             if (!below.getType().equals(Material.BEACON)) {
                 getLogger().info("DEBUG: no beacon below here");
@@ -962,21 +969,29 @@ public class Register extends BeaconzPluginDependent {
         }
         // Check beacons
         if (block.getType().equals(Material.BEACON)) {
-           return beaconRegister.getOrDefault(point, null);
+            if (DEBUG) getLogger().info("DEBUG: beacon ");
+            return beaconRegister.getOrDefault(point, null);
         }
         // Check the pyramid around the beacon
+        if (DEBUG) getLogger().info("DEBUG: check pyramid ");
         // Look for a beacon
         for (int modX = -1; modX < 2; modX++) {
             for (int modZ = -1; modZ < 2; modZ++) {
-                Block test = block.getRelative(modX, 1, modZ);
-                if (test.getType().equals(Material.BEACON)) {
-                    point = new Point2D.Double(test.getLocation().getBlockX(),test.getLocation().getBlockZ());
-                    if (beaconRegister.containsKey(point)) {
-                        return beaconRegister.get(point);
+                for (int modY = 1; modY < 3; modY++) {
+                    Block test = block.getRelative(modX, modY, modZ);
+                    if (DEBUG) getLogger().info("DEBUG: test is " + test.getType() + " and is at " + test.getLocation());
+                    if (test.getType().equals(Material.BEACON)) {
+                        if (DEBUG) getLogger().info("DEBUG: test is a beacon. Check if it's a known beacon ");
+                        point = new Point2D.Double(test.getLocation().getBlockX(),test.getLocation().getBlockZ());
+                        if (beaconRegister.containsKey(point)) {
+                            if (DEBUG) getLogger().info("DEBUG: beacon found ");
+                            return beaconRegister.get(point);
+                        }
                     }
                 }
             }
         }
+        if (DEBUG) getLogger().info("DEBUG: no beacon found ");
         return null;
     }
 

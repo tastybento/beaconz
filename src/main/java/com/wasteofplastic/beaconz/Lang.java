@@ -6,8 +6,11 @@ import java.util.HashMap;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.jetbrains.annotations.Nullable;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
 
@@ -78,8 +81,8 @@ public class Lang extends BeaconzPluginDependent {
     public static Component beaconLockedAlready;
     public static Component beaconLockedJustNow;
     public static Component beaconLockedWithNMoreBlocks;
-    public static Component beaconMapBeaconMap;
-    public static Component beaconMapUnknownBeacon;
+    public static String beaconMapBeaconMap;
+    public static String beaconMapUnknownBeacon;
     public static Component beaconMaxLinks;
     public static Component beaconNameCreateATriangle;
     public static Component beaconNameCreatedALink;
@@ -134,7 +137,7 @@ public class Lang extends BeaconzPluginDependent {
     public static Component generalGames;
     public static Component generalLevel;
     public static Component generalLinks;
-    public static Component generalLocation;
+    public static String generalLocation;
     public static Component generalMembers;
     public static Component generalNone;
     public static Component generalSuccess;
@@ -192,10 +195,10 @@ public class Lang extends BeaconzPluginDependent {
     public static Component titleCmdYourePlaying;
     public static Component titleLobbyInfo;
     public static Component titleSubTitle;
-    public static Component titleSubTitleColor;
+    public static TextColor titleSubTitleColor;
     public static Component titleWelcome;
     public static Component titleWelcomeBackToGame;
-    public static Component titleWelcomeColor;
+    public static TextColor titleWelcomeColor;
     public static Component titleWelcomeToGame;
     public static Component triangleCouldNotMakeTriangle;
     public static Component triangleCouldNotMakeTriangles;
@@ -299,8 +302,8 @@ public class Lang extends BeaconzPluginDependent {
         beaconLockedAlready = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("beacon.LockedAlready", "This beacon is already locked. Don't waste [lockingBlock]s!"));
         beaconLockedJustNow = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("beacon.LockedJustNow", "This beacon is now locked. Break an [lockingBlock] to unlock it!"));
         beaconLockedWithNMoreBlocks = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("beacon.LockedWithNMoreBlocks", "[number] additional locking block(s) on this level will lock the beacon."));        
-        beaconMapBeaconMap = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("beacon.MapBeaconMap", "Beacon Map"));
-        beaconMapUnknownBeacon = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("beacon.MapUnknownBeacon", "Unknown beacon"));
+        beaconMapBeaconMap = locale.getString("beacon.MapBeaconMap", "Beacon Map");
+        beaconMapUnknownBeacon = locale.getString("beacon.MapUnknownBeacon", "Unknown beacon");
         beaconMaxLinks = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("beacon.MaxLinks", "This beacon already has [number] outbound links!"));
         beaconNameCreateATriangle = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("beacon.NameCreateATriangle", "[name] created a triangle!"));
         beaconNameCreatedALink = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("beacon.NameCreatedALink", "[name] created a link!"));
@@ -358,7 +361,7 @@ public class Lang extends BeaconzPluginDependent {
         generalGames = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("general.Games", "Games"));
         generalLevel = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("general.Level", "Level"));
         generalLinks = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("general.Links", "Links"));
-        generalLocation = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("general.Location", "Location"));
+        generalLocation = locale.getString("general.Location", "Location");
         generalMembers = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("general.Members", "Members"));
         generalNone = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("general.None", "None"));
         generalSuccess = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("general.Success", "Success!"));
@@ -416,10 +419,10 @@ public class Lang extends BeaconzPluginDependent {
         titleCmdYourePlaying = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("title.CmdYourePlaying", "You're playing Beaconz game [game]"));
         titleLobbyInfo = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("title.LobbyInfo", "Welcome to Beaconz!|You are in the lobby area.|Hit a sign to start a game!|Beaconz is a team game where|you try to find, claim and link|naturally occuring beaconz in|the world. You can mine beaconz|for goodies and defend them|with blocks and traps."));
         titleSubTitle = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("title.SubTitle", "Capture, link & defend beaconz!"));
-        titleSubTitleColor = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("title.SubTitleColor", "gold"));
+        titleSubTitleColor = getTextColor(locale.getString("title.SubTitleColor", "gold"));
         titleWelcome = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("title.Welcome",  "Welcome to Beaconz!"));
         titleWelcomeBackToGame = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("title.WelcomeBackToGame", "Welcome back to Beaconz game [name]"));
-        titleWelcomeColor = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("title.WelcomeColor", "gold"));
+        titleWelcomeColor = getTextColor(locale.getString("title.WelcomeColor", "gold"));
         titleWelcomeToGame = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("title.WelcomeToGame", "Welcome to Beaconz game [name]"));
         triangleCouldNotMakeTriangle = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("triangle.CouldNotMakeTriangle", "One triangle could not be created because of overlapping enemy elements!"));
         triangleCouldNotMakeTriangles = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("triangle.CouldNotMakeTriangles", "[number] triangles could not be created because of overlapping enemy elements!"));
@@ -440,5 +443,24 @@ public class Lang extends BeaconzPluginDependent {
                 getLogger().severe("No not know what defenseText." + material + " is in locale file " + localeName + ".yml, skipping...");
             }
         }
+    }
+
+
+    private TextColor getTextColor(@Nullable String colorString) {
+        // Try to parse it directly into a TextColor
+        // fromHexString handles "#RRGGBB"
+        // NamedTextColor.NAMES.value() handles names like "gold", "red", etc.
+        TextColor color = TextColor.fromHexString(colorString);
+
+        if (color == null) {
+            color = NamedTextColor.NAMES.value(colorString.toLowerCase());
+        }
+
+        // Use a fallback if the config value was invalid
+        if (color == null) {
+            color = NamedTextColor.GOLD;
+        }
+        
+        return color;
     }
 }

@@ -229,11 +229,11 @@ public class BeaconObj extends BeaconzPluginDependent {
      */
     public boolean isNotClear() {
         Block beacon = getBeaconzWorld().getBlockAt((int)location.getX(), y, (int)location.getY());
-        getLogger().info("DEBUG: block y = " + beacon.getY() + " " + beacon.getLocation());
+        getLogger().info("DEBUG: beacon block y = " + beacon.getY() + " " + beacon.getLocation());
         for (BlockFace face: FACES) {
             Block block = beacon.getRelative(face);
             getLogger().info("DEBUG: highest block at " + block.getX() + "," + block.getZ() + " y = " + getHighestBlockYAt(block.getX(), block.getZ()));
-            if (block.getY() != getHighestBlockYAt(block.getX(), block.getZ())) {
+            if (getHighestBlockYAt(block.getX(), block.getZ()) != beacon.getY()) {
                 getLogger().info("DEBUG: Beacon is not cleared");
                 return true;
             }

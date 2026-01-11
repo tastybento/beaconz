@@ -198,17 +198,17 @@ public class Messages extends BeaconzPluginDependent {
         // Tell other players
         Game game = getGameMgr().getGame(team);
         if (game != null) {
-            HashMap<Team, List<String>> teamMembers = game.getScorecard().getTeamMembers();
+            HashMap<Team, List<UUID>> teamMembers = game.getScorecard().getTeamMembers();
             if (teamMembers != null) {
-                List<String> members = teamMembers.get(team);
+                List<UUID> members = teamMembers.get(team);
                 if (members != null) {
-                    for (String uuid : members) {
-                        Player member = Bukkit.getPlayer(UUID.fromString(uuid));
-                        if (player == null || !player.getUniqueId().equals(UUID.fromString(uuid))) {
+                    for (UUID uuid : members) {
+                        Player member = Bukkit.getPlayer(uuid);
+                        if (player == null || !player.getUniqueId().equals(uuid)) {
                             if (member != null) {
                                 member.sendMessage(ChatColor.GOLD + "[" + game.getName() + "] " + message);
                             } else {
-                                setMessage(UUID.fromString(uuid), ChatColor.GOLD + "[" + game.getName() + "] " + message);
+                                setMessage(uuid, ChatColor.GOLD + "[" + game.getName() + "] " + message);
                             }
                         }
                     }
@@ -228,17 +228,17 @@ public class Messages extends BeaconzPluginDependent {
         // Tell other players
         Game game = getGameMgr().getGame(team);
         if (game != null) {
-            HashMap<Team, List<String>> teamMembers = game.getScorecard().getTeamMembers();
+            HashMap<Team, List<UUID>> teamMembers = game.getScorecard().getTeamMembers();
             if (teamMembers != null) {
-                List<String> members = teamMembers.get(team);
+                List<UUID> members = teamMembers.get(team);
                 if (members != null) {
-                    for (String uuid : members) {
+                    for (UUID uuid : members) {
                         Player member = Bukkit.getPlayer(uuid);
                         if (player == null || !player.getUniqueId().equals(uuid)) {
                             if (member != null) {
                                 member.sendMessage(Component.text("[" + game.getName() + "] ").append(message).color(NamedTextColor.GOLD));
                             } else {
-                                setMessage(UUID.fromString(uuid), ChatColor.GOLD + "[" + game.getName() + "] " + message);
+                                setMessage(uuid, ChatColor.GOLD + "[" + game.getName() + "] " + message);
                             }
                         }
                     }

@@ -26,7 +26,6 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.UUID;
 
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -71,7 +70,7 @@ import com.wasteofplastic.beaconz.Settings;
 
 public class BeaconProtectionListener extends BeaconzPluginDependent implements Listener {
 
-    private final static boolean DEBUG = false;
+    private final static boolean DEBUG = true;
     /**
      * A bi-drectional hashmap to track players standing on beaconz
      */
@@ -153,6 +152,7 @@ public class BeaconProtectionListener extends BeaconzPluginDependent implements 
         if (beacon == null) {
             return;
         }
+        getLogger().info("DEBIF: beacon " + beacon.getLocation());
         // Check for obsidian/glass breakage - i.e., capture
         if (block.getRelative(BlockFace.DOWN).getType().equals(Material.BEACON)) {
             // Check if this is a real beacon

@@ -50,6 +50,7 @@ import com.wasteofplastic.beaconz.BeaconzPluginDependent;
 import com.wasteofplastic.beaconz.DefenseBlock;
 import com.wasteofplastic.beaconz.Lang;
 import com.wasteofplastic.beaconz.LinkResult;
+import com.wasteofplastic.beaconz.Params.GameScoreGoal;
 import com.wasteofplastic.beaconz.Settings;
 import com.wasteofplastic.beaconz.map.TerritoryMapRenderer;
 
@@ -321,18 +322,18 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
             if (result.getFieldsMade() == 1) {
                 player.sendMessage(Lang.beaconTriangleCreated.append(Component.text(" "))
                         .append(Lang.scoreNewScore).append(Component.text(" = ")
-                                .append(Component.text(String.format(Locale.US, "%,d",getGameMgr().getSC(team).getScore(team, "area")))))
+                                .append(Component.text(String.format(Locale.US, "%,d",getGameMgr().getSC(team).getScore(team, GameScoreGoal.AREA)))))
                         .color(NamedTextColor.GOLD));
                 getMessages().tellTeam(player, Lang.beaconNameCreateATriangle.replaceText("[name]", player.displayName())
                         .append(Component.text(" ").append(Lang.scoreNewScore).append(Component.text(" = ")
-                                .append(Component.text(String.format(Locale.US, "%,d", getGameMgr().getSC(team).getScore(team, "area"))))))
+                                .append(Component.text(String.format(Locale.US, "%,d", getGameMgr().getSC(team).getScore(team, GameScoreGoal.AREA))))))
                         .color(NamedTextColor.GREEN));
                 // Taunt other teams
                 getMessages().tellOtherTeams(team, Lang.beaconNameCreateATriangle.replaceText("[name]", team.displayName()).color(NamedTextColor.RED));
             } else {
                 Component message = Lang.beaconNameCreateTriangles.replaceText("[name]", player.displayName())
                         .replaceText("[number]", Component.text(String.valueOf(result.getFieldsMade())));
-                Component newScore = Lang.scoreNewScore.append(Component.text(" " + String.format(Locale.US, "%,d", getGameMgr().getSC(team).getScore(team, "area"))));
+                Component newScore = Lang.scoreNewScore.append(Component.text(" " + String.format(Locale.US, "%,d", getGameMgr().getSC(team).getScore(team, GameScoreGoal.AREA))));
                 player.sendMessage(message.append(Component.text(" ")).append(newScore).color(NamedTextColor.GOLD));
                 getMessages().tellTeam(player, message.append(Component.text(" ")).append(newScore).color(NamedTextColor.GREEN));
                 // Taunt other teams

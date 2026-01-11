@@ -915,9 +915,9 @@ class AdminCmdHandlerTest {
         when(game.getScorecard()).thenReturn(scorecard);
         when(scorecard.getScoreboard()).thenReturn(scoreboard);
 
-        HashMap<Team, List<String>> teamMembers = new HashMap<>();
-        List<String> members = new ArrayList<>();
-        members.add(UUID.randomUUID().toString());
+        HashMap<Team, List<UUID>> teamMembers = new HashMap<>();
+        List<UUID> members = new ArrayList<>();
+        members.add(UUID.randomUUID());
         teamMembers.put(team1, members);
 
         when(scorecard.getTeamMembers()).thenReturn(teamMembers);

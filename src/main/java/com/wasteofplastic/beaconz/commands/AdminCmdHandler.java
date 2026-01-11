@@ -405,7 +405,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
             sender.sendMessage(Component.text("/" + label + " delete <gamename> - ").append(Lang.helpAdminDelete).color(NamedTextColor.RED));
             return false;
         } else {
-            Game game = getGameMgr().getGames().get(args[1]);
+            Game game = getGameMgr().getGames().get(Component.text(args[1]));
             if (game == null) {
                 sender.sendMessage(Lang.errorNoSuchGame.append(Component.text("'" + args[1] + "'")).color(NamedTextColor.RED));
                 return false;
@@ -725,7 +725,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                         return false;
                     } else {
                         // Display each team and its members
-                        HashMap<Team, List<String>> teamMembers = game.getScorecard().getTeamMembers();
+                        HashMap<Team, List<UUID>> teamMembers = game.getScorecard().getTeamMembers();
                         for (Team t : teamMembers.keySet()) {
                             sender.sendMessage(Component.text("==== ")
                                     .append(t.displayName())
@@ -733,8 +733,8 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
 
                             // Build member list from UUIDs
                             StringBuilder memberlist = new StringBuilder();
-                            for (String uuid : teamMembers.get(t)) {
-                                memberlist.append("[").append(getServer().getOfflinePlayer(UUID.fromString(uuid)).getName()).append("] ");
+                            for (UUID uuid : teamMembers.get(t)) {
+                                memberlist.append("[").append(getServer().getOfflinePlayer(uuid).getName()).append("] ");
                             }
                             sender.sendMessage(Lang.generalMembers.append(Component.text(": " + memberlist).color(NamedTextColor.WHITE)));
                         }

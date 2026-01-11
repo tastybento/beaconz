@@ -29,6 +29,7 @@ import com.wasteofplastic.beaconz.GameMgr;
 import com.wasteofplastic.beaconz.Lang;
 import com.wasteofplastic.beaconz.Region;
 import com.wasteofplastic.beaconz.Scorecard;
+import com.wasteofplastic.beaconz.Params.GameScoreGoal;
 
 /**
  * Comprehensive test suite for {@link CmdHandler} covering all command scenarios.
@@ -307,7 +308,7 @@ class CmdHandlerTest {
         when(scorecard.getTeam(player)).thenReturn(team1);
         when(scorecard.getScoreboard()).thenReturn(scoreboard);
         when(scoreboard.getTeams()).thenReturn(Set.of(team1, team2));
-        when(scorecard.getScore(any(Team.class), anyString())).thenReturn(100);
+        when(scorecard.getScore(any(Team.class), any(GameScoreGoal.class))).thenReturn(100);
 
         // Execute score command
         boolean result = handler.onCommand(player, command, "beaconz", new String[]{"score"});
@@ -631,15 +632,15 @@ class CmdHandlerTest {
         when(scoreboard.getTeams()).thenReturn(Set.of(team1, team2));
 
         // Mock scores for different metrics
-        when(scorecard.getScore(team1, "beacons")).thenReturn(5);
-        when(scorecard.getScore(team1, "links")).thenReturn(8);
-        when(scorecard.getScore(team1, "triangles")).thenReturn(3);
-        when(scorecard.getScore(team1, "area")).thenReturn(500);
+        when(scorecard.getScore(team1, GameScoreGoal.BEACONS)).thenReturn(5);
+        when(scorecard.getScore(team1, GameScoreGoal.LINKS)).thenReturn(8);
+        when(scorecard.getScore(team1, GameScoreGoal.TRIANGLES)).thenReturn(3);
+        when(scorecard.getScore(team1, GameScoreGoal.AREA)).thenReturn(500);
 
-        when(scorecard.getScore(team2, "beacons")).thenReturn(3);
-        when(scorecard.getScore(team2, "links")).thenReturn(4);
-        when(scorecard.getScore(team2, "triangles")).thenReturn(1);
-        when(scorecard.getScore(team2, "area")).thenReturn(200);
+        when(scorecard.getScore(team2, GameScoreGoal.BEACONS)).thenReturn(3);
+        when(scorecard.getScore(team2, GameScoreGoal.LINKS)).thenReturn(4);
+        when(scorecard.getScore(team2, GameScoreGoal.TRIANGLES)).thenReturn(1);
+        when(scorecard.getScore(team2, GameScoreGoal.AREA)).thenReturn(200);
 
         // Call showGameScores
         handler.showGameScores(sender, game);

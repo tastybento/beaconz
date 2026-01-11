@@ -36,8 +36,6 @@ import com.wasteofplastic.beaconz.BeaconObj;
 import com.wasteofplastic.beaconz.Beaconz;
 import com.wasteofplastic.beaconz.Lang;
 
-import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
-
 
 public class BeaconMap extends MapRenderer {
     private final Beaconz plugin;
@@ -61,16 +59,14 @@ public class BeaconMap extends MapRenderer {
         if (inMainHand.getType().equals(Material.FILLED_MAP) || inOffHand.getType().equals(Material.FILLED_MAP)) {
             // here's where you do your drawing - see the Javadocs for the MapCanvas class for
             // the methods you can use
-            String plainText = PlainTextComponentSerializer.plainText().serialize(Lang.beaconMapBeaconMap);
-            canvas.drawText(10, 10, MinecraftFont.Font, plainText);
+            canvas.drawText(10, 10, MinecraftFont.Font, Lang.beaconMapBeaconMap);
             // Get the text
             BeaconObj beacon = plugin.getRegister().getBeaconMap(map.getId());
             if (beacon != null) {
                 canvas.drawText(10, 20, MinecraftFont.Font, Lang.generalLocation + ": " + beacon.getName());
                 canvas.setPixelColor(64, 64, Color.WHITE);
             } else {
-                plainText = PlainTextComponentSerializer.plainText().serialize(Lang.beaconMapUnknownBeacon);
-                canvas.drawText(10, 20, MinecraftFont.Font, plainText);
+                canvas.drawText(10, 20, MinecraftFont.Font, Lang.beaconMapUnknownBeacon);
             }
         }
     }

@@ -111,13 +111,13 @@ public class Beaconz extends JavaPlugin {
 
         // Run commands that need to be run 1 tick after start
         getServer().getScheduler().runTask(this, () -> {
-
+            
             // Start the game manager and create the lobby region
             gameMgr = new GameMgr(plugin);
 
             // Load the beacon register
             getRegister();
-
+            
             // Create the block populator
             getBp();
 
@@ -185,6 +185,9 @@ public class Beaconz extends JavaPlugin {
      * @return the gameMgr
      */
     public GameMgr getGameMgr() {
+        if (gameMgr == null) {
+            gameMgr = new GameMgr(plugin);
+        }
         return gameMgr;
     }
 

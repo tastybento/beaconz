@@ -24,7 +24,10 @@ package com.wasteofplastic.beaconz;
 
 import java.awt.geom.Point2D;
 import java.io.File;
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Random;
 import java.util.Set;
@@ -55,6 +58,7 @@ import com.wasteofplastic.beaconz.Params.GameMode;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import net.kyori.adventure.title.Title;
 
 /**
  * Region instantiates the various regions in the world
@@ -69,6 +73,20 @@ public class Region extends BeaconzPluginDependent {
     private Location spawnPoint;
     //private long progress;
     private Game game = null;
+    
+    // Define the Title timing (Fade-in, Stay, Fade-out)
+    Title.Times times = Title.Times.times(
+            Duration.ofMillis(500),  // 10 ticks
+            Duration.ofMillis(3000), // 60 ticks
+            Duration.ofMillis(500)   // 10 ticks
+    );
+
+    // Title object to show
+    Title title = Title.title(
+            Lang.titleWelcome.color(Lang.titleWelcomeColor), 
+            Lang.titleSubTitle.color(Lang.titleSubTitleColor), 
+            times
+    );
 
 
     public Region(Beaconz beaconzPlugin, Point2D[] corners) {
@@ -546,10 +564,7 @@ public class Region extends BeaconzPluginDependent {
         player.sendMessage(Lang.titleSubTitle.color(NamedTextColor.AQUA));
 
         // Welcome player on screen
-        getServer().dispatchCommand(getServer().getConsoleSender(),
-                "title " + player.getName() + " title {\"text\":\"" + Lang.titleWelcome + "\", \"color\":\"" + Lang.titleWelcomeColor + "\"}");
-        getServer().dispatchCommand(getServer().getConsoleSender(),
-                "title " + player.getName() + " subtitle {\"text\":\"" + Lang.titleSubTitle + "\", \"color\":\"" + Lang.titleSubTitleColor + "\"}");
+        player.showTitle(title);
 
         // Show the lobby scoreboard - wait for title message to disappear
         if (this.equals(getGameMgr().getLobby())) {
@@ -614,7 +629,10 @@ public class Region extends BeaconzPluginDependent {
         player.sendMessage(Lang.startYoureAMember.replaceText("[name]", Component.text(""))
                 .append(teamname).color(NamedTextColor.AQUA));
         if (game.getGamegoalvalue() > 0) {
-            player.sendMessage(Lang.startObjective.replaceText("[value]",Component.text( String.format(Locale.US, "%,d", game.getGamegoalvalue()).replace("[goal]", game.getGamegoal().name()))).color(NamedTextColor.AQUA));
+            player.sendMessage(Lang.startObjective
+                    .replaceText("[value]",Component.text(String.format(Locale.US, "%,d", game.getGamegoalvalue())))
+                    .replaceText("[goal]", Component.text( game.getGamegoal().name()))
+                    .color(NamedTextColor.AQUA));
         } else {
             player.sendMessage(Lang.startMostObjective.replaceText("[goal]", Component.text(game.getGamegoal().name())).color(NamedTextColor.AQUA));
         }
@@ -640,7 +658,7 @@ public class Region extends BeaconzPluginDependent {
         if (safeloc == null && location != null) {
             // look for a safe spot at location and within radius
             Block bl = location.getBlock();
-            StringBuilder usedxyz = new StringBuilder();
+            List<Pair> used = new ArrayList<>();
 
             // sweep in a concentric cube pattern to check for a safe spot
             Location checkloc = null;
@@ -648,10 +666,10 @@ public class Region extends BeaconzPluginDependent {
                 for (int rad = 0; rad < radius; rad++) {
                     for (int z = -rad; z <= rad; z++) {
                         for (int x = -rad; x <= rad; x++) {
-                            String coords = "#" + x + " "+ z + "#";
-                            if (!usedxyz.toString().contains(coords)) {
-                                usedxyz.append(coords);
-                                checkloc = getBeaconzWorld().getHighestBlockAt(bl.getRelative(x, 0, z).getLocation()).getLocation();
+                            Pair coords =new Pair(x,z);
+                            if (!used.contains(coords)) {
+                                used.add(new Pair(x,z));
+                                checkloc = getBeaconzWorld().getHighestBlockAt(bl.getRelative(x, 0, z).getLocation()).getLocation().subtract(0, 1, 0);
                                 if (isLocationSafe(checkloc)) {
                                     safeloc = checkloc.add(0.5, 0.0, 0.5);
                                     break outerloop;
@@ -663,8 +681,7 @@ public class Region extends BeaconzPluginDependent {
         }
         if (safeloc == null && location != null) {
             Bukkit.getConsoleSender().sendMessage(Component.text("Could not find a safe spot. Region at " + displayCoords() + ". Using default.").color(NamedTextColor.YELLOW));
-            safeloc = getBeaconzWorld().getHighestBlockAt((int) location.getX(), (int) location.getZ()).getLocation();
-            safeloc = safeloc.add(0.5, 0.0, 0.5);
+            safeloc = new Location(getBeaconzWorld(), location.getX(), getBeaconzWorld().getHighestBlockYAt(location), location.getZ());
             safeloc.getBlock().getRelative(BlockFace.DOWN).setType(Material.BEDROCK);
         }
 
@@ -695,7 +712,7 @@ public class Region extends BeaconzPluginDependent {
         // If ground is AIR, then this is either not good, or they are on slab,
         // stair, etc.
         if (ground.getType() == Material.AIR) {
-            //Bukkit.getLogger().info("DEBUG: air");
+            Bukkit.getLogger().info("DEBUG: air");
             return false;
         }
         // Liquid is unsafe

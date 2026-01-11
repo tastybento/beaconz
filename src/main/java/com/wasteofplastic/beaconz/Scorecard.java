@@ -39,20 +39,18 @@ import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.ScoreboardManager;
 import org.bukkit.scoreboard.Team;
 import org.bukkit.util.Vector;
-import org.jetbrains.annotations.NotNull;
 
 import com.wasteofplastic.beaconz.Params.GameScoreGoal;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.serializer.json.JSONComponentSerializer;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
 public class Scorecard extends BeaconzPluginDependent{
     private static final Integer MAXSCORELENGTH = 10;
-    private Boolean gameON;
+    private boolean gameON;
     private Game game;
-    private Component gameName;
+    private String gameName;
     private ScoreboardManager manager;
     private Scoreboard scoreboard;
     private Score scoreentry;
@@ -69,10 +67,9 @@ public class Scorecard extends BeaconzPluginDependent{
     private BukkitTask timertaskid;
     private HashMap<Team, Location> teamSpawnPoint = new HashMap<>();
     private HashMap<Team, HashMap<GameScoreGoal,Integer>> score = new HashMap<>();
-    private HashMap<Team, List<String>> teamMembers = new HashMap<>();
+    private HashMap<Team, List<UUID>> teamMembers = new HashMap<>();
     private HashMap<UUID, Team> teamLookup = new HashMap<>();
     private HashMap<Team, Material> teamBlocks = new HashMap<>();
-    private enum Scoretypes {area, links, triangles, beacons}
 
     /**
      * Scorecard controls all aspects of
@@ -92,7 +89,8 @@ public class Scorecard extends BeaconzPluginDependent{
     public Scorecard(Beaconz beaconzPlugin, Game game) {
         super(beaconzPlugin);
         this.game = game;
-        this.gameName = game.getName();
+        // For the scorecard, the game name is a String
+        this.gameName =PlainTextComponentSerializer.plainText().serialize(game.getName());
         this.manager = beaconzPlugin.getServer().getScoreboardManager();
         initialize(true);
     }
@@ -132,16 +130,14 @@ public class Scorecard extends BeaconzPluginDependent{
         sidebarline = 15;
 
         // Set up the scoreboard with the goal
-        scoreobjective.displayName(Lang.titleBeaconz.append(Component.text(" " + game.getGamemode() + "! 00d 00:00:00").color(NamedTextColor.GREEN)));
+        scoreobjective.displayName(Lang.titleBeaconz.append(Component.text(" " + game.getGamemode().name() + "! 00d 00:00:00").color(NamedTextColor.GREEN)));
 
         goalstr = "";
         if (game.getGamegoalvalue() == 0) {
-            goalstr = Lang.scoreGetTheMostGoal.replaceText("[goal]", Component.text(game.getGamegoal().toString())).toString();
+            goalstr = PlainTextComponentSerializer.plainText().serialize(Lang.scoreGetTheMostGoal.color(NamedTextColor.GREEN)).replace("[goal]", game.getGamegoal().name());
         } else {
-            Component value;
-            value = Component.text(
-                    String.format(Locale.US, "%,d", game.getGamegoalvalue()).replace("[goal]",game.getGamegoal().name()));
-            goalstr = PlainTextComponentSerializer.plainText().serialize(Lang.scoreGetValueGoal.replaceText("[value]", value).color(NamedTextColor.GREEN));
+            String value = String.format(Locale.US, "%,d", game.getGamegoalvalue());
+            goalstr = PlainTextComponentSerializer.plainText().serialize(Lang.scoreGetValueGoal.color(NamedTextColor.GREEN)).replace("[value]", value).replace("[goal]", game.getGamegoal().name());
         }
         scoreline = scoreobjective.getScore(goalstr);
         scoreline.setScore(sidebarline);
@@ -178,7 +174,6 @@ public class Scorecard extends BeaconzPluginDependent{
     /**
      * Adds teams to the game from the config file
      */
-    @SuppressWarnings("deprecation")
     protected void addTeams() {
         ConfigurationSection csect = getBeaconzPlugin().getConfig().getConfigurationSection("teams.names");
         int teamcnt = 0;
@@ -219,10 +214,9 @@ public class Scorecard extends BeaconzPluginDependent{
      */
     public void refreshScores(Team team) {
         if (team != null) {
-            Integer defaultvalue = null;
+            int defaultvalue = 0;
             if (score.get(team) == null) defaultvalue = 0;   // if team doesn't have score, create it and set to 0
-            //for (String st : game.getScoretypes().split(":")) {
-            for (GameScoreGoal st : GameScoreGoal.values()) {
+            for (GameScoreGoal st :  game.getScoretypes()) {
                 refreshScores(team, st, defaultvalue);
             }
         }
@@ -234,39 +228,35 @@ public class Scorecard extends BeaconzPluginDependent{
      * @param scoretype - can be area, beacons, links, triangles
      * @param value - default value
      */
-    public void refreshScores(Team team, GameScoreGoal scoretype, Integer value) {
+    public void refreshScores(Team team, GameScoreGoal scoretype, int value) {
         if (gameON) {
-            if (value == null) {
-                switch (scoretype) {
-                case GameScoreGoal.AREA: {
-                    value = getRegister().getTeamArea(team);
-                    break;
-                }
-                case GameScoreGoal.BEACONS: {
-                    value = getRegister().getTeamBeacons(team).size();
-                    break;
-                }
-                case GameScoreGoal.LINKS: {
-                    value = getRegister().getTeamLinks(team);
-                    break;
-                }
-                case GameScoreGoal.TRIANGLES: {
-                    value = getRegister().getTeamTriangles(team);
-                    break;
-                }
-                default:
-                    break;
-                }
+            switch (scoretype) {
+            case GameScoreGoal.AREA: {
+                value = getRegister().getTeamArea(team);
+                break;
+            }
+            case GameScoreGoal.BEACONS: {
+                value = getRegister().getTeamBeacons(team).size();
+                break;
+            }
+            case GameScoreGoal.LINKS: {
+                value = getRegister().getTeamLinks(team);
+                break;
+            }
+            case GameScoreGoal.TRIANGLES: {
+                value = getRegister().getTeamTriangles(team);
+                break;
+            }
+            default:
+                break;
             }
             //Update the score - putscore will call refreshSBDisplay()
             putScore(team, scoretype, value);
 
             // See if we have a winner
             // If the gamegoal value is zero, then the game is never ending
-            //getLogger().info("DEBUG: ending game goal = " + game.getGamegoal() + " required value = " + game.getGamegoalvalue() + " actual value = " + value);
-            //getLogger().info("DEBUG: timertype = " + timertype + " scoretype = " + scoretype);
             if (game.getGamegoalvalue() > 0 && scoretype.equals(game.getGamegoal()) && value >= game.getGamegoalvalue()) {
-                //getLogger().info("DEBUG: ending game");
+                // ending game
                 endGame();
             }
         }
@@ -314,7 +304,6 @@ public class Scorecard extends BeaconzPluginDependent{
      * @param teamBlock
      * @param save      - if true, saves game to file after adding team
      */
-    @SuppressWarnings("deprecation")
     public void addTeam(String teamName, String teamDisplayName, Material teamBlock, Boolean save) {
         Team team = scoreboard.getTeam(teamName);
         if (team == null) {
@@ -343,7 +332,7 @@ public class Scorecard extends BeaconzPluginDependent{
             }
         }
         //Refresh the scores, save the game and return
-        refreshScores(team);
+        //refreshScores(team);
         if (save) game.save();
 
     }
@@ -372,8 +361,9 @@ public class Scorecard extends BeaconzPluginDependent{
      */
     public String sbEntry (Team team, GameScoreGoal scoretype) {
         String scoreboardentry = "";
+        String teamName = PlainTextComponentSerializer.plainText().serialize(team.displayName());
         for (String entry : scoreboard.getEntries()) {
-            if (entry.contains(team.getDisplayName() + " " + scoretype)) {
+            if (entry.contains(teamName + " " + scoretype)) {
                 scoreboardentry = entry;
                 break;
             }
@@ -390,11 +380,10 @@ public class Scorecard extends BeaconzPluginDependent{
         team.addEntry(player.getName());
         // then update the team lists
         removeTeamPlayer(player);
-        String uuid = player.getUniqueId().toString();
         teamLookup.put(player.getUniqueId(), team);
-        List<String> members = teamMembers.get(team);
+        List<UUID> members = teamMembers.get(team);
         if (members == null) members = new ArrayList<>();
-        members.add(uuid);
+        members.add(player.getUniqueId());
         teamMembers.put(team, members);
         game.save();
     }
@@ -406,9 +395,9 @@ public class Scorecard extends BeaconzPluginDependent{
         // Remove player from the teamLookup index
         teamLookup.remove(player.getUniqueId());
         // Go through all the team and remove the player if he exists
-        for (Entry<Team, List<String>> team : teamMembers.entrySet()) {
+        for (Entry<Team, List<UUID>> team : teamMembers.entrySet()) {
             if (team.getValue() != null) {
-                team.getValue().remove(player.getUniqueId().toString());
+                team.getValue().remove(player.getUniqueId());
                 teamMembers.put(team.getKey(), team.getValue());
             }
         }
@@ -566,7 +555,7 @@ public class Scorecard extends BeaconzPluginDependent{
     /**
      * Return the teamMembers hashmap
      */
-    public HashMap<Team, List<String>> getTeamMembers() {
+    public HashMap<Team, List<UUID>> getTeamMembers() {
         return teamMembers;
     }
     public HashMap<UUID, Team> getTeamLookup() {
@@ -593,25 +582,24 @@ public class Scorecard extends BeaconzPluginDependent{
             e.printStackTrace();
         }
         for (Team team: scoreboard.getTeams()) {
-            @SuppressWarnings("unchecked")
-            List<String> members = (List<String>) teamsYml.getList(gameName + "." + team.getName() + ".members");
-            if (members != null) {
-                teamMembers.put(team, members);
-                for (String uuid : members) {
-                    try {
-                        OfflinePlayer player = getBeaconzPlugin().getServer().getOfflinePlayer(UUID.fromString(uuid));
-                        if (player != null) {
-                            team.addEntry(player.getName());
-                            teamLookup.put(UUID.fromString(uuid), team);
-                        } else {
-                            getLogger().severe("Error loading team member " + team.getName() + " " + uuid + " - skipping");
-                        }
-                    } catch (Exception e) {
-                        //e.printStackTrace();
+            List<String> members = teamsYml.getStringList(gameName + "." + team.getName() + ".members");
+            List<UUID> memberList = new ArrayList<>();
+            for (String uuidText : members) {
+                try {
+                    UUID uuid = UUID.fromString(uuidText);
+                    memberList.add(uuid);
+                    OfflinePlayer player = getBeaconzPlugin().getServer().getOfflinePlayer(uuid);
+                    if (player != null) {
+                        team.addEntry(player.getName());
+                        teamLookup.put(uuid, team);
+                    } else {
                         getLogger().severe("Error loading team member " + team.getName() + " " + uuid + " - skipping");
                     }
+                } catch (Exception e) {
+                    getLogger().severe("Error loading team member " + team.getName() + " " + uuidText + " - skipping");
                 }
             }
+            teamMembers.put(team, memberList);
         }
     }
 
@@ -628,8 +616,10 @@ public class Scorecard extends BeaconzPluginDependent{
         }
         for (Team team: scoreboard.getTeams()) {
             // Save the team members
-            List<String> members = teamMembers.get(team);
-            teamsYml.set(gameName + "." + team.getName() + ".members", members);
+            if (teamMembers.containsKey(team)) {
+                List<String> members = teamMembers.get(team).stream().map(UUID::toString).toList();
+                teamsYml.set(gameName + "." + team.getName() + ".members", members);
+            }
             // Save the team spawn location
             teamsYml.set(gameName + "." + team.getName() + "." + "spawnpoint", getStringLocation(teamSpawnPoint.get(team)));
         }
@@ -692,8 +682,9 @@ public class Scorecard extends BeaconzPluginDependent{
      * @param team
      * @return
      * @return score for team
+     * TODO: simplify this
      */
-    public Integer getScore(Team team, String scoretype) {
+    public Integer getScore(Team team, GameScoreGoal scoretype) {
         if (score.containsKey(team)) {
             HashMap<GameScoreGoal,Integer> scores = score.get(team);
             if (scores.containsKey(scoretype)) return scores.get(scoretype);
@@ -784,15 +775,15 @@ public class Scorecard extends BeaconzPluginDependent{
             for (Team t : scoreboard.getTeams()) {
                 if (t.equals(team)) {
                     blockFace = switch (direction) {
-                        case 0 -> BlockFace.NORTH;
-                        case 1 -> BlockFace.SOUTH;
-                        case 2 -> BlockFace.EAST;
-                        case 3 -> BlockFace.WEST;
-                        case 4 -> BlockFace.NORTH_EAST;
-                        case 5 -> BlockFace.NORTH_WEST;
-                        case 6 -> BlockFace.SOUTH_EAST;
-                        case 7 -> BlockFace.SOUTH_WEST;
-                        default -> blockFace;
+                    case 0 -> BlockFace.NORTH;
+                    case 1 -> BlockFace.SOUTH;
+                    case 2 -> BlockFace.EAST;
+                    case 3 -> BlockFace.WEST;
+                    case 4 -> BlockFace.NORTH_EAST;
+                    case 5 -> BlockFace.NORTH_WEST;
+                    case 6 -> BlockFace.SOUTH_EAST;
+                    case 7 -> BlockFace.SOUTH_WEST;
+                    default -> blockFace;
                     };
                 }
                 direction++;
@@ -1051,27 +1042,15 @@ public class Scorecard extends BeaconzPluginDependent{
             File backup = new File(getBeaconzPlugin().getDataFolder(),"teams.old");
             teamsFile.renameTo(backup);
         }
-        @NotNull
-        JSONComponentSerializer serializer = JSONComponentSerializer.builder().build();
-        teamsYml.set(serializer.serialize(gameName), null);
-        
-        
-        /*
-        for (Team team: scoreboard.getTeams()) {
-            // Remove the team members
-            if (teamMembers.containsKey(team)) {
-                for (String name : teamMembers.get(team)) {
-                    team.removeEntry(name);
-                }
-            }
-        }*/
+        teamsYml.set(gameName, null);
         // Remove from hashmap
+        /*
         for (Team team : teamMembers.keySet()) {
-            for (String name : teamMembers.get(team)) {
+            for (UUID name : teamMembers.get(team)) {
                 team.removeEntry(name);
             }
             teamMembers.put(team, new ArrayList<>());
-        }
+        }*/
         // Clear all the players from the teamLookup.
         teamLookup.clear();
 

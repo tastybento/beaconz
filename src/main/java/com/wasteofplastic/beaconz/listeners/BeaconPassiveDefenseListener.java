@@ -66,6 +66,8 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
      * Maximum distance squared an emerald block can be placed from the beacon
      */
     private static final double MAXDISTANCESQRD = 64;
+    
+    private static final boolean DEBUG = true;
 
     /**
      * @param plugin
@@ -303,16 +305,17 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
      */
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onBeaconBreak(BlockBreakEvent event) {
-        //getLogger().info("BPD DEBUG: " + event.getEventName());
+        if (DEBUG) getLogger().info("BPD DEBUG: " + event.getEventName());
         World world = event.getBlock().getWorld();
         if (!world.equals(getBeaconzWorld())) {
-            //getLogger().info("DEBUG: not right world");
+            if (DEBUG) getLogger().info("DEBUG: not right world");
             return;
         }
-        //getLogger().info("DEBUG: This is a beacon");
+        
         Player player = event.getPlayer();
         // Only Ops can break or place blocks in the lobby
         if (getGameMgr().isPlayerInLobby(player)) {
+            if (DEBUG) getLogger().info("DEBUG: In lobby");
             if (player.isOp()) {
                 return;
             } else {
@@ -322,7 +325,9 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
         }
         // Get the player's team
         Scorecard sc = getGameMgr().getSC(player);
+        if (DEBUG) getLogger().info("DEBUG: scorecard = " + sc);
         if (sc == null || sc.getTeam(player) == null) {
+            if (DEBUG) getLogger().info("DEBUG: Corecard is null or player's team is null");
             if (!player.isOp()) {
                 event.setCancelled(true);
                 player.sendMessage(Lang.errorYouMustBeInAGame);
@@ -338,16 +343,18 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
         Block block = event.getBlock();
         BeaconObj beacon = getRegister().getBeacon(block);
         if (beacon == null || beacon.getOwnership() == null) {
+            if (DEBUG) getLogger().info("DEBUG: This is a not beacon");
             return;
         }
         // Check height
         if (block.getY() < beacon.getHeight()) {
-            //getLogger().info("DEBUG: below beacon");
+            if (DEBUG) getLogger().info("DEBUG: below beacon");
             return;
         }
         // Check if this block is a defense block
         if (!beacon.getDefenseBlocks().containsKey(event.getBlock())) {
             // No it is not
+            if (DEBUG) getLogger().info("DEBUG: not defense block");
             return;
         }
         
@@ -423,13 +430,13 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
      */
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onDefenseDamage(BlockDamageEvent event) {
-        //getLogger().info("DEBUG: " + event.getEventName());
+        getLogger().info("DEBUG: " + event.getEventName());
         World world = event.getBlock().getWorld();
         if (!world.equals(getBeaconzWorld())) {
             //getLogger().info("DEBUG: not right world");
             return;
         }
-        //getLogger().info("DEBUG: This is a beacon");
+        getLogger().info("DEBUG: This is a beacon");
         Player player = event.getPlayer();
         // Only Ops can break or place blocks in the lobby
         if (getGameMgr().isPlayerInLobby(player)) {
@@ -462,7 +469,7 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
         }
         // Check height
         if (block.getY() < beacon.getHeight()) {
-            //getLogger().info("DEBUG: below beacon");
+            getLogger().info("DEBUG: below beacon");
             return;
         }
         // If same team, then do nothing
@@ -477,7 +484,7 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
          */
         // Check if this block is a defense block
         if (!beacon.getDefenseBlocks().containsKey(event.getBlock())) {
-            //getLogger().info("DEBUG: not a defense block");
+            getLogger().info("DEBUG: not a defense block");
             // No it is not
             return;
         }

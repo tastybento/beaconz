@@ -63,7 +63,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 
 public class BeaconCaptureListener extends BeaconzPluginDependent implements Listener {
 
-    private final static boolean DEBUG = false;
+    private final static boolean DEBUG = true;
 
     public BeaconCaptureListener(Beaconz plugin) {
         super(plugin);
@@ -138,17 +138,18 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onBeaconBreak(BlockBreakEvent event) {
         if (DEBUG)
-            getLogger().info("DEBUG: " + event.getEventName());
+            getLogger().info("DEBUG: BeaconCaputreListner " + event.getEventName() );
         World world = event.getBlock().getWorld();
         if (!world.equals(getBeaconzWorld())) {
             return;
         }
-        if (DEBUG)
-            getLogger().info("DEBUG: This is a beacon");
+        
         Player player = event.getPlayer();
 
         // Only Ops can break blocks in the lobby
         if (getGameMgr().isPlayerInLobby(player)) {
+            if (DEBUG)
+                getLogger().info("DEBUG: Player in in lobby");
             if (player.isOp()) {
                 return;
             } else {
@@ -368,7 +369,6 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
      * @param player
      * @param beacon
      */
-    @SuppressWarnings("deprecation")
     private void giveBeaconMap(Player player, BeaconObj beacon) {
         // Create the MapView
         MapView mapView = Bukkit.createMap(getBeaconzWorld());

@@ -46,8 +46,7 @@ public class BeaconzChunkGen extends ChunkGenerator {
             chunkData.setBlock(X, maxY - 1, Z, Material.BEACON);
             // Create the pyramid
             // All diamond blocks for now
-            chunkData.setBlock(X, maxY - 2, Z, Material.DIAMOND_BLOCK.createBlockData());
-            chunkData.setRegion(X-1, maxY - 3, Z-1, X+2, maxY - 2, Z+2, Material.DIAMOND_BLOCK);
+            chunkData.setRegion(X-1, maxY - 2, Z-1, X+2, maxY - 1, Z+2, Material.DIAMOND_BLOCK);
             // Register the beacon
             int posX = (chunkX << 4)  + X;
             int posZ = (chunkZ << 4) + Z;
