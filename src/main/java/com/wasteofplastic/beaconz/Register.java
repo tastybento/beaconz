@@ -515,21 +515,10 @@ public class Register extends BeaconzPluginDependent {
             //links.clear();
             beaconLinks.clear();
         } else {
-            //getLogger().info("DEBUG: clearing region " + region.displayCoords());
-            //getLogger().info("DEBUG: Checking map " + en.getKey());
-            //getLogger().info("DEBUG: Removing map " + en.getKey());
             beaconMaps.entrySet().removeIf(en -> region.containsBeacon(en.getValue()));
-            //getLogger().info("DEBUG: beacon maps done");
-            //getLogger().info("DEBUG: checking " + en.getKey());
-            //getLogger().info("DEBUG: Removing beacon at " + en.getKey());
             beaconRegister.entrySet().removeIf(en -> region.containsPoint(en.getKey()));
-            //getLogger().info("DEBUG: beacons done");
-            //getLogger().info("DEBUG: Checking triangle with corner at " + tri.a);
-            //getLogger().info("DEBUG: Removing triangle!");
             triangleFields.removeIf(tri -> region.containsPoint(tri.a));
-            //getLogger().info("DEBUG: triangles done");
             beaconLinks.remove(region.getGame());
-            // getLogger().info("DEBUG: links done");
         }
     }
 

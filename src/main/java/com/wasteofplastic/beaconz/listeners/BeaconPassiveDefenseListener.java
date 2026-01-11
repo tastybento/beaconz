@@ -235,12 +235,15 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
                     // Check if beacon is locked
                     int missing = adjacentBeacon.nbrToLock(block.getY());
                     if (missing == 0) {
-                        player.sendMessage( Lang.beaconLockedJustNow.replaceText("[lockingBlock]", Component.text(Settings.lockingBlock.toLowerCase())));                                
+                        player.sendMessage(Lang.beaconLockedJustNow
+                                .replaceText(builder -> builder.matchLiteral("[lockingBlock]").replacement(Component.text(Settings.lockingBlock.toLowerCase()))));
                     } else if (adjacentBeacon.isLocked()) {
-                        player.sendMessage( Lang.beaconLockedAlready.replaceText("[lockingBlock]", Component.text(Settings.lockingBlock.toLowerCase())));   
+                        player.sendMessage(Lang.beaconLockedAlready
+                                .replaceText(builder -> builder.matchLiteral("[lockingBlock]").replacement(Component.text(Settings.lockingBlock.toLowerCase()))));
                     } else {
-                        player.sendMessage(Lang.beaconLockedWithNMoreBlocks.replaceText("[number]", Component.text(missing)));
-                    }                        
+                        player.sendMessage(Lang.beaconLockedWithNMoreBlocks
+                                .replaceText(builder -> builder.matchLiteral("[number]").replacement(Component.text(missing))));
+                    }
                 }                        
             } 
         }
@@ -263,23 +266,26 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
         }
         // Check if the height exceeds the allowed height
         if (beacon.getY() + Settings.defenseHeight - 1 < block.getY()) {
-            player.sendMessage(Lang.errorCanOnlyPlaceBlocksUpTo.replaceText("[value]", Component.text(String.valueOf(Settings.defenseHeight))));
+            player.sendMessage(Lang.errorCanOnlyPlaceBlocksUpTo
+                    .replaceText(builder -> builder.matchLiteral("[value]").replacement(Component.text(String.valueOf(Settings.defenseHeight)))));
             event.setCancelled(true);
             return;
         }
         // Check if the player has the experience level required to place the block
         int level = block.getY() - beacon.getY();
-        int levelRequired = 0;
+        final int levelRequired;
         //getLogger().info("DEBUG: level = " + level);
         try {
             levelRequired = Settings.defenseLevels.get(level);
             if (player.getLevel() < levelRequired) {
-                player.sendMessage(Lang.errorYouNeedToBeLevel.replaceText("[value]",Component.text(String.valueOf(levelRequired)))); 
+                player.sendMessage(Lang.errorYouNeedToBeLevel
+                        .replaceText(builder -> builder.matchLiteral("[value]").replacement(Component.text(String.valueOf(levelRequired)))));
                 event.setCancelled(true);
                 return;
             }
         } catch (Exception e) {
             getLogger().severe("Defense level for height " + level + " does not exist!");
+            return;
         }
         Component levelPlaced = Component.text("");
         if (levelRequired > 0) {

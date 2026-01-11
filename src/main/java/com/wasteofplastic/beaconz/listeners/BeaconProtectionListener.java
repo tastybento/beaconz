@@ -413,7 +413,8 @@ public class BeaconProtectionListener extends BeaconzPluginDependent implements 
                 if (game != null) {
                     Team team = game.getScorecard().getTeam(player); 
                     if (!beacon.getOwnership().equals(team)) {
-                        player.sendMessage(Lang.triangleThisBelongsTo.replaceText("[team]", beacon.getOwnership().displayName()));
+                        player.sendMessage(Lang.triangleThisBelongsTo
+                                .replaceText(builder -> builder.matchLiteral("[team]").replacement(beacon.getOwnership().displayName())));
                         event.setCancelled(true);
                     }
                 }          
@@ -480,7 +481,8 @@ public class BeaconProtectionListener extends BeaconzPluginDependent implements 
             BeaconObj beacon = getRegister().getBeaconAt(invLoc);
             if (beacon != null) {
                 if (!beacon.getOwnership().equals(team)) {
-                    player.sendMessage(Lang.triangleThisBelongsTo.replaceText("[team]", beacon.getOwnership().displayName()));
+                    player.sendMessage(Lang.triangleThisBelongsTo
+                            .replaceText(builder -> builder.matchLiteral("[team]").replacement(beacon.getOwnership().displayName())));
                     event.setCancelled(true);
                 }
             }

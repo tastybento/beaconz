@@ -130,14 +130,14 @@ public class Scorecard extends BeaconzPluginDependent{
         sidebarline = 15;
 
         // Set up the scoreboard with the goal
-        scoreobjective.displayName(Lang.titleBeaconz.append(Component.text(" " + game.getGamemode().name() + "! 00d 00:00:00").color(NamedTextColor.GREEN)));
+        scoreobjective.displayName(Lang.titleBeaconz.append(Component.text(" " + game.getGamemode().getName() + "! 00d 00:00:00").color(NamedTextColor.GREEN)));
 
         goalstr = "";
         if (game.getGamegoalvalue() == 0) {
-            goalstr = PlainTextComponentSerializer.plainText().serialize(Lang.scoreGetTheMostGoal.color(NamedTextColor.GREEN)).replace("[goal]", game.getGamegoal().name());
+            goalstr = PlainTextComponentSerializer.plainText().serialize(Lang.scoreGetTheMostGoal.color(NamedTextColor.GREEN)).replace("[goal]", game.getGamegoal().getName());
         } else {
             String value = String.format(Locale.US, "%,d", game.getGamegoalvalue());
-            goalstr = PlainTextComponentSerializer.plainText().serialize(Lang.scoreGetValueGoal.color(NamedTextColor.GREEN)).replace("[value]", value).replace("[goal]", game.getGamegoal().name());
+            goalstr = PlainTextComponentSerializer.plainText().serialize(Lang.scoreGetValueGoal.color(NamedTextColor.GREEN)).replace("[value]", value).replace("[goal]", game.getGamegoal().getName());
         }
         scoreline = scoreobjective.getScore(goalstr);
         scoreline.setScore(sidebarline);

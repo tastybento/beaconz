@@ -37,6 +37,7 @@ import com.wasteofplastic.beaconz.Params.GameMode;
 import com.wasteofplastic.beaconz.Params.GameScoreGoal;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
 /**
  * Comprehensive test suite for {@link Game} class.
@@ -139,7 +140,13 @@ class GameTest {
         Lang.errorNotInGame = Component.text("You are not in game [game]");
         Lang.scoreGetValueGoal = Component.text("getvalue goal");
         Lang.scoreGameOver = "Game Over"; // Still a String in Lang class
-
+        Lang.scoreGameModeMiniGame = "Minigame";
+        Lang.scoreGoalArea = "Area";
+        Lang.scoreGoalBeacons = "Beacons";
+        Lang.scoreGoalTime = "Time";
+        Lang.scoreGoalTriangles = "Triangles";
+        Lang. scoreGoalLinks = "Links";
+        Lang.scoreStrategy = "Strategy";
     }
 
     /**

@@ -631,10 +631,10 @@ public class Region extends BeaconzPluginDependent {
         if (game.getGamegoalvalue() > 0) {
             player.sendMessage(Lang.startObjective
                     .replaceText("[value]",Component.text(String.format(Locale.US, "%,d", game.getGamegoalvalue())))
-                    .replaceText("[goal]", Component.text( game.getGamegoal().name()))
+                    .replaceText("[goal]", Component.text( game.getGamegoal().getName()))
                     .color(NamedTextColor.AQUA));
         } else {
-            player.sendMessage(Lang.startMostObjective.replaceText("[goal]", Component.text(game.getGamegoal().name())).color(NamedTextColor.AQUA));
+            player.sendMessage(Lang.startMostObjective.replaceText("[goal]", Component.text(game.getGamegoal().getName())).color(NamedTextColor.AQUA));
         }
     }
 

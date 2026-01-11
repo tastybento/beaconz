@@ -148,7 +148,7 @@ class GameMgrTest {
         Settings.strategyGoalValue = 3600;
         Settings.minigameTimer = 600;
         Settings.strategyTimer = 0;
-        Settings.minigameScoreTypes = List.of(GameScoreGoal.ALL);
+        Settings.minigameScoreTypes = List.of(GameScoreGoal.AREA);
         Settings.strategyScoreTypes = List.of(GameScoreGoal.TRIANGLES, GameScoreGoal.LINKS);
         Settings.lobbyBlocks = new java.util.ArrayList<>();
         Settings.lobbyBlocks.add("STONE");
@@ -411,7 +411,7 @@ class GameMgrTest {
         mockBiomeForArea(0, 0, 64, Biome.PLAINS);
         gameMgr = new GameMgr(plugin);
 
-        Params params = new Params(GameMode.STRATEGY, 1024, 4, GameScoreGoal.BEACONS, 5000, 1200, List.of(GameScoreGoal.ALL), 0.2D);
+        Params params = new Params(GameMode.STRATEGY, 1024, 4, GameScoreGoal.BEACONS, 5000, 1200, List.of(GameScoreGoal.AREA), 0.2D);
         // Set custom defaults
         gameMgr.setGameDefaultParms(params);
 

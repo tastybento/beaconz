@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -28,8 +29,10 @@ import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.ServerMock;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
@@ -38,6 +41,7 @@ import com.wasteofplastic.beaconz.BeaconObj;
 import com.wasteofplastic.beaconz.Beaconz;
 import com.wasteofplastic.beaconz.Game;
 import com.wasteofplastic.beaconz.GameMgr;
+import com.wasteofplastic.beaconz.GlobalTestSetup;
 import com.wasteofplastic.beaconz.Lang;
 import com.wasteofplastic.beaconz.Params.GameMode;
 import com.wasteofplastic.beaconz.Params.GameScoreGoal;
@@ -73,6 +77,7 @@ import net.kyori.adventure.text.Component;
  *
  * @author tastybento
  */
+@ExtendWith(GlobalTestSetup.class)
 class AdminCmdHandlerTest {
 
     // Mocked dependencies
@@ -103,6 +108,25 @@ class AdminCmdHandlerTest {
     // Mock beacons
     private BeaconObj beacon;
     private HashMap<Point2D, BeaconObj> beaconRegister;
+
+    /**
+     * Initialize Lang static strings used by enums BEFORE any test runs.
+     * This must be done in @BeforeAll because enums are initialized once per JVM,
+     * and if they reference null Lang strings, those null values persist across all tests.
+     */
+    @BeforeAll
+    static void setupEnumStrings() {
+        // Initialize strings used by GameMode enum
+        Lang.scoreGameModeMiniGame = "Minigame";
+        Lang.scoreStrategy = "Strategy";
+
+        // Initialize strings used by GameScoreGoal enum
+        Lang.scoreGoalArea = "Area";
+        Lang.scoreGoalBeacons = "Beacons";
+        Lang.scoreGoalTime = "Time";
+        Lang.scoreGoalTriangles = "Triangles";
+        Lang.scoreGoalLinks = "Links";
+    }
 
     /**
      * Sets up the test environment before each test.
@@ -811,7 +835,7 @@ class AdminCmdHandlerTest {
         boolean result = handler.onCommand(player, command, "bza", new String[]{"listparms", "TestGame"});
 
         assertTrue(result, "Listparms should succeed");
-        verify(game).getGamemode();
+        verify(game, atLeast(1)).getGamemode();
         verify(game).getNbrTeams();
         verify(game).getGamegoal();
     }

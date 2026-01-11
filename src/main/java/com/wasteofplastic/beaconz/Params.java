@@ -2,6 +2,7 @@ package com.wasteofplastic.beaconz;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.function.Supplier;
 
 import org.apache.commons.lang.math.NumberUtils;
 
@@ -13,11 +14,37 @@ import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
  */
 public class Params {
     public enum GameMode {
-        STRATEGY, MINIGAME
+        STRATEGY(() -> Lang.scoreStrategy),
+        MINIGAME(() -> Lang.scoreGameModeMiniGame);
+
+        private final Supplier<String> translationSupplier;
+        GameMode(Supplier<String> supplier) {
+           this.translationSupplier = supplier;
+        }
+        
+        public String getName() {
+            String name = translationSupplier.get();
+            return name != null ? name : name();  // Fallback to enum name if Lang string is null
+        }
+        
     }
 
     public enum GameScoreGoal {
-        ALL, AREA, BEACONS, TIME, TRIANGLES, LINKS
+        AREA(() -> Lang.scoreGoalArea),
+        BEACONS(() -> Lang.scoreGoalBeacons),
+        TIME(() -> Lang.scoreGoalTime),
+        TRIANGLES(() -> Lang.scoreGoalTriangles),
+        LINKS(() -> Lang.scoreGoalLinks);
+
+        private final Supplier<String> translationSupplier;
+        GameScoreGoal(Supplier<String> supplier) {
+           this.translationSupplier = supplier;
+        }
+        
+        public String getName() {
+            String name = translationSupplier.get();
+            return name != null ? name : name();  // Fallback to enum name if Lang string is null
+        }
     }
 
     private GameMode gamemode;

@@ -20,6 +20,7 @@ import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
  *
  */
 public class Lang extends BeaconzPluginDependent {
+    
     private FileConfiguration locale = null;
 
     public Lang(Beaconz beaconzPlugin) {
@@ -211,6 +212,15 @@ public class Lang extends BeaconzPluginDependent {
     public static Component errorNoLobbyYet;
     public static Component errorRequestCanceled;
     public static Component adminDeleteGameConfirm;
+    public static String scoreStrategy;
+    public static String scoreGameModeMiniGame;
+    public static String scoreGoalArea;
+    public static String scoreGoalBeacons;
+    public static String scoreGoalTime;
+    public static String scoreGoalTriangles;
+    public static String scoreGoalLinks;
+    public static Component scoreGame;
+    public static Component scoreTeam;
     
    
     public void loadLocale(String localeName) {
@@ -272,7 +282,7 @@ public class Lang extends BeaconzPluginDependent {
         adminParmsGoalValue = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("admin.ParmsGoalValue", "Goal Value"));
         adminParmsMode = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("admin.ParmsMode", "Mode"));
         adminParmsScoreTypes = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("admin.ParmsScoreTypes", "Score Types"));
-        adminParmsTeams = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("admin.ParmsTeams", "# of Teams"));
+        adminParmsTeams = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("admin.ParmsTeams", "# of Factions"));
         adminParmsUnlimited = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("admin.ParmsUnlimited", "Unlimited"));
         adminPaused = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("admin.Paused", "Paused the game [name]. To restart, use /[label] resume <game>"));
         adminRegenComplete = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("admin.RegenComplete", "Regenetation complete."));
@@ -286,7 +296,7 @@ public class Lang extends BeaconzPluginDependent {
         beaconAmplifierBlocksCannotBeRecovered = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("beacon.AmplifierBlocksCannotBeRecovered", "Link amplifier blocks cannot be recovered!"));
         beaconCannotBeExtended = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("beacon.CannotBeExtended", "Cannot be extended any further in this direction!"));
         beaconCannotPlaceLiquids = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("beacon.CannotPlaceLiquids", "You cannot place liquids above a beacon!"));
-        beaconClaimedForTeam = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("beacon.ClaimedForTeam", "Beacon claimed for team [team]"));
+        beaconClaimedForTeam = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("beacon.ClaimedForTeam", "Beacon claimed for [team] faction"));
         beaconDefensePlaced = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("beacon.DefensePlaced", "Defense placed"));
         beaconDefenseRemoveTopDown = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("beacon.DefenseRemoveTopDown", "Remove blocks top-down"));
         beaconExtended = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("beacon.Extended", "You extended the beacon!"));
@@ -318,7 +328,7 @@ public class Lang extends BeaconzPluginDependent {
         beaconYouCannotLinkToSelf = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("beacon.YouCannotLinkToSelf", "You cannot link a beacon to itself!"));
         beaconYouCanOnlyExtend = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("beacon.YouCanOnlyExtend", "You can only extend a captured beacon!"));
         beaconYouCapturedABeacon = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("beacon.YouCapturedABeacon", "You captured a beacon! Mine the beacon for more beacon maps."));
-        beaconYouDestroyed = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("beacon.YouDestroyed", "You destroyed [team] team's beacon!"));
+        beaconYouDestroyed = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("beacon.YouDestroyed", "You destroyed [team] faction's beacon!"));
         beaconYouHaveAMap = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("beacon.YouHaveAMap", "You have a beacon map! Take it to another beacon to link them up!"));
         beaconYouHaveThisMuchExp = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("beacon.YouHaveThisMuchExp", "You have [number] exp points."));
         beaconYouMustCapturedBeacon = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("beacon.YouMustCapturedBeacon", "You must capture the beacon first!"));
@@ -337,7 +347,7 @@ public class Lang extends BeaconzPluginDependent {
         errorNoGames = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("error.NoGames", "Could not find any games."));
         errorNoLobbyYet = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("error.NoLobbyYet", "Hmm, there is no lobby yet..."));
         errorNoSuchGame = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("error.NoSuchGame", "No such game!"));
-        errorNoSuchTeam = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("error.NoSuchTeam", "Could not find team!"));
+        errorNoSuchTeam = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("error.NoSuchTeam", "Could not find faction!"));
         errorNotEnoughExperience = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("error.NotEnoughExperience", "You do not have enough experience to do that!"));
         errorNotInGame = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("error.NotInGame", "You are not in the game '[game]'! Going to the lobby..."));
         errorNotInRegister = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("error.NotInRegister", "error.: block isBeacon() but is not in the Register: "));
@@ -354,7 +364,7 @@ public class Lang extends BeaconzPluginDependent {
         errorYouDoNotHavePermission = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("error.YouDoNotHavePermission", "You do not have permission to use this command!"));
         errorYouHaveToBeStandingOnABeacon = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("error.YouHaveToBeStandingOnABeacon", "You have to be standing on a beacon"));
         errorYouMustBeInAGame = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("error.YouMustBeInAGame", "You must be in a game to do that!"  ));
-        errorYouMustBeInATeam = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("error.YouMustBeInATeam", "You must be in a team to do that!"));
+        errorYouMustBeInATeam = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("error.YouMustBeInATeam", "You must be in a faction to do that!"));
         errorYouNeedToBeLevel = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("error.YouNeedToBeLevel", "You need to be level [value] to do that!"));
         generalFailure = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("general.Failure", "Failure!"));
         generalGame = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("general.Game", "Game"));
@@ -365,30 +375,30 @@ public class Lang extends BeaconzPluginDependent {
         generalMembers = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("general.Members", "Members"));
         generalNone = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("general.None", "None"));
         generalSuccess = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("general.Success", "Success!"));
-        generalTeam = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("general.Team", "Team"));
-        generalTeams = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("general.Teams", "Teams"));
+        generalTeam = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("general.Team", "Faction"));
+        generalTeams = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("general.Teams", "Factions"));
         generalUnowned = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("general.Unowned", "Unowned"));
         helpAdminClaim = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("help.AdminClaim", " - force-claims a beacon in a game"));
         helpAdminDelete = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("help.AdminDelete", " - deletes the game and regenerates chunks"));
         helpAdminDistribution = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("help.AdminDistribution", " - sets global beacon distribution temporarily"));
         helpAdminForceEnd = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("help.AdminForceEnd", " - forces a game to end immediately"));
         helpAdminGames = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("help.AdminGames", " - list existing games"));
-        helpAdminJoin = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("help.AdminJoin", " - join a team in an active game"));
+        helpAdminJoin = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("help.AdminJoin", " - join a faction in an active game"));
         helpAdminKick = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("help.AdminKick", "- kicks a player from the game"));
         helpAdminLink = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("help.AdminLink", " - force-links a beacon you are standing on to one at x,z"));
-        helpAdminList = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("help.AdminList", " - lists all known beacons in the game | all games owned by team"));
+        helpAdminList = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("help.AdminList", " - lists all known beacons in the game | all games owned by faction"));
         helpAdminListParms = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("help.AdminListParms", " - lists game parameters"));
         helpAdminNewGame = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("help.AdminNewGame", " - creates a new game in an empty region; parameters are optional - do /[label] newgame help for a list of the possible parameters"));
         helpAdminPause = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("help.AdminPause", " - pauses the timer and scoreboard in a game"));
         helpAdminRegenerate = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("help.AdminRegenerate", " - regenerates game area chunks and resets game"));
         helpAdminReload = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("help.AdminReload", " - reloads the plugin, preserving existing games"));
-        helpAdminRestart = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("help.AdminRestart", " - restarts the game with currently defined parameters - clears scoreboard, cleans out all beacons, restarts timer; teams aren't changed"));
+        helpAdminRestart = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("help.AdminRestart", " - restarts the game with currently defined parameters - clears scoreboard, cleans out all beacons, restarts timer; factions aren't changed"));
         helpAdminResume = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("help.AdminResume", " - resume a paused game"));
         helpAdminSetGameParms = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("help.AdminSetGameParms", " - defines a game's parameters - DOES NOT restart the game (use restart for that) - do /[label] setgameparms help for a list of the possible parameters"));
         helpAdminSetLobbySpawn = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("help.AdminSetLobbySpawn", " - sets the lobby spawn point when in the lobby area"));
-        helpAdminSetTeamSpawn = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("help.AdminSetTeamSpawn", " - sets the spawn point for team"));
-        helpAdminSwitch = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("help.AdminSwitch", " - switches team when in a game"));
-        helpAdminTeams = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("help.AdminTeams", " - shows teams and team members for a game"));
+        helpAdminSetTeamSpawn = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("help.AdminSetTeamSpawn", " - sets the spawn point for faction"));
+        helpAdminSwitch = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("help.AdminSwitch", " - switches faction when in a game"));
+        helpAdminTeams = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("help.AdminTeams", " - shows factions and faction members for a game"));
         helpAdminTimerToggle = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("help.AdminTimerToggle", " - toggles the scoreboard timer on and off"));
         helpAdminTitle = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("help.AdminTitle", "beacon.z Admin Commands"));
         helpHelp = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("help.Help", "- this help"));
@@ -397,19 +407,28 @@ public class Lang extends BeaconzPluginDependent {
         helpLine = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("help.Line", "=================================================="));
         helpLobby = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("help.Lobby", "- go the lobby area"));
         helpLocation = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("help.Location", "- tells you where you are"));
-        helpScore = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("help.Score", "- show the team scores"));
+        helpScore = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("help.Score", "- show the faction scores"));
         helpScoreboard = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("help.Scoreboard", "- toggles the scoreboard on and off"));
         scoreCongratulations = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("score.Congratulations", "Congratulations"));
         scoreGameOver = locale.getString("score.GameOver", "<< GAME OVER >>");
         scoreGetTheMostGoal = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("score.GetTheMostGoal", "<< Get the most [goal]!! >>"));
         scoreGetValueGoal = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("score.GetValueGoal", "<< Get [value] [goal]!! >>"));
+        scoreGame = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("score.game", "[score] [unit]"));
+        scoreGameModeMiniGame = locale.getString("score.gamemode.minigame", "Minigame");
+        scoreGoalArea = locale.getString("score.goals.area", "Area");
+        scoreGoalBeacons = locale.getString("score.goals.beacons", "Beacons");
+        scoreGoalTime = locale.getString("score.goals.time", "Time");
+        scoreGoalTriangles = locale.getString("score.goals.triangles", "Triangles");
+        scoreGoalLinks = locale.getString("score.goals.links", "Links");
         scoreNewScore = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("score.NewScore", "New score"));
         scoreNoWinners = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("score.NoWinners", "There were no winners!"));
         scoreScores = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("score.Scores", "Scores:"));
-        scoreTeamWins = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("score.TeamWins", "[team] TEAM WINS!!!"));
-        startMostObjective = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("start.MostObjective", "Your team's objective is to capture the most [goal]!"));
-        startObjective = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("start.Objective", "Your team's objective is to capture [value] [goal]!"));
-        startYoureAMember = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("start.YoureAMember", "You're a member of [name] team!"));
+        scoreTeam = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("score.team", "[team]"));
+        scoreStrategy = locale.getString("score.gamemode.strategy", "Strategy");
+        scoreTeamWins = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("score.TeamWins", "[team] FACTION WINS!!!"));
+        startMostObjective = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("start.MostObjective", "Your faction's objective is to capture the most [goal]!"));
+        startObjective = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("start.Objective", "Your faction's objective is to capture [value] [goal]!"));
+        startYoureAMember = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("start.YoureAMember", "You're a member of [name] faction!"));
         startYourePlaying = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("start.YourePlaying", "You're playing game [name] in [mode] mode!"));
         teleportDoNotMove = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("teleport.DoNotMove", "Do not move, teleporting in [number] seconds!"));
         teleportYouMoved = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("teleport.YouMoved", "You moved! Cancelling teleport!"));
@@ -417,7 +436,7 @@ public class Lang extends BeaconzPluginDependent {
         titleBeaconzNews = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("title.BeaconzNews", "Beaconz News"));
         titleCmdLocation = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("title.CmdLocation", "You're in the Beaconz Lobby at"));
         titleCmdYourePlaying = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("title.CmdYourePlaying", "You're playing Beaconz game [game]"));
-        titleLobbyInfo = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("title.LobbyInfo", "Welcome to Beaconz!|You are in the lobby area.|Hit a sign to start a game!|Beaconz is a team game where|you try to find, claim and link|naturally occuring beaconz in|the world. You can mine beaconz|for goodies and defend them|with blocks and traps."));
+        titleLobbyInfo = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("title.LobbyInfo", "Welcome to Beaconz!|You are in the lobby area.|Hit a sign to start a game!|Beaconz is a faction game where|you try to find, claim and link|naturally occuring beaconz in|the world. You can mine beaconz|for goodies and defend them|with blocks and traps."));
         titleSubTitle = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("title.SubTitle", "Capture, link & defend beaconz!"));
         titleSubTitleColor = getTextColor(locale.getString("title.SubTitleColor", "gold"));
         titleWelcome = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("title.Welcome",  "Welcome to Beaconz!"));
@@ -430,7 +449,7 @@ public class Lang extends BeaconzPluginDependent {
         triangleEntering = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("triangle.Entering ", "Now entering [team]'s triangle area level [level]"));
         triangleLeaving = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("triangle.Leaving", "Leaving [team]'s triangle area"));
         triangleThisBelongsTo = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("triangle.ThisBelongsTo", "This belongs to [team]!"));
-        triangleYourTeamLostATriangle = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("triangle.YourTeamLostATriangle", "Your team lost a triangle!"));
+        triangleYourTeamLostATriangle = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("triangle.YourTeamLostATriangle", "Your faction lost a triangle!"));
         triangleTeamLostATriangle = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("triangle.TeamLostATriangle", "[team] lost a triangle!"));
 
         // Defense text

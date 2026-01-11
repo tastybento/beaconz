@@ -430,7 +430,8 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
         // Player is leaving triangle fields (entering neutral territory)
         if (toTriangles.isEmpty()) {
             // Notify player they're leaving the field
-            player.sendMessage(Lang.triangleLeaving.replaceText("[team]", fromTriangles.getFirst().getOwner().displayName()));
+            player.sendMessage(Lang.triangleLeaving
+                    .replaceText(builder -> builder.matchLiteral("[team]").replacement(fromTriangles.getFirst().getOwner().displayName())));
 
             // Remove all triangle field effects that were previously applied
             if (triangleEffects.containsKey(player.getUniqueId())) {
@@ -449,9 +450,9 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
         // Player is entering a field or moving to a more densely stacked area
         if (fromTriangles.size() < toTriangles.size()) {
             // Notify player they're entering or powering up in the field
-            player.sendMessage(
-                    Lang.triangleEntering.replaceText("[team]", toTriangles.getFirst().getOwner().displayName())
-                    .replaceText("[level]", Component.text(String.valueOf(toTriangles.size()))));
+            player.sendMessage(Lang.triangleEntering
+                    .replaceText(builder -> builder.matchLiteral("[team]").replacement(toTriangles.getFirst().getOwner().displayName()))
+                    .replaceText(builder -> builder.matchLiteral("[level]").replacement(Component.text(String.valueOf(toTriangles.size())))));
         } else if (toTriangles.size() < fromTriangles.size()) {
             // Player is moving to less densely stacked area (weaker effects)
             // Remove current effects first - weaker effects will be applied below
@@ -465,8 +466,9 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
                 }
             }
             // Notify player of the level drop
-            player.sendMessage(Lang.triangleDroppingToLevel.replaceText("[team]", toTriangles.getFirst().getOwner().displayName())
-                    .replaceText("[level]", Component.text(String.valueOf(toTriangles.size()))));
+            player.sendMessage(Lang.triangleDroppingToLevel
+                    .replaceText(builder -> builder.matchLiteral("[team]").replacement(toTriangles.getFirst().getOwner().displayName()))
+                    .replaceText(builder -> builder.matchLiteral("[level]").replacement(Component.text(String.valueOf(toTriangles.size())))));
         }
 
         // Apply the appropriate effects for the new field(s)

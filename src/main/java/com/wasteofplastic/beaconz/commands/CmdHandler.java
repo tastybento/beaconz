@@ -178,11 +178,28 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
         // Refresh scores
         game.getScorecard().refreshScores();
         sender.sendMessage(Lang.scoreScores.color(NamedTextColor.AQUA));
-        for (Team t : game.getScorecard().getScoreboard().getTeams()) {
-            sender.sendMessage(Component.text("  " + t.displayName() + ": " + game.getScorecard().getScore(t, GameScoreGoal.BEACONS) + " beacons").color(NamedTextColor.AQUA));
-            sender.sendMessage(Component.text("  " + t.displayName() + ": " + game.getScorecard().getScore(t, GameScoreGoal.LINKS) + " links").color(NamedTextColor.AQUA));
-            sender.sendMessage(Component.text("  " + t.displayName() + ": " + game.getScorecard().getScore(t, GameScoreGoal.TRIANGLES) + " triangles").color(NamedTextColor.AQUA));
-            sender.sendMessage(Component.text("  " + t.displayName() + ": " + game.getScorecard().getScore(t, GameScoreGoal.AREA) + " total area").color(NamedTextColor.AQUA));
+
+        // Score types to display in order
+        GameScoreGoal[] scoreTypes = {
+            GameScoreGoal.BEACONS,
+            GameScoreGoal.LINKS,
+            GameScoreGoal.TRIANGLES,
+            GameScoreGoal.AREA
+        };
+
+        for (Team team : game.getScorecard().getScoreboard().getTeams()) {
+            sender.sendMessage(Lang.scoreTeam.replaceText(builder ->
+                builder.matchLiteral("[team]").replacement(team.displayName())));
+
+            for (GameScoreGoal scoreType : scoreTypes) {
+                int score = game.getScorecard().getScore(team, scoreType);
+                sender.sendMessage(Lang.scoreGame
+                        .replaceText(builder -> builder.matchLiteral("[score]")
+                                .replacement(Component.text(score)))
+                        .replaceText(builder -> builder.matchLiteral("[unit]")
+                                .replacement(Component.text(scoreType.getName())))
+                        .color(NamedTextColor.AQUA));
+            }
         }
     }
 

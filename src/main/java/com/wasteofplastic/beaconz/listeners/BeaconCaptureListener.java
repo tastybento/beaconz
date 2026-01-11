@@ -173,8 +173,7 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
             return;
         }
         // Get the player's team
-        Team team = null;
-        if (game != null && game.getScorecard() != null) team = game.getScorecard().getTeam(player);
+        final Team team = (game != null && game.getScorecard() != null) ? game.getScorecard().getTeam(player) : null;
         if (team == null && !player.isOp()) {
             event.setCancelled(true);
             return;
@@ -225,7 +224,7 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
                 } else {
                     if (DEBUG)
                         getLogger().info("DEBUG: another block");
-                    Team beaconTeam = beacon.getOwnership();
+                    final Team beaconTeam = beacon.getOwnership();
                     if (beaconTeam != null) {
                         if (DEBUG)
                             getLogger().info("DEBUG: known team block");
@@ -244,10 +243,16 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
                         }
                         // Enemy team has lost a beacon!
                         // Taunt other teams
-                        getMessages().tellOtherTeams(team, Lang.beaconTeamDestroyed.replaceText("[team1]", team.displayName())
-                                .replaceText("[team2]", beaconTeam.displayName()).color(NamedTextColor.RED));
-                        getMessages().tellTeam(player, Lang.beaconPlayerDestroyed.replaceText("[player]", player.displayName()).replaceText("[team]", beaconTeam.displayName()));
-                        player.sendMessage(Lang.beaconYouDestroyed.replaceText("[team]", beaconTeam.displayName()).color(NamedTextColor.GREEN));
+                        getMessages().tellOtherTeams(team, Lang.beaconTeamDestroyed
+                                .replaceText(builder -> builder.matchLiteral("[team1]").replacement(team.displayName()))
+                                .replaceText(builder -> builder.matchLiteral("[team2]").replacement(beaconTeam.displayName()))
+                                .color(NamedTextColor.RED));
+                        getMessages().tellTeam(player, Lang.beaconPlayerDestroyed
+                                .replaceText(builder -> builder.matchLiteral("[player]").replacement(player.displayName()))
+                                .replaceText(builder -> builder.matchLiteral("[team]").replacement(beaconTeam.displayName())));
+                        player.sendMessage(Lang.beaconYouDestroyed
+                                .replaceText(builder -> builder.matchLiteral("[team]").replacement(beaconTeam.displayName()))
+                                .color(NamedTextColor.GREEN));
                         player.getWorld().playSound(player.getLocation(), Sound.BLOCK_CHORUS_FLOWER_DEATH, 1F, 1F);
                         getRegister().removeBeaconOwnership(beacon);
                         block.setType(Material.OBSIDIAN);
@@ -300,7 +305,11 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
                                 player.getWorld().dropItem(event.getPlayer().getLocation(), en.getValue());
                                 if (rand.nextInt(100) < Settings.beaconMineExhaustChance) {
                                     beacon.resetHackTimer();
-                                    player.sendMessage(Lang.generalSuccess.color(NamedTextColor.GREEN).append(Component.text(" ").append(Lang.beaconIsExhausted.replaceText("[minutes]", Component.text(String.valueOf(Settings.mineCoolDown/60000))))));
+                                    player.sendMessage(Lang.generalSuccess.color(NamedTextColor.GREEN)
+                                            .append(Component.text(" "))
+                                            .append(Lang.beaconIsExhausted
+                                                    .replaceText(builder -> builder.matchLiteral("[minutes]")
+                                                            .replacement(Component.text(String.valueOf(Settings.mineCoolDown/60000))))));
                                     player.getWorld().playSound(player.getLocation(), Sound.BLOCK_CHEST_CLOSE, 1F, 1F);
                                 } else {
                                     player.sendMessage(Lang.generalSuccess.color(NamedTextColor.GREEN));
@@ -320,7 +329,10 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
                             player.getWorld().dropItemNaturally(event.getBlock().getLocation(), en.getValue());
                             if (rand.nextInt(100) < Settings.beaconMineExhaustChance) {
                                 beacon.resetHackTimer();
-                                player.sendMessage(Lang.generalSuccess.append(Lang.beaconIsExhausted.replaceText("[minutes]", Component.text(String.valueOf(Settings.mineCoolDown/60000)))));
+                                player.sendMessage(Lang.generalSuccess
+                                        .append(Lang.beaconIsExhausted
+                                                .replaceText(builder -> builder.matchLiteral("[minutes]")
+                                                        .replacement(Component.text(String.valueOf(Settings.mineCoolDown/60000))))));
                                 player.getWorld().playSound(player.getLocation(), Sound.BLOCK_CHEST_CLOSE, 1F, 1F);
                             } else {
                                 player.sendMessage(Lang.generalSuccess.color(NamedTextColor.GREEN));

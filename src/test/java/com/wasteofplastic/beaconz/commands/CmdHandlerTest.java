@@ -129,6 +129,8 @@ class CmdHandlerTest {
         Lang.generalGame = Component.text("Game");
         Lang.actionsYouAreInTeam = Component.text("You are in [team]!");
         Lang.scoreScores = Component.text("Scores:");
+        Lang.scoreGame = Component.text("[score] [unit]");
+        Lang.scoreTeam = Component.text("[team]");
     }
 
     /**

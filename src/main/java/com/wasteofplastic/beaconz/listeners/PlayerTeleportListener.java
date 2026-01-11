@@ -335,7 +335,9 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
 
                         } else {
                             // Player is not authorized for this game - redirect to lobby
-                            player.sendMessage(Lang.errorNotInGame.replaceText("[game]", toGame.getName()).color(NamedTextColor.RED));
+                            player.sendMessage(Lang.errorNotInGame
+                                    .replaceText(builder -> builder.matchLiteral("[game]").replacement(toGame.getName()))
+                                    .color(NamedTextColor.RED));
                             event.setTo(getGameMgr().getLobby().getSpawnPoint());
                         }
                     }
@@ -387,7 +389,9 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
             delay = 0L;
         } else {
             // Notify player they must stand still
-            player.sendMessage(Lang.teleportDoNotMove.replaceText("[number]", Component.text(String.valueOf(Settings.teleportDelay))).color(NamedTextColor.RED));
+            player.sendMessage(Lang.teleportDoNotMove
+                    .replaceText(builder -> builder.matchLiteral("[number]").replacement(Component.text(String.valueOf(Settings.teleportDelay))))
+                    .color(NamedTextColor.RED));
         }
 
         // Record player's starting position for movement detection
