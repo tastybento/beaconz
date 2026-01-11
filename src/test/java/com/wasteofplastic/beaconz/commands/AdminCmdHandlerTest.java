@@ -984,10 +984,7 @@ class AdminCmdHandlerTest {
         var player = server.addPlayer();
         player.setOp(true);
 
-        LinkedHashMap<Component, Game> games = new LinkedHashMap<>();
-        games.put(Component.text("TestGame1"), game);
-        games.put(Component.text("TestGame2"), game2);
-        when(gameMgr.getGames()).thenReturn(games);
+        when(gameMgr.getAllGameNames()).thenReturn(List.of("TestGame1", "TestGame2"));
 
         List<String> completions = handler.onTabComplete(player, command, "bza", new String[]{"delete", ""});
 

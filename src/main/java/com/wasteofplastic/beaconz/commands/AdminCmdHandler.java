@@ -454,7 +454,8 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
             sender.sendMessage(Component.text("/" + label + " force_end <gamename>").append(Lang.helpAdminForceEnd).color(NamedTextColor.RED));
             return false;
         } else {
-            Game game = getGameMgr().getGames().get(args[1]);
+            Component gameName = Component.text(args[1]);
+            Game game = getGameMgr().getGames().get(gameName);
             if (game == null) {
                 sender.sendMessage(Lang.errorNoSuchGame.append(Component.text("'" + args[1] + "'")).color(NamedTextColor.RED));
                 return false;
@@ -1105,9 +1106,9 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
             //options.add("timertoggle");
             break;
         case 2:
-            if (sender instanceof Player) {
+            if (sender instanceof Player p) {
                 // Add the player options
-                game = getGameMgr().getGame(player.getLocation());
+                game = getGameMgr().getGame(p.getLocation());
                 if (args[0].equalsIgnoreCase("claim")) {
                     options.add("unowned");
                     options.addAll(game.getScorecard().getTeamsNames());

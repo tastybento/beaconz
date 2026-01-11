@@ -67,7 +67,7 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
      */
     private static final double MAXDISTANCESQRD = 64;
     
-    private static final boolean DEBUG = true;
+    private static final boolean DEBUG = false;
 
     /**
      * @param plugin

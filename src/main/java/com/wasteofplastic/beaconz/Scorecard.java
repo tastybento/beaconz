@@ -195,7 +195,7 @@ public class Scorecard extends BeaconzPluginDependent{
                 }
             }
         }
-        if (teamcnt == 0) getLogger().severe("Scorecard.addTeams did not add any teams. Game: " + game.getName());
+        if (teamcnt == 0) getLogger().severe("Scorecard.addTeams did not add any teams. Game: " + PlainTextComponentSerializer.plainText().serialize(game.getName()));
     }
 
     /**

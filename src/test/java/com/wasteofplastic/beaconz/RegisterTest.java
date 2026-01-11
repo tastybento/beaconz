@@ -794,11 +794,10 @@ class RegisterTest {
         Team team = mock(Team.class);
         when(team.getName()).thenReturn("TestTeam");
 
-        // Reset gameMgr to clear previous stubbing, then set getGame to return null
-        // This avoids Component serialization issues in YAML
+        // Reset gameMgr to clear previous stubbing
         reset(gameMgr);
         when(plugin.getGameMgr()).thenReturn(gameMgr);
-        when(gameMgr.getGame(any(Point2D.class))).thenReturn(null);
+        when(gameMgr.getGame(anyInt(), anyInt())).thenReturn(game);
 
         register.addBeacon(team, 100, 64, 200);
 
@@ -824,7 +823,6 @@ class RegisterTest {
 
     /**
      * Test save and load round trip.
-     * Note: We set game to null to avoid Component serialization issues.
      */
     @Test
     void testSaveAndLoadRoundTrip() {
@@ -835,7 +833,8 @@ class RegisterTest {
         // Reset gameMgr to clear previous stubbing, then set getGame to return null
         reset(gameMgr);
         when(plugin.getGameMgr()).thenReturn(gameMgr);
-        when(gameMgr.getGame(any(Point2D.class))).thenReturn(null);
+        
+        when(gameMgr.getGame(anyInt(), anyInt())).thenReturn(game);
 
         register.addBeacon(team, 100, 64, 200);
 

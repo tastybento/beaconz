@@ -336,8 +336,6 @@ class LobbyListenerTest extends CommonTestBase {
         List<Component> lines = List.of(Component.text("line1"), Component.text("line2"), Component.text(""), Component.text(""), Component.text(""));
         // Use a different world to trigger the early return
         World wrongWorld = mock(World.class);
-        when(wrongWorld.equals(world)).thenReturn(false);
-        when(wrongWorld.equals(wrongWorld)).thenReturn(true);
         when(block.getWorld()).thenReturn(wrongWorld);
         SignChangeEvent event = new SignChangeEvent(block, player, lines, Side.FRONT);
         ll.onSignPlace(event);

@@ -189,7 +189,7 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command,
             String alias, String[] args) {
-        if (!(sender instanceof Player)) {
+        if (!(sender instanceof Player p)) {
             return new ArrayList<>();
         }
         final List<String> options = new ArrayList<>();
@@ -199,18 +199,18 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
         case 0:
         case 1:
             options.add("help");
-            if (sender.hasPermission("beaconz.player.leave")) {
+            if (p.hasPermission("beaconz.player.leave")) {
                 options.add("leave");
             }
             options.add("score");
             options.add("scoreboard");
             break;
         case 2:
-            if (sender.hasPermission("beaconz.player.leave") && args[0].equalsIgnoreCase("leave")) {
+            if (p.hasPermission("beaconz.player.leave") && args[0].equalsIgnoreCase("leave")) {
                 // List all the games this player is in
                 List<String> inGames = new ArrayList<>();
                 for (Game game : getGameMgr().getGames().values()) {
-                    if (game.getScorecard().getTeam((Player)sender) != null) {
+                    if (game.getScorecard().inTeam(p)) {
                         String plainText = PlainTextComponentSerializer.plainText().serialize(game.getName());
                         inGames.add(plainText);
                     }

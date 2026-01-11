@@ -50,6 +50,7 @@ import com.wasteofplastic.beaconz.Params.GameScoreGoal;
  */
 class CmdHandlerTest {
 
+    private static final Component TEST_GAME = Component.text("TestGame");
     // Mocked dependencies
     private ServerMock server;
     private Beaconz plugin;
@@ -304,7 +305,7 @@ class CmdHandlerTest {
         // Mock player in a game with a team
         when(gameMgr.getGame(any(Location.class))).thenReturn(game);
         when(game.getScorecard()).thenReturn(scorecard);
-        when(game.getName()).thenReturn(Component.text("TestGame"));
+        when(game.getName()).thenReturn(TEST_GAME);
         when(scorecard.getTeam(player)).thenReturn(team1);
         when(scorecard.getScoreboard()).thenReturn(scoreboard);
         when(scoreboard.getTeams()).thenReturn(Set.of(team1, team2));
@@ -457,7 +458,7 @@ class CmdHandlerTest {
         player.addAttachment(plugin, "beaconz.player.leave", true);
 
         // Mock game exists
-        when(gameMgr.getGame("TestGame")).thenReturn(game);
+        when(gameMgr.getGame(TEST_GAME)).thenReturn(game);
 
         // Execute leave command with game name
         boolean result = handler.onCommand(player, command, "beaconz", new String[]{"leave", "TestGame"});
@@ -479,7 +480,7 @@ class CmdHandlerTest {
         player.addAttachment(plugin, "beaconz.player.leave", true);
 
         // Mock game doesn't exist
-        when(gameMgr.getGame("NonExistentGame")).thenReturn(null);
+        when(gameMgr.getGame(Component.text("NonExistentGame"))).thenReturn(null);
 
         // Execute leave command with invalid game name
         boolean result = handler.onCommand(player, command, "beaconz", new String[]{"leave", "NonExistentGame"});
@@ -501,7 +502,7 @@ class CmdHandlerTest {
         player.addAttachment(plugin, "beaconz.player.leave", false);
 
         // Mock game exists
-        when(gameMgr.getGame("TestGame")).thenReturn(game);
+        when(gameMgr.getGame(TEST_GAME)).thenReturn(game);
 
         // Execute leave command
         boolean result = handler.onCommand(player, command, "beaconz", new String[]{"leave", "TestGame"});
@@ -523,9 +524,11 @@ class CmdHandlerTest {
         var player = server.addPlayer();
         player.addAttachment(plugin, "beaconz.player", true);
         player.setOp(true);
+        
+        Component gameName = TEST_GAME;
 
         // Mock game exists
-        when(gameMgr.getGame("TestGame")).thenReturn(game);
+        when(gameMgr.getGame(gameName)).thenReturn(game);
 
         // Execute join command
         boolean result = handler.onCommand(player, command, "beaconz", new String[]{"join", "TestGame"});
@@ -547,7 +550,7 @@ class CmdHandlerTest {
         player.setOp(true);
 
         // Mock game doesn't exist
-        when(gameMgr.getGame("NonExistentGame")).thenReturn(null);
+        when(gameMgr.getGame(Component.text("NonExistentGame"))).thenReturn(null);
 
         // Execute join command
         boolean result = handler.onCommand(player, command, "beaconz", new String[]{"join", "NonExistentGame"});
@@ -569,7 +572,7 @@ class CmdHandlerTest {
         player.setOp(false);
 
         // Mock game exists
-        when(gameMgr.getGame("TestGame")).thenReturn(game);
+        when(gameMgr.getGame(TEST_GAME)).thenReturn(game);
 
         // Execute join command
         boolean result = handler.onCommand(player, command, "beaconz", new String[]{"join", "TestGame"});
@@ -734,18 +737,19 @@ class CmdHandlerTest {
         Scorecard scorecard1 = mock(Scorecard.class);
         Scorecard scorecard2 = mock(Scorecard.class);
 
-        when(game1.getName()).thenReturn(Component.text("Game 1"));
+        when(game1.getName()).thenReturn(Component.text("Game1"));
         when(game1.getScorecard()).thenReturn(scorecard1);
-        when(scorecard1.getTeam(player)).thenReturn(team1);
+        when(scorecard1.inTeam(player)).thenReturn(true);
 
-        when(game2.getName()).thenReturn(Component.text("Game 2"));
+        when(game2.getName()).thenReturn(Component.text("Game2"));
         when(game2.getScorecard()).thenReturn(scorecard2);
-        when(scorecard2.getTeam(player)).thenReturn(null); // Not in this game
+        when(scorecard2.inTeam(player)).thenReturn(false); // Not in this game
 
-        LinkedHashMap<Component, Game> games = new LinkedHashMap<>();
-        games.put(Component.text("Game 1"), game1);
-        games.put(Component.text("Game 2"), game2);
-        when(gameMgr.getGames()).thenReturn(games);
+        
+        LinkedHashMap<Component, Game> map = new LinkedHashMap<>();
+        map.put(Component.text("Game1"), game1);
+        map.put(Component.text("Game2"), game2);
+        when(gameMgr.getGames()).thenReturn(map);
 
         // Get tab completions for leave command
         List<String> completions = handler.onTabComplete(player, command, "beaconz", new String[]{"leave", ""});

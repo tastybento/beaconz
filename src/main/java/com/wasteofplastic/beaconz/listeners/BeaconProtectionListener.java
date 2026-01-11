@@ -70,7 +70,7 @@ import com.wasteofplastic.beaconz.Settings;
 
 public class BeaconProtectionListener extends BeaconzPluginDependent implements Listener {
 
-    private final static boolean DEBUG = true;
+    private final static boolean DEBUG = false;
     /**
      * A bi-drectional hashmap to track players standing on beaconz
      */

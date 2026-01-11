@@ -17,6 +17,7 @@ import org.bukkit.damage.DamageSource;
 import org.bukkit.damage.DamageType;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.player.PlayerRespawnEvent.RespawnReason;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scoreboard.Team;
 import org.jetbrains.annotations.NotNull;
@@ -127,8 +128,8 @@ class PlayerDeathListenerTest extends CommonTestBase {
     void testOnRespawn() {
         Location other = mock(Location.class);
         when(other.getWorld()).thenReturn(mock(World.class));
-        @SuppressWarnings("removal")
-        PlayerRespawnEvent event = new PlayerRespawnEvent(player, other, false);
+        when(other.clone()).thenReturn(other);
+        PlayerRespawnEvent event = new PlayerRespawnEvent(player, other, false, false, false, RespawnReason.DEATH);
         pdl.onRespawn(event);
         // Player is not in deadPlayers, so respawn location should remain unchanged
         assertEquals(other, event.getRespawnLocation());
