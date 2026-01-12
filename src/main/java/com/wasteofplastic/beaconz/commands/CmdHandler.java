@@ -73,12 +73,12 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
         case 1:
             switch (args[0].toLowerCase()) {
             case "help":
-                sender.sendMessage(Component.text("/" + label + " help " + Lang.helpHelp));
+                sender.sendMessage(Component.text("/" + label + " help ").append(Lang.helpHelp));
                 if (player.hasPermission("beaconz.player.leave")) {
-                    sender.sendMessage(Component.text("/" + label + " leave <game> " + Lang.helpLeave));
+                    sender.sendMessage(Component.text("/" + label + " leave <game> ").append(Lang.helpLeave));
                 }
-                sender.sendMessage(Component.text("/" + label + " score " + Lang.helpScore));
-                sender.sendMessage(Component.text("/" + label + " sb " + Lang.helpScoreboard));
+                sender.sendMessage(Component.text("/" + label + " score " ).append(Lang.helpScore));
+                sender.sendMessage(Component.text("/" + label + " sb ").append( Lang.helpScoreboard));
                 break;
             case "score":
                 Game game = getGameMgr().getGame(player.getLocation());
