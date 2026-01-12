@@ -26,7 +26,6 @@ import java.awt.geom.Point2D;
 import java.util.Iterator;
 import java.util.Map.Entry;
 
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.World;
@@ -82,7 +81,7 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
      */
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onExplode(EntityExplodeEvent event) {
-        //getLogger().info("DEBUG: " + event.getEventName());
+        if (DEBUG) getLogger().info("DEBUG: " + event.getEventName());
         World world = event.getLocation().getWorld();
         if (!world.equals(getBeaconzWorld())) {
             return;
@@ -100,7 +99,7 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
     public void onPistonPush(BlockPistonExtendEvent event) {
         World world = event.getBlock().getWorld();
         if (!world.equals(getBeaconzWorld())) {
-            //getLogger().info("DEBUG: not right world");
+            if (DEBUG) getLogger().info("DEBUG: not right world");
             return;
         }
         for (Block b : event.getBlocks()) {
@@ -121,7 +120,7 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
     public void onPistonPull(BlockPistonRetractEvent event) {
         World world = event.getBlock().getWorld();
         if (!world.equals(getBeaconzWorld())) {
-            //getLogger().info("DEBUG: not right world");
+            if (DEBUG) getLogger().info("DEBUG: not right world");
             return;
         }
         for (Block b : event.getBlocks()) {
@@ -138,13 +137,13 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
      */
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onBlockPlace(BlockPlaceEvent event) {
-        //getLogger().info("DEBUG: " + event.getEventName());
+        if (DEBUG) getLogger().info("DEBUG: " + event.getEventName());
         World world = event.getBlock().getWorld();
         if (!world.equals(getBeaconzWorld())) {
             //getLogger().info("DEBUG: not right world");
             return;
         }
-        //getLogger().info("DEBUG: This is a beacon");
+        if (DEBUG) getLogger().info("DEBUG: This is a beacon");
         Player player = event.getPlayer();
         // Only Ops can break or place blocks in the lobby
         if (getGameMgr().isPlayerInLobby(player)) {
@@ -207,7 +206,7 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
                     }
                     // Check what blocks are above the emerald block
                     int highestBlock = getHighestBlockYAt(block.getX(), block.getZ());
-                    //getLogger().info("DEBUG: highest block y = " + highestBlock + " difference = " + (highestBlock - adjacentBeacon.getY()));
+                    if (DEBUG) getLogger().info("DEBUG: highest block y = " + highestBlock + " difference = " + (highestBlock - adjacentBeacon.getY()));
                     if (highestBlock > adjacentBeacon.getY()) {
                         event.getPlayer().sendMessage(Lang.errorClearAboveBeacon);
                         event.setCancelled(true);
@@ -227,7 +226,7 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
         if (Material.getMaterial(Settings.lockingBlock.toUpperCase()) != null) {
             lockingBlock = Material.getMaterial(Settings.lockingBlock.toUpperCase());                
         }
-        if (block.getType().equals(lockingBlock)) {
+        if (block.getType().equals(lockingBlock) && adjacentBeacon != null) {
             // Check if the team is placing a block on their own beacon 
             if (adjacentBeacon.getOwnership() != null && adjacentBeacon.getOwnership().equals(team)) {
                 // Check if block was placed directly above the beacon's base
@@ -274,7 +273,7 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
         // Check if the player has the experience level required to place the block
         int level = block.getY() - beacon.getY();
         final int levelRequired;
-        //getLogger().info("DEBUG: level = " + level);
+        if (DEBUG) getLogger().info("DEBUG: level = " + level);
         try {
             levelRequired = Settings.defenseLevels.get(level);
             if (player.getLevel() < levelRequired) {
@@ -293,7 +292,9 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
         }
         // Check what type of block it is
         if (Settings.linkBlocks.containsKey(event.getBlock().getType())) {
-            player.sendMessage(Lang.beaconLinkBlockPlaced.replaceText("[range]", Component.text(String.valueOf(Settings.linkBlocks.get(event.getBlock().getType()))))); 
+            player.sendMessage(Lang.beaconLinkBlockPlaced.replaceText(
+                    builder -> builder.matchLiteral("[range]")
+                    .replacement(Component.text(String.valueOf(Settings.linkBlocks.get(event.getBlock().getType())))))); 
         }
         // Send message
         Component message = Lang.defenseText.get(event.getBlock().getType());
@@ -376,7 +377,8 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
                 } else if (Settings.removaldelta > 0 ) {
                     // Not your block
                     if (player.getLevel() < Settings.removaldelta + dBlock.getLevel()) {
-                        player.sendMessage(Lang.errorYouNeedToBeLevel.replaceText("[value]", Component.text(String.valueOf(Settings.removaldelta + dBlock.getLevel())))); 
+                        player.sendMessage(Lang.errorYouNeedToBeLevel.replaceText(builder -> 
+                                builder.matchLiteral("[value]").replacement(Component.text(String.valueOf(Settings.removaldelta + dBlock.getLevel()))))); 
                         event.setCancelled(true); 
                     }
                 }
@@ -396,7 +398,8 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
             int level = dBlock.getLevel();
             
             if (player.getLevel() < highestBlock) {
-                player.sendMessage(Lang.errorYouNeedToBeLevel.replaceText("[value]", Component.text(String.valueOf(highestBlock)))); 
+                player.sendMessage(Lang.errorYouNeedToBeLevel.replaceText(builder -> 
+                builder.matchLiteral("[value]").replacement(Component.text(String.valueOf(highestBlock))))); 
                 event.setCancelled(true);
                 return;
             }
@@ -413,7 +416,8 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
                
         // Check if it was a link block
         if (Settings.linkBlocks.containsKey(block.getType())) {
-            player.sendMessage(Lang.beaconLinkBlockBroken.replaceText("[range]", Component.text(String.valueOf(Settings.linkBlocks.get(event.getBlock().getType()))))); 
+            player.sendMessage(Lang.beaconLinkBlockBroken.replaceText(builder -> 
+            builder.matchLiteral("[range]").replacement(Component.text(String.valueOf(Settings.linkBlocks.get(event.getBlock().getType())))))); 
             if (Settings.destroyLinkBlocks) {
                 world.playSound(player.getLocation(), Sound.BLOCK_GLASS_BREAK, 1F, 1F);
                 block.setType(Material.AIR);
@@ -442,7 +446,7 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
             //getLogger().info("DEBUG: not right world");
             return;
         }
-        getLogger().info("DEBUG: This is a beacon");
+        if (DEBUG) getLogger().info("DEBUG: This is a beacon");
         Player player = event.getPlayer();
         // Only Ops can break or place blocks in the lobby
         if (getGameMgr().isPlayerInLobby(player)) {
@@ -475,22 +479,13 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
         }
         // Check height
         if (block.getY() < beacon.getHeight()) {
-            getLogger().info("DEBUG: below beacon");
+            if (DEBUG) getLogger().info("DEBUG: below beacon");
             return;
         }
         // If same team, then do nothing
-        /*
-        if (team.equals(beacon.getOwnership())) {
-            return;
-        }*/
-        /*
-        for (Block b : beacon.getDefenseBlocks().keySet()) {
-            //getLogger().info("DEBUG: block " + b.getType() + " at " + b.getLocation().toVector());
-        }
-         */
         // Check if this block is a defense block
         if (!beacon.getDefenseBlocks().containsKey(event.getBlock())) {
-            getLogger().info("DEBUG: not a defense block");
+             if (DEBUG) getLogger().info("DEBUG: not a defense block");
             // No it is not
             return;
         }
@@ -512,7 +507,8 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
                 } else if (Settings.removaldelta > 0 ) {
                     // Not your block
                     if (player.getLevel() < Settings.removaldelta + dBlock.getLevel()) {
-                        player.sendMessage(Lang.errorYouNeedToBeLevel.replaceText("[value]", Component.text(String.valueOf(Settings.removaldelta + dBlock.getLevel())))); 
+                        player.sendMessage(Lang.errorYouNeedToBeLevel.replaceText(builder -> 
+                        builder.matchLiteral("[value]").replacement(Component.text(String.valueOf(Settings.removaldelta + dBlock.getLevel()))))); 
                         event.setCancelled(true);
                     }
                 }
@@ -534,11 +530,13 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
             }
         }
         if (player.getLevel() < highestBlock) {
-            player.sendMessage(Lang.errorYouNeedToBeLevel.replaceText("[value]", Component.text(String.valueOf(highestBlock)))); 
+            Component highest = Component.text(String.valueOf(highestBlock));
+            player.sendMessage(Lang.errorYouNeedToBeLevel.replaceText(builder -> 
+            builder.matchLiteral("[value]").replacement(highest))); 
             event.setCancelled(true);
             return;
         }
-        //getLogger().info("DEBUG: highest block is " + highestBlock);
+        if (DEBUG) getLogger().info("DEBUG: highest block is " + highestBlock);
         // Check that breakage is being done top-down
         if (level < highestBlock) {
             event.getPlayer().sendMessage(Lang.beaconDefenseRemoveTopDown);
@@ -557,7 +555,7 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
         while (y > 0 && getBeaconzWorld().getBlockAt(block.getX(), y, block.getZ()).getType().equals(Material.AIR)) {
             y--;
         };
-        //getLogger().info("DEBUG: highest block is at " + y);
+        if (DEBUG) getLogger().info("DEBUG: highest block is at " + y);
         return y;
     }
      */
@@ -568,10 +566,10 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
     /*
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onBucketEmpty(final PlayerBucketEmptyEvent event) {
-        //getLogger().info("DEBUG: " + event.getEventName());
+        if (DEBUG) getLogger().info("DEBUG: " + event.getEventName());
         World world = event.getBlockClicked().getWorld();
         if (!world.equals(getBeaconzWorld())) {
-            //getLogger().info("DEBUG: not right world");
+            if (DEBUG) getLogger().info("DEBUG: not right world");
             return;
         }
         if (event.getBlockClicked().getY() == BLOCK_HEIGHT) {
@@ -582,15 +580,15 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
      */
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onBlockFlow(final BlockFromToEvent event) {
-        //getLogger().info("DEBUG: " + event.getEventName());
+        if (DEBUG) getLogger().info("DEBUG: " + event.getEventName());
         World world = event.getBlock().getWorld();
         if (!event.getBlock().isLiquid() || !world.equals(getBeaconzWorld())) {
-            //getLogger().info("DEBUG: not right world");
+            if (DEBUG) getLogger().info("DEBUG: not right world");
             return;
         }
         if (getRegister().isAboveBeacon(event.getToBlock().getLocation())) {
             event.setCancelled(true);
-            //getLogger().info("DEBUG: stopping flow");
+            if (DEBUG) getLogger().info("DEBUG: stopping flow");
         }
     }
 

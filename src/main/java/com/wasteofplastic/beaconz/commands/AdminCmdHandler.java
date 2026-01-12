@@ -330,7 +330,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
         int cnt = 0;
         for (Game g : getGameMgr().getGames().values()) {
             cnt ++;
-            sender.sendMessage(Component.text(g.getName() + " - " + g.getRegion().displayCoords()).color(NamedTextColor.AQUA));
+            sender.sendMessage(g.getName().append(Component.text(" - " + g.getRegion().displayCoords()).color(NamedTextColor.AQUA)));
         }
         if (cnt == 0) sender.sendMessage(Lang.adminGamesNoOthers.color(NamedTextColor.AQUA));
         return true;
@@ -1029,7 +1029,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                             Lang.generalUnowned : b.getOwnership().displayName();
 
                     // Display beacon information
-                    sender.sendMessage(Component.text(game.getName() + ": " +
+                    sender.sendMessage(Component.text(gameName + ": " +
                             b.getLocation().getBlockX() + "," +
                             b.getLocation().getBlockY() + "," +
                             b.getLocation().getBlockZ() + " >> ")

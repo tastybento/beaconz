@@ -99,7 +99,6 @@ public class LobbyListener extends BeaconzPluginDependent implements Listener {
                 for (int i = 1; i < 4; i++) {
                     Component gamename = side.line(i);
                     if (getGameMgr().getGame(gamename) != null) {
-                        System.out.println("Debug - Name matches" );
                         if (getGameMgr().getGame(gamename).isOver()) {
                             event.getPlayer().sendMessage(Lang.scoreGameOver);
                         } else {

@@ -47,6 +47,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
+import org.bukkit.scoreboard.Criteria;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Score;
@@ -581,10 +582,14 @@ public class Region extends BeaconzPluginDependent {
                         sb.clearSlot(DisplaySlot.SIDEBAR);
                     } catch (Exception e){ }
 
-                    sbobj = sb.registerNewObjective("text", "dummy");
+                    // Properly serialize Component to plain text before splitting
+                    String lobbyInfoText = PlainTextComponentSerializer.plainText().serialize(Lang.titleLobbyInfo);
+                    String[] lobbyInfo = lobbyInfoText.split("\\|");
+
+                    // Use modern API with Criteria and Component displayName
+                    sbobj = sb.registerNewObjective("text", Criteria.DUMMY,
+                            Component.text(lobbyInfo[0]).color(NamedTextColor.GREEN));
                     sbobj.setDisplaySlot(DisplaySlot.SIDEBAR);
-                    String[] lobbyInfo = Lang.titleLobbyInfo.toString().split("\\|"); // TODO handle this better
-                    sbobj.displayName(Component.text(lobbyInfo[0]).color(NamedTextColor.GREEN));
                     for (int line = 1; line < lobbyInfo.length; line++) {
                         scoreline = sbobj.getScore(lobbyInfo[line]);
                         scoreline.setScore(16-line);
@@ -626,15 +631,21 @@ public class Region extends BeaconzPluginDependent {
 
         // Welcome player in chat
         player.sendMessage(Lang.titleWelcome.color(NamedTextColor.GREEN));
-        player.sendMessage(Lang.startYoureAMember.replaceText("[name]", Component.text(""))
+        player.sendMessage(Lang.startYoureAMember
+                .replaceText(builder -> builder.matchLiteral("[name]").replacement(Component.text("")))
                 .append(teamname).color(NamedTextColor.AQUA));
         if (game.getGamegoalvalue() > 0) {
             player.sendMessage(Lang.startObjective
-                    .replaceText("[value]",Component.text(String.format(Locale.US, "%,d", game.getGamegoalvalue())))
-                    .replaceText("[goal]", Component.text( game.getGamegoal().getName()))
+                    .replaceText(builder -> builder.matchLiteral("[value]")
+                            .replacement(Component.text(String.format(Locale.US, "%,d", game.getGamegoalvalue()))))
+                    .replaceText(builder -> builder.matchLiteral("[goal]")
+                            .replacement(Component.text(game.getGamegoal().getName())))
                     .color(NamedTextColor.AQUA));
         } else {
-            player.sendMessage(Lang.startMostObjective.replaceText("[goal]", Component.text(game.getGamegoal().getName())).color(NamedTextColor.AQUA));
+            player.sendMessage(Lang.startMostObjective
+                    .replaceText(builder -> builder.matchLiteral("[goal]")
+                            .replacement(Component.text(game.getGamegoal().getName())))
+                    .color(NamedTextColor.AQUA));
         }
     }
 
