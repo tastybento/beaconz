@@ -647,7 +647,6 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                 return false;
             } else {
                 // Display each game parameter with color formatting
-                System.out.println(game.getGamemode().getName());
                 sender.sendMessage(Lang.adminParmsMode.append(Component.text(": ")).color(NamedTextColor.YELLOW)
                         .append(Component.text(game.getGamemode().getName())).color(NamedTextColor.AQUA));
                 sender.sendMessage(Lang.adminParmsTeams.append(Component.text(": ")).color(NamedTextColor.YELLOW)
@@ -736,7 +735,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
 
                     Scoreboard sb = game.getScorecard().getScoreboard();
                     if (sb == null) {
-                        sender.sendMessage(Lang.errorNoSuchGame.append(Component.text("'" + args[1] + "'").color(NamedTextColor.RED)));
+                        sender.sendMessage(Lang.errorNoSuchGame.append(Component.text(" '" + args[1] + "'").color(NamedTextColor.RED)));
                         return false;
                     } else {
                         // Display each team and its members
@@ -787,7 +786,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
         // DISTRIBUTION COMMAND: Set beacon spawn probability (0.0 to 1.0)
         // Controls how frequently beacons generate in chunks
         if (args.length < 2) {
-            sender.sendMessage(Component.text("/" + label + " distribution <fraction between 0 and 1> " + Lang.helpAdminDistribution).color(NamedTextColor.RED));
+            sender.sendMessage(Component.text("/" + label + " distribution <fraction between 0 and 1> ").append(Lang.helpAdminDistribution).color(NamedTextColor.RED));
             return false;
         } else {
             try {
@@ -1115,17 +1114,13 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
             }
             // Console-compatible commands
             options.add("delete");
-            options.add("distribution");
             options.add("games");
-            options.add("regenerate");
             options.add("force_end");
             options.add("list");
             options.add("listparms");
             options.add("newgame");
             options.add("reload");
-            //options.add("setgameparms");
             options.add("teams");
-            //options.add("timertoggle");
             break;
         case 2:
             if (sender instanceof Player p) {
@@ -1142,7 +1137,6 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
             }
             // Complete the options with the console-only options
             // Player names
-            //if (args[0].equalsIgnoreCase("kick") || args[0].equalsIgnoreCase("switch")) {
             if (args[0].equalsIgnoreCase("switch")) {
                 for (Player p : getServer().getOnlinePlayers()) {
                     options.add(p.getName());
@@ -1150,12 +1144,8 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
             }
             // Game name options
             if (args[0].equalsIgnoreCase("delete")
-                    || args[0].equalsIgnoreCase("regenerate") //|| args[0].equalsIgnoreCase("restart")
-                    //|| args[0].equalsIgnoreCase("pause") || args[0].equalsIgnoreCase("resume")
                     || args[0].equalsIgnoreCase("force_end") || args[0].equalsIgnoreCase("listparms")
-                    //|| args[0].equalsIgnoreCase("setgameparms")
                     || args[0].equalsIgnoreCase("list") || args[0].equalsIgnoreCase("teams")
-                    //|| args[0].equalsIgnoreCase("timertoggle")
                     ) {
                 // List all the games
                 options.addAll(getGameMgr().getAllGameNames());

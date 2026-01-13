@@ -39,7 +39,7 @@ beacon:
   CannotBeExtended: "Cannot be extended any further in this direction!"
   CannotPlaceLiquids: "You cannot place liquids above a beacon!"
   ClaimedForTeam: "Beacon claimed for [team] faction!"
-  ClaimingBeaconAt: "Claiming beacon at [loction]"
+  ClaimingBeaconAt: "Claiming beacon at [location]"
   DefensePlaced: "Defense placed"
   DefenseRemoveTopDown: "Remove blocks top-down"
   Extended: "You extended the beacon!"

@@ -32,6 +32,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.scoreboard.Criteria;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Score;
@@ -44,6 +45,7 @@ import com.wasteofplastic.beaconz.Params.GameScoreGoal;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
 public class Scorecard extends BeaconzPluginDependent{
@@ -110,6 +112,7 @@ public class Scorecard extends BeaconzPluginDependent{
      * Prepares the timer, scoretypes, scores and score values per game mode
      *
      */
+    @SuppressWarnings("deprecation")
     public void initialize(Boolean newGame) {
         timerinterval = 5;
         showtimer = Settings.showTimer;
@@ -125,7 +128,8 @@ public class Scorecard extends BeaconzPluginDependent{
         } catch (Exception e){ }
 
         scoreboard = manager.getNewScoreboard();
-        scoreobjective = scoreboard.registerNewObjective("score", "beaconz");
+        //scoreobjective = scoreboard.registerNewObjective("score", "beaconz");
+        scoreobjective = scoreboard.registerNewObjective("score", Criteria.DUMMY, Lang.titleBeaconz);
         scoreobjective.setDisplaySlot(DisplaySlot.SIDEBAR);
         sidebarline = 15;
 
@@ -310,8 +314,8 @@ public class Scorecard extends BeaconzPluginDependent{
             // Create the team
             team = scoreboard.registerNewTeam(teamName);
             team.setAllowFriendlyFire(false);
-            team.setPrefix(ChatColor.valueOf(teamChatColor(team)) + "[" + teamDisplayName +"] " + ChatColor.RESET);
-            team.setDisplayName(teamDisplayName);
+            team.prefix(Component.text("[" + teamDisplayName +"] ").color(teamChatColor(team)));
+            team.displayName(Component.text(teamDisplayName));
             // Store the block for the team
             //getLogger().info("DEBUG: [" +game.getName() + "] Adding team " + team.getDisplayName() + " team block = " + teamBlock);
             teamBlocks.put(team, teamBlock);
@@ -347,12 +351,12 @@ public class Scorecard extends BeaconzPluginDependent{
      * For instance, fixScoreString (redteam, "beacons", 10, 8) will return "______10 RED beacons"
      */
     public String fixScoreString (Team team, GameScoreGoal scoretype, Integer score, Integer maxlen) {
-        String teamcolor = teamChatColor(team);
-        String fixedstring = "";
+        TextColor teamcolor = teamChatColor(team);
         String formattedScore = String.format(Locale.US, "%,d", score);
         String padstring = "____________________".substring(0, Math.max(0, maxlen - 1 - formattedScore.length()));
-        fixedstring = ChatColor.GRAY + padstring + ChatColor.valueOf(teamcolor) + formattedScore + " " + team.getDisplayName() + " " + scoretype;
-        return fixedstring;
+        Component fixed = Component.text(padstring).color(NamedTextColor.GRAY).append(Component.text(formattedScore + " ").color(teamcolor))
+                .append(team.displayName()).append(Component.text(" " + scoretype.getName()));
+        return PlainTextComponentSerializer.plainText().serialize(fixed);
     }
 
     /**
@@ -885,30 +889,28 @@ public class Scorecard extends BeaconzPluginDependent{
         return topteam;
     }
 
-    public String teamChatColor(Team team) {
+    public TextColor teamChatColor(Team team) {
         // IMPORTANT: The a team's display name is ALWAYS the team's name in uppercase, PRECEEDED BY the ChatColor
         String tn = team.getName().toUpperCase();
-        String cc = "WHITE";
-        switch (tn) {
-        case "RED":       {cc = "RED"; break;}
-        case "BLUE":      {cc = "BLUE"; break;}
-        case "WHITE":     {cc = "WHITE"; break;}
-        case "ORANGE":    {cc = "DARK_RED"; break;}
-        case "MAGENTA":   {cc = "RED"; break;}
-        case "LIGHTBLUE": {cc = "AQUA"; break;}
-        case "YELLOW":    {cc = "YELLOW"; break;}
-        case "LIME":      {cc = "GREEN"; break;}
-        case "PINK":      {cc = "RED"; break;}
-        case "GRAY":      {cc = "DARK_GRAY"; break;}
-        case "LIGHTGRAY": {cc = "GRAY"; break;}
-        case "CYAN":      {cc = "BLUE"; break;}
-        case "PURPLE":    {cc = "DARK_PURPLE"; break;}
-        case "BROWN":     {cc = "GOLD"; break;}
-        case "GREEN":     {cc = "DARK_GREEN"; break;}
-        case "BLACK":     {cc = "BLACK"; break;}
-        default:
-        }
-        return cc;
+        return switch (tn) {
+        case "RED" -> NamedTextColor.RED;
+        case "BLUE" -> NamedTextColor.BLUE;
+        case "WHITE" -> NamedTextColor.WHITE; 
+        case "ORANGE" -> TextColor.color(255, 165, 0); 
+        case "MAGENTA" -> TextColor.color(255, 0, 255); 
+        case "LIGHTBLUE" -> NamedTextColor.AQUA; 
+        case "YELLOW" -> NamedTextColor.YELLOW; 
+        case "LIME" -> NamedTextColor.GREEN; 
+        case "PINK" -> TextColor.color(255, 105, 180); 
+        case "GRAY" -> NamedTextColor.DARK_GRAY; 
+        case "LIGHTGRAY" -> NamedTextColor.GRAY; 
+        case "CYAN" -> TextColor.color(0, 255, 255); 
+        case "PURPLE" -> NamedTextColor.DARK_PURPLE; 
+        case "BROWN" -> TextColor.color(150, 75, 0);
+        case "GREEN" -> NamedTextColor.DARK_GREEN; 
+        case "BLACK" -> NamedTextColor.BLACK; 
+        default -> NamedTextColor.WHITE;
+        };
     }
 
     /**
@@ -948,6 +950,7 @@ public class Scorecard extends BeaconzPluginDependent{
                         if (player != null) {
                             // Tell players in the game
                             if (game.getRegion().isPlayerInRegion(player)) {
+                                // TODO - update this!
                                 getServer().dispatchCommand(getServer().getConsoleSender(),
                                         "title " + player.getName() + " title {\"text\":\"" + titleline + "\", \"color\":\"" + "gold" + "\"}");
                                 getServer().dispatchCommand(getServer().getConsoleSender(),

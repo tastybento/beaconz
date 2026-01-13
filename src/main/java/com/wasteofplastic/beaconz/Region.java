@@ -882,11 +882,9 @@ public class Region extends BeaconzPluginDependent {
      */
     public void enter(Player player) {
         // Show scoreboard
-        Component teamname = Component.text("no");
         Team team = game.getScorecard().getTeam(player);
-        if (team != null) {
-            teamname = team.displayName();
-        }
+        Component teamname = team == null ? Component.text("no") : team.displayName();
+
         if (Settings.useScoreboard) {
             player.setScoreboard(game.getScorecard().getScoreboard());
         } else {
@@ -896,8 +894,8 @@ public class Region extends BeaconzPluginDependent {
         // Welcome player in chat
         player.sendMessage(Lang.titleWelcome.color(NamedTextColor.GREEN));
         player.sendMessage(Lang.startYoureAMember
-                .replaceText(builder -> builder.matchLiteral("[name]").replacement(Component.text("")))
-                .append(teamname).color(NamedTextColor.AQUA));
+                .replaceText(builder -> builder.matchLiteral("[name]").replacement(teamname))
+                .color(NamedTextColor.AQUA));
         if (game.getGamegoalvalue() > 0) {
             player.sendMessage(Lang.startObjective
                     .replaceText(builder -> builder.matchLiteral("[value]")

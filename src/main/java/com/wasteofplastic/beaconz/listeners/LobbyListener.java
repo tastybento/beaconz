@@ -92,10 +92,7 @@ public class LobbyListener extends BeaconzPluginDependent implements Listener {
             }
             Sign sign = (Sign) event.getClickedBlock().getState();
             @NotNull SignSide side = sign.getSide(Side.FRONT);
-            getLogger().info("Debug " + side.line(0));
-            getLogger().info("Debug " + Lang.adminSignKeyword);
             if (side.line(0).equals(Lang.adminSignKeyword)) {
-                System.out.println("Debug - checks out" );
                 for (int i = 1; i < 4; i++) {
                     Component gamename = side.line(i);
                     if (getGameMgr().getGame(gamename) != null) {
