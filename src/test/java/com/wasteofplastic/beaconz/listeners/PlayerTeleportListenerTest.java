@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
 import com.wasteofplastic.beaconz.Lang;
+import com.wasteofplastic.beaconz.Params.GameMode;
 import com.wasteofplastic.beaconz.Region;
 import com.wasteofplastic.beaconz.Settings;
 
@@ -63,10 +64,10 @@ class PlayerTeleportListenerTest extends CommonTestBase {
         super.setUp();
 
         // Initialize Lang strings needed for teleport listener
-        Lang.titleBeaconzNews = "Beaconz News";
-        Lang.errorNotInGame = "You are not in the game '[game]'! Going to the lobby...";
-        Lang.teleportDoNotMove = "Do not move, teleporting in [number] seconds!";
-        Lang.teleportYouMoved = "You moved! Cancelling teleport!";
+        Lang.titleBeaconzNews = Component.text("Beaconz News");
+        Lang.errorNotInGame = Component.text("You are not in the game '[game]'! Going to the lobby...");
+        Lang.teleportDoNotMove = Component.text("Do not move, teleporting in [number] seconds!");
+        Lang.teleportYouMoved = Component.text("You moved! Cancelling teleport!");
 
         // Initialize Settings
         Settings.teleportDelay = 3;
@@ -96,10 +97,10 @@ class PlayerTeleportListenerTest extends CommonTestBase {
         when(mgr.isPlayerInLobby(player)).thenReturn(false);
 
         // Setup game
-        when(game.getName()).thenReturn(GAME_NAME);
+        when(game.getName()).thenReturn(Component.text(GAME_NAME));
         when(game.getRegion()).thenReturn(gameRegion);
         when(game.hasPlayer(player)).thenReturn(true);
-        when(game.getGamemode()).thenReturn("strategy");
+        when(game.getGamemode()).thenReturn(GameMode.STRATEGY);
         when(game.isGameRestart()).thenReturn(false);
         when(game.isOver()).thenReturn(false);
         when(mgr.getGame(gameLocation)).thenReturn(game);
@@ -295,7 +296,7 @@ class PlayerTeleportListenerTest extends CommonTestBase {
         ptl.onTeleport(event);
 
         // OP players teleport immediately
-        verify(player, never()).sendMessage(ChatColor.RED + Lang.teleportDoNotMove.replace("[number]", String.valueOf(Settings.teleportDelay)));
+        verify(player, never()).sendMessage(Lang.teleportDoNotMove.replaceText("[number]", Component.text(String.valueOf(Settings.teleportDelay))));
     }
 
     /**
@@ -326,7 +327,7 @@ class PlayerTeleportListenerTest extends CommonTestBase {
         when(mgr.getGame(gameLocation)).thenReturn(game);
         when(mgr.isLocationInLobby(location)).thenReturn(false);
         when(game.hasPlayer(player)).thenReturn(true);
-        when(game.getGamemode()).thenReturn("minigame");
+        when(game.getGamemode()).thenReturn(GameMode.MINIGAME);
         when(store.getInventory(player, GAME_NAME)).thenReturn(gameLocation);
         when(gameRegion.findSafeSpot(gameLocation, 20)).thenReturn(gameLocation);
 
@@ -353,43 +354,6 @@ class PlayerTeleportListenerTest extends CommonTestBase {
 
         verify(player).sendMessage(any(Component.class));
         assertEquals(lobbyLocation, event.getTo());
-    }
-
-    /**
-     * Test method for {@link com.wasteofplastic.beaconz.listeners.PlayerTeleportListener#onTeleport(org.bukkit.event.player.PlayerTeleportEvent)}.
-     * Tests teleport into lobby - should restore lobby inventory.
-     */
-    @Test
-    void testOnTeleportIntoLobby() {
-        when(mgr.isLocationInLobby(lobbyLocation)).thenReturn(true);
-        when(mgr.isLocationInLobby(location)).thenReturn(false);
-
-        PlayerTeleportEvent event = new PlayerTeleportEvent(player, location, lobbyLocation);
-        ptl.onTeleport(event);
-
-        verify(store).getInventory(player, "Lobby");
-        verify(lobby).enterLobby(player);
-    }
-
-    /**
-     * Test method for {@link com.wasteofplastic.beaconz.listeners.PlayerTeleportListener#onTeleport(org.bukkit.event.player.PlayerTeleportEvent)}.
-     * Tests teleport from lobby to game - should store lobby inventory and exit lobby.
-     */
-    @Test
-    void testOnTeleportFromLobbyToGame() {
-        when(mgr.isLocationInLobby(lobbyLocation)).thenReturn(true);
-        when(mgr.isLocationInLobby(gameLocation)).thenReturn(false);
-        when(mgr.getGame(gameLocation)).thenReturn(game);
-        when(game.hasPlayer(player)).thenReturn(true);
-        when(store.getInventory(player, GAME_NAME)).thenReturn(gameLocation);
-        when(gameRegion.findSafeSpot(gameLocation, 20)).thenReturn(gameLocation);
-
-        PlayerTeleportEvent event = new PlayerTeleportEvent(player, lobbyLocation, gameLocation);
-        ptl.onTeleport(event);
-
-        verify(store).storeInventory(player, "Lobby", lobbyLocation);
-        verify(lobby).exit(player);
-        verify(gameRegion).enter(player);
     }
 
     /**

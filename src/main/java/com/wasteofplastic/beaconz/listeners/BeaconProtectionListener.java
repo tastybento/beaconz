@@ -26,7 +26,6 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.UUID;
 
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -153,6 +152,7 @@ public class BeaconProtectionListener extends BeaconzPluginDependent implements 
         if (beacon == null) {
             return;
         }
+        getLogger().info("DEBIF: beacon " + beacon.getLocation());
         // Check for obsidian/glass breakage - i.e., capture
         if (block.getRelative(BlockFace.DOWN).getType().equals(Material.BEACON)) {
             // Check if this is a real beacon
@@ -161,7 +161,7 @@ public class BeaconProtectionListener extends BeaconzPluginDependent implements 
                 // Check that the beacon is clear of blocks
                 if (beacon.isNotClear() && (beacon.getOwnership() == null || !beacon.getOwnership().equals(team))) {
                     // You can't capture an uncleared beacon
-                    player.sendMessage(ChatColor.GOLD + Lang.errorClearAroundBeacon);
+                    player.sendMessage(Lang.errorClearAroundBeacon);
                     event.setCancelled(true);
                 }
             }
@@ -265,11 +265,11 @@ public class BeaconProtectionListener extends BeaconzPluginDependent implements 
         BeaconObj beacon = getRegister().getBeaconAt(b.getX(),b.getZ());
         if (beacon != null && beacon.getY() <= event.getBlockClicked().getY()) {
             event.setCancelled(true);
-            event.getPlayer().sendMessage(ChatColor.RED + Lang.beaconCannotPlaceLiquids);
+            event.getPlayer().sendMessage(Lang.beaconCannotPlaceLiquids);
         }
         if (getRegister().isAboveBeacon(b.getLocation())) {
             event.setCancelled(true);
-            event.getPlayer().sendMessage(ChatColor.RED + Lang.beaconCannotPlaceLiquids);
+            event.getPlayer().sendMessage(Lang.beaconCannotPlaceLiquids);
         }
     }
 
@@ -364,7 +364,7 @@ public class BeaconProtectionListener extends BeaconzPluginDependent implements 
         Game game = getGameMgr().getGame(event.getBlock().getLocation());
         if (game == null) {
             event.setCancelled(true);
-            player.sendMessage(ChatColor.RED + Lang.errorYouCannotDoThat);
+            player.sendMessage(Lang.errorYouCannotDoThat);
             return;
         }
 
@@ -382,7 +382,7 @@ public class BeaconProtectionListener extends BeaconzPluginDependent implements 
         BeaconObj beacon = getRegister().getBeaconAt(event.getBlock().getX(),event.getBlock().getZ());
         if (beacon != null && beacon.getY() < event.getBlock().getY()) {
             event.setCancelled(true);
-            event.getPlayer().sendMessage(ChatColor.RED + Lang.errorYouCannotBuildThere);
+            event.getPlayer().sendMessage(Lang.errorYouCannotBuildThere);
         }
     }
 
@@ -413,7 +413,8 @@ public class BeaconProtectionListener extends BeaconzPluginDependent implements 
                 if (game != null) {
                     Team team = game.getScorecard().getTeam(player); 
                     if (!beacon.getOwnership().equals(team)) {
-                        player.sendMessage(ChatColor.RED + Lang.triangleThisBelongsTo.replace("[team]", beacon.getOwnership().getDisplayName()));
+                        player.sendMessage(Lang.triangleThisBelongsTo
+                                .replaceText(builder -> builder.matchLiteral("[team]").replacement(beacon.getOwnership().displayName())));
                         event.setCancelled(true);
                     }
                 }          
@@ -480,7 +481,8 @@ public class BeaconProtectionListener extends BeaconzPluginDependent implements 
             BeaconObj beacon = getRegister().getBeaconAt(invLoc);
             if (beacon != null) {
                 if (!beacon.getOwnership().equals(team)) {
-                    player.sendMessage(ChatColor.RED + Lang.triangleThisBelongsTo.replace("[team]", beacon.getOwnership().getDisplayName()));
+                    player.sendMessage(Lang.triangleThisBelongsTo
+                            .replaceText(builder -> builder.matchLiteral("[team]").replacement(beacon.getOwnership().displayName())));
                     event.setCancelled(true);
                 }
             }
@@ -488,7 +490,7 @@ public class BeaconProtectionListener extends BeaconzPluginDependent implements 
             /*
             for (TriangleField triangle : getRegister().getTriangle(invLoc.getBlockX(), invLoc.getBlockZ())) {
                 if (!triangle.getOwner().equals(team)) {
-                    player.sendMessage(ChatColor.RED + Lang.triangleThisBelongsTo.replace("[team]", triangle.getOwner().getDisplayName()));
+                    player.sendMessage(Lang.triangleThisBelongsTo.replace("[team]", triangle.getOwner().getDisplayName()));
                     event.setCancelled(true);
                     return;
                 }

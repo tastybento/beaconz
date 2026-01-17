@@ -34,6 +34,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Team;
+import org.jetbrains.annotations.NotNull;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -136,6 +137,7 @@ public class Messages extends BeaconzPluginDependent {
      * @param playerUUID
      * @param playerMessages
      */
+    @Deprecated
     public void put(UUID playerUUID, List<String> playerMessages) {
         messages.put(playerUUID, playerMessages);
 
@@ -147,7 +149,24 @@ public class Messages extends BeaconzPluginDependent {
      * @param player - the originating player, always an online player
      * @param message - the message to send
      */
+    @Deprecated
     public void tellTeam(Player player, String message) {
+        Scorecard sc = getGameMgr().getSC(player);
+        if (sc != null) {
+            Team team = sc.getTeam(player);
+            if (team != null) {
+                tellTeam(player, team, message);
+            }
+        }
+    }
+    
+    /**
+     * Tells all of a player's team members (online or offline) that something happened. Only works if the player is in the game area.
+     *
+     * @param player - the originating player, always an online player
+     * @param message - the message to send
+     */
+    public void tellTeam(Player player, Component message) {
         Scorecard sc = getGameMgr().getSC(player);
         if (sc != null) {
             Team team = sc.getTeam(player);
@@ -162,6 +181,7 @@ public class Messages extends BeaconzPluginDependent {
      * @param team
      * @param message
      */
+    @Deprecated
     public void tellTeam(Team team, String message) {
         tellTeam(null, team, message);
     }
@@ -173,21 +193,22 @@ public class Messages extends BeaconzPluginDependent {
      * @param team team
      * @param message message to send
      */
+    @Deprecated
     public void tellTeam(Player player, Team team, String message) {
         // Tell other players
         Game game = getGameMgr().getGame(team);
         if (game != null) {
-            HashMap<Team, List<String>> teamMembers = game.getScorecard().getTeamMembers();
+            HashMap<Team, List<UUID>> teamMembers = game.getScorecard().getTeamMembers();
             if (teamMembers != null) {
-                List<String> members = teamMembers.get(team);
+                List<UUID> members = teamMembers.get(team);
                 if (members != null) {
-                    for (String uuid : members) {
-                        Player member = Bukkit.getPlayer(UUID.fromString(uuid));
-                        if (player == null || !player.getUniqueId().equals(UUID.fromString(uuid))) {
+                    for (UUID uuid : members) {
+                        Player member = Bukkit.getPlayer(uuid);
+                        if (player == null || !player.getUniqueId().equals(uuid)) {
                             if (member != null) {
                                 member.sendMessage(ChatColor.GOLD + "[" + game.getName() + "] " + message);
                             } else {
-                                setMessage(UUID.fromString(uuid), ChatColor.GOLD + "[" + game.getName() + "] " + message);
+                                setMessage(uuid, ChatColor.GOLD + "[" + game.getName() + "] " + message);
                             }
                         }
                     }
@@ -207,17 +228,17 @@ public class Messages extends BeaconzPluginDependent {
         // Tell other players
         Game game = getGameMgr().getGame(team);
         if (game != null) {
-            HashMap<Team, List<String>> teamMembers = game.getScorecard().getTeamMembers();
+            HashMap<Team, List<UUID>> teamMembers = game.getScorecard().getTeamMembers();
             if (teamMembers != null) {
-                List<String> members = teamMembers.get(team);
+                List<UUID> members = teamMembers.get(team);
                 if (members != null) {
-                    for (String uuid : members) {
+                    for (UUID uuid : members) {
                         Player member = Bukkit.getPlayer(uuid);
                         if (player == null || !player.getUniqueId().equals(uuid)) {
                             if (member != null) {
                                 member.sendMessage(Component.text("[" + game.getName() + "] ").append(message).color(NamedTextColor.GOLD));
                             } else {
-                                setMessage(UUID.fromString(uuid), ChatColor.GOLD + "[" + game.getName() + "] " + message);
+                                setMessage(uuid, ChatColor.GOLD + "[" + game.getName() + "] " + message);
                             }
                         }
                     }
@@ -268,5 +289,19 @@ public class Messages extends BeaconzPluginDependent {
             playerMessages = new ArrayList<>(Collections.singletonList(message));
         }
         put(uuid, playerMessages);
+    }
+
+    public void tellTeam(Team team, @NotNull Component message) {
+       this.tellTeam(null, team, message);
+    }
+
+    public void tellOtherTeams(Team team, @NotNull Component message) {
+        for (Team otherTeam : team.getScoreboard().getTeams()) {
+            if (!team.equals(otherTeam)) {
+                // Tell other players
+                tellTeam(otherTeam, message);
+            }
+        }
+        
     }
 }

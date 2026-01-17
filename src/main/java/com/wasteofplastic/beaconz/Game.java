@@ -26,9 +26,9 @@ import java.awt.geom.Point2D;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
@@ -38,7 +38,13 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.MapMeta;
 import org.bukkit.scoreboard.Team;
 
+import com.wasteofplastic.beaconz.Params.GameMode;
+import com.wasteofplastic.beaconz.Params.GameScoreGoal;
 import com.wasteofplastic.beaconz.listeners.BeaconLinkListener;
+
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
 /**
  * Represents a single game instance in the Beaconz world.
@@ -102,40 +108,21 @@ public class Game extends BeaconzPluginDependent {
     private final Region region;
 
     /** Unique name identifying this game instance */
-    private final String gameName;
+    private final Component gameName;
 
     /** Scorecard managing teams, scores, and game timer */
     private final Scorecard scorecard;
-
-    /** Game mode: "minigame" or "persistent" */
-    private String gamemode;
-
-    /** Minimum distance between beacons in this game */
-    private int gamedistance;
-
-    /** Distribution factor for beacon placement (0.0-1.0) */
-    private double gamedistribution;
-
-    /** Number of teams in this game */
-    private int nbr_teams;
-
-    /** Type of winning condition (e.g., "area", "beacons", "time") */
-    private String gamegoal;
-
-    /** Value needed to achieve the game goal */
-    private int gamegoalvalue;
-
-    /** Game duration in seconds (for timed games), or 0 for unlimited */
-    private int countdowntimer;
+    
+    /**
+     * Game parameters
+     */
+    private Params params;
 
     /** Unix timestamp (in milliseconds) when the game started */
     private Long startTime;
 
     /** Unix timestamp (in milliseconds) when the game was created */
     private Long gameCreateTime;
-
-    /** Comma-separated list of score types to track (e.g., "area,beacons,triangles") */
-    private String scoretypes;
 
     /** Flag indicating the game is currently restarting (prevents double-processing) */
     private boolean gameRestart;
@@ -165,19 +152,13 @@ public class Game extends BeaconzPluginDependent {
      * <b>Important:</b> Each game belongs to exactly one Region; a game cannot exist without a region.
      *
      * @param beaconzPlugin the main plugin instance
-     * @param gamedistance minimum distance between beacons
      * @param region the physical region where this game takes place
      * @param gameName unique identifier for this game
-     * @param gamemode "minigame" or "persistent"
-     * @param nbr_teams number of teams to create
-     * @param gamegoal type of winning condition
-     * @param gamegoalvalue threshold value to win
-     * @param countdowntimer duration in seconds (0 = unlimited)
-     * @param scoretypes comma-separated score types to track
-     * @param distribution beacon placement distribution factor (0.0-1.0)
+     * @param params game parameters
      */
-    public Game(Beaconz beaconzPlugin, int gamedistance, Region region, String gameName, String gamemode, int nbr_teams, String gamegoal, int gamegoalvalue, int countdowntimer, String scoretypes, Double distribution) {
-        super(beaconzPlugin);
+    public Game(Beaconz plugin, Region region, Component gameName, Params params) {
+        super(plugin);
+        this.params = params;
         this.region = region;
         this.gameName = gameName;
 
@@ -189,11 +170,12 @@ public class Game extends BeaconzPluginDependent {
         region.setGame(this);
 
         // Store all game configuration parameters
-        setGameParms(gamemode, gamedistance, nbr_teams, gamegoal, gamegoalvalue, countdowntimer, startTime, gameCreateTime, scoretypes, distribution);
+        setGameParms(params, startTime, gameCreateTime);
 
         // Create the scorecard which manages teams, scores, and game timer
         scorecard = new Scorecard(beaconzPlugin, this);
     }
+
 
     /**
      * Handles a plugin reload event.
@@ -353,19 +335,20 @@ public class Game extends BeaconzPluginDependent {
         YamlConfiguration gamesYml = YamlConfiguration.loadConfiguration(gamesFile);
 
         // Save all game configuration under "game.{gameName}" path
-        String path = "game." + gameName;
+        String plainText = PlainTextComponentSerializer.plainText().serialize(gameName);
+        String path = "game." + plainText;
         gamesYml.set(path + ".region", ptsToStrCoord(region.corners()));
-        gamesYml.set(path + ".gamemode", gamemode);
-        gamesYml.set(path + ".gamedistance", gamedistance);
-        gamesYml.set(path + ".nbrteams", nbr_teams);
-        gamesYml.set(path + ".gamegoal", gamegoal);
-        gamesYml.set(path + ".goalvalue", gamegoalvalue);
+        gamesYml.set(path + ".gamemode", params.getGamemode().name());
+        gamesYml.set(path + ".gamedistance", params.getSize());
+        gamesYml.set(path + ".nbrteams", params.getTeams());
+        gamesYml.set(path + ".gamegoal", params.getGoal().name());
+        gamesYml.set(path + ".goalvalue", params.getGoalvalue());
         gamesYml.set(path + ".starttime", startTime);
         gamesYml.set(path + ".creationtime", this.gameCreateTime);
         gamesYml.set(path + ".countdowntimer", scorecard.getCountdownTimer());
-        gamesYml.set(path + ".scoretypes", scoretypes);
+        gamesYml.set(path + ".scoretypes", params.getScoretypes().stream().map(GameScoreGoal::name).toList());
         gamesYml.set(path + ".gameOver", isOver);
-        gamesYml.set(path + ".gamedistribution", gamedistribution);
+        gamesYml.set(path + ".gamedistribution", params.getDistribution());
 
         // Write the YAML configuration to disk
         try {
@@ -490,9 +473,9 @@ public class Game extends BeaconzPluginDependent {
 
         // Send appropriate welcome message
         if (newPlayer) {
-            senderMsg(player, ChatColor.GREEN + Lang.titleWelcomeToGame.replace("[name]", ChatColor.YELLOW + gameName));
+            player.sendMessage(Lang.titleWelcomeToGame.replaceText("[name]", gameName.color(NamedTextColor.YELLOW)).color(NamedTextColor.GREEN));
         } else {
-            senderMsg(player, ChatColor.GREEN + Lang.titleWelcomeBackToGame.replace("[name]", ChatColor.YELLOW + gameName));
+            player.sendMessage(Lang.titleWelcomeBackToGame.replaceText("[name]", gameName.color(NamedTextColor.YELLOW)).color(NamedTextColor.GREEN));
         }
 
         // Assign player to a team (balanced assignment if new)
@@ -543,7 +526,7 @@ public class Game extends BeaconzPluginDependent {
      */
     public void giveStartingKit(Player player) {
         // For minigame mode, set starting XP level (used as link currency)
-        if (gamemode.equals("minigame")) {
+        if (params.getGamemode() == GameMode.MINIGAME) {
             BeaconLinkListener.setTotalExperience(player, Settings.initialXP);
         }
 
@@ -644,10 +627,10 @@ public class Game extends BeaconzPluginDependent {
             }
 
             // Send success message to command sender
-            senderMsg(sender, ChatColor.GREEN + Lang.generalSuccess);
-        } else {
+            sender.sendMessage(Lang.generalSuccess.color(NamedTextColor.GREEN));
+        } else if (sender != null){
             // Player wasn't in this game
-            senderMsg(sender, ChatColor.RED + Lang.errorNotInGame.replace("[game]", this.gameName));
+            sender.sendMessage(Lang.errorNotInGame.replaceText("[game]", gameName).color(NamedTextColor.RED));
         }
 
         // Teleport player to lobby, do not save inventory
@@ -675,7 +658,7 @@ public class Game extends BeaconzPluginDependent {
      *
      * @return the game's name
      */
-    public String getName() {
+    public Component getName() {
         return gameName;
     }
 
@@ -706,49 +689,49 @@ public class Game extends BeaconzPluginDependent {
      *
      * @return "minigame" or "persistent"
      */
-    public String getGamemode() {return gamemode;}
+    public GameMode getGamemode() {return params.getGamemode();}
 
     /**
      * Gets the minimum distance between beacons.
      *
      * @return minimum beacon distance in blocks
      */
-    public int getGamedistance() {return gamedistance;}
+    public int getGamedistance() {return params.getSize();}
 
     /**
      * Gets the beacon distribution factor.
      *
      * @return distribution value (0.0-1.0)
      */
-    public double getGamedistribution() {return gamedistribution;}
+    public double getGamedistribution() {return params.getDistribution();}
 
     /**
      * Gets the number of teams in this game.
      *
      * @return team count
      */
-    public int getNbrTeams() {return nbr_teams;}
+    public int getNbrTeams() {return params.getTeams();}
 
     /**
      * Gets the game goal type.
      *
      * @return goal type (e.g., "area", "beacons", "time")
      */
-    public String getGamegoal() {return gamegoal;}
+    public GameScoreGoal getGamegoal() {return params.getGoal();}
 
     /**
      * Gets the game goal value threshold.
      *
      * @return goal value to achieve victory
      */
-    public int getGamegoalvalue() {return gamegoalvalue;}
+    public int getGamegoalvalue() {return params.getGoalvalue();}
 
     /**
      * Gets the countdown timer duration.
      *
      * @return timer in seconds (0 = unlimited)
      */
-    public int getCountdownTimer() {return countdowntimer;}
+    public int getCountdownTimer() {return params.getCountdown();}
 
     /**
      * Gets the game start timestamp.
@@ -769,7 +752,7 @@ public class Game extends BeaconzPluginDependent {
      *
      * @return score types string (e.g., "area,beacons,triangles")
      */
-    public String getScoretypes() {return scoretypes;}
+    public List<GameScoreGoal> getScoretypes() {return params.getScoretypes();}
 
     // ========== Setter Methods ==========
 
@@ -779,28 +762,14 @@ public class Game extends BeaconzPluginDependent {
      * This is typically called during game creation or loading from file.
      * All parameters are stored as instance variables.
      *
-     * @param gamemode "minigame" or "persistent"
-     * @param gdistance minimum distance between beacons
-     * @param nbr_teams number of teams
-     * @param gamegoal type of winning condition
-     * @param gamegoalvalue threshold to win
-     * @param countdowntimer duration in seconds (0 = unlimited)
+     * @param parameters game parameters
      * @param startTime Unix timestamp when game started
      * @param createTime Unix timestamp when game was created
-     * @param scoretypes comma-separated score types to track
-     * @param distribution beacon placement distribution factor
      */
-    public void setGameParms(String gamemode, int gdistance, int nbr_teams, String gamegoal, int gamegoalvalue, int countdowntimer, Long startTime, Long createTime, String scoretypes, double distribution) {
-        this.gamemode = gamemode;
-        this.gamedistance = gdistance;
-        this.nbr_teams = nbr_teams;
-        this.gamegoal = gamegoal;
-        this.gamegoalvalue = gamegoalvalue;
-        this.countdowntimer = countdowntimer;
+    public void setGameParms(Params parameters, Long startTime, Long createTime) {
+        this.params = parameters;
         this.startTime = startTime;
         this.gameCreateTime = createTime;
-        this.scoretypes = scoretypes;
-        this.gamedistribution = distribution;
     }
 
     /**
@@ -808,42 +777,43 @@ public class Game extends BeaconzPluginDependent {
      *
      * @param gm "minigame" or "persistent"
      */
-    public void setGamemode(String gm) {gamemode = gm;}
+    public void setGamemode(GameMode gm) {params.setGamemode(gm);}
 
     /**
      * Sets the minimum beacon distance.
      *
      * @param gd distance in blocks
      */
-    public void setGamedistance(int gd) {gamedistance = gd;}
+    public void setGamedistance(int gd) {params.setSize(gd);}
 
     /**
      * Sets the number of teams.
      *
      * @param tn team count
      */
-    public void setNbrTeams(int tn) {nbr_teams = tn;}
+    public void setNbrTeams(int tn) {params.setTeams(tn);}
 
     /**
      * Sets the game goal type.
      *
      * @param gg goal type (e.g., "area", "beacons")
      */
-    public void setGamegoal(String gg) {gamegoal = gg;}
+    public void setGamegoal(GameScoreGoal gg) {params.setGoal(gg);}
 
     /**
      * Sets the game goal value.
      *
      * @param gv threshold value to win
      */
-    public void setGamegoalvalue(int gv) {gamegoalvalue = gv;}
+    public void setGamegoalvalue(int gv) {params.setGoalvalue(gv);}
 
     /**
      * Sets the countdown timer duration.
      *
      * @param cd duration in seconds (0 = unlimited)
      */
-    public void setCountdownTimer(int cd) {countdowntimer = cd;}
+    public void setCountdownTimer(int cd) {params.setCountdown(cd);}
+    
 
     /**
      * Sets the game start time.
@@ -857,14 +827,14 @@ public class Game extends BeaconzPluginDependent {
      *
      * @param sct comma-separated score types
      */
-    public void setScoretypes(String sct) {scoretypes = sct;}
+    public void setScoretypes(List<GameScoreGoal> sct) {params.setScoretypes(sct);}
 
     /**
      * Sets the beacon distribution factor.
      *
      * @param gdist distribution value (0.0-1.0)
      */
-    public void setGamedistribution(double gdist) {gamedistribution = gdist;}
+    public void setGamedistribution(double gdist) {params.setDistribution(gdist);}
 
     // ========== Utility Methods ==========
 

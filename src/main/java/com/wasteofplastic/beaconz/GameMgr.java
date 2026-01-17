@@ -25,7 +25,9 @@ import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 
@@ -38,10 +40,12 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Team;
 
+import com.wasteofplastic.beaconz.Params.GameMode;
+import com.wasteofplastic.beaconz.Params.GameScoreGoal;
 import com.wasteofplastic.beaconz.generator.BeaconzChunkGen;
 
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
 /**
  * Manages the lifecycle and spatial organization of Beaconz games and regions.
@@ -74,17 +78,10 @@ public class GameMgr extends BeaconzPluginDependent {
     /** Map of region corner coordinates to Region objects for spatial lookup */
     private final LinkedHashMap<Point2D[], Region> regions;
     /** Map of game names to active Game instances */
-    private final LinkedHashMap<String, Game> games;
+    private final LinkedHashMap<Component, Game> games;
 
     // Default game configuration parameters
-    private String gamemode;
-    private Integer gamedistance;
-    private Double gamedistribution;
-    private Integer nbr_teams;
-    private String gamegoal;
-    private Integer gamegoalvalue;
-    private Integer timer;
-    private String scoretypes;
+    private Params defaultParameters;
 
     /**
      * Constructs a new GameMgr and initializes the game system.
@@ -109,6 +106,7 @@ public class GameMgr extends BeaconzPluginDependent {
         if (lobby == null) {
             createLobby();
         }
+        defaultParameters = new Params();
     }
 
     /**
@@ -201,22 +199,14 @@ public class GameMgr extends BeaconzPluginDependent {
     public void loadAllGames() {
         regions.clear();
         games.clear();
-        loadGames(null);
+        loadGames();
     }
 
     /**
      * Loads game data from the games.yml file.
-     *
-     * <p>If gameName is null, loads all games and the lobby. Otherwise, loads only
-     * the specified game. When loading an active game (one already in memory),
-     * the game parameters are updated and the game is reloaded. When loading an
-     * inactive game, a new Game object is created and registered.</p>
-     *
-     * <p>The lobby is only loaded when gameName is null (during full initialization).</p>
-     *
      * @param gameName the specific game to load, or null to load all games
      */
-    public void loadGames(String gameName) {
+    public void loadGames() {
         File gamesFile = new File(getBeaconzPlugin().getDataFolder(),"games.yml");
         if (gamesFile.exists()) {
             YamlConfiguration gamesYml = new YamlConfiguration();
@@ -230,54 +220,51 @@ public class GameMgr extends BeaconzPluginDependent {
             }
 
             ConfigurationSection csec = gamesYml.getConfigurationSection("lobby");
-            // Load the lobby only during full initialization
-            if (gameName == null) {
-                if (csec != null) {
-                    // Reconstruct lobby region from saved coordinates
-                    Point2D [] corners = strCoordToPts(csec.getString("region"));
-                    lobby = new Region(plugin, corners);
-                    String spawn = csec.getString("spawn", "");
-                    if (!spawn.isEmpty()) {
-                        lobby.setSpawnPoint(Beaconz.getLocationString(spawn));
-                    }
-                    regions.put(corners, lobby);
+            // Load the lobby 
+            if (csec != null) {
+                // Reconstruct lobby region from saved coordinates
+                Point2D [] corners = strCoordToPts(csec.getString("region"));
+                lobby = new Region(plugin, corners);
+                String spawn = csec.getString("spawn", "");
+                if (!spawn.isEmpty()) {
+                    lobby.setSpawnPoint(Beaconz.getLocationString(spawn));
                 }
+                regions.put(corners, lobby);
             }
             // Load game configurations
             csec = gamesYml.getConfigurationSection("game");
             if (csec != null) {
                 for (String gname : csec.getKeys(false)) {
-                    // Either load all games or just the specified one
-                    if (gameName == null || gname.equals(gameName)) {
-                        // Extract all game parameters from YAML
-                        Point2D [] corners = strCoordToPts(csec.getString(gname + ".region"));
-                        Region region = new Region(plugin, corners);
-                        String gm   = csec.getString(gname + ".gamemode");
-                        int gd   = csec.getInt(gname + ".gamedistance");
-                        int nt  = csec.getInt(gname + ".nbrteams");
-                        String gg   = csec.getString(gname + ".gamegoal");
-                        int gv  = csec.getInt(gname + ".goalvalue");
-                        Long st  = csec.getLong(gname + ".starttime");
-                        Long ct  = csec.getLong(gname + ".createtime");
-                        int gt  = csec.getInt(gname + ".countdowntimer");
-                        String gs   = csec.getString(gname + ".scoretypes");
-                        boolean isOver = csec.getBoolean(gname + ".gameOver");
-                        double gdist = csec.getDouble(gname + ".gamedistribution");
+                    Component gameName = Component.text(gname);
+                    // Extract all game parameters from YAML
+                    Point2D [] corners = strCoordToPts(csec.getString(gname + ".region"));
+                    Region region = new Region(plugin, corners);
+                    GameMode gameMode   = GameMode.valueOf(csec.getString(gname + ".gamemode"));
+                    int size   = csec.getInt(gname + ".gamedistance");
+                    int teams  = csec.getInt(gname + ".nbrteams");
+                    GameScoreGoal goal   = GameScoreGoal.valueOf(csec.getString(gname + ".gamegoal"));
+                    int goalValue  = csec.getInt(gname + ".goalvalue");
+                    Long startTime  = csec.getLong(gname + ".starttime");
+                    Long createTime  = csec.getLong(gname + ".createtime");
+                    int countdown  = csec.getInt(gname + ".countdowntimer");
+                    List<GameScoreGoal> scoreTypes  = csec.getStringList(gname + ".scoretypes").stream().map(GameScoreGoal::valueOf).toList();
+                    boolean isOver = csec.getBoolean(gname + ".gameOver");
+                    double distribution = csec.getDouble(gname + ".gamedistribution");
 
-                        Game game = games.get(gameName);
-                        if (game != null && gameName != null) {
-                            // Updating an active game - refresh its parameters and reload
-                            game.setGameParms(gm, gd, nt, gg, gv,gt, st, ct, gs, gdist);
-                            game.setOver(isOver);
-                            region.setGame(game);
-                            game.reload();
-                        } else {
-                            // Loading a saved game that isn't currently active
-                            regions.put(corners, region);
-                            game = new Game(plugin, gd, region, gname, gm, nt, gg, gv, gt, gs, gdist);
-                            game.setOver(isOver);
-                            games.put(gname, game);
-                        }
+                    Game game = games.get(gameName);
+                    Params params = new Params(gameMode, size, teams, goal, goalValue, countdown, scoreTypes, distribution);
+                    if (game != null) {
+                        // Updating an active game - refresh its parameters and reload
+                        game.setGameParms(params, startTime, createTime);
+                        game.setOver(isOver);
+                        region.setGame(game);
+                        game.reload();
+                    } else {
+                        // Loading a saved game that isn't currently active
+                        regions.put(corners, region);
+                        game = new Game(plugin, region, gameName, params);
+                        game.setOver(isOver);
+                        games.put(gameName, game);
                     }
                 }
             }
@@ -359,11 +346,12 @@ public class GameMgr extends BeaconzPluginDependent {
      *
      * @param gameName unique identifier for the new game
      */
-    public CompletableFuture<Boolean> newGame(String gameName) {
+    public CompletableFuture<Boolean> newGame(String gName) {
+        Component gameName = Component.text(gName);
         CompletableFuture<Boolean> result = new CompletableFuture<>();
         // Get the location for creating the new region
         Point2D ctr = nextRegionLocation();
-        Double radius = rup16(gamedistance / 2.0);
+        Double radius = rup16(defaultParameters.getSize() / 2.0);
         if (ctr == null) {
             getLogger().warning("Could not find a location to create the next region.");
             result.complete(false);
@@ -384,7 +372,7 @@ public class GameMgr extends BeaconzPluginDependent {
                 result.complete(false);
             } else {
                 // Create the game with current default parameters
-                Game game = new Game(plugin, gamedistance, region, gameName, gamemode, nbr_teams, gamegoal, gamegoalvalue, timer, scoretypes, gamedistribution);
+                Game game = new Game(plugin, region, gameName, defaultParameters);
                 games.put(gameName, game);
                 regions.put(region.corners(), region);
             }
@@ -415,7 +403,7 @@ public class GameMgr extends BeaconzPluginDependent {
      */
     public Point2D nextRegionLocation() {
         Point2D newregionctr = null;
-        Double gradius = rup16(gamedistance / 2.0);
+        Double gradius = rup16(defaultParameters.getSize() / 2.0);
 
         // Try to place near existing regions with a safety buffer
         if (regions != null) {
@@ -442,7 +430,7 @@ public class GameMgr extends BeaconzPluginDependent {
         if (newregionctr == null) {
             for (int i = 0; i <10; i++) {
                 Random rand = new Random();
-                int r = rand.nextInt(gamedistance * 100);
+                int r = rand.nextInt(defaultParameters.getSize() * 100);
                 Point2D rctr = new Point2D.Double(r, r);
                 newregionctr = goodNeighbor(rctr, gradius);
                 if (newregionctr != null) {
@@ -473,7 +461,7 @@ public class GameMgr extends BeaconzPluginDependent {
         Point2D rightctr = new Point2D.Double(rup16(rctr.getX() + distance), rup16(rctr.getY()));
         Point2D leftctr = new Point2D.Double(rup16(rctr.getX() - distance), rup16(rctr.getY()));
 
-        Double radius = rup16(gamedistance / 2.0);
+        Double radius = rup16(defaultParameters.getSize() / 2.0);
         // Check each direction in order: up, right, down, left
         if (isAreaFree(upctr, radius) && isAreaSafe(upctr, radius)) {
             location = upctr;
@@ -589,7 +577,7 @@ public class GameMgr extends BeaconzPluginDependent {
      * initialization and reload to refresh default values.</p>
      */
     public void setGameDefaultParms() {
-        setGameDefaultParms(null, null, null, null, null, null, null, null);
+        defaultParameters = new Params();
     }
 
     /**
@@ -599,37 +587,17 @@ public class GameMgr extends BeaconzPluginDependent {
      * Non-null parameters override the configuration values. Game mode affects which
      * default values are selected (minigame vs strategy mode have different defaults).</p>
      *
-     * @param mode game mode ("minigame" or "strategy")
-     * @param gdistance distance/size of game regions in blocks
-     * @param nteams number of teams in new games
-     * @param ggoal win condition type
-     * @param gvalue win condition threshold value
-     * @param gtimer countdown timer duration
-     * @param stypes score types to track
+     * @param mode game mode (minigame or strategy)
+     * @param size distance/size of game regions in blocks
+     * @param teams number of teams in new games
+     * @param goal win condition type
+     * @param goalvalue win condition threshold value
+     * @param countdown countdown timer duration
+     * @param scoretypes score types to track
      * @param distribution beacon distribution pattern
      */
-    public void setGameDefaultParms(String mode, Integer gdistance, Integer nteams, String ggoal, Integer gvalue, Integer gtimer, String stypes, Double distribution) {
-        gamemode = mode != null ? mode : Settings.gamemode;
-        gamedistance = gdistance != null ? gdistance : Settings.gameDistance;
-        gamedistribution = distribution!= null ? distribution : Settings.distribution;
-        nbr_teams = nteams != null ? nteams : Settings.defaultTeamNumber;
-
-        // Select appropriate defaults based on game mode
-        String defaultgoal = Settings.minigameGoal;
-        if(gamemode.equals("strategy")) defaultgoal = Settings.strategyGoal;
-        gamegoal = ggoal != null ? ggoal : defaultgoal;
-
-        Integer defaultgvalue = Settings.minigameGoalValue;
-        if(gamemode.equals("strategy")) defaultgvalue = Settings.strategyGoalValue;
-        gamegoalvalue = gvalue != null ? gvalue : defaultgvalue;
-
-        Integer defaulttimer = Settings.minigameTimer;
-        if(gamemode.equals("strategy")) defaulttimer = Settings.strategyTimer;
-        timer = gtimer != null ? gtimer : defaulttimer;
-
-        String defaultsct = Settings.minigameScoreTypes;
-        if(gamemode.equals("strategy")) defaultsct = Settings.strategyScoreTypes;
-        scoretypes = stypes!= null ? stypes: defaultsct;
+    public void setGameDefaultParms(Params parameters) {
+        this.defaultParameters = parameters;
     }
 
     /**
@@ -654,9 +622,9 @@ public class GameMgr extends BeaconzPluginDependent {
         }
         // If no team and player is not an admin and not in lobby, send them to lobby
         if (team == null && !player.isOp()&& !isPlayerInLobby(player)) {
-                getLobby().tpToRegionSpawn(player,true);
-            }
-        
+            getLobby().tpToRegionSpawn(player,true);
+        }
+
         return team;
     }
 
@@ -702,7 +670,7 @@ public class GameMgr extends BeaconzPluginDependent {
      * @param team the team to look up
      * @return the Game this team belongs to, or null if team not found
      */
-    public Game getGame (Team team) {
+    public Game getGame(Team team) {
         Game game = null;
         if (games != null) {
             for (Game g : games.values()) {
@@ -721,7 +689,7 @@ public class GameMgr extends BeaconzPluginDependent {
      * @param gamename the unique name of the game
      * @return the Game with this name, or null if not found
      */
-    public Game getGame (String gamename) {
+    public Game getGame(Component gamename) {
         return games.get(gamename);
     }
 
@@ -731,7 +699,7 @@ public class GameMgr extends BeaconzPluginDependent {
      * @param point the coordinates to check
      * @return the Game at this location, or null if not in any game region
      */
-    public Game getGame (Point2D point) {
+    public Game getGame(Point2D point) {
         return getGame(getRegion((int)point.getX(), (int)point.getY()));
     }
 
@@ -742,7 +710,7 @@ public class GameMgr extends BeaconzPluginDependent {
      * @param z the z-coordinate in blocks
      * @return the Game at this location, or null if not in any game region
      */
-    public Game getGame (int x, int z) {
+    public Game getGame(int x, int z) {
         return getGame(getRegion(x, z));
     }
 
@@ -752,7 +720,7 @@ public class GameMgr extends BeaconzPluginDependent {
      * @param loc the location to check
      * @return the Game at this location, or null if not in any game region
      */
-    public Game getGame (Location loc) {
+    public Game getGame(Location loc) {
         return getGame(getRegion(loc.getBlockX(), loc.getBlockZ()));
     }
 
@@ -764,7 +732,7 @@ public class GameMgr extends BeaconzPluginDependent {
      * @param link a line segment, typically representing a beacon connection
      * @return the Game containing the start of this link, or null if not in any game
      */
-    public Game getGame (Line2D link) {
+    public Game getGame(Line2D link) {
         return getGame(getRegion((int)link.getX1(), (int)link.getY1()));
     }
 
@@ -863,7 +831,7 @@ public class GameMgr extends BeaconzPluginDependent {
      *
      * @return LinkedHashMap mapping game names to Game objects
      */
-    public LinkedHashMap<String, Game> getGames() {
+    public LinkedHashMap<Component, Game> getGames() {
         return games;
     }
 
@@ -1017,9 +985,10 @@ public class GameMgr extends BeaconzPluginDependent {
      * @param sender the command sender initiating the deletion (for feedback messages)
      * @param game the game to delete
      */
-    public void delete(CommandSender sender, Game game) {          
+    public void delete(CommandSender sender, Game game) {
+        String gameName = PlainTextComponentSerializer.plainText().serialize(game.getName());
         // Remove all saved player inventories for this game
-        getBeaconzStore().removeGame(game.getName());
+        getBeaconzStore().removeGame(gameName);
         // End the game and clean up its state
         game.delete();
         // Unregister the game
@@ -1032,6 +1001,23 @@ public class GameMgr extends BeaconzPluginDependent {
         regions.remove(game.getRegion().corners());
     }
 
+    /**
+     * Get the game via name
+     * @param string name of game
+     * @return Game or null if not known
+     */
+    public Game getGame(String string) {
+        
+        return getGame(Component.text(string));
+    }
+
+    /**
+     * Obtain a list of all the game names
+     * @return list of all the game names
+     */
+    public List<String> getAllGameNames() {
+        return games.keySet().stream().map(PlainTextComponentSerializer.plainText()::serialize).toList();
+    }
 }
 
 

@@ -22,10 +22,11 @@
 
 package com.wasteofplastic.beaconz.listeners;
 
-import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Tag;
 import org.bukkit.block.Sign;
+import org.bukkit.block.sign.Side;
+import org.bukkit.block.sign.SignSide;
 import org.bukkit.entity.Animals;
 import org.bukkit.entity.Monster;
 import org.bukkit.entity.Slime;
@@ -37,11 +38,14 @@ import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.jetbrains.annotations.NotNull;
 
 import com.wasteofplastic.beaconz.Beaconz;
 import com.wasteofplastic.beaconz.BeaconzPluginDependent;
 import com.wasteofplastic.beaconz.Lang;
 import com.wasteofplastic.beaconz.Settings;
+
+import net.kyori.adventure.text.Component;
 
 /**
  * Handles lobby events
@@ -68,14 +72,11 @@ public class LobbyListener extends BeaconzPluginDependent implements Listener {
     public void onSignClick(final PlayerInteractEvent event) {
         // We are only interested in hitting signs
         if (!event.hasBlock()) {
-            //getLogger().info("DEBUG: no block");
             return;
         }
-        //getLogger().info("DEBUG: action = " + event.getAction());
         if (!event.getAction().equals(Action.LEFT_CLICK_BLOCK)) {
             return;
         }
-        //getLogger().info("DEBUG: block material = " + event.getClickedBlock().getType());
         if (!Tag.SIGNS.isTagged(event.getClickedBlock().getType())) {
             return;
         }
@@ -83,29 +84,28 @@ public class LobbyListener extends BeaconzPluginDependent implements Listener {
         if (!event.getClickedBlock().getWorld().equals(getBeaconzWorld())) {
             return; 
         }
-        //getLogger().info("DEBUG: click sign");
         if (getGameMgr().getLobby().isPlayerInRegion(event.getPlayer())) {
             // Check for accidental creative mode hitting
             if (event.getPlayer().getGameMode().equals(GameMode.CREATIVE)) {
-                event.getPlayer().sendMessage(ChatColor.RED + Lang.adminUseSurvival);
+                event.getPlayer().sendMessage(Lang.adminUseSurvival);
                 event.setCancelled(true);
             }
             Sign sign = (Sign) event.getClickedBlock().getState();
-            if (sign.getLine(0).toLowerCase().contains(Lang.adminSignKeyword)) {
+            @NotNull SignSide side = sign.getSide(Side.FRONT);
+            if (side.line(0).equals(Lang.adminSignKeyword)) {
                 for (int i = 1; i < 4; i++) {
-                    String gamename = sign.getLine(i);
-                    //getLogger().info("DEBUG: gamename = " + gamename);
+                    Component gamename = side.line(i);
                     if (getGameMgr().getGame(gamename) != null) {
                         if (getGameMgr().getGame(gamename).isOver()) {
-                            event.getPlayer().sendMessage(ChatColor.RED + Lang.scoreGameOver);
+                            event.getPlayer().sendMessage(Lang.scoreGameOver);
                         } else {
                             getGameMgr().getGame(gamename).join(event.getPlayer());
                         }
                         return;
                     }
                 }
-                event.getPlayer().sendMessage(ChatColor.RED + Lang.errorNotReady);
-                event.getPlayer().sendMessage(ChatColor.RED + Lang.errorNoSuchGame);
+                event.getPlayer().sendMessage(Lang.errorNotReady);
+                event.getPlayer().sendMessage(Lang.errorNoSuchGame);
             }
         }
     } 
@@ -114,30 +114,21 @@ public class LobbyListener extends BeaconzPluginDependent implements Listener {
      * Tells admin if the game sign has been placed successfully
      * @param event
      */
-    @SuppressWarnings("deprecation")
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onSignPlace(final SignChangeEvent event) {
         // Check world
         if (!event.getBlock().getWorld().equals(getBeaconzWorld())) {
             return; 
         }
-        if (DEBUG)
-            getLogger().info("DEBUG: sign updated");
         if (getGameMgr().getLobby().isPlayerInRegion(event.getPlayer())) {
-            if (DEBUG)
-                getLogger().info("DEBUG: sign in lobby");
-            if (event.getLine(0).toLowerCase().contains(Lang.adminSignKeyword)) {
+            if (event.line(0).contains(Lang.adminSignKeyword)) {
                 for (int i = 1; i < 4; i++) {
-                    if (DEBUG)
-                        getLogger().info("DEBUG: checking line " + event.getLine(i));
-                    if (getGameMgr().getGame(event.getLine(i)) != null) {
-                        if (DEBUG)
-                            getLogger().info("DEBUG: found!");
-                        event.getPlayer().sendMessage(ChatColor.GREEN + Lang.adminGameSignPlaced + " - " + event.getLine(i));
+                    if (getGameMgr().getGame(event.line(i)) != null) {
+                        event.getPlayer().sendMessage(Lang.adminGameSignPlaced.append(Component.text(" - ").append(event.line(i))));
                         return;
                     }
                 }
-                event.getPlayer().sendMessage(ChatColor.RED + Lang.errorNoSuchGame);
+                event.getPlayer().sendMessage(Lang.errorNoSuchGame);
             }
         }
     }

@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
@@ -58,6 +57,8 @@ import com.wasteofplastic.beaconz.Lang;
 import com.wasteofplastic.beaconz.Region;
 import com.wasteofplastic.beaconz.Settings;
 import com.wasteofplastic.beaconz.TriangleField;
+
+import net.kyori.adventure.text.Component;
 
 /**
  * Handles player and vehicle movement within the game world, enforcing territorial boundaries and effects.
@@ -119,7 +120,7 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
         if (event.getEntity().getWorld().equals(getBeaconzWorld())) {
             if (getGameMgr().getGame(event.getEntity().getLocation()) == null) {
                 event.setCancelled(true);
-                event.getPlayer().sendMessage(ChatColor.RED + Lang.errorYouCannotDoThat);
+                event.getPlayer().sendMessage(Lang.errorYouCannotDoThat);
             }
         }
     }
@@ -137,7 +138,7 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
         if (event.getRightClicked().getWorld().equals(getBeaconzWorld())) {
             if (getGameMgr().getGame(event.getRightClicked().getLocation()) == null) {
                 event.setCancelled(true);
-                event.getPlayer().sendMessage(ChatColor.RED + Lang.errorYouCannotDoThat);
+                event.getPlayer().sendMessage(Lang.errorYouCannotDoThat);
             }
         }
     }
@@ -155,7 +156,7 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
         if (event.getEntity().getWorld().equals(getBeaconzWorld())) {
             if (getGameMgr().getGame(event.getEntity().getLocation()) == null) {
                 event.setCancelled(true);
-                event.getPlayer().sendMessage(ChatColor.RED + Lang.errorYouCannotDoThat);
+                event.getPlayer().sendMessage(Lang.errorYouCannotDoThat);
             }
         }
     }
@@ -174,7 +175,7 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
         if (event.getEntity().getWorld().equals(getBeaconzWorld())) {
             if (getGameMgr().getGame(event.getEntity().getLocation()) == null) {
                 event.setCancelled(true);
-                event.getPlayer().sendMessage(ChatColor.RED + Lang.errorYouCannotDoThat);
+                event.getPlayer().sendMessage(Lang.errorYouCannotDoThat);
             }
         }
     }
@@ -195,7 +196,7 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
         if (player.getWorld().equals(getBeaconzWorld())) {
             if (getGameMgr().getGame(event.getVehicle().getLocation()) == null) {
                 event.setCancelled(true);
-                player.sendMessage(ChatColor.RED + Lang.errorYouCannotDoThat);
+                player.sendMessage(Lang.errorYouCannotDoThat);
             }
         }
     }
@@ -328,7 +329,7 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
                 barrierPlayers.add(player.getUniqueId());
                 // Return true to cancel the event (player stays in place)
                 // Note: We don't teleport the player - just block the movement
-                player.sendMessage(ChatColor.YELLOW + Lang.errorRegionLimit);
+                player.sendMessage(Lang.errorRegionLimit);
                 return true;
             }
         }
@@ -429,7 +430,8 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
         // Player is leaving triangle fields (entering neutral territory)
         if (toTriangles.isEmpty()) {
             // Notify player they're leaving the field
-            player.sendMessage(Lang.triangleLeaving.replace("[team]", fromTriangles.getFirst().getOwner().getDisplayName()));
+            player.sendMessage(Lang.triangleLeaving
+                    .replaceText(builder -> builder.matchLiteral("[team]").replacement(fromTriangles.getFirst().getOwner().displayName())));
 
             // Remove all triangle field effects that were previously applied
             if (triangleEffects.containsKey(player.getUniqueId())) {
@@ -448,7 +450,9 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
         // Player is entering a field or moving to a more densely stacked area
         if (fromTriangles.size() < toTriangles.size()) {
             // Notify player they're entering or powering up in the field
-            player.sendMessage((Lang.triangleEntering.replace("[team]", toTriangles.getFirst().getOwner().getDisplayName())).replace("[level]",String.valueOf(toTriangles.size())));
+            player.sendMessage(Lang.triangleEntering
+                    .replaceText(builder -> builder.matchLiteral("[team]").replacement(toTriangles.getFirst().getOwner().displayName()))
+                    .replaceText(builder -> builder.matchLiteral("[level]").replacement(Component.text(String.valueOf(toTriangles.size())))));
         } else if (toTriangles.size() < fromTriangles.size()) {
             // Player is moving to less densely stacked area (weaker effects)
             // Remove current effects first - weaker effects will be applied below
@@ -462,7 +466,9 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
                 }
             }
             // Notify player of the level drop
-            player.sendMessage((Lang.triangleDroppingToLevel.replace("[team]", toTriangles.getFirst().getOwner().getDisplayName())).replace("[level]",String.valueOf(toTriangles.size())));
+            player.sendMessage(Lang.triangleDroppingToLevel
+                    .replaceText(builder -> builder.matchLiteral("[team]").replacement(toTriangles.getFirst().getOwner().displayName()))
+                    .replaceText(builder -> builder.matchLiteral("[level]").replacement(Component.text(String.valueOf(toTriangles.size())))));
         }
 
         // Apply the appropriate effects for the new field(s)

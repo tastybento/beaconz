@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -16,7 +15,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.WorldBorder;
@@ -50,6 +48,8 @@ import com.wasteofplastic.beaconz.Lang;
 import com.wasteofplastic.beaconz.Region;
 import com.wasteofplastic.beaconz.TriangleField;
 
+import net.kyori.adventure.text.Component;
+
 class PlayerMovementListenerTest extends CommonTestBase {
     
     private PlayerMovementListener pml;
@@ -70,8 +70,8 @@ class PlayerMovementListenerTest extends CommonTestBase {
         when(sheep.getWorld()).thenReturn(world);
         when(player.getUniqueId()).thenReturn(uuid);
         
-        when(team.getDisplayName()).thenReturn("red team [level]");
-        
+        when(team.displayName()).thenReturn(Component.text("red team [level]"));
+
         
         pml = new PlayerMovementListener(plugin);
     }
@@ -101,7 +101,7 @@ class PlayerMovementListenerTest extends CommonTestBase {
        PlayerLeashEntityEvent event = new PlayerLeashEntityEvent(sheep, sheep, player, EquipmentSlot.HAND);
        pml.onLeashUse(event);
        assertTrue(event.isCancelled());
-       verify(player).sendMessage(ChatColor.RED + Lang.errorYouCannotDoThat);
+       verify(player).sendMessage(Lang.errorYouCannotDoThat);
     }
 
     /**
@@ -113,7 +113,7 @@ class PlayerMovementListenerTest extends CommonTestBase {
         PlayerInteractEntityEvent event = new PlayerInteractEntityEvent(player, sheep, EquipmentSlot.HAND);
         pml.onPlayerHitEntity(event);
         assertTrue(event.isCancelled());
-        verify(player).sendMessage(ChatColor.RED + Lang.errorYouCannotDoThat);
+        verify(player).sendMessage(Lang.errorYouCannotDoThat);
     }
 
     /**
@@ -128,7 +128,7 @@ class PlayerMovementListenerTest extends CommonTestBase {
         HangingPlaceEvent event = new HangingPlaceEvent(hanging, player, block, BlockFace.EAST, EquipmentSlot.HAND, item);
         pml.onHangingPlace(event);
         assertTrue(event.isCancelled());
-        verify(player).sendMessage(ChatColor.RED + Lang.errorYouCannotDoThat);
+        verify(player).sendMessage(Lang.errorYouCannotDoThat);
     }
 
     /**
@@ -142,7 +142,7 @@ class PlayerMovementListenerTest extends CommonTestBase {
         PlayerShearEntityEvent event = new PlayerShearEntityEvent(player, sheep, item, EquipmentSlot.HAND, drops);
         pml.onShear(event);
         assertTrue(event.isCancelled());
-        verify(player).sendMessage(ChatColor.RED + Lang.errorYouCannotDoThat);
+        verify(player).sendMessage(Lang.errorYouCannotDoThat);
     }
 
     /**
@@ -156,7 +156,7 @@ class PlayerMovementListenerTest extends CommonTestBase {
         VehicleDamageEvent event = new VehicleDamageEvent(horse, player, 10);
         pml.onVehicleDamage(event);
         assertTrue(event.isCancelled());
-        verify(player).sendMessage(ChatColor.RED + Lang.errorYouCannotDoThat);
+        verify(player).sendMessage(Lang.errorYouCannotDoThat);
     }
 
     /**
@@ -314,7 +314,7 @@ class PlayerMovementListenerTest extends CommonTestBase {
         TriangleField field1 = mock(TriangleField.class);
         Team teamOwner = mock(Team.class);
         when(field1.getOwner()).thenReturn(teamOwner);
-        when(teamOwner.getDisplayName()).thenReturn("Blue Team");
+        when(teamOwner.displayName()).thenReturn(Component.text("Blue Team"));
 
         List<TriangleField> fromTriangles = List.of(); 
         List<TriangleField> toTriangles = List.of(field1);
@@ -322,7 +322,7 @@ class PlayerMovementListenerTest extends CommonTestBase {
         pml.applyTriangleEffects(player, fromTriangles, toTriangles);
 
         // Verify the entering message was sent (Logic uses Lang.triangleEntering)
-        verify(player).sendMessage(anyString());
+        verify(player).sendMessage(any(Component.class));
     }
 
     /**
@@ -338,7 +338,7 @@ class PlayerMovementListenerTest extends CommonTestBase {
         TriangleField f1 = mock(TriangleField.class);
         Team teamOwner = mock(Team.class);
         when(f1.getOwner()).thenReturn(teamOwner);
-        when(teamOwner.getDisplayName()).thenReturn("Red Team");
+        when(teamOwner.displayName()).thenReturn(Component.text("Red Team"));
 
         // Simulate stored effects for this player
         PotionEffect oldEffect = new PotionEffect(PotionEffectType.REGENERATION, 100, 1);
@@ -353,7 +353,8 @@ class PlayerMovementListenerTest extends CommonTestBase {
 
         // Verify old effects are removed and dropping message sent
         verify(player).removePotionEffect(PotionEffectType.REGENERATION);
-        verify(player).sendMessage("Red Team triangleDroppingToLevel");
+        // The message uses Lang.triangleDroppingToLevel.replaceText("[team]", teamDisplayName).replaceText("[level]", level)
+        verify(player).sendMessage(any(Component.class));
     }
 
     /**
@@ -368,14 +369,15 @@ class PlayerMovementListenerTest extends CommonTestBase {
         TriangleField f1 = mock(TriangleField.class);
         Team teamOwner = mock(Team.class);
         when(f1.getOwner()).thenReturn(teamOwner);
-        when(teamOwner.getDisplayName()).thenReturn("Green Team");
+        when(teamOwner.displayName()).thenReturn(Component.text("Green Team"));
 
         List<TriangleField> fromTriangles = List.of(f1);
         List<TriangleField> toTriangles = List.of();
 
         pml.applyTriangleEffects(player, fromTriangles, toTriangles);
 
-        verify(player).sendMessage("Green Team triangleLeaving");
+        // The message uses Lang.triangleLeaving.replaceText("[team]", teamDisplayName)
+        verify(player).sendMessage(any(Component.class));
         assertFalse(pml.getTriangleEffects().containsKey(uuid));
     }
 

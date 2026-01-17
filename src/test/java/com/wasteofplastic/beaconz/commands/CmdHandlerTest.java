@@ -29,6 +29,7 @@ import com.wasteofplastic.beaconz.GameMgr;
 import com.wasteofplastic.beaconz.Lang;
 import com.wasteofplastic.beaconz.Region;
 import com.wasteofplastic.beaconz.Scorecard;
+import com.wasteofplastic.beaconz.Params.GameScoreGoal;
 
 /**
  * Comprehensive test suite for {@link CmdHandler} covering all command scenarios.
@@ -49,6 +50,7 @@ import com.wasteofplastic.beaconz.Scorecard;
  */
 class CmdHandlerTest {
 
+    private static final Component TEST_GAME = Component.text("TestGame");
     // Mocked dependencies
     private ServerMock server;
     private Beaconz plugin;
@@ -114,19 +116,21 @@ class CmdHandlerTest {
      * These strings are used for user messages and help text.
      */
     private void setupLangStrings() {
-        Lang.errorOnlyPlayers = "Only players can use this command";
-        Lang.errorYouDoNotHavePermission = "You do not have permission";
-        Lang.errorNoLobbyYet = "No lobby has been set up yet";
-        Lang.errorYouMustBeInAGame = "You must be in a game";
-        Lang.errorNoSuchGame = "No such game";
-        Lang.errorUnknownCommand = "Unknown command";
-        Lang.helpHelp = "- shows this help";
-        Lang.helpLeave = "- leave a game";
-        Lang.helpScore = "- show the team scores";
-        Lang.helpScoreboard = "- toggles the scoreboard on and off";
-        Lang.generalGame = "Game";
-        Lang.actionsYouAreInTeam = "You are in [team]!";
-        Lang.scoreScores = "Scores:";
+        Lang.errorOnlyPlayers = Component.text("Only players can use this command");
+        Lang.errorYouDoNotHavePermission = Component.text("You do not have permission");
+        Lang.errorNoLobbyYet = Component.text("No lobby has been set up yet");
+        Lang.errorYouMustBeInAGame = Component.text("You must be in a game");
+        Lang.errorNoSuchGame = Component.text("No such game");
+        Lang.errorUnknownCommand = Component.text("Unknown command");
+        Lang.helpHelp = Component.text("- shows this help");
+        Lang.helpLeave = Component.text("- leave a game");
+        Lang.helpScore = Component.text("- show the team scores");
+        Lang.helpScoreboard = Component.text("- toggles the scoreboard on and off");
+        Lang.generalGame = Component.text("Game");
+        Lang.actionsYouAreInTeam = Component.text("You are in [team]!");
+        Lang.scoreScores = Component.text("Scores:");
+        Lang.scoreGame = Component.text("[score] [unit]");
+        Lang.scoreTeam = Component.text("[team]");
     }
 
     /**
@@ -303,11 +307,11 @@ class CmdHandlerTest {
         // Mock player in a game with a team
         when(gameMgr.getGame(any(Location.class))).thenReturn(game);
         when(game.getScorecard()).thenReturn(scorecard);
-        when(game.getName()).thenReturn("TestGame");
+        when(game.getName()).thenReturn(TEST_GAME);
         when(scorecard.getTeam(player)).thenReturn(team1);
         when(scorecard.getScoreboard()).thenReturn(scoreboard);
         when(scoreboard.getTeams()).thenReturn(Set.of(team1, team2));
-        when(scorecard.getScore(any(Team.class), anyString())).thenReturn(100);
+        when(scorecard.getScore(any(Team.class), any(GameScoreGoal.class))).thenReturn(100);
 
         // Execute score command
         boolean result = handler.onCommand(player, command, "beaconz", new String[]{"score"});
@@ -456,7 +460,7 @@ class CmdHandlerTest {
         player.addAttachment(plugin, "beaconz.player.leave", true);
 
         // Mock game exists
-        when(gameMgr.getGame("TestGame")).thenReturn(game);
+        when(gameMgr.getGame(TEST_GAME)).thenReturn(game);
 
         // Execute leave command with game name
         boolean result = handler.onCommand(player, command, "beaconz", new String[]{"leave", "TestGame"});
@@ -478,7 +482,7 @@ class CmdHandlerTest {
         player.addAttachment(plugin, "beaconz.player.leave", true);
 
         // Mock game doesn't exist
-        when(gameMgr.getGame("NonExistentGame")).thenReturn(null);
+        when(gameMgr.getGame(Component.text("NonExistentGame"))).thenReturn(null);
 
         // Execute leave command with invalid game name
         boolean result = handler.onCommand(player, command, "beaconz", new String[]{"leave", "NonExistentGame"});
@@ -500,7 +504,7 @@ class CmdHandlerTest {
         player.addAttachment(plugin, "beaconz.player.leave", false);
 
         // Mock game exists
-        when(gameMgr.getGame("TestGame")).thenReturn(game);
+        when(gameMgr.getGame(TEST_GAME)).thenReturn(game);
 
         // Execute leave command
         boolean result = handler.onCommand(player, command, "beaconz", new String[]{"leave", "TestGame"});
@@ -522,9 +526,11 @@ class CmdHandlerTest {
         var player = server.addPlayer();
         player.addAttachment(plugin, "beaconz.player", true);
         player.setOp(true);
+        
+        Component gameName = TEST_GAME;
 
         // Mock game exists
-        when(gameMgr.getGame("TestGame")).thenReturn(game);
+        when(gameMgr.getGame(gameName)).thenReturn(game);
 
         // Execute join command
         boolean result = handler.onCommand(player, command, "beaconz", new String[]{"join", "TestGame"});
@@ -546,7 +552,7 @@ class CmdHandlerTest {
         player.setOp(true);
 
         // Mock game doesn't exist
-        when(gameMgr.getGame("NonExistentGame")).thenReturn(null);
+        when(gameMgr.getGame(Component.text("NonExistentGame"))).thenReturn(null);
 
         // Execute join command
         boolean result = handler.onCommand(player, command, "beaconz", new String[]{"join", "NonExistentGame"});
@@ -568,7 +574,7 @@ class CmdHandlerTest {
         player.setOp(false);
 
         // Mock game exists
-        when(gameMgr.getGame("TestGame")).thenReturn(game);
+        when(gameMgr.getGame(TEST_GAME)).thenReturn(game);
 
         // Execute join command
         boolean result = handler.onCommand(player, command, "beaconz", new String[]{"join", "TestGame"});
@@ -631,15 +637,15 @@ class CmdHandlerTest {
         when(scoreboard.getTeams()).thenReturn(Set.of(team1, team2));
 
         // Mock scores for different metrics
-        when(scorecard.getScore(team1, "beacons")).thenReturn(5);
-        when(scorecard.getScore(team1, "links")).thenReturn(8);
-        when(scorecard.getScore(team1, "triangles")).thenReturn(3);
-        when(scorecard.getScore(team1, "area")).thenReturn(500);
+        when(scorecard.getScore(team1, GameScoreGoal.BEACONS)).thenReturn(5);
+        when(scorecard.getScore(team1, GameScoreGoal.LINKS)).thenReturn(8);
+        when(scorecard.getScore(team1, GameScoreGoal.TRIANGLES)).thenReturn(3);
+        when(scorecard.getScore(team1, GameScoreGoal.AREA)).thenReturn(500);
 
-        when(scorecard.getScore(team2, "beacons")).thenReturn(3);
-        when(scorecard.getScore(team2, "links")).thenReturn(4);
-        when(scorecard.getScore(team2, "triangles")).thenReturn(1);
-        when(scorecard.getScore(team2, "area")).thenReturn(200);
+        when(scorecard.getScore(team2, GameScoreGoal.BEACONS)).thenReturn(3);
+        when(scorecard.getScore(team2, GameScoreGoal.LINKS)).thenReturn(4);
+        when(scorecard.getScore(team2, GameScoreGoal.TRIANGLES)).thenReturn(1);
+        when(scorecard.getScore(team2, GameScoreGoal.AREA)).thenReturn(200);
 
         // Call showGameScores
         handler.showGameScores(sender, game);
@@ -733,18 +739,19 @@ class CmdHandlerTest {
         Scorecard scorecard1 = mock(Scorecard.class);
         Scorecard scorecard2 = mock(Scorecard.class);
 
-        when(game1.getName()).thenReturn("Game1");
+        when(game1.getName()).thenReturn(Component.text("Game1"));
         when(game1.getScorecard()).thenReturn(scorecard1);
-        when(scorecard1.getTeam(player)).thenReturn(team1);
+        when(scorecard1.inTeam(player)).thenReturn(true);
 
-        when(game2.getName()).thenReturn("Game2");
+        when(game2.getName()).thenReturn(Component.text("Game2"));
         when(game2.getScorecard()).thenReturn(scorecard2);
-        when(scorecard2.getTeam(player)).thenReturn(null); // Not in this game
+        when(scorecard2.inTeam(player)).thenReturn(false); // Not in this game
 
-        LinkedHashMap<String, Game> games = new LinkedHashMap<>();
-        games.put("Game1", game1);
-        games.put("Game2", game2);
-        when(gameMgr.getGames()).thenReturn(games);
+        
+        LinkedHashMap<Component, Game> map = new LinkedHashMap<>();
+        map.put(Component.text("Game1"), game1);
+        map.put(Component.text("Game2"), game2);
+        when(gameMgr.getGames()).thenReturn(map);
 
         // Get tab completions for leave command
         List<String> completions = handler.onTabComplete(player, command, "beaconz", new String[]{"leave", ""});

@@ -59,6 +59,7 @@ public class BeaconObj extends BeaconzPluginDependent {
     private Integer id = null;
     private boolean newBeacon = true;
     private static final List<BlockFace> FACES = new ArrayList<>(Arrays.asList(BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST, BlockFace.NORTH_EAST, BlockFace.NORTH_WEST, BlockFace.SOUTH_EAST, BlockFace.SOUTH_WEST));
+    private static final boolean DEBUG = false;
     private HashMap<Block, DefenseBlock> defenseBlocks = new HashMap<>();
     private final Set<BeaconObj> links = new HashSet<>();
 
@@ -229,28 +230,28 @@ public class BeaconObj extends BeaconzPluginDependent {
      */
     public boolean isNotClear() {
         Block beacon = getBeaconzWorld().getBlockAt((int)location.getX(), y, (int)location.getY());
-        getLogger().info("DEBUG: block y = " + beacon.getY() + " " + beacon.getLocation());
+        if (DEBUG) getLogger().info("DEBUG: beacon block y = " + beacon.getY() + " " + beacon.getLocation());
         for (BlockFace face: FACES) {
             Block block = beacon.getRelative(face);
-            getLogger().info("DEBUG: highest block at " + block.getX() + "," + block.getZ() + " y = " + getHighestBlockYAt(block.getX(), block.getZ()));
-            if (block.getY() != getHighestBlockYAt(block.getX(), block.getZ())) {
-                getLogger().info("DEBUG: Beacon is not cleared");
+            if (DEBUG) getLogger().info("DEBUG: highest block at " + block.getX() + "," + block.getZ() + " y = " + getHighestBlockYAt(block.getX(), block.getZ()));
+            if (getHighestBlockYAt(block.getX(), block.getZ()) != beacon.getY()) {
+                if (DEBUG) getLogger().info("DEBUG: Beacon is not cleared");
                 return true;
             }
         }
-        getLogger().info("DEBUG: Checking defences");
+        if (DEBUG) getLogger().info("DEBUG: Checking defences");
         // Check all the defense blocks too
         Block block;
         for (Point2D point: getRegister().getDefensesAtBeacon(this)) {
-            getLogger().info("DEBUG: checking = " + (int)point.getX() + "," + y + ", " + (int)point.getY());
+            if (DEBUG) getLogger().info("DEBUG: checking = " + (int)point.getX() + "," + y + ", " + (int)point.getY());
             block = getBeaconzWorld().getBlockAt((int)point.getX(), y, (int)point.getY());
-            getLogger().info("DEBUG: Block Y = " + block.getY() + " and it is " + block.getType());
+            if (DEBUG) getLogger().info("DEBUG: Block Y = " + block.getY() + " and it is " + block.getType());
             if (block.getY() != getHighestBlockYAt((int)point.getX(), (int)point.getY())) {
-                getLogger().info("DEBUG: Beacon is no cleared");
+                if (DEBUG) getLogger().info("DEBUG: Beacon is no cleared");
                 return true;
             }
         }
-        getLogger().info("DEBUG: Beacon is cleared");
+        if (DEBUG) getLogger().info("DEBUG: Beacon is cleared");
         return false;
     }
 
@@ -341,7 +342,6 @@ public class BeaconObj extends BeaconzPluginDependent {
      * Checks the integrity of the beacon and fixes it if required
      */
     public void checkIntegrity() {
-        //Bukkit.getLogger().info("DEBUG: made beacon at " + (source.getX() * 16 + x) + " " + y + " " + (source.getZ()*16 + z) );
         Block b = getBeaconzWorld().getBlockAt(x, y, z);
         if (!b.getType().equals(Material.BEACON)) {
             getLogger().severe("Beacon at " + x + " " + y + " " + z + " missing beacon block!");

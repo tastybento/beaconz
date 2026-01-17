@@ -24,7 +24,10 @@ package com.wasteofplastic.beaconz;
 
 import java.awt.geom.Point2D;
 import java.io.File;
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Random;
 import java.util.Set;
@@ -44,30 +47,88 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
+import org.bukkit.scoreboard.Criteria;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Score;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
+import com.wasteofplastic.beaconz.Params.GameMode;
+
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import net.kyori.adventure.title.Title;
 
 /**
- * Region instantiates the various regions in the world
- * A region belongs to a game - except for the lobby, which is a region with no game
- * A region is defined by two sets of X:Z coordinates and encompasses all Ys
- * A region can be created and recreated freely; region.populate is not in the constructor and must be called explicitly
+ * Represents a rectangular region in the Beaconz game world.
+ * <p>
+ * A Region defines a bounded area in the world where gameplay occurs. Each region is defined
+ * by two corner coordinates (min and max X/Z) and encompasses all Y levels from bedrock to sky.
+ * <p>
+ * <b>Region Types:</b>
+ * <ul>
+ *   <li><b>Game Region</b> - Associated with a Game instance, contains beacons and gameplay</li>
+ *   <li><b>Lobby Region</b> - Special region with no game association, where players spawn and wait</li>
+ * </ul>
+ * <p>
+ * <b>Key Features:</b>
+ * <ul>
+ *   <li>Automatic spawn point finding with safety checks</li>
+ *   <li>Player teleportation and region entry/exit handling</li>
+ *   <li>Title and scoreboard display when entering regions</li>
+ *   <li>Corner beacon creation for region boundaries</li>
+ *   <li>Complete region deletion including chunk unloading and file removal</li>
+ * </ul>
+ * <p>
+ * Regions can be created and recreated freely. Population and terrain generation
+ * must be called explicitly after construction.
+ *
+ * @author tastybento
+ * @see Game
+ * @see BeaconObj
  */
 public class Region extends BeaconzPluginDependent {
 
     private final Beaconz plugin;
+    /** Two corners defining the region bounds: [0] = min corner (xMin, zMin), [1] = max corner (xMax, zMax) */
     private final Point2D [] corners;
+    /** The safe spawn location within this region */
     private Location spawnPoint;
-    //private long progress;
+    /** The game associated with this region, null for lobby */
     private Game game = null;
+    
+    /** Title timing configuration: 500ms fade-in, 3000ms stay, 500ms fade-out */
+    Title.Times times = Title.Times.times(
+            Duration.ofMillis(500),  // 10 ticks
+            Duration.ofMillis(3000), // 60 ticks
+            Duration.ofMillis(500)   // 10 ticks
+    );
 
+    /** Pre-configured title shown to players entering this region */
+    Title title = Title.title(
+            Lang.titleWelcome.color(Lang.titleWelcomeColor), 
+            Lang.titleSubTitle.color(Lang.titleSubTitleColor), 
+            times
+    );
 
+    /**
+     * Constructs a new Region with the specified boundaries.
+     * <p>
+     * The constructor automatically:
+     * <ul>
+     *   <li>Normalizes corner coordinates (ensures min/max ordering)</li>
+     *   <li>Calculates and sets a safe spawn point at region center</li>
+     *   <li>Initializes the region for a new game</li>
+     * </ul>
+     * <p>
+     * Note: This does NOT populate the region with beacons or terrain.
+     * Call appropriate populate/regenerate methods after construction.
+     *
+     * @param beaconzPlugin the main plugin instance
+     * @param corners array of two Point2D objects defining opposite corners of the region
+     */
     public Region(Beaconz beaconzPlugin, Point2D[] corners) {
         super(beaconzPlugin);
         this.plugin = beaconzPlugin;
@@ -76,7 +137,15 @@ public class Region extends BeaconzPluginDependent {
     }
 
     /**
-     * Initializes the class without (re)constructing it
+     * Initializes or reinitializes the region without reconstructing it.
+     * <p>
+     * This method is called during construction and can be called again to reset
+     * a region. For new games, it calculates a safe spawn point at the region center.
+     * <p>
+     * The spawn point search starts at the center and finds the highest safe block
+     * within the calculated radius.
+     *
+     * @param newGame if true, sets a new spawn point; if false, keeps existing configuration
      */
     public void initialize(Boolean newGame) {
 
@@ -327,9 +396,34 @@ public class Region extends BeaconzPluginDependent {
     }
 
     /**
-     * Creates the corner-most beacons so that the map can be theoretically be covered entirely (almost)
-     * Also regenerates the chunk
-     * This is only for creating new regions. Existing regions have their corner beacons loaded with Register.loadRegister().
+     * Creates corner beacons at the four corners of the region.
+     * <p>
+     * This method places beacons at each corner of the region to establish boundaries
+     * and allow for theoretical complete coverage of the map area. Corner beacons are
+     * special permanent markers that define the playable area.
+     * <p>
+     * <b>Process for each corner:</b>
+     * <ol>
+     *   <li>Check if a beacon already exists nearby (within 5 blocks)</li>
+     *   <li>Find the highest solid block at the corner position</li>
+     *   <li>Skip leaves and air blocks to find actual terrain</li>
+     *   <li>Create a beacon structure with diamond block pyramid base</li>
+     *   <li>Register the beacon in the beacon registry</li>
+     *   <li>Add obsidian capstone on top</li>
+     * </ol>
+     * <p>
+     * <b>Beacon Structure:</b>
+     * <pre>
+     * Layer +2: Obsidian (capstone)
+     * Layer +1: Beacon block
+     * Layer  0: 3x3 Diamond block pyramid
+     * </pre>
+     * <p>
+     * <b>Note:</b> This is only for creating new regions. Existing regions load their
+     * corner beacons from the beacon register via {@link Register#loadRegister()}.
+     * <p>
+     * Corner positions are calculated as 1 block inset from actual corners to avoid
+     * boundary issues.
      */
     public void createCorners() {
         // Check corners
@@ -388,11 +482,34 @@ public class Region extends BeaconzPluginDependent {
 
 
     /**
-     * Sets the region's corners, and in the right order
+     * Normalizes and sets the region's corner coordinates.
+     * <p>
+     * Ensures corners are in the correct order with [0] being the minimum corner
+     * and [1] being the maximum corner. Automatically swaps coordinates if they
+     * are provided in reverse order.
+     * <p>
+     * This is critical for region boundary calculations as all containment checks
+     * assume corners[0] has the minimum X and Z, and corners[1] has the maximum.
+     *
+     * @param c array of two Point2D objects representing opposite corners
+     * @return normalized array where [0] is min corner (xMin, zMin) and [1] is max corner (xMax, zMax)
      */
     public Point2D [] setCorners(Point2D [] c) {
         return setCorners(c[0].getX(), c[0].getY(), c[1].getX(), c[1].getY());
     }
+
+    /**
+     * Normalizes and sets the region's corner coordinates from individual values.
+     * <p>
+     * Automatically determines which values are minimum and maximum, swapping them
+     * if necessary to ensure proper ordering.
+     *
+     * @param xMin first X coordinate (will be normalized to actual minimum)
+     * @param zMin first Z coordinate (will be normalized to actual minimum)
+     * @param xMax second X coordinate (will be normalized to actual maximum)
+     * @param zMax second Z coordinate (will be normalized to actual maximum)
+     * @return normalized array where [0] is min corner and [1] is max corner
+     */
     public Point2D [] setCorners(Double xMin, Double zMin, Double xMax, Double zMax) {
         if (xMin > xMax) {
             Double x = xMin;
@@ -408,16 +525,28 @@ public class Region extends BeaconzPluginDependent {
     }
 
     /**
-     * Returns the region's corners as a Point2D []
+     * Returns the region's corner coordinates.
+     * <p>
+     * The corners define the rectangular boundary of this region.
+     *
+     * @return array of two Point2D objects: [0] = min corner (xMin, zMin), [1] = max corner (xMax, zMax)
      */
     public Point2D [] corners() {
         return corners;
     }
 
     /**
-     * Displays the barrier blocks if player is within a distance of the barrier
-     * @param player player to show to
-     * @param radius size of barrier
+     * Displays a visual barrier to the player showing the region boundaries.
+     * <p>
+     * Creates a world border centered on this region that the player can see.
+     * The barrier becomes visible when the player is within the specified radius
+     * of the border. This helps players understand the playable area limits.
+     * <p>
+     * The world border size is calculated as twice the region radius to encompass
+     * the entire rectangular region from center to edges.
+     *
+     * @param player the player to show the barrier to
+     * @param radius the warning distance in blocks - barrier becomes visible when player is this close
      */
     public void showBarrier(Player player, int radius) {
         Location center = new Location(plugin.getBeaconzWorld(), getCenter().getX(), 0, getCenter().getY());
@@ -431,7 +560,13 @@ public class Region extends BeaconzPluginDependent {
 
 
     /**
-     * Returns the region's center point
+     * Calculates and returns the center point of the region.
+     * <p>
+     * The center is calculated as the midpoint between the minimum and maximum
+     * X and Z coordinates. This is used for spawn point calculations and
+     * region display purposes.
+     *
+     * @return Point2D representing the exact center coordinates (X, Z) of the region
      */
     public Point2D getCenter() {
         double x = (corners[0].getX() + corners[1].getX()) / 2.0;
@@ -440,14 +575,25 @@ public class Region extends BeaconzPluginDependent {
     }
 
     /**
-     * Returns the region's radius
+     * Calculates and returns the radius of the region.
+     * <p>
+     * The radius is defined as half the distance between the minimum and maximum
+     * X coordinates. Since regions are rectangular, this represents the distance
+     * from center to the east/west edges.
+     *
+     * @return the region's radius in blocks
      */
     public int getRadius() {
         return (int) Math.abs((corners[0].getX() - corners[1].getX()) / 2D);
     }
 
     /**
-     * Returns the region's coordinates in a pretty display string
+     * Generates a human-readable string displaying the region's coordinates.
+     * <p>
+     * The output format shows both the center point and the two corner coordinates
+     * for easy reference in logs and admin commands.
+     *
+     * @return formatted string like "center: [500:500] - corners: [0:0] and [1000:1000]"
      */
     public String displayCoords() {
         return "center: [" +
@@ -457,14 +603,44 @@ public class Region extends BeaconzPluginDependent {
     }
 
     /**
-     * Determines whether a beacon or point lie inside the region
+     * Checks if a beacon is located within this region's boundaries.
+     * <p>
+     * Uses the beacon's X and Z coordinates to determine containment.
+     * Y coordinate is ignored as regions encompass all vertical levels.
+     *
+     * @param beacon the beacon to check
+     * @return true if the beacon's location is within this region, false otherwise
      */
     public Boolean containsBeacon(BeaconObj beacon) {
         return containsPoint(beacon.getX(), beacon.getY());
     }
+
+    /**
+     * Checks if a Point2D coordinate is within this region's boundaries.
+     * <p>
+     * Convenience method that extracts X and Z from a Point2D object.
+     *
+     * @param point the 2D point to check (X and Z coordinates)
+     * @return true if the point is within this region, false otherwise
+     */
     public Boolean containsPoint(Point2D point) {
         return (containsPoint((int)point.getX(),(int)point.getY()));
     }
+
+    /**
+     * Checks if specific X and Z coordinates are within this region's boundaries.
+     * <p>
+     * This is the core containment check method. A point is considered inside
+     * the region if its X coordinate is between xMin and xMax (inclusive) AND
+     * its Z coordinate is between zMin and zMax (inclusive).
+     * <p>
+     * Note: Point2D uses Y for the second coordinate, but in Minecraft world
+     * coordinates this represents the Z axis (not vertical height).
+     *
+     * @param x the X coordinate (east-west) to check
+     * @param z the Z coordinate (north-south) to check
+     * @return true if the coordinates are within this region's boundaries, false otherwise
+     */
     public Boolean containsPoint(int x, int z) {
         // Make sure the coords are in the right order, although they should be..
         int xMin = (int)corners[0].getX();
@@ -477,14 +653,27 @@ public class Region extends BeaconzPluginDependent {
     }
 
     /**
-     * Determines whether a player is inside the region
+     * Checks if a player is currently located within this region's boundaries.
+     * <p>
+     * Uses the player's current block position (X and Z coordinates) to check
+     * containment. The player's Y coordinate (height) is ignored.
+     *
+     * @param player the player to check
+     * @return true if the player is within this region, false otherwise
      */
     public Boolean isPlayerInRegion(Player player) {
         return containsPoint(player.getLocation().getBlockX(), player.getLocation().getBlockZ());
     }
 
     /**
-     * Sets the region's spawn point
+     * Sets the region's spawn point at the specified 2D location.
+     * <p>
+     * This method finds the highest block at the given X/Z coordinates and
+     * then searches for a safe spawn location within the specified radius.
+     * The Y coordinate is determined automatically from terrain height.
+     *
+     * @param point the 2D coordinates (X and Z) where spawn should be set
+     * @param radius maximum search radius in blocks to find a safe spot
      */
     public void setSpawnPoint(Point2D point, Integer radius) {
         int y = getBeaconzWorld().getHighestBlockYAt((int) point.getX(), (int) point.getY());
@@ -492,33 +681,64 @@ public class Region extends BeaconzPluginDependent {
     }
 
     /**
-     * Sets a safe spawn point in a region
-     * @param loc
-     * @param radius
+     * Sets a safe spawn point in the region, searching within a radius for safety.
+     * <p>
+     * This method attempts to find a safe location near the provided location.
+     * A safe location is one where:
+     * <ul>
+     *   <li>The ground block is solid (not air or liquid)</li>
+     *   <li>There are two blocks of air space above for the player</li>
+     *   <li>No portals, fences, signs, or hazards are present</li>
+     * </ul>
+     * <p>
+     * If no safe location is found within the radius, a safe spot is created
+     * by placing bedrock at the specified location.
+     *
+     * @param loc the center location to start searching from
+     * @param radius maximum search radius in blocks (capped at 20)
      */
     public void setSpawnPoint(Location loc, Integer radius){
         spawnPoint = findSafeSpot(loc, radius);
     }
 
     /**
-     * Sets the spawn point without finding a safe spot
-     * @param loc
+     * Sets the spawn point directly to the specified location without safety checks.
+     * <p>
+     * Use this method when you've already verified the location is safe or when
+     * you need to set an exact spawn point regardless of safety.
+     *
+     * @param loc the exact location to use as spawn point
      */
     public void setSpawnPoint(Location loc) {
         spawnPoint = loc;
     }
 
     /**
-     * Returns the region's spawn point
+     * Returns the region's current spawn point.
+     * <p>
+     * This is the location where players will be teleported when entering
+     * this region or when using region spawn commands.
+     *
+     * @return the spawn point location, or null if not set
      */
     public Location getSpawnPoint() {
         return spawnPoint;
     }
 
     /**
-     * Teleports a player to the region's spawn point
-     * @param player
-     * @param directly - if true player will go to spawn directly and not experience the delay teleport
+     * Teleports a player to this region's spawn point.
+     * <p>
+     * The player will be teleported to the spawn location and any nearby
+     * monsters within 10 blocks will be removed for safety.
+     * <p>
+     * The directly parameter controls teleport delay behavior:
+     * <ul>
+     *   <li>true - Immediate teleport, bypassing any teleport delays</li>
+     *   <li>false - Normal teleport with standard delays and movement checks</li>
+     * </ul>
+     *
+     * @param player the player to teleport
+     * @param directly if true, teleport immediately; if false, use normal teleport delay
      */
     public void tpToRegionSpawn(Player player, boolean directly) {
         if (directly) {
@@ -534,19 +754,43 @@ public class Region extends BeaconzPluginDependent {
     }
 
     /**
-     * Handles player entering the Lobby
+     * Handles player entering the Lobby region.
+     * <p>
+     * This method is called when a player enters the lobby and performs several
+     * initialization tasks to welcome and orient the player.
+     * <p>
+     * <b>Actions performed:</b>
+     * <ol>
+     *   <li>Sends welcome messages to player in chat</li>
+     *   <li>Displays title screen with welcome message and subtitle</li>
+     *   <li>After 3 seconds (60 ticks), displays lobby scoreboard if still in lobby</li>
+     * </ol>
+     * <p>
+     * <b>Scoreboard Display:</b>
+     * The lobby scoreboard shows information from {@link Lang#titleLobbyInfo}, which
+     * is split by the "|" character. The first segment becomes the sidebar title
+     * (colored green), and subsequent segments become individual lines displayed
+     * in descending order.
+     * <p>
+     * The scoreboard creation uses the modern Bukkit API with {@link Criteria#DUMMY}
+     * and sets the display name directly in the constructor rather than calling
+     * displayName() separately.
+     * <p>
+     * <b>Delayed Scoreboard:</b>
+     * The scoreboard is shown after a 60-tick (3-second) delay to avoid interfering
+     * with the title animation. The method checks that the player is still in the
+     * lobby before showing the scoreboard.
+     *
+     * @param player the player entering the lobby
      */
     public void enterLobby(final Player player) {
 
         // Welcome player in chat
-        player.sendMessage(Component.text(Lang.titleWelcome).color(NamedTextColor.GREEN));
-        player.sendMessage(Component.text(Lang.titleSubTitle).color(NamedTextColor.AQUA));
+        player.sendMessage(Lang.titleWelcome.color(NamedTextColor.GREEN));
+        player.sendMessage(Lang.titleSubTitle.color(NamedTextColor.AQUA));
 
         // Welcome player on screen
-        getServer().dispatchCommand(getServer().getConsoleSender(),
-                "title " + player.getName() + " title {\"text\":\"" + Lang.titleWelcome + "\", \"color\":\"" + Lang.titleWelcomeColor + "\"}");
-        getServer().dispatchCommand(getServer().getConsoleSender(),
-                "title " + player.getName() + " subtitle {\"text\":\"" + Lang.titleSubTitle + "\", \"color\":\"" + Lang.titleSubTitleColor + "\"}");
+        player.showTitle(title);
 
         // Show the lobby scoreboard - wait for title message to disappear
         if (this.equals(getGameMgr().getLobby())) {
@@ -563,10 +807,14 @@ public class Region extends BeaconzPluginDependent {
                         sb.clearSlot(DisplaySlot.SIDEBAR);
                     } catch (Exception e){ }
 
-                    sbobj = sb.registerNewObjective("text", "dummy");
+                    // Properly serialize Component to plain text before splitting
+                    String lobbyInfoText = PlainTextComponentSerializer.plainText().serialize(Lang.titleLobbyInfo);
+                    String[] lobbyInfo = lobbyInfoText.split("\\|");
+
+                    // Use modern API with Criteria and Component displayName
+                    sbobj = sb.registerNewObjective("text", Criteria.DUMMY,
+                            Component.text(lobbyInfo[0]).color(NamedTextColor.GREEN));
                     sbobj.setDisplaySlot(DisplaySlot.SIDEBAR);
-                    String[] lobbyInfo = Lang.titleLobbyInfo.split("\\|");
-                    sbobj.displayName(Component.text(lobbyInfo[0]).color(NamedTextColor.GREEN));
                     for (int line = 1; line < lobbyInfo.length; line++) {
                         scoreline = sbobj.getScore(lobbyInfo[line]);
                         scoreline.setScore(16-line);
@@ -579,26 +827,64 @@ public class Region extends BeaconzPluginDependent {
     }
 
     /**
-     * Handles player Exit event
+     * Handles player exiting this region.
+     * <p>
+     * This method cleans up player state when leaving a game region.
+     * <p>
+     * <b>Actions performed:</b>
+     * <ul>
+     *   <li>Clears the player's scoreboard (removes game scoreboard)</li>
+     *   <li>For MINIGAME mode: clears stored items and empties inventory</li>
+     * </ul>
+     * <p>
+     * In MINIGAME mode, player inventories are temporary and all items are cleared
+     * when the player leaves. Stored items from before entering the game are restored
+     * via {@link BeaconzStore#clearItems(Player, String, Location)}.
+     *
+     * @param player the player exiting the region
      */
     public void exit(Player player) {
         player.setScoreboard(getServer().getScoreboardManager().getNewScoreboard());
-        if (game !=null && game.getGamemode().equals("minigame"))  {
-            getBeaconzStore().clearItems(player, game.getName(), player.getLocation());
+        if (game !=null && game.getGamemode() == GameMode.MINIGAME)  {
+            String gameName = PlainTextComponentSerializer.plainText().serialize(game.getName());
+            getBeaconzStore().clearItems(player, gameName, player.getLocation());
             player.getInventory().clear();
         }
     }
 
     /**
-     * Handles player Enter event
+     * Handles player entering this game region.
+     * <p>
+     * This method welcomes the player and displays game information when they
+     * enter a region with an active game.
+     * <p>
+     * <b>Actions performed:</b>
+     * <ol>
+     *   <li>Determines the player's team (if any)</li>
+     *   <li>Sets the game scoreboard if enabled in settings</li>
+     *   <li>Sends welcome message and displays the player's team</li>
+     *   <li>Displays game objective based on goal type:
+     *     <ul>
+     *       <li>If goal has a numeric target (goalvalue &gt; 0): Shows "Reach X [goal]"</li>
+     *       <li>If goal is unlimited (goalvalue = 0): Shows "Most [goal]"</li>
+     *     </ul>
+     *   </li>
+     * </ol>
+     * <p>
+     * <b>Scoreboard Behavior:</b>
+     * If the player already has a scoreboard with entries, their existing scoreboard
+     * is cleared. Otherwise, the game's scoreboard is assigned to show live scores.
+     * <p>
+     * All messages use the modern Kyori Adventure API with builder pattern for
+     * text replacement and proper color formatting.
+     *
+     * @param player the player entering the region
      */
     public void enter(Player player) {
         // Show scoreboard
-        Component teamname = Component.text("no");
         Team team = game.getScorecard().getTeam(player);
-        if (team != null) {
-            teamname = team.displayName();
-        }
+        Component teamname = team == null ? Component.text("no") : team.displayName();
+
         if (Settings.useScoreboard) {
             player.setScoreboard(game.getScorecard().getScoreboard());
         } else {
@@ -606,20 +892,58 @@ public class Region extends BeaconzPluginDependent {
         }
 
         // Welcome player in chat
-        player.sendMessage(Component.text(Lang.titleWelcome).color(NamedTextColor.GREEN));
-        player.sendMessage(Component.text(Lang.startYoureAMember.replace("[name]", ""))
-                .append(teamname).color(NamedTextColor.AQUA));
+        player.sendMessage(Lang.titleWelcome.color(NamedTextColor.GREEN));
+        player.sendMessage(Lang.startYoureAMember
+                .replaceText(builder -> builder.matchLiteral("[name]").replacement(teamname))
+                .color(NamedTextColor.AQUA));
         if (game.getGamegoalvalue() > 0) {
-            player.sendMessage(Component.text(Lang.startObjective.replace("[value]", String.format(Locale.US, "%,d", game.getGamegoalvalue())).replace("[goal]", game.getGamegoal())).color(NamedTextColor.AQUA));
+            player.sendMessage(Lang.startObjective
+                    .replaceText(builder -> builder.matchLiteral("[value]")
+                            .replacement(Component.text(String.format(Locale.US, "%,d", game.getGamegoalvalue()))))
+                    .replaceText(builder -> builder.matchLiteral("[goal]")
+                            .replacement(Component.text(game.getGamegoal().getName())))
+                    .color(NamedTextColor.AQUA));
         } else {
-            player.sendMessage(Component.text(Lang.startMostObjective.replace("[goal]", game.getGamegoal())).color(NamedTextColor.AQUA));
+            player.sendMessage(Lang.startMostObjective
+                    .replaceText(builder -> builder.matchLiteral("[goal]")
+                            .replacement(Component.text(game.getGamegoal().getName())))
+                    .color(NamedTextColor.AQUA));
         }
     }
 
     /**
-     * Find the nearest safe spot to a given point, within a radius
-     * The radius is arbitrarily limited to 20 blocks
-     * If no safe location within radius is found, this creates a safe spot by converting the block at location to bedrock
+     * Finds the nearest safe spawn location within a radius of the given point.
+     * <p>
+     * This method searches for a safe location suitable for player teleportation.
+     * The search radius is capped at 20 blocks to prevent excessive searching.
+     * <p>
+     * <b>Safety Criteria:</b>
+     * A location is considered safe if ALL of the following are true:
+     * <ul>
+     *   <li>Ground block exists and is solid (not air, not passable)</li>
+     *   <li>Two blocks of air space above ground for the player to stand</li>
+     *   <li>No portals (nether or end) at the location</li>
+     *   <li>No fences, signs, or pressure plates that could trap the player</li>
+     *   <li>Not inside a tree (no logs directly above)</li>
+     * </ul>
+     * <p>
+     * <b>Search Pattern:</b>
+     * The search starts at the center location and spirals outward checking
+     * increasingly distant locations. The search prioritizes higher ground
+     * and checks in all directions.
+     * <p>
+     * <b>Fallback Behavior:</b>
+     * If no safe location is found within the radius, the method creates a safe
+     * spot at the original location by:
+     * <ol>
+     *   <li>Placing bedrock at the ground level</li>
+     *   <li>Clearing two blocks of air above it</li>
+     *   <li>Logging a warning about the forced safe spot creation</li>
+     * </ol>
+     *
+     * @param location the center location to search from
+     * @param radius maximum search radius in blocks (capped at 20)
+     * @return a safe Location for player spawn, guaranteed to be non-null
      */
     public Location findSafeSpot (Location location, Integer radius) {
 
@@ -636,7 +960,7 @@ public class Region extends BeaconzPluginDependent {
         if (safeloc == null && location != null) {
             // look for a safe spot at location and within radius
             Block bl = location.getBlock();
-            StringBuilder usedxyz = new StringBuilder();
+            List<Pair> used = new ArrayList<>();
 
             // sweep in a concentric cube pattern to check for a safe spot
             Location checkloc = null;
@@ -644,10 +968,10 @@ public class Region extends BeaconzPluginDependent {
                 for (int rad = 0; rad < radius; rad++) {
                     for (int z = -rad; z <= rad; z++) {
                         for (int x = -rad; x <= rad; x++) {
-                            String coords = "#" + x + " "+ z + "#";
-                            if (!usedxyz.toString().contains(coords)) {
-                                usedxyz.append(coords);
-                                checkloc = getBeaconzWorld().getHighestBlockAt(bl.getRelative(x, 0, z).getLocation()).getLocation();
+                            Pair coords =new Pair(x,z);
+                            if (!used.contains(coords)) {
+                                used.add(new Pair(x,z));
+                                checkloc = getBeaconzWorld().getHighestBlockAt(bl.getRelative(x, 0, z).getLocation()).getLocation().subtract(0, 1, 0);
                                 if (isLocationSafe(checkloc)) {
                                     safeloc = checkloc.add(0.5, 0.0, 0.5);
                                     break outerloop;
@@ -659,8 +983,7 @@ public class Region extends BeaconzPluginDependent {
         }
         if (safeloc == null && location != null) {
             Bukkit.getConsoleSender().sendMessage(Component.text("Could not find a safe spot. Region at " + displayCoords() + ". Using default.").color(NamedTextColor.YELLOW));
-            safeloc = getBeaconzWorld().getHighestBlockAt((int) location.getX(), (int) location.getZ()).getLocation();
-            safeloc = safeloc.add(0.5, 0.0, 0.5);
+            safeloc = new Location(getBeaconzWorld(), location.getX(), getBeaconzWorld().getHighestBlockYAt(location), location.getZ());
             safeloc.getBlock().getRelative(BlockFace.DOWN).setType(Material.BEDROCK);
         }
 
@@ -691,7 +1014,7 @@ public class Region extends BeaconzPluginDependent {
         // If ground is AIR, then this is either not good, or they are on slab,
         // stair, etc.
         if (ground.getType() == Material.AIR) {
-            //Bukkit.getLogger().info("DEBUG: air");
+            Bukkit.getLogger().info("DEBUG: air");
             return false;
         }
         // Liquid is unsafe
@@ -712,21 +1035,46 @@ public class Region extends BeaconzPluginDependent {
     }
 
     /**
-     * @return the game or null if this is the lobby
+     * Returns the game associated with this region.
+     * <p>
+     * Each region can be associated with one game, or can be the lobby (no game).
+     * The lobby region always returns null from this method.
+     *
+     * @return the Game instance for this region, or null if this is the lobby
      */
     public Game getGame() {
         return game;
     }
 
     /**
-     * @param game the game to set
+     * Associates a game with this region.
+     * <p>
+     * This creates the link between a region and its game. The lobby region
+     * should not have a game set.
+     *
+     * @param game the Game instance to associate with this region
      */
     public void setGame(Game game) {
         this.game = game;
     }
 
     /**
-     * Makes a platform in the sky
+     * Creates a platform in the sky for the lobby region.
+     * <p>
+     * This method generates a flat platform at {@link Settings#lobbyHeight} using
+     * random blocks from {@link Settings#lobbyBlocks}. The platform covers the
+     * entire region from corner to corner.
+     * <p>
+     * <b>Construction:</b>
+     * <ul>
+     *   <li>Iterates through all X and Z coordinates within region bounds</li>
+     *   <li>For each position, randomly selects a block type from the lobby blocks list</li>
+     *   <li>Places the block at the configured lobby height</li>
+     *   <li>Skips invalid materials with an error message</li>
+     * </ul>
+     * <p>
+     * This is typically used to create a colorful, decorative lobby floor where
+     * players can walk around while waiting for games.
      */
     public void makePlatform() {
         Random rand = new Random();
@@ -755,7 +1103,7 @@ public class Region extends BeaconzPluginDependent {
         SignSide side = realSign.getSide(Side.FRONT);
         side.line(0, Component.text("[beaconz]"));
         side.line(1, Component.text(Settings.defaultGameName));
-        side.line(2, Component.text(Lang.actionsHitSign));
+        side.line(2, Lang.actionsHitSign);
         realSign.update();
         // Set the spawn point to look at the new sign
         org.bukkit.block.data.type.Sign signData = (org.bukkit.block.data.type.Sign) realSign.getBlockData();
@@ -768,11 +1116,25 @@ public class Region extends BeaconzPluginDependent {
     }
 
     /**
-     * Converts block face direction to radial degrees. Returns 0 if block face
-     * is not radial.
-     * 
-     * @param face
-     * @return degrees
+     * Converts a Minecraft BlockFace direction to yaw rotation in degrees.
+     * <p>
+     * This is used to orient players to face a specific direction when spawning.
+     * For example, when spawning in the lobby, the player should face toward
+     * the sign that was just created.
+     * <p>
+     * <b>Conversion Map:</b>
+     * <ul>
+     *   <li>SOUTH = 0° (positive Z direction)</li>
+     *   <li>WEST = 90° (negative X direction)</li>
+     *   <li>NORTH = 180° (negative Z direction)</li>
+     *   <li>EAST = 270° (positive X direction)</li>
+     *   <li>Diagonal directions use intermediate angles (e.g., SOUTH_WEST = 45°)</li>
+     * </ul>
+     * <p>
+     * Non-radial directions (UP, DOWN, SELF) return 0°.
+     *
+     * @param face the BlockFace direction to convert
+     * @return yaw angle in degrees (0-360), or 0 if face is not a horizontal direction
      */
     public static float blockFaceToFloat(BlockFace face) {
         return switch (face) {
@@ -797,9 +1159,14 @@ public class Region extends BeaconzPluginDependent {
     }
 
     /**
-     * Check if location is in this region
-     * @param location
-     * @return true or false
+     * Checks if a location is within this region's boundaries.
+     * <p>
+     * This method verifies both that the location is in the correct world
+     * (the Beaconz game world) and that the X/Z coordinates fall within
+     * the region bounds. Y coordinate is ignored as regions span all heights.
+     *
+     * @param location the location to check
+     * @return true if the location is in this region and the Beaconz world, false otherwise
      */
     public boolean contains(Location location) {
         World world = location.getWorld();
@@ -810,8 +1177,15 @@ public class Region extends BeaconzPluginDependent {
     }
 
     /**
-     * Sends all players in this region to the lobby, optionally saving inventory.
-     * @param saveInv true to save player inventory before teleporting
+     * Sends all online players to the lobby, checking each player's location.
+     * <p>
+     * This method iterates through all online players and sends those who
+     * are in this region to the lobby. Players not in this region are unaffected.
+     * <p>
+     * The saveInv parameter controls inventory handling for MINIGAME mode games.
+     *
+     * @param saveInv true to save and restore player inventory when in MINIGAME mode,
+     *                false to clear inventory without saving
      */
     public void sendAllPlayersToLobby(Boolean saveInv) {
         for (Player player : getServer().getOnlinePlayers()) {
@@ -820,13 +1194,32 @@ public class Region extends BeaconzPluginDependent {
     }
 
     /**
-     * Sends player to lobby, if he is in this region
-     * @param player
+     * Sends a player to the lobby if they are currently in this region.
+     * <p>
+     * This method checks if the player is within this region's boundaries.
+     * If they are not, the method does nothing (player is left where they are).
+     * <p>
+     * <b>Teleportation Process:</b>
+     * <ol>
+     *   <li>Verify player is in this region - if not, return immediately</li>
+     *   <li>For MINIGAME mode: optionally save/clear player inventory</li>
+     *   <li>Teleport player to lobby spawn point</li>
+     *   <li>Player enters lobby (welcome messages, scoreboard, etc.)</li>
+     * </ol>
+     * <p>
+     * <b>Inventory Handling:</b>
+     * In MINIGAME mode, if saveInv is true, the player's current inventory
+     * is saved to be restored later. If false, inventory is just cleared.
+     * This has no effect in STRATEGY mode.
+     *
+     * @param player the player to potentially send to lobby
+     * @param saveInv true to save inventory before clearing (MINIGAME mode only),
+     *                false to just clear without saving
      */
     public void sendToLobby(Player player, Boolean saveInv) {
         if (isPlayerInRegion(player)) {
-            String gameName = game != null? game.getName() : null;
-            if (saveInv || gameName != null) {
+            String gameName = PlainTextComponentSerializer.plainText().serialize(game.getName());
+            if (saveInv) {
                 getBeaconzStore().storeInventory(player, gameName, player.getLocation());
             } else {
                 getBeaconzStore().clearItems(player, gameName, null);

@@ -40,7 +40,6 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -48,6 +47,8 @@ import org.mockito.MockedStatic;
 import com.wasteofplastic.beaconz.BeaconObj;
 import com.wasteofplastic.beaconz.Game;
 import com.wasteofplastic.beaconz.Lang;
+
+import net.kyori.adventure.text.Component;
 
 class BeaconProtectionListenerTest extends CommonTestBase {
     private MockedStatic<Bukkit> bukkitStatic;
@@ -93,11 +94,11 @@ class BeaconProtectionListenerTest extends CommonTestBase {
 
         listener = new BeaconProtectionListener(plugin);
         // Common Lang strings
-        Lang.errorClearAroundBeacon = "errorClearAroundBeacon";
-        Lang.errorYouCannotDoThat = "errorYouCannotDoThat";
-        Lang.errorYouCannotBuildThere = "errorYouCannotBuildThere";
-        Lang.beaconCannotPlaceLiquids = "beaconCannotPlaceLiquids";
-        Lang.triangleThisBelongsTo = "triangleThisBelongsTo [team]";
+        Lang.errorClearAroundBeacon = Component.text("errorClearAroundBeacon");
+        Lang.errorYouCannotDoThat = Component.text("errorYouCannotDoThat");
+        Lang.errorYouCannotBuildThere = Component.text("errorYouCannotBuildThere");
+        Lang.beaconCannotPlaceLiquids = Component.text("beaconCannotPlaceLiquids");
+        Lang.triangleThisBelongsTo = Component.text("triangleThisBelongsTo [team]");
     }
 
     @org.junit.jupiter.api.AfterEach
@@ -161,7 +162,7 @@ class BeaconProtectionListenerTest extends CommonTestBase {
         when(beacon.getOwnership()).thenReturn(otherTeam);
         listener.onBeaconDamage(blockDamageEvent);
         verify(blockDamageEvent).setCancelled(true);
-        verify(player).sendMessage(eq(ChatColor.GOLD + Lang.errorClearAroundBeacon));
+        verify(player).sendMessage(Lang.errorClearAroundBeacon);
     }
 
     @Test
@@ -266,7 +267,7 @@ class BeaconProtectionListenerTest extends CommonTestBase {
         when(block.getY()).thenReturn(64);
         listener.onBucketEmpty(bucketEmptyEvent);
         verify(bucketEmptyEvent).setCancelled(true);
-        verify(bucketEmptyEvent.getPlayer()).sendMessage(eq(ChatColor.RED + Lang.beaconCannotPlaceLiquids));
+        verify(bucketEmptyEvent.getPlayer()).sendMessage(Lang.beaconCannotPlaceLiquids);
     }
 
     @Test
@@ -353,7 +354,7 @@ class BeaconProtectionListenerTest extends CommonTestBase {
         when(mgr.getGame(block.getLocation())).thenReturn(null);
         listener.onBlockPlace(blockPlaceEvent);
         verify(blockPlaceEvent).setCancelled(true);
-        verify(player).sendMessage(eq(ChatColor.RED + Lang.errorYouCannotDoThat));
+        verify(player).sendMessage(Lang.errorYouCannotDoThat);
     }
 
     @Test
@@ -372,7 +373,7 @@ class BeaconProtectionListenerTest extends CommonTestBase {
         when(beacon.getY()).thenReturn(64);
         listener.onBlockPlace(blockPlaceEvent);
         verify(blockPlaceEvent).setCancelled(true);
-        verify(player).sendMessage(eq(ChatColor.RED + Lang.errorYouCannotBuildThere));
+        verify(player).sendMessage(Lang.errorYouCannotBuildThere);
     }
 
     // onEntityDamage (EntityDamageByEntityEvent)
@@ -391,7 +392,7 @@ class BeaconProtectionListenerTest extends CommonTestBase {
         // Player's team differs from beacon ownership
         listener.onEntityDamage(edByEntityEvent);
         verify(edByEntityEvent).setCancelled(true);
-        verify(enemy).sendMessage(anyString());
+        verify(enemy).sendMessage(any(Component.class));
     }
 
     @Test
@@ -445,7 +446,7 @@ class BeaconProtectionListenerTest extends CommonTestBase {
         when(beacon.getOwnership()).thenReturn(otherTeam);
         listener.onInventoryOpen(inventoryOpenEvent);
         verify(inventoryOpenEvent).setCancelled(true);
-        verify(player).sendMessage(anyString());
+        verify(player).sendMessage(any(Component.class));
     }
 
     // getStandingOn

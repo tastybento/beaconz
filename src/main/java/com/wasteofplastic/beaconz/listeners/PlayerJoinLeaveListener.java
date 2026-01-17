@@ -85,7 +85,7 @@ public class PlayerJoinLeaveListener extends BeaconzPluginDependent implements L
             if (messages != null) {
                 // plugin.getLogger().info("DEBUG: Messages waiting!");
                 getServer().getScheduler().runTaskLater(getBeaconzPlugin(), () -> {
-                    player.sendMessage(ChatColor.AQUA + Lang.titleBeaconzNews);
+                    player.sendMessage(Lang.titleBeaconzNews);
                     int i = 1;
                     for (String message : messages) {
                         player.sendMessage(i++ + ": " + message);

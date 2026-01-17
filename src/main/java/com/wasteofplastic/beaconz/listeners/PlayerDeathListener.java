@@ -39,6 +39,9 @@ import com.wasteofplastic.beaconz.Beaconz;
 import com.wasteofplastic.beaconz.BeaconzPluginDependent;
 import com.wasteofplastic.beaconz.Game;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+
 /**
  * Handles all death and respawn events
  * 
@@ -76,7 +79,7 @@ public class PlayerDeathListener extends BeaconzPluginDependent implements Liste
             if (!getGameMgr().getLobby().isPlayerInRegion(player)) {
                 Game game = getGameMgr().getGame(player.getLocation());
                 if (game != null) {
-                    gameName = game.getName();
+                    gameName = PlainTextComponentSerializer.plainText().serialize(game.getName());
                     Team team = game.getScorecard().getTeam(player);                    
                     if (team != null) spawnPoint = game.getScorecard().getTeamSpawnPoint(team);
                 }

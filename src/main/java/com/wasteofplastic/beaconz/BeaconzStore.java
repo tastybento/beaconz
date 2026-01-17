@@ -113,7 +113,7 @@ public class BeaconzStore extends BeaconzPluginDependent {
     /**
      * Puts the player's inventory into the right chest
      * @param player
-     * @param gameName
+     * @param game
      * @param from
      * @param storeInv - whether the inventory should be stored or not
      */
@@ -189,4 +189,5 @@ public class BeaconzStore extends BeaconzPluginDependent {
         ymlIndex.set(gameName + "." + player.getUniqueId() + ".exp", newExp);
         saveInventories();
     }
+
 }
