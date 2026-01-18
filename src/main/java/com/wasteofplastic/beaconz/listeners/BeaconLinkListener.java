@@ -69,7 +69,6 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
      * Handles the event of hitting a beacon with paper or a map
      * @param event
      */
-    @SuppressWarnings("deprecation")
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onPaperMapUse(final PlayerInteractEvent event) {
         if (DEBUG)
@@ -150,7 +149,9 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
         }
         // Check the team
         if (mappedBeacon.getOwnership() == null || !mappedBeacon.getOwnership().equals(team)) {
-            player.sendMessage(Lang.beaconOriginNotOwned.replaceText("[team]",team.displayName()).color(NamedTextColor.RED));
+            player.sendMessage(Lang.beaconOriginNotOwned
+                    .replaceText(builder -> builder.matchLiteral("[team]").replacement(team.displayName()))
+                    .color(NamedTextColor.RED));
             return;
         }
         event.setCancelled(true);
@@ -158,7 +159,10 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
             // Check if the beaconz can be linked.
             int linkDistance = checkBeaconDistance(beacon, mappedBeacon);
             if (linkDistance > Settings.linkLimit) {
-                player.sendMessage(Lang.errorTooFar.replaceText("[max]", Component.text(String.valueOf(Settings.linkLimit))).color(NamedTextColor.RED));
+                player.sendMessage(Lang.errorTooFar
+                        .replaceText(builder -> builder.matchLiteral("[max]")
+                                .replacement(Component.text(String.valueOf(Settings.linkLimit))))
+                        .color(NamedTextColor.RED));
                 return;
             }
             // Check if the player has sufficient experience to link the beacons
@@ -166,8 +170,14 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
             if (expRequired > 0) {
                 if (testForExp(player, expRequired)) {
                     player.sendMessage(Lang.errorNotEnoughExperience.color(NamedTextColor.RED));
-                    player.sendMessage(Lang.beaconYouNeedThisMuchExp.replaceText("[number]", Component.text(String.format(Locale.US, "%,d", expRequired))).color(NamedTextColor.RED));
-                    player.sendMessage(Lang.beaconYouHaveThisMuchExp.replaceText("[number]", Component.text(String.format(Locale.US, "%,d",getTotalExperience(player)))).color(NamedTextColor.RED));
+                    player.sendMessage(Lang.beaconYouNeedThisMuchExp
+                            .replaceText(builder -> builder.matchLiteral("[number]")
+                                    .replacement(Component.text(String.format(Locale.US, "%,d", expRequired))))
+                            .color(NamedTextColor.RED));
+                    player.sendMessage(Lang.beaconYouHaveThisMuchExp
+                            .replaceText(builder -> builder.matchLiteral("[number]")
+                                    .replacement(Component.text(String.format(Locale.US, "%,d", getTotalExperience(player)))))
+                            .color(NamedTextColor.RED));
                     return;
                 }
             }
@@ -276,7 +286,6 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
      * @param otherBeacon
      * @return true if link is made successfully
      */
-    @SuppressWarnings("deprecation")
     private boolean linkBeacons(Player player, Team team, BeaconObj beacon,
             BeaconObj otherBeacon) {
         if (beacon.equals(otherBeacon)) {
@@ -284,7 +293,10 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
             return false;
         }
         if (beacon.getNumberOfLinks() == Settings.maxLinks) {
-            player.sendMessage(Lang.beaconMaxLinks.replaceText("[number]", Component.text(String.valueOf(Settings.maxLinks))).color(NamedTextColor.RED));
+            player.sendMessage(Lang.beaconMaxLinks
+                    .replaceText(builder -> builder.matchLiteral("[number]")
+                            .replacement(Component.text(String.valueOf(Settings.maxLinks))))
+                    .color(NamedTextColor.RED));
             return false;
         }
         // Check if this link already exists
@@ -310,10 +322,15 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
         LinkResult result = getRegister().addBeaconLink(beacon, otherBeacon);
         if (result.isSuccess()) {
             player.sendMessage(Lang.beaconLinkCreated.color(NamedTextColor.GREEN));
-            player.sendMessage(Lang.beaconNowHasLinks.replaceText("[number]", Component.text(String.valueOf(beacon.getNumberOfLinks()))));
+            player.sendMessage(Lang.beaconNowHasLinks
+                    .replaceText(builder -> builder.matchLiteral("[number]")
+                            .replacement(Component.text(String.valueOf(beacon.getNumberOfLinks())))));
             player.getWorld().playSound(player.getLocation(), Sound.ENTITY_FIREWORK_ROCKET_LARGE_BLAST, 1F, 1F);
             // Tell the team
-            getMessages().tellTeam(player, Lang.beaconNameCreatedALink.replaceText("[name]", player.displayName()).color(NamedTextColor.GREEN));
+            getMessages().tellTeam(player, Lang.beaconNameCreatedALink
+                    .replaceText(builder -> builder.matchLiteral("[name]")
+                            .replacement(player.displayName()))
+                    .color(NamedTextColor.GREEN));
         } else {
             player.sendMessage(Lang.beaconLinkCouldNotBeCreated.color(NamedTextColor.RED));
             return false;
@@ -324,15 +341,23 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
                         .append(Lang.scoreNewScore).append(Component.text(" = ")
                                 .append(Component.text(String.format(Locale.US, "%,d",getGameMgr().getSC(team).getScore(team, GameScoreGoal.AREA)))))
                         .color(NamedTextColor.GOLD));
-                getMessages().tellTeam(player, Lang.beaconNameCreateATriangle.replaceText("[name]", player.displayName())
+                getMessages().tellTeam(player, Lang.beaconNameCreateATriangle
+                        .replaceText(builder -> builder.matchLiteral("[name]")
+                                .replacement(player.displayName()))
                         .append(Component.text(" ").append(Lang.scoreNewScore).append(Component.text(" = ")
                                 .append(Component.text(String.format(Locale.US, "%,d", getGameMgr().getSC(team).getScore(team, GameScoreGoal.AREA))))))
                         .color(NamedTextColor.GREEN));
                 // Taunt other teams
-                getMessages().tellOtherTeams(team, Lang.beaconNameCreateATriangle.replaceText("[name]", team.displayName()).color(NamedTextColor.RED));
+                getMessages().tellOtherTeams(team, Lang.beaconNameCreateATriangle
+                        .replaceText(builder -> builder.matchLiteral("[name]")
+                                .replacement(team.displayName()))
+                        .color(NamedTextColor.RED));
             } else {
-                Component message = Lang.beaconNameCreateTriangles.replaceText("[name]", player.displayName())
-                        .replaceText("[number]", Component.text(String.valueOf(result.getFieldsMade())));
+                Component message = Lang.beaconNameCreateTriangles
+                        .replaceText(builder -> builder.matchLiteral("[name]")
+                                .replacement(player.displayName()))
+                        .replaceText(builder -> builder.matchLiteral("[number]")
+                                .replacement(Component.text(String.valueOf(result.getFieldsMade()))));
                 Component newScore = Lang.scoreNewScore.append(Component.text(" " + String.format(Locale.US, "%,d", getGameMgr().getSC(team).getScore(team, GameScoreGoal.AREA))));
                 player.sendMessage(message.append(Component.text(" ")).append(newScore).color(NamedTextColor.GOLD));
                 getMessages().tellTeam(player, message.append(Component.text(" ")).append(newScore).color(NamedTextColor.GREEN));
@@ -344,7 +369,10 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
             if (result.getFieldsFailedToMake() == 1) {
                 player.sendMessage(Lang.triangleCouldNotMakeTriangle.color(NamedTextColor.RED));
             } else {
-                player.sendMessage(Lang.triangleCouldNotMakeTriangles.replaceText("[number]", Component.text(String.valueOf(result.getFieldsFailedToMake()))).color(NamedTextColor.RED));
+                player.sendMessage(Lang.triangleCouldNotMakeTriangles
+                        .replaceText(builder -> builder.matchLiteral("[number]")
+                                .replacement(Component.text(String.valueOf(result.getFieldsFailedToMake()))))
+                        .color(NamedTextColor.RED));
             }
         }
         // Give rewards
