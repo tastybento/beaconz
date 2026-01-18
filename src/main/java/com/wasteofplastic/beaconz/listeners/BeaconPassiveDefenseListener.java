@@ -110,10 +110,6 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
      */
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onExplode(EntityExplodeEvent event) {
-        if (DEBUG) {
-            getLogger().info("DEBUG: " + event.getEventName());
-        }
-
         if (isNotBeaconzWorld(event.getLocation().getWorld())) {
             return;
         }
@@ -133,9 +129,6 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onPistonPush(BlockPistonExtendEvent event) {
         if (isNotBeaconzWorld(event.getBlock().getWorld())) {
-            if (DEBUG) {
-                getLogger().info("DEBUG: not right world");
-            }
             return;
         }
 
@@ -159,9 +152,6 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onPistonPull(BlockPistonRetractEvent event) {
         if (isNotBeaconzWorld(event.getBlock().getWorld())) {
-            if (DEBUG) {
-                getLogger().info("DEBUG: not right world");
-            }
             return;
         }
 
@@ -190,10 +180,6 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
      */
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onBlockPlace(BlockPlaceEvent event) {
-        if (DEBUG) {
-            getLogger().info("DEBUG: " + event.getEventName());
-        }
-
         if (isNotBeaconzWorld(event.getBlock().getWorld())) {
             return;
         }
@@ -201,7 +187,7 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
         Player player = event.getPlayer();
 
         // Check lobby restrictions
-        if (!validateLobbyPlacement(player, event)) {
+        if (!validateLobbyAccess(player, event)) {
             return;
         }
 
@@ -237,20 +223,23 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
     }
 
     /**
-     * Validates block placement in the lobby area.
-     * Only operators can place blocks in the lobby.
+     * Validates lobby access for block interactions.
+     * Only operators can interact with blocks in the lobby.
      *
-     * @param player the player attempting to place a block
-     * @param event the block place event to cancel if invalid
-     * @return true if validation passed, false if event was cancelled
+     * @param player the player attempting to interact with a block
+     * @param event the cancellable event to cancel if invalid
+     * @return true if validation passed, false if event was cancelled or player is in lobby
      */
-    private boolean validateLobbyPlacement(Player player, BlockPlaceEvent event) {
+    private boolean validateLobbyAccess(Player player, org.bukkit.event.Cancellable event) {
         if (getGameMgr().isPlayerInLobby(player)) {
+            if (DEBUG) {
+                getLogger().info("DEBUG: In lobby");
+            }
             if (!player.isOp()) {
                 event.setCancelled(true);
                 return false;
             }
-            return false; // Op can place, but don't process further
+            return false; // Op can interact, but don't process further
         }
         return true;
     }
@@ -260,11 +249,14 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
      *
      * @param player the player to validate
      * @param scorecard the player's scorecard
-     * @param event the block place event to cancel if invalid
-     * @return the player's team
+     * @param event the cancellable event to cancel if invalid
+     * @return the player's team, or empty if validation failed
      */
-    private Optional<Team> validatePlayerTeam(Player player, Scorecard scorecard, BlockPlaceEvent event) {
+    private Optional<Team> validatePlayerTeam(Player player, Scorecard scorecard, org.bukkit.event.Cancellable event) {
         if (scorecard == null || scorecard.getTeam(player) == null) {
+            if (DEBUG) {
+                getLogger().info("DEBUG: Scorecard is null or player's team is null");
+            }
             if (!player.isOp()) {
                 event.setCancelled(true);
                 player.sendMessage(Lang.errorYouMustBeInAGame);
@@ -505,7 +497,7 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
         Player player = event.getPlayer();
 
         // Check lobby restrictions
-        if (!validateLobbyBreak(player, event)) {
+        if (!validateLobbyAccess(player, event)) {
             return;
         }
 
@@ -515,7 +507,7 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
             getLogger().info("DEBUG: scorecard = " + scorecard);
         }
 
-        Optional<Team> team = validatePlayerTeamForBreak(player, scorecard, event);
+        Optional<Team> team = validatePlayerTeam(player, scorecard, event);
         if (team.isEmpty()) {
             return;
         }
@@ -532,11 +524,11 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
 
         // Handle based on team ownership
         if (team.get().equals(beacon.getOwnership())) {
-            if (!handleOwnTeamDefenseBreak(player, defenseBlock, event)) {
+            if (!handleOwnTeamDefenseInteraction(player, defenseBlock, event)) {
                 return; // Event was cancelled
             }
         } else {
-            if (!handleEnemyTeamDefenseBreak(player, beacon, defenseBlock, event)) {
+            if (!handleEnemyTeamDefenseInteraction(player, beacon, defenseBlock, event, true)) {
                 return; // Event was cancelled
             }
         }
@@ -546,58 +538,12 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
         handleLinkBlockBreak(player, block, beacon, team.get());
     }
 
-    /**
-     * Validates block breaking in the lobby area.
-     * Only operators can break blocks in the lobby.
-     *
-     * @param player the player attempting to break a block
-     * @param event the block break event to cancel if invalid
-     * @return true if validation passed, false if event was cancelled
-     */
-    private boolean validateLobbyBreak(Player player, BlockBreakEvent event) {
-        if (getGameMgr().isPlayerInLobby(player)) {
-            if (DEBUG) {
-                getLogger().info("DEBUG: In lobby");
-            }
-            if (!player.isOp()) {
-                event.setCancelled(true);
-                return false;
-            }
-            return false; // Op can break, but don't process further
-        }
-        return true;
-    }
-
-    /**
-     * Validates that a player is on a team for block breaking.
-     *
-     * @param player the player to validate
-     * @param scorecard the player's scorecard
-     * @param event the block break event to cancel if invalid
-     * @return the player's team
-     */
-    private Optional<Team> validatePlayerTeamForBreak(Player player, Scorecard scorecard, BlockBreakEvent event) {
-        if (scorecard == null || scorecard.getTeam(player) == null) {
-            if (DEBUG) {
-                getLogger().info("DEBUG: Scorecard is null or player's team is null");
-            }
-            if (!player.isOp()) {
-                event.setCancelled(true);
-                player.sendMessage(Lang.errorYouMustBeInAGame);
-                getGameMgr().getLobby().tpToRegionSpawn(player, true);
-                return Optional.empty();
-            }
-            player.sendMessage(Lang.errorYouMustBeInATeam);
-            return Optional.empty();
-        }
-        return Optional.ofNullable(scorecard.getTeam(player));
-    }
 
     /**
      * Checks if a block is a defense block on an owned beacon.
      *
      * @param block the block to check
-     * @param beacon the beacon to check against
+     * @param beacon the beacon to check against (may be null)
      * @return true if this is a defense block, false otherwise
      */
     private boolean isDefenseBlock(Block block, BeaconObj beacon) {
@@ -628,15 +574,15 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
     }
 
     /**
-     * Handles defense block breaking by the owning team.
+     * Handles defense block interaction (break/damage) by the owning team.
      * Checks if the player placed the block or has sufficient level to remove it.
      *
-     * @param player the player breaking the block
+     * @param player the player interacting with the block
      * @param defenseBlock the defense block data
-     * @param event the block break event to cancel if invalid
-     * @return true if the break is allowed, false if event was cancelled
+     * @param event the cancellable event to cancel if invalid
+     * @return true if the interaction is allowed, false if event was cancelled
      */
-    private boolean handleOwnTeamDefenseBreak(Player player, DefenseBlock defenseBlock, BlockBreakEvent event) {
+    private boolean handleOwnTeamDefenseInteraction(Player player, DefenseBlock defenseBlock, org.bukkit.event.Cancellable event) {
         // Check ownership - players can only remove their own blocks unless they have extra levels
         if (defenseBlock.getPlacer() != null && !defenseBlock.getPlacer().equals(player.getUniqueId())) {
             if (Settings.removaldelta < 0) {
@@ -660,25 +606,27 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
     }
 
     /**
-     * Handles defense block breaking by an enemy team.
+     * Handles defense block interaction (break/damage) by an enemy team.
      * Enforces top-down removal and level requirements.
      *
-     * @param player the player breaking the block
+     * @param player the player interacting with the block
      * @param beacon the beacon being attacked
      * @param defenseBlock the defense block data
-     * @param event the block break event to cancel if invalid
-     * @return true if the break is allowed, false if event was cancelled
+     * @param event the cancellable event to cancel if invalid
+     * @param checkLock whether to check if the beacon is locked (for breaking, not damage)
+     * @return true if the interaction is allowed, false if event was cancelled
      */
-    private boolean handleEnemyTeamDefenseBreak(Player player, BeaconObj beacon, DefenseBlock defenseBlock, BlockBreakEvent event) {
-        // Check if beacon is locked
-        if (beacon.isLocked()) {
+    private boolean handleEnemyTeamDefenseInteraction(Player player, BeaconObj beacon, DefenseBlock defenseBlock,
+                                                      org.bukkit.event.Cancellable event, boolean checkLock) {
+        // Check if beacon is locked (only for breaking, not damage)
+        if (checkLock && beacon.isLocked()) {
             player.sendMessage(Lang.beaconLocked);
             event.setCancelled(true);
             return false;
         }
 
-        // Get the highest defense block level
-        int highestLevel = beacon.getHighestBlockLevel();
+        // Get highest level - for break use beacon method, for damage cleanup AIR blocks first
+        int highestLevel = checkLock ? beacon.getHighestBlockLevel() : cleanupAndFindHighestLevel(beacon);
 
         // Check player has required level
         if (player.getLevel() < highestLevel) {
@@ -687,6 +635,10 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
                             .replacement(Component.text(String.valueOf(highestLevel)))));
             event.setCancelled(true);
             return false;
+        }
+
+        if (DEBUG) {
+            getLogger().info("DEBUG: highest block is " + highestLevel);
         }
 
         // Enforce top-down removal
@@ -755,13 +707,13 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
         Player player = event.getPlayer();
 
         // Check lobby restrictions
-        if (!validateLobbyDamage(player, event)) {
+        if (!validateLobbyAccess(player, event)) {
             return;
         }
 
         // Validate player team membership
         Scorecard scorecard = getGameMgr().getSC(player);
-        Optional<Team> team = validatePlayerTeamForDamage(player, scorecard, event);
+        Optional<Team> team = validatePlayerTeam(player, scorecard, event);
         if (team.isEmpty()) {
             return;
         }
@@ -770,7 +722,7 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
         Block block = event.getBlock();
         BeaconObj beacon = getRegister().getBeaconAt(new Point2D.Double(block.getX(), block.getZ()));
 
-        if (!isDefenseBlockForDamage(block, beacon)) {
+        if (!isDefenseBlock(block, beacon)) {
             return;
         }
 
@@ -784,144 +736,9 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
 
         // Handle based on team ownership
         if (team.get().equals(beacon.getOwnership())) {
-            handleOwnTeamDefenseDamage(player, defenseBlock, event);
+            handleOwnTeamDefenseInteraction(player, defenseBlock, event);
         } else {
-            handleEnemyTeamDefenseDamage(player, beacon, defenseBlock, event);
-        }
-    }
-
-    /**
-     * Validates block damage in the lobby area.
-     * Only operators can damage blocks in the lobby.
-     *
-     * @param player the player attempting to damage a block
-     * @param event the block damage event to cancel if invalid
-     * @return true if validation passed, false if event was cancelled
-     */
-    private boolean validateLobbyDamage(Player player, BlockDamageEvent event) {
-        if (getGameMgr().isPlayerInLobby(player)) {
-            if (!player.isOp()) {
-                event.setCancelled(true);
-                return false;
-            }
-            return false; // Op can damage, but don't process further
-        }
-        return true;
-    }
-
-    /**
-     * Validates that a player is on a team for block damage.
-     *
-     * @param player the player to validate
-     * @param scorecard the player's scorecard
-     * @param event the block damage event to cancel if invalid
-     * @return the player's team
-     */
-    private Optional<Team> validatePlayerTeamForDamage(Player player, Scorecard scorecard, BlockDamageEvent event) {
-        if (scorecard == null || scorecard.getTeam(player) == null) {
-            if (!player.isOp()) {
-                event.setCancelled(true);
-                player.sendMessage(Lang.errorYouMustBeInAGame);
-                getGameMgr().getLobby().tpToRegionSpawn(player, true);
-                return Optional.empty();
-            }
-            player.sendMessage(Lang.errorYouMustBeInATeam);
-            return Optional.empty();
-        }
-        return Optional.ofNullable(scorecard.getTeam(player));
-    }
-
-    /**
-     * Checks if a block is a defense block for damage validation.
-     *
-     * @param block the block to check
-     * @param beacon the beacon to check against
-     * @return true if this is a defense block, false otherwise
-     */
-    private boolean isDefenseBlockForDamage(Block block, BeaconObj beacon) {
-        if (beacon == null || beacon.getOwnership() == null) {
-            return false;
-        }
-
-        // Check if block is above beacon height
-        if (block.getY() < beacon.getHeight()) {
-            if (DEBUG) {
-                getLogger().info("DEBUG: below beacon");
-            }
-            return false;
-        }
-
-        // Check if this block is registered as a defense block
-        if (!beacon.getDefenseBlocks().containsKey(block)) {
-            if (DEBUG) {
-                getLogger().info("DEBUG: not a defense block");
-            }
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Handles defense block damage by the owning team.
-     * Checks if the player placed the block or has sufficient level to remove it.
-     *
-     * @param player the player damaging the block
-     * @param defenseBlock the defense block data
-     * @param event the block damage event to cancel if invalid
-     */
-    private void handleOwnTeamDefenseDamage(Player player, DefenseBlock defenseBlock, BlockDamageEvent event) {
-        // Check ownership - players can only remove their own blocks unless they have extra levels
-        if (defenseBlock.getPlacer() != null && !defenseBlock.getPlacer().equals(player.getUniqueId())) {
-            if (Settings.removaldelta < 0) {
-                // Cannot remove other players' blocks
-                player.sendMessage(Lang.errorYouCannotRemoveOtherPlayersBlocks);
-                event.setCancelled(true);
-            } else if (Settings.removaldelta > 0) {
-                // Need extra levels to remove other players' blocks
-                int requiredLevel = Settings.removaldelta + defenseBlock.getLevel();
-                if (player.getLevel() < requiredLevel) {
-                    player.sendMessage(Lang.errorYouNeedToBeLevel
-                            .replaceText(builder -> builder.matchLiteral("[value]")
-                                    .replacement(Component.text(String.valueOf(requiredLevel)))));
-                    event.setCancelled(true);
-                }
-            }
-        }
-    }
-
-    /**
-     * Handles defense block damage by an enemy team.
-     * Enforces top-down removal and level requirements, cleaning up any AIR blocks.
-     *
-     * @param player the player damaging the block
-     * @param beacon the beacon being attacked
-     * @param defenseBlock the defense block data
-     * @param event the block damage event to cancel if invalid
-     */
-    private void handleEnemyTeamDefenseDamage(Player player, BeaconObj beacon, DefenseBlock defenseBlock, BlockDamageEvent event) {
-        int blockLevel = defenseBlock.getLevel();
-
-        // Clean up any AIR blocks and find highest block level
-        int highestLevel = cleanupAndFindHighestLevel(beacon);
-
-        // Check player has required level
-        if (player.getLevel() < highestLevel) {
-            player.sendMessage(Lang.errorYouNeedToBeLevel
-                    .replaceText(builder -> builder.matchLiteral("[value]")
-                            .replacement(Component.text(String.valueOf(highestLevel)))));
-            event.setCancelled(true);
-            return;
-        }
-
-        if (DEBUG) {
-            getLogger().info("DEBUG: highest block is " + highestLevel);
-        }
-
-        // Enforce top-down removal
-        if (blockLevel < highestLevel) {
-            player.sendMessage(Lang.beaconDefenseRemoveTopDown);
-            event.setCancelled(true);
+            handleEnemyTeamDefenseInteraction(player, beacon, defenseBlock, event, false);
         }
     }
 

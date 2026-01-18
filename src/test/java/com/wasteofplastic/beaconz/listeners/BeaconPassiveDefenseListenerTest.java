@@ -649,6 +649,7 @@ class BeaconPassiveDefenseListenerTest extends CommonTestBase {
         when(block.getY()).thenReturn(66);
         when(block.getX()).thenReturn(100);
         when(block.getZ()).thenReturn(100);
+        when(block.getType()).thenReturn(Material.STONE);
         when(mgr.isPlayerInLobby(player)).thenReturn(false);
         when(mgr.getSC(player)).thenReturn(scorecard);
         when(scorecard.getTeam(player)).thenReturn(team);
