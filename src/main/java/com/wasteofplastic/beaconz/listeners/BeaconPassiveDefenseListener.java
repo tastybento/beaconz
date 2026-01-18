@@ -25,6 +25,7 @@ package com.wasteofplastic.beaconz.listeners;
 import java.awt.geom.Point2D;
 import java.util.Iterator;
 import java.util.Map.Entry;
+import java.util.Optional;
 
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -55,76 +56,117 @@ import com.wasteofplastic.beaconz.Settings;
 import net.kyori.adventure.text.Component;
 
 /**
- * Handles beacon defenses
- * @author tastybento
+ * Manages passive defense mechanics for beacons including block placement, defense removal,
+ * and protection from various threats.
  *
+ * <p>This listener handles:
+ * <ul>
+ *   <li>Defense block placement around beacons with level requirements</li>
+ *   <li>Defense block removal with top-down enforcement</li>
+ *   <li>Beacon range extension using emerald blocks</li>
+ *   <li>Beacon locking mechanics</li>
+ *   <li>Protection from explosions, pistons, and liquid flow</li>
+ * </ul>
+ *
+ * <p>Defense blocks must be placed and removed according to specific rules:
+ * <ul>
+ *   <li>Only placed on owned beacons</li>
+ *   <li>Require appropriate player experience levels</li>
+ *   <li>Must be removed top-down by attacking teams</li>
+ *   <li>Cannot exceed configured height limits</li>
+ * </ul>
+ *
+ * @author tastybento
  */
 public class BeaconPassiveDefenseListener extends BeaconzPluginDependent implements Listener {
 
     /**
-     * Maximum distance squared an emerald block can be placed from the beacon
+     * Maximum distance squared (in blocks) an emerald block can be placed from the beacon center
+     * for range extension. Value of 64 equals 8 blocks (8²).
      */
-    private static final double MAXDISTANCESQRD = 64;
-    
+    private static final double MAX_EXTENSION_DISTANCE_SQUARED = 64.0;
+
+    /**
+     * Debug flag for additional logging. Set to false in production.
+     */
     private static final boolean DEBUG = false;
 
     /**
-     * @param plugin
+     * Creates a new beacon passive defense listener.
+     *
+     * @param plugin the Beaconz plugin instance
      */
     public BeaconPassiveDefenseListener(Beaconz plugin) {
         super(plugin);
     }
 
     /**
-     * Protects the beacon defenses from any damage
-     * @param event
+     * Protects beacon structures from explosion damage.
+     *
+     * <p>Removes any blocks above beacons from the explosion's affected block list,
+     * preventing damage to beacon defenses and the beacon itself.
+     *
+     * @param event the entity explosion event
      */
-    @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onExplode(EntityExplodeEvent event) {
-        if (DEBUG) getLogger().info("DEBUG: " + event.getEventName());
-        World world = event.getLocation().getWorld();
-        if (!world.equals(getBeaconzWorld())) {
+        if (DEBUG) {
+            getLogger().info("DEBUG: " + event.getEventName());
+        }
+
+        if (isNotBeaconzWorld(event.getLocation().getWorld())) {
             return;
         }
-        // Remove any blocks that are defensive
-        // TODO: Check if it is the highest block
-        event.blockList().removeIf(b -> getRegister().isAboveBeacon(b.getLocation()));
+
+        // Remove any blocks that are above beacons from the explosion
+        event.blockList().removeIf(block -> getRegister().isAboveBeacon(block.getLocation()));
     }
 
     /**
-     * Prevents blocks from being piston pushed above a beacon or a piston being used to remove beacon blocks
-     * @param event
+     * Prevents pistons from pushing blocks into beacon-protected areas.
+     *
+     * <p>Cancels piston extension if any block would be pushed to a location
+     * above a beacon, preserving beacon defenses from piston manipulation.
+     *
+     * @param event the piston extend event
      */
-    @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onPistonPush(BlockPistonExtendEvent event) {
-        World world = event.getBlock().getWorld();
-        if (!world.equals(getBeaconzWorld())) {
-            if (DEBUG) getLogger().info("DEBUG: not right world");
+        if (isNotBeaconzWorld(event.getBlock().getWorld())) {
+            if (DEBUG) {
+                getLogger().info("DEBUG: not right world");
+            }
             return;
         }
-        for (Block b : event.getBlocks()) {
-            Block whereItWillBe = b.getRelative(event.getDirection());
-            if (getRegister().isAboveBeacon(whereItWillBe.getLocation())) {
+
+        for (Block block : event.getBlocks()) {
+            Block destination = block.getRelative(event.getDirection());
+            if (getRegister().isAboveBeacon(destination.getLocation())) {
                 event.setCancelled(true);
                 return;
             }
         }
     }
 
-
     /**
-     * Prevents sticky piston damage
-     * @param event
+     * Prevents sticky pistons from pulling blocks from beacon-protected areas.
+     *
+     * <p>Cancels piston retraction if any block being pulled is above a beacon,
+     * preventing removal of beacon defenses via sticky piston.
+     *
+     * @param event the piston retract event
      */
-    @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onPistonPull(BlockPistonRetractEvent event) {
-        World world = event.getBlock().getWorld();
-        if (!world.equals(getBeaconzWorld())) {
-            if (DEBUG) getLogger().info("DEBUG: not right world");
+        if (isNotBeaconzWorld(event.getBlock().getWorld())) {
+            if (DEBUG) {
+                getLogger().info("DEBUG: not right world");
+            }
             return;
         }
-        for (Block b : event.getBlocks()) {
-            if (getRegister().isAboveBeacon(b.getLocation())) {
+
+        for (Block block : event.getBlocks()) {
+            if (getRegister().isAboveBeacon(block.getLocation())) {
                 event.setCancelled(true);
                 return;
             }
@@ -132,464 +174,818 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
     }
 
     /**
-     * Handles placing of blocks around a beacon
-     * @param event
+     * Handles block placement around beacons, enforcing placement rules for defense blocks,
+     * range extensions, and locking blocks.
+     *
+     * <p>Validates:
+     * <ul>
+     *   <li>Player is in the Beaconz world and in a game</li>
+     *   <li>Block placement location and type</li>
+     *   <li>Player's team ownership of the beacon</li>
+     *   <li>Player's experience level for defense blocks</li>
+     *   <li>Height restrictions for defenses</li>
+     * </ul>
+     *
+     * @param event the block place event
      */
-    @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onBlockPlace(BlockPlaceEvent event) {
-        if (DEBUG) getLogger().info("DEBUG: " + event.getEventName());
-        World world = event.getBlock().getWorld();
-        if (!world.equals(getBeaconzWorld())) {
-            //getLogger().info("DEBUG: not right world");
+        if (DEBUG) {
+            getLogger().info("DEBUG: " + event.getEventName());
+        }
+
+        if (isNotBeaconzWorld(event.getBlock().getWorld())) {
             return;
         }
-        if (DEBUG) getLogger().info("DEBUG: This is a beacon");
+
         Player player = event.getPlayer();
-        // Only Ops can break or place blocks in the lobby
-        if (getGameMgr().isPlayerInLobby(player)) {
-            if (player.isOp()) {
-                return;
-            } else {
-                event.setCancelled(true);
-                return;
-            }
+
+        // Check lobby restrictions
+        if (!validateLobbyPlacement(player, event)) {
+            return;
         }
-        // Get the player's team
-        Scorecard sc = getGameMgr().getSC(player);
-        if (sc == null || sc.getTeam(player) == null) {
+
+        // Validate player team membership
+        Scorecard scorecard = getGameMgr().getSC(player);
+        Optional<Team> team = validatePlayerTeam(player, scorecard, event);
+        if (team.isEmpty()) {
+            return;
+        }
+
+        Block block = event.getBlock();
+        Optional<BeaconObj> adjacentBeacon = findAdjacentBeacon(block);
+
+        // Check for range extension block (emerald)
+        if (block.getType() == Material.EMERALD_BLOCK && adjacentBeacon.isPresent()) {
+            handleRangeExtension(player, block, adjacentBeacon.get(), team.get(), event);
+            return;
+        }
+
+        // Check for locking block
+        Material lockingBlock = getLockingBlockMaterial();
+        if (block.getType() == lockingBlock && adjacentBeacon.isPresent()) {
+            handleLockingBlock(player, block, adjacentBeacon.get(), team.get());
+        }
+
+        // Handle defensive block placement
+        BeaconObj beacon = getRegister().getBeaconAt(new Point2D.Double(block.getX(), block.getZ()));
+        if (beacon == null || beacon.getOwnership() == null || beacon.getY() > block.getY()) {
+            return;
+        }
+
+        handleDefenseBlockPlacement(player, block, beacon, team.get(), event);
+    }
+
+    /**
+     * Validates block placement in the lobby area.
+     * Only operators can place blocks in the lobby.
+     *
+     * @param player the player attempting to place a block
+     * @param event the block place event to cancel if invalid
+     * @return true if validation passed, false if event was cancelled
+     */
+    private boolean validateLobbyPlacement(Player player, BlockPlaceEvent event) {
+        if (getGameMgr().isPlayerInLobby(player)) {
+            if (!player.isOp()) {
+                event.setCancelled(true);
+                return false;
+            }
+            return false; // Op can place, but don't process further
+        }
+        return true;
+    }
+
+    /**
+     * Validates that a player is on a team and in a game.
+     *
+     * @param player the player to validate
+     * @param scorecard the player's scorecard
+     * @param event the block place event to cancel if invalid
+     * @return the player's team
+     */
+    private Optional<Team> validatePlayerTeam(Player player, Scorecard scorecard, BlockPlaceEvent event) {
+        if (scorecard == null || scorecard.getTeam(player) == null) {
             if (!player.isOp()) {
                 event.setCancelled(true);
                 player.sendMessage(Lang.errorYouMustBeInAGame);
                 getGameMgr().getLobby().tpToRegionSpawn(player, true);
-                return;
+                return Optional.empty();
+            }
+            player.sendMessage(Lang.errorYouMustBeInATeam);
+            return Optional.empty();
+        }
+        return Optional.ofNullable(scorecard.getTeam(player));
+    }
+
+    /**
+     * Finds a beacon adjacent to the given block by checking all four cardinal directions.
+     *
+     * @param block the block to check around
+     * @return the adjacent beacon
+     */
+    private Optional<BeaconObj> findAdjacentBeacon(Block block) {
+        for (BlockFace face : new BlockFace[]{BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST}) {
+            Block adjacent = block.getRelative(face);
+            BeaconObj beacon = getRegister().getBeaconAt(new Point2D.Double(adjacent.getX(), adjacent.getZ()));
+            if (beacon != null) {
+                return Optional.of(beacon);
+            }
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Handles placement of emerald blocks for beacon range extension.
+     *
+     * @param player the player placing the block
+     * @param block the emerald block being placed
+     * @param beacon the adjacent beacon
+     * @param team the player's team
+     * @param event the block place event to cancel if invalid
+     */
+    private void handleRangeExtension(Player player, Block block, BeaconObj beacon, Team team, BlockPlaceEvent event) {
+        // Check block is at the right height (one below beacon)
+        if (block.getY() + 1 != beacon.getY()) {
+            return;
+        }
+
+        // Verify team ownership
+        if (beacon.getOwnership() == null || !beacon.getOwnership().equals(team)) {
+            player.sendMessage(Lang.beaconYouCanOnlyExtend);
+            event.setCancelled(true);
+            return;
+        }
+
+        // Check distance from beacon center
+        if (block.getLocation().distanceSquared(beacon.getLocation()) > MAX_EXTENSION_DISTANCE_SQUARED) {
+            player.sendMessage(Lang.beaconCannotBeExtended);
+            event.setCancelled(true);
+            return;
+        }
+
+        // Ensure area above is clear
+        int highestBlockY = getHighestBlockYAt(block.getX(), block.getZ());
+        if (DEBUG) {
+            getLogger().info("DEBUG: highest block y = " + highestBlockY + " difference = " + (highestBlockY - beacon.getY()));
+        }
+
+        if (highestBlockY > beacon.getY()) {
+            player.sendMessage(Lang.errorClearAboveBeacon);
+            event.setCancelled(true);
+            return;
+        }
+
+        // Register the extension
+        getRegister().addBeaconDefenseBlock(block.getLocation(), beacon);
+        player.sendMessage(Lang.beaconExtended);
+    }
+
+    /**
+     * Gets the configured locking block material.
+     *
+     * @return the locking block material, defaults to EMERALD_BLOCK if not configured
+     */
+    private Material getLockingBlockMaterial() {
+        Material material = Material.getMaterial(Settings.lockingBlock.toUpperCase());
+        return material != null ? material : Material.EMERALD_BLOCK;
+    }
+
+    /**
+     * Handles placement of locking blocks on beacons.
+     * Locking blocks must be placed directly above the beacon by the owning team.
+     *
+     * @param player the player placing the block
+     * @param block the locking block being placed
+     * @param beacon the adjacent beacon
+     * @param team the player's team
+     */
+    private void handleLockingBlock(Player player, Block block, BeaconObj beacon, Team team) {
+        // Only process if team owns the beacon
+        if (beacon.getOwnership() == null || !beacon.getOwnership().equals(team)) {
+            return;
+        }
+        
+        // Check if block is placed directly above beacon's base (within 2 blocks in x and z)
+        if (Math.abs(block.getX() - beacon.getX()) < 2 && Math.abs(block.getZ() - beacon.getZ()) < 2) {
+            int blocksNeeded = beacon.nbrToLock(block.getY());
+
+            if (blocksNeeded == 0) {
+                player.sendMessage(Lang.beaconLockedJustNow
+                        .replaceText(builder -> builder.matchLiteral("[lockingBlock]")
+                                .replacement(Component.text(Settings.lockingBlock.toLowerCase()))));
+            } else if (beacon.isLocked()) {
+                player.sendMessage(Lang.beaconLockedAlready
+                        .replaceText(builder -> builder.matchLiteral("[lockingBlock]")
+                                .replacement(Component.text(Settings.lockingBlock.toLowerCase()))));
             } else {
-                player.sendMessage(Lang.errorYouMustBeInATeam);
-                return;
+                player.sendMessage(Lang.beaconLockedWithNMoreBlocks
+                        .replaceText(builder -> builder.matchLiteral("[number]")
+                                .replacement(Component.text(blocksNeeded))));
             }
         }
+    }
 
-        Team team = sc.getTeam(player);
-        Block block = event.getBlock();
-        
-        // Check to see if block is being placed adjacent to a beacon
-        Block adjBlock = block.getRelative(BlockFace.NORTH);
-        BeaconObj adjacentBeacon = getRegister().getBeaconAt(new Point2D.Double(adjBlock.getX(), adjBlock.getZ()));
-        if (adjacentBeacon == null) {
-            adjBlock = block.getRelative(BlockFace.SOUTH);
-            adjacentBeacon = getRegister().getBeaconAt(new Point2D.Double(adjBlock.getX(), adjBlock.getZ()));
-            if (adjacentBeacon == null) {
-                adjBlock = block.getRelative(BlockFace.EAST);
-                adjacentBeacon = getRegister().getBeaconAt(new Point2D.Double(adjBlock.getX(), adjBlock.getZ()));
-                if (adjacentBeacon == null) {
-                    adjBlock = block.getRelative(BlockFace.WEST);
-                    adjacentBeacon = getRegister().getBeaconAt(new Point2D.Double(adjBlock.getX(), adjBlock.getZ()));
-                }
-            }
-        }
-        
-        // Check if block is a beacon extension block
-        if (block.getType().equals(Material.EMERALD_BLOCK)) {
-            if (adjacentBeacon != null) {
-                // Check block is at the right height
-                if (block.getY() + 1 == adjacentBeacon.getY()) {
-                    // Check if the team is placing a block on their own beacon or not
-                    if (adjacentBeacon.getOwnership() == null || !adjacentBeacon.getOwnership().equals(team)) {
-                        player.sendMessage(Lang.beaconYouCanOnlyExtend);
-                        event.setCancelled(true);
-                        return;
-                    }
-                    // Check the distance away from the main beacon
-                    if (block.getLocation().distanceSquared(adjacentBeacon.getLocation()) > MAXDISTANCESQRD) {
-                        player.sendMessage(Lang.beaconCannotBeExtended);
-                        event.setCancelled(true);
-                        return;
-                    }
-                    // Check what blocks are above the emerald block
-                    int highestBlock = getHighestBlockYAt(block.getX(), block.getZ());
-                    if (DEBUG) getLogger().info("DEBUG: highest block y = " + highestBlock + " difference = " + (highestBlock - adjacentBeacon.getY()));
-                    if (highestBlock > adjacentBeacon.getY()) {
-                        event.getPlayer().sendMessage(Lang.errorClearAboveBeacon);
-                        event.setCancelled(true);
-                        return;
-                    }
-                    // Extend beacon
-                    getRegister().addBeaconDefenseBlock(block.getLocation(), adjacentBeacon);
-                    player.sendMessage(Lang.beaconExtended);
-                    // TODO: give experience?
-                    return;
-                } 
-            }
-        }
-        
-        // Check if the block is a beacon locking block
-        Material lockingBlock = Material.EMERALD_BLOCK;
-        if (Material.getMaterial(Settings.lockingBlock.toUpperCase()) != null) {
-            lockingBlock = Material.getMaterial(Settings.lockingBlock.toUpperCase());                
-        }
-        if (block.getType().equals(lockingBlock) && adjacentBeacon != null) {
-            // Check if the team is placing a block on their own beacon 
-            if (adjacentBeacon.getOwnership() != null && adjacentBeacon.getOwnership().equals(team)) {
-                // Check if block was placed directly above the beacon's base
-                if (Math.abs(block.getX()) - Math.abs(adjacentBeacon.getX()) < 2 && Math.abs(block.getZ()) - Math.abs(adjacentBeacon.getZ()) < 2) {
-                    // Check if beacon is locked
-                    int missing = adjacentBeacon.nbrToLock(block.getY());
-                    if (missing == 0) {
-                        player.sendMessage(Lang.beaconLockedJustNow
-                                .replaceText(builder -> builder.matchLiteral("[lockingBlock]").replacement(Component.text(Settings.lockingBlock.toLowerCase()))));
-                    } else if (adjacentBeacon.isLocked()) {
-                        player.sendMessage(Lang.beaconLockedAlready
-                                .replaceText(builder -> builder.matchLiteral("[lockingBlock]").replacement(Component.text(Settings.lockingBlock.toLowerCase()))));
-                    } else {
-                        player.sendMessage(Lang.beaconLockedWithNMoreBlocks
-                                .replaceText(builder -> builder.matchLiteral("[number]").replacement(Component.text(missing))));
-                    }
-                }                        
-            } 
-        }
-
-        // Check if the block is a defensive block
-        BeaconObj beacon = getRegister().getBeaconAt(new Point2D.Double(block.getX(), block.getZ()));
-        if (beacon == null || beacon.getOwnership() == null) {
-            return;
-        }
-        // Check blocks below the beacon
-        if (beacon.getY() > block.getY()) {
-            return;
-        }
-
-        // Check if the team is placing a block on their own beacon or not
+    /**
+     * Handles placement of defense blocks on owned beacons.
+     *
+     * @param player the player placing the block
+     * @param block the defense block being placed
+     * @param beacon the beacon being defended
+     * @param team the player's team
+     * @param event the block place event to cancel if invalid
+     */
+    private void handleDefenseBlockPlacement(Player player, Block block, BeaconObj beacon, Team team, BlockPlaceEvent event) {
+        // Verify team ownership
         if (!beacon.getOwnership().equals(team)) {
             player.sendMessage(Lang.errorCanOnlyPlaceBlocks);
             event.setCancelled(true);
             return;
         }
-        // Check if the height exceeds the allowed height
+
+        // Check height restrictions
         if (beacon.getY() + Settings.defenseHeight - 1 < block.getY()) {
             player.sendMessage(Lang.errorCanOnlyPlaceBlocksUpTo
-                    .replaceText(builder -> builder.matchLiteral("[value]").replacement(Component.text(String.valueOf(Settings.defenseHeight)))));
+                    .replaceText(builder -> builder.matchLiteral("[value]")
+                            .replacement(Component.text(String.valueOf(Settings.defenseHeight)))));
             event.setCancelled(true);
             return;
         }
-        // Check if the player has the experience level required to place the block
+
+        // Verify player has required experience level
         int level = block.getY() - beacon.getY();
-        final int levelRequired;
-        if (DEBUG) getLogger().info("DEBUG: level = " + level);
-        try {
-            levelRequired = Settings.defenseLevels.get(level);
-            if (player.getLevel() < levelRequired) {
-                player.sendMessage(Lang.errorYouNeedToBeLevel
-                        .replaceText(builder -> builder.matchLiteral("[value]").replacement(Component.text(String.valueOf(levelRequired)))));
-                event.setCancelled(true);
-                return;
-            }
-        } catch (Exception e) {
-            getLogger().severe("Defense level for height " + level + " does not exist!");
+        int levelRequired = getRequiredLevel(level);
+
+        if (levelRequired < 0) {
+            return; // Invalid level configuration
+        }
+
+        if (player.getLevel() < levelRequired) {
+            player.sendMessage(Lang.errorYouNeedToBeLevel
+                    .replaceText(builder -> builder.matchLiteral("[value]")
+                            .replacement(Component.text(String.valueOf(levelRequired)))));
+            event.setCancelled(true);
             return;
         }
-        Component levelPlaced = Component.text("");
-        if (levelRequired > 0) {
-            levelPlaced = Component.text(" [" + Lang.generalLevel + " " + levelRequired + "]");
+
+        // Send placement confirmation message
+        sendDefensePlacementMessage(player, block, levelRequired);
+
+        // Register the defense block
+        beacon.addDefenseBlock(block, levelRequired, player.getUniqueId());
+    }
+
+    /**
+     * Gets the required experience level for placing a defense block at a given height.
+     *
+     * @param level the height level above the beacon
+     * @return the required experience level, or -1 if configuration is missing
+     */
+    private int getRequiredLevel(int level) {
+        if (DEBUG) {
+            getLogger().info("DEBUG: level = " + level);
         }
-        // Check what type of block it is
-        if (Settings.linkBlocks.containsKey(event.getBlock().getType())) {
+
+        try {
+            return Settings.defenseLevels.get(level);
+        } catch (Exception e) {
+            getLogger().severe("Defense level for height " + level + " does not exist!");
+            return -1;
+        }
+    }
+
+    /**
+     * Sends appropriate placement message to the player based on block type.
+     *
+     * @param player the player who placed the block
+     * @param block the block that was placed
+     * @param levelRequired the experience level required for this placement
+     */
+    private void sendDefensePlacementMessage(Player player, Block block, int levelRequired) {
+        Component levelPlaced = levelRequired > 0
+                ? Component.text(" [" + Lang.generalLevel + " " + levelRequired + "]")
+                : Component.text("");
+
+        // Check if it's a link block
+        if (Settings.linkBlocks.containsKey(block.getType())) {
             player.sendMessage(Lang.beaconLinkBlockPlaced.replaceText(
                     builder -> builder.matchLiteral("[range]")
-                    .replacement(Component.text(String.valueOf(Settings.linkBlocks.get(event.getBlock().getType())))))); 
+                            .replacement(Component.text(String.valueOf(Settings.linkBlocks.get(block.getType()))))));
         }
-        // Send message
-        Component message = Lang.defenseText.get(event.getBlock().getType());
+
+        // Send defense placement message
+        Component message = Lang.defenseText.get(block.getType());
         if (message == null) {
             player.sendMessage(Lang.beaconDefensePlaced.append(levelPlaced));
         } else {
             player.sendMessage(message.append(levelPlaced));
         }
-        beacon.addDefenseBlock(event.getBlock(), levelRequired, player.getUniqueId());
     }
 
     /**
-     * Handle breakage of the top part of a beacon
-     * @param event
+     * Handles breaking of defense blocks placed around beacons.
+     *
+     * <p>Enforces top-down removal for attacking teams and ownership rules for defending teams.
+     * Also handles link block removal and beacon unlinking mechanics.
+     *
+     * @param event the block break event
      */
-    @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onBeaconBreak(BlockBreakEvent event) {
-        if (DEBUG) getLogger().info("BPD DEBUG: " + event.getEventName());
-        World world = event.getBlock().getWorld();
-        if (!world.equals(getBeaconzWorld())) {
-            if (DEBUG) getLogger().info("DEBUG: not right world");
+        if (DEBUG) {
+            getLogger().info("BPD DEBUG: " + event.getEventName());
+        }
+
+        if (isNotBeaconzWorld(event.getBlock().getWorld())) {
+            if (DEBUG) {
+                getLogger().info("DEBUG: not right world");
+            }
             return;
         }
         
         Player player = event.getPlayer();
-        // Only Ops can break or place blocks in the lobby
-        if (getGameMgr().isPlayerInLobby(player)) {
-            if (DEBUG) getLogger().info("DEBUG: In lobby");
-            if (player.isOp()) {
-                return;
-            } else {
-                event.setCancelled(true);
-                return;
-            }
+
+        // Check lobby restrictions
+        if (!validateLobbyBreak(player, event)) {
+            return;
         }
-        // Get the player's team
-        Scorecard sc = getGameMgr().getSC(player);
-        if (DEBUG) getLogger().info("DEBUG: scorecard = " + sc);
-        if (sc == null || sc.getTeam(player) == null) {
-            if (DEBUG) getLogger().info("DEBUG: Corecard is null or player's team is null");
-            if (!player.isOp()) {
-                event.setCancelled(true);
-                player.sendMessage(Lang.errorYouMustBeInAGame);
-                getGameMgr().getLobby().tpToRegionSpawn(player,true);
-                return;
-            } else {
-                player.sendMessage(Lang.errorYouMustBeInATeam);
-                return;
-            }
+
+        // Validate player team membership
+        Scorecard scorecard = getGameMgr().getSC(player);
+        if (DEBUG) {
+            getLogger().info("DEBUG: scorecard = " + scorecard);
         }
-        Team team = sc.getTeam(player);
-        // Check if the block is a beacon or the surrounding pyramid
+
+        Optional<Team> team = validatePlayerTeamForBreak(player, scorecard, event);
+        if (team.isEmpty()) {
+            return;
+        }
+
+        // Check if this is a defense block
         Block block = event.getBlock();
         BeaconObj beacon = getRegister().getBeacon(block);
-        if (beacon == null || beacon.getOwnership() == null) {
-            if (DEBUG) getLogger().info("DEBUG: This is a not beacon");
+
+        if (!isDefenseBlock(block, beacon)) {
             return;
         }
-        // Check height
-        if (block.getY() < beacon.getHeight()) {
-            if (DEBUG) getLogger().info("DEBUG: below beacon");
-            return;
-        }
-        // Check if this block is a defense block
-        if (!beacon.getDefenseBlocks().containsKey(event.getBlock())) {
-            // No it is not
-            if (DEBUG) getLogger().info("DEBUG: not defense block");
-            return;
-        }
-        
-        // If not same team, then blocks have to be removed in a specific way
-        DefenseBlock dBlock = beacon.getDefenseBlocks().get(event.getBlock());
-        if (team.equals(beacon.getOwnership())) {
-            // Check ownership
-            if (dBlock.getPlacer() != null && !dBlock.getPlacer().equals(player.getUniqueId())) {
-                if (Settings.removaldelta < 0) {
-                    // Not your block
-                    player.sendMessage(Lang.errorYouCannotRemoveOtherPlayersBlocks);
-                    event.setCancelled(true);
-                } else if (Settings.removaldelta > 0 ) {
-                    // Not your block
-                    if (player.getLevel() < Settings.removaldelta + dBlock.getLevel()) {
-                        player.sendMessage(Lang.errorYouNeedToBeLevel.replaceText(builder -> 
-                                builder.matchLiteral("[value]").replacement(Component.text(String.valueOf(Settings.removaldelta + dBlock.getLevel()))))); 
-                        event.setCancelled(true); 
-                    }
-                }
-            }            
+
+        DefenseBlock defenseBlock = beacon.getDefenseBlocks().get(block);
+
+        // Handle based on team ownership
+        if (team.get().equals(beacon.getOwnership())) {
+            if (!handleOwnTeamDefenseBreak(player, defenseBlock, event)) {
+                return; // Event was cancelled
+            }
         } else {
-            // Get the highest defense block height
-            int highestBlock = beacon.getHighestBlockLevel();
-            
-            // Check if beacon is locked
-            if (beacon.isLocked()) {        
-                player.sendMessage(Lang.beaconLocked);
-                event.setCancelled(true);
-                return;
-            }
-
-            // Check all blocks in the defense
-            int level = dBlock.getLevel();
-            
-            if (player.getLevel() < highestBlock) {
-                player.sendMessage(Lang.errorYouNeedToBeLevel.replaceText(builder -> 
-                builder.matchLiteral("[value]").replacement(Component.text(String.valueOf(highestBlock))))); 
-                event.setCancelled(true);
-                return;
-            }
-            // Check that breakage is being done top-down
-            if (level < highestBlock) {
-                event.getPlayer().sendMessage(Lang.beaconDefenseRemoveTopDown);
-                event.setCancelled(true);
-                return;
+            if (!handleEnemyTeamDefenseBreak(player, beacon, defenseBlock, event)) {
+                return; // Event was cancelled
             }
         }
 
-        // The block is broken
-        beacon.removeDefenseBlock(block);        
-               
-        // Check if it was a link block
-        if (Settings.linkBlocks.containsKey(block.getType())) {
-            player.sendMessage(Lang.beaconLinkBlockBroken.replaceText(builder -> 
-            builder.matchLiteral("[range]").replacement(Component.text(String.valueOf(Settings.linkBlocks.get(event.getBlock().getType())))))); 
-            if (Settings.destroyLinkBlocks) {
-                world.playSound(player.getLocation(), Sound.BLOCK_GLASS_BREAK, 1F, 1F);
-                block.setType(Material.AIR);
-            }
-            // Remove the longest link
-            if (Settings.removeLongestLink && beacon.removeLongestLink()) {
-                player.sendMessage(Lang.beaconLinkLost);
-                // Update score
-                getGameMgr().getGame(team).getScorecard().refreshScores(team);
-                getGameMgr().getGame(team).getScorecard().refreshSBdisplay(team);
-            }
-        }
-
+        // Block will be broken - clean up and handle link blocks
+        beacon.removeDefenseBlock(block);
+        handleLinkBlockBreak(player, block, beacon, team.get());
     }
 
     /**
-     * Handles damage to, but not breakage of blocks placed around a beacon.
-     * Warns players to clear blocks top-down.
-     * @param event
+     * Validates block breaking in the lobby area.
+     * Only operators can break blocks in the lobby.
+     *
+     * @param player the player attempting to break a block
+     * @param event the block break event to cancel if invalid
+     * @return true if validation passed, false if event was cancelled
      */
-    @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
-    public void onDefenseDamage(BlockDamageEvent event) {
-        getLogger().info("DEBUG: " + event.getEventName());
-        World world = event.getBlock().getWorld();
-        if (!world.equals(getBeaconzWorld())) {
-            //getLogger().info("DEBUG: not right world");
-            return;
-        }
-        if (DEBUG) getLogger().info("DEBUG: This is a beacon");
-        Player player = event.getPlayer();
-        // Only Ops can break or place blocks in the lobby
+    private boolean validateLobbyBreak(Player player, BlockBreakEvent event) {
         if (getGameMgr().isPlayerInLobby(player)) {
-            if (player.isOp()) {
-                return;
-            } else {
-                event.setCancelled(true);
-                return;
+            if (DEBUG) {
+                getLogger().info("DEBUG: In lobby");
             }
+            if (!player.isOp()) {
+                event.setCancelled(true);
+                return false;
+            }
+            return false; // Op can break, but don't process further
         }
-        // Get the player's team
-        Scorecard sc = getGameMgr().getSC(player);
-        if (sc == null || sc.getTeam(player) == null) {
+        return true;
+    }
+
+    /**
+     * Validates that a player is on a team for block breaking.
+     *
+     * @param player the player to validate
+     * @param scorecard the player's scorecard
+     * @param event the block break event to cancel if invalid
+     * @return the player's team
+     */
+    private Optional<Team> validatePlayerTeamForBreak(Player player, Scorecard scorecard, BlockBreakEvent event) {
+        if (scorecard == null || scorecard.getTeam(player) == null) {
+            if (DEBUG) {
+                getLogger().info("DEBUG: Scorecard is null or player's team is null");
+            }
             if (!player.isOp()) {
                 event.setCancelled(true);
                 player.sendMessage(Lang.errorYouMustBeInAGame);
                 getGameMgr().getLobby().tpToRegionSpawn(player, true);
-                return;
-            } else {
-                player.sendMessage(Lang.errorYouMustBeInATeam);
-                return;
+                return Optional.empty();
             }
+            player.sendMessage(Lang.errorYouMustBeInATeam);
+            return Optional.empty();
         }
-        Team team = sc.getTeam(player);
-        // Check if the block is a beacon or the surrounding pyramid
-        Block block = event.getBlock();
-        BeaconObj beacon = getRegister().getBeaconAt(new Point2D.Double(block.getX(), block.getZ()));
+        return Optional.ofNullable(scorecard.getTeam(player));
+    }
+
+    /**
+     * Checks if a block is a defense block on an owned beacon.
+     *
+     * @param block the block to check
+     * @param beacon the beacon to check against
+     * @return true if this is a defense block, false otherwise
+     */
+    private boolean isDefenseBlock(Block block, BeaconObj beacon) {
         if (beacon == null || beacon.getOwnership() == null) {
-            return;
+            if (DEBUG) {
+                getLogger().info("DEBUG: This is not a beacon");
+            }
+            return false;
         }
-        // Check height
+
+        // Check if block is above beacon height
         if (block.getY() < beacon.getHeight()) {
-            if (DEBUG) getLogger().info("DEBUG: below beacon");
-            return;
+            if (DEBUG) {
+                getLogger().info("DEBUG: below beacon");
+            }
+            return false;
         }
-        // If same team, then do nothing
-        // Check if this block is a defense block
-        if (!beacon.getDefenseBlocks().containsKey(event.getBlock())) {
-             if (DEBUG) getLogger().info("DEBUG: not a defense block");
-            // No it is not
-            return;
+        
+        // Check if this block is registered as a defense block
+        if (!beacon.getDefenseBlocks().containsKey(block)) {
+            if (DEBUG) {
+                getLogger().info("DEBUG: not defense block");
+            }
+            return false;
         }
-        // Check if it's a range extender that could be broken
-        if (Settings.destroyLinkBlocks && Settings.linkBlocks.containsKey(event.getBlock().getType())) {
-            // Player glass breaking sound
-            world.playSound(event.getBlock().getLocation(), Sound.BLOCK_GLASS_BREAK, 1F, 2F);
-            player.sendMessage(Lang.beaconAmplifierBlocksCannotBeRecovered);
-        }
-          
-        DefenseBlock dBlock = beacon.getDefenseBlocks().get(event.getBlock());
-        if (team.equals(beacon.getOwnership())) {
-            // Check ownership
-            if (dBlock.getPlacer() != null && !dBlock.getPlacer().equals(player.getUniqueId())) {
-                if (Settings.removaldelta < 0) {
-                    // Not your block
-                    player.sendMessage(Lang.errorYouCannotRemoveOtherPlayersBlocks);
-                    event.setCancelled(true); 
-                } else if (Settings.removaldelta > 0 ) {
-                    // Not your block
-                    if (player.getLevel() < Settings.removaldelta + dBlock.getLevel()) {
-                        player.sendMessage(Lang.errorYouNeedToBeLevel.replaceText(builder -> 
-                        builder.matchLiteral("[value]").replacement(Component.text(String.valueOf(Settings.removaldelta + dBlock.getLevel()))))); 
-                        event.setCancelled(true);
-                    }
+
+        return true;
+    }
+
+    /**
+     * Handles defense block breaking by the owning team.
+     * Checks if the player placed the block or has sufficient level to remove it.
+     *
+     * @param player the player breaking the block
+     * @param defenseBlock the defense block data
+     * @param event the block break event to cancel if invalid
+     * @return true if the break is allowed, false if event was cancelled
+     */
+    private boolean handleOwnTeamDefenseBreak(Player player, DefenseBlock defenseBlock, BlockBreakEvent event) {
+        // Check ownership - players can only remove their own blocks unless they have extra levels
+        if (defenseBlock.getPlacer() != null && !defenseBlock.getPlacer().equals(player.getUniqueId())) {
+            if (Settings.removaldelta < 0) {
+                // Cannot remove other players' blocks
+                player.sendMessage(Lang.errorYouCannotRemoveOtherPlayersBlocks);
+                event.setCancelled(true);
+                return false;
+            } else if (Settings.removaldelta > 0) {
+                // Need extra levels to remove other players' blocks
+                int requiredLevel = Settings.removaldelta + defenseBlock.getLevel();
+                if (player.getLevel() < requiredLevel) {
+                    player.sendMessage(Lang.errorYouNeedToBeLevel
+                            .replaceText(builder -> builder.matchLiteral("[value]")
+                                    .replacement(Component.text(String.valueOf(requiredLevel)))));
+                    event.setCancelled(true);
+                    return false;
                 }
             }
+        }
+        return true;
+    }
+
+    /**
+     * Handles defense block breaking by an enemy team.
+     * Enforces top-down removal and level requirements.
+     *
+     * @param player the player breaking the block
+     * @param beacon the beacon being attacked
+     * @param defenseBlock the defense block data
+     * @param event the block break event to cancel if invalid
+     * @return true if the break is allowed, false if event was cancelled
+     */
+    private boolean handleEnemyTeamDefenseBreak(Player player, BeaconObj beacon, DefenseBlock defenseBlock, BlockBreakEvent event) {
+        // Check if beacon is locked
+        if (beacon.isLocked()) {
+            player.sendMessage(Lang.beaconLocked);
+            event.setCancelled(true);
+            return false;
+        }
+
+        // Get the highest defense block level
+        int highestLevel = beacon.getHighestBlockLevel();
+
+        // Check player has required level
+        if (player.getLevel() < highestLevel) {
+            player.sendMessage(Lang.errorYouNeedToBeLevel
+                    .replaceText(builder -> builder.matchLiteral("[value]")
+                            .replacement(Component.text(String.valueOf(highestLevel)))));
+            event.setCancelled(true);
+            return false;
+        }
+
+        // Enforce top-down removal
+        int blockLevel = defenseBlock.getLevel();
+        if (blockLevel < highestLevel) {
+            player.sendMessage(Lang.beaconDefenseRemoveTopDown);
+            event.setCancelled(true);
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Handles link block breaking, including link removal and score updates.
+     *
+     * @param player the player who broke the block
+     * @param block the block that was broken
+     * @param beacon the beacon the block was on
+     * @param team the player's team
+     */
+    private void handleLinkBlockBreak(Player player, Block block, BeaconObj beacon, Team team) {
+        if (!Settings.linkBlocks.containsKey(block.getType())) {
             return;
         }
-        // Get the level
-        int level = dBlock.getLevel();
-        // Check all blocks in the defense
-        int highestBlock = 0;
-        Iterator<Entry<Block, DefenseBlock>> it = beacon.getDefenseBlocks().entrySet().iterator();
-        while (it.hasNext()) {
-            Entry<Block, DefenseBlock> defenseBlock = it.next();
-            if (defenseBlock.getKey().getType().equals(Material.AIR)) {
-                // Clean up if any blocks have been removed by creatives, or moved due to gravity.
-                it.remove();
-            } else {
-                highestBlock = Math.max(highestBlock, defenseBlock.getValue().getLevel());
+
+        // Notify player
+        player.sendMessage(Lang.beaconLinkBlockBroken
+                .replaceText(builder -> builder.matchLiteral("[range]")
+                        .replacement(Component.text(String.valueOf(Settings.linkBlocks.get(block.getType()))))));
+
+        // Destroy the block if configured
+        if (Settings.destroyLinkBlocks) {
+            block.getWorld().playSound(player.getLocation(), Sound.BLOCK_GLASS_BREAK, 1F, 1F);
+            block.setType(Material.AIR);
+        }
+
+        // Remove longest link if configured
+        if (Settings.removeLongestLink && beacon.removeLongestLink()) {
+            player.sendMessage(Lang.beaconLinkLost);
+            // Update score
+            Scorecard scorecard = getGameMgr().getGame(team).getScorecard();
+            scorecard.refreshScores(team);
+            scorecard.refreshSBdisplay(team);
+        }
+    }
+
+    /**
+     * Handles damage to, but not breakage of, defense blocks placed around beacons.
+     *
+     * <p>Warns players about top-down removal requirements and plays warning sounds
+     * for link blocks that will be destroyed.
+     *
+     * @param event the block damage event
+     */
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    public void onDefenseDamage(BlockDamageEvent event) {
+        if (DEBUG) {
+            getLogger().info("DEBUG: " + event.getEventName());
+        }
+
+        if (isNotBeaconzWorld(event.getBlock().getWorld())) {
+            return;
+        }
+
+        Player player = event.getPlayer();
+
+        // Check lobby restrictions
+        if (!validateLobbyDamage(player, event)) {
+            return;
+        }
+
+        // Validate player team membership
+        Scorecard scorecard = getGameMgr().getSC(player);
+        Optional<Team> team = validatePlayerTeamForDamage(player, scorecard, event);
+        if (team.isEmpty()) {
+            return;
+        }
+
+        // Check if this is a defense block
+        Block block = event.getBlock();
+        BeaconObj beacon = getRegister().getBeaconAt(new Point2D.Double(block.getX(), block.getZ()));
+
+        if (!isDefenseBlockForDamage(block, beacon)) {
+            return;
+        }
+
+        // Warn about link block destruction
+        if (Settings.destroyLinkBlocks && Settings.linkBlocks.containsKey(block.getType())) {
+            block.getWorld().playSound(block.getLocation(), Sound.BLOCK_GLASS_BREAK, 1F, 2F);
+            player.sendMessage(Lang.beaconAmplifierBlocksCannotBeRecovered);
+        }
+
+        DefenseBlock defenseBlock = beacon.getDefenseBlocks().get(block);
+
+        // Handle based on team ownership
+        if (team.get().equals(beacon.getOwnership())) {
+            handleOwnTeamDefenseDamage(player, defenseBlock, event);
+        } else {
+            handleEnemyTeamDefenseDamage(player, beacon, defenseBlock, event);
+        }
+    }
+
+    /**
+     * Validates block damage in the lobby area.
+     * Only operators can damage blocks in the lobby.
+     *
+     * @param player the player attempting to damage a block
+     * @param event the block damage event to cancel if invalid
+     * @return true if validation passed, false if event was cancelled
+     */
+    private boolean validateLobbyDamage(Player player, BlockDamageEvent event) {
+        if (getGameMgr().isPlayerInLobby(player)) {
+            if (!player.isOp()) {
+                event.setCancelled(true);
+                return false;
+            }
+            return false; // Op can damage, but don't process further
+        }
+        return true;
+    }
+
+    /**
+     * Validates that a player is on a team for block damage.
+     *
+     * @param player the player to validate
+     * @param scorecard the player's scorecard
+     * @param event the block damage event to cancel if invalid
+     * @return the player's team
+     */
+    private Optional<Team> validatePlayerTeamForDamage(Player player, Scorecard scorecard, BlockDamageEvent event) {
+        if (scorecard == null || scorecard.getTeam(player) == null) {
+            if (!player.isOp()) {
+                event.setCancelled(true);
+                player.sendMessage(Lang.errorYouMustBeInAGame);
+                getGameMgr().getLobby().tpToRegionSpawn(player, true);
+                return Optional.empty();
+            }
+            player.sendMessage(Lang.errorYouMustBeInATeam);
+            return Optional.empty();
+        }
+        return Optional.ofNullable(scorecard.getTeam(player));
+    }
+
+    /**
+     * Checks if a block is a defense block for damage validation.
+     *
+     * @param block the block to check
+     * @param beacon the beacon to check against
+     * @return true if this is a defense block, false otherwise
+     */
+    private boolean isDefenseBlockForDamage(Block block, BeaconObj beacon) {
+        if (beacon == null || beacon.getOwnership() == null) {
+            return false;
+        }
+
+        // Check if block is above beacon height
+        if (block.getY() < beacon.getHeight()) {
+            if (DEBUG) {
+                getLogger().info("DEBUG: below beacon");
+            }
+            return false;
+        }
+
+        // Check if this block is registered as a defense block
+        if (!beacon.getDefenseBlocks().containsKey(block)) {
+            if (DEBUG) {
+                getLogger().info("DEBUG: not a defense block");
+            }
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Handles defense block damage by the owning team.
+     * Checks if the player placed the block or has sufficient level to remove it.
+     *
+     * @param player the player damaging the block
+     * @param defenseBlock the defense block data
+     * @param event the block damage event to cancel if invalid
+     */
+    private void handleOwnTeamDefenseDamage(Player player, DefenseBlock defenseBlock, BlockDamageEvent event) {
+        // Check ownership - players can only remove their own blocks unless they have extra levels
+        if (defenseBlock.getPlacer() != null && !defenseBlock.getPlacer().equals(player.getUniqueId())) {
+            if (Settings.removaldelta < 0) {
+                // Cannot remove other players' blocks
+                player.sendMessage(Lang.errorYouCannotRemoveOtherPlayersBlocks);
+                event.setCancelled(true);
+            } else if (Settings.removaldelta > 0) {
+                // Need extra levels to remove other players' blocks
+                int requiredLevel = Settings.removaldelta + defenseBlock.getLevel();
+                if (player.getLevel() < requiredLevel) {
+                    player.sendMessage(Lang.errorYouNeedToBeLevel
+                            .replaceText(builder -> builder.matchLiteral("[value]")
+                                    .replacement(Component.text(String.valueOf(requiredLevel)))));
+                    event.setCancelled(true);
+                }
             }
         }
-        if (player.getLevel() < highestBlock) {
-            Component highest = Component.text(String.valueOf(highestBlock));
-            player.sendMessage(Lang.errorYouNeedToBeLevel.replaceText(builder -> 
-            builder.matchLiteral("[value]").replacement(highest))); 
+    }
+
+    /**
+     * Handles defense block damage by an enemy team.
+     * Enforces top-down removal and level requirements, cleaning up any AIR blocks.
+     *
+     * @param player the player damaging the block
+     * @param beacon the beacon being attacked
+     * @param defenseBlock the defense block data
+     * @param event the block damage event to cancel if invalid
+     */
+    private void handleEnemyTeamDefenseDamage(Player player, BeaconObj beacon, DefenseBlock defenseBlock, BlockDamageEvent event) {
+        int blockLevel = defenseBlock.getLevel();
+
+        // Clean up any AIR blocks and find highest block level
+        int highestLevel = cleanupAndFindHighestLevel(beacon);
+
+        // Check player has required level
+        if (player.getLevel() < highestLevel) {
+            player.sendMessage(Lang.errorYouNeedToBeLevel
+                    .replaceText(builder -> builder.matchLiteral("[value]")
+                            .replacement(Component.text(String.valueOf(highestLevel)))));
             event.setCancelled(true);
             return;
         }
-        if (DEBUG) getLogger().info("DEBUG: highest block is " + highestBlock);
-        // Check that breakage is being done top-down
-        if (level < highestBlock) {
-            event.getPlayer().sendMessage(Lang.beaconDefenseRemoveTopDown);
+
+        if (DEBUG) {
+            getLogger().info("DEBUG: highest block is " + highestLevel);
+        }
+
+        // Enforce top-down removal
+        if (blockLevel < highestLevel) {
+            player.sendMessage(Lang.beaconDefenseRemoveTopDown);
             event.setCancelled(true);
         }
     }
 
     /**
-     * Gets the highest defense block in the world at x,z starting at the max height a defense block can be
-     * @param block
-     * @param y
-     * @return
+     * Cleans up defense blocks that have been removed (are now AIR) and finds the highest remaining level.
+     * This handles blocks removed by creative mode or gravity.
+     *
+     * @param beacon the beacon to clean up
+     * @return the highest defense block level remaining
      */
-    /*
-    private int getHighestDefenseBlockYAt(Block block, int y) {
-        while (y > 0 && getBeaconzWorld().getBlockAt(block.getX(), y, block.getZ()).getType().equals(Material.AIR)) {
-            y--;
-        };
-        if (DEBUG) getLogger().info("DEBUG: highest block is at " + y);
-        return y;
+    private int cleanupAndFindHighestLevel(BeaconObj beacon) {
+        int highestLevel = 0;
+        Iterator<Entry<Block, DefenseBlock>> iterator = beacon.getDefenseBlocks().entrySet().iterator();
+
+        while (iterator.hasNext()) {
+            Entry<Block, DefenseBlock> entry = iterator.next();
+            if (entry.getKey().getType() == Material.AIR) {
+                // Clean up blocks removed by creative mode or gravity
+                iterator.remove();
+            } else {
+                highestLevel = Math.max(highestLevel, entry.getValue().getLevel());
+            }
+        }
+
+        return highestLevel;
     }
-     */
+
     /**
-     * Prevents the tipping of liquids over beacons
-     * @param event
+     * Prevents liquid from flowing onto or above beacon structures.
+     *
+     * <p>Cancels the flow event if the destination block is above a beacon,
+     * protecting beacon defenses from water and lava damage.
+     *
+     * @param event the block flow event
      */
-    /*
-    @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
-    public void onBucketEmpty(final PlayerBucketEmptyEvent event) {
-        if (DEBUG) getLogger().info("DEBUG: " + event.getEventName());
-        World world = event.getBlockClicked().getWorld();
-        if (!world.equals(getBeaconzWorld())) {
-            if (DEBUG) getLogger().info("DEBUG: not right world");
-            return;
-        }
-        if (event.getBlockClicked().getY() == BLOCK_HEIGHT) {
-            event.setCancelled(true);
-            event.getPlayer().sendMessage("You cannot do that here!");
-        }
-    }
-     */
-    @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onBlockFlow(final BlockFromToEvent event) {
-        if (DEBUG) getLogger().info("DEBUG: " + event.getEventName());
-        World world = event.getBlock().getWorld();
-        if (!event.getBlock().isLiquid() || !world.equals(getBeaconzWorld())) {
-            if (DEBUG) getLogger().info("DEBUG: not right world");
+        if (DEBUG) {
+            getLogger().info("DEBUG: " + event.getEventName());
+        }
+
+        if (!event.getBlock().isLiquid() || isNotBeaconzWorld(event.getBlock().getWorld())) {
+            if (DEBUG) {
+                getLogger().info("DEBUG: not right world or not liquid");
+            }
             return;
         }
+
         if (getRegister().isAboveBeacon(event.getToBlock().getLocation())) {
             event.setCancelled(true);
-            if (DEBUG) getLogger().info("DEBUG: stopping flow");
+            if (DEBUG) {
+                getLogger().info("DEBUG: stopping flow");
+            }
         }
+    }
+
+    /**
+     * Checks if the given world is NOT the Beaconz game world.
+     *
+     * @param world the world to check
+     * @return true if this is NOT the Beaconz world, false if it is the Beaconz world
+     */
+    private boolean isNotBeaconzWorld(World world) {
+        return world == null || !world.equals(getBeaconzWorld());
     }
 
 }
