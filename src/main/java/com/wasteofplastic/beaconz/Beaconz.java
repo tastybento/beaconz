@@ -79,6 +79,7 @@ public class Beaconz extends JavaPlugin {
     private Register register;
     private World beaconzWorld;
     private static Beaconz plugin;
+    private ChunkGenerator chunkGenerator;
     private BlockPopulator beaconPopulator;
     private GameMgr gameMgr;
     private Messages messages;
@@ -86,12 +87,15 @@ public class Beaconz extends JavaPlugin {
     protected PlayerMovementListener pml;
     private TinyDB nameStore;
     private PlayerTeleportListener teleportListener;
-    public Boolean ignoreChunkLoad;
 
+    @Override
+    public void onLoad() {
+        plugin = this;
+        chunkGenerator = new BeaconzChunkGen(this);
+    }
 
     @Override
     public void onEnable() {
-        plugin = this;
         // Save the default config from the jar
         saveDefaultConfig();
         loadConfig();
@@ -143,7 +147,6 @@ public class Beaconz extends JavaPlugin {
             getServer().getPluginManager().registerEvents(new SkyListeners(plugin), plugin);
             getServer().getPluginManager().registerEvents(new BeaconSurroundListener(plugin), plugin);
             getServer().getPluginManager().registerEvents(new LobbyListener(plugin), plugin);
-            ignoreChunkLoad = false; // used in WorldListener and other classes
 
             // Load messages for players
             messages = new Messages(plugin);
@@ -161,6 +164,8 @@ public class Beaconz extends JavaPlugin {
             if (gameMgr.getGames().isEmpty()) {
                 gameMgr.newGame(Settings.defaultGameName);
             }
+            // Make spawns
+
         });
     }
 
@@ -599,7 +604,6 @@ public class Beaconz extends JavaPlugin {
      * @return
      */
     public World getBeaconzWorld() {
-        @Nullable ChunkGenerator chunkGenerator = new BeaconzChunkGen(this);
         // Check to see if the world exists, and if not, make it
         if (beaconzWorld == null) {
             // World doesn't exist, so make it
@@ -609,6 +613,7 @@ public class Beaconz extends JavaPlugin {
                         .name(Settings.worldName)
                         .type(WorldType.NORMAL)
                         .environment(World.Environment.NORMAL)
+                        .seed(Settings.seedAdjustment)
                         .generator(chunkGenerator)
                         .createWorld();
             } catch (Exception e) {
@@ -1016,5 +1021,17 @@ public class Beaconz extends JavaPlugin {
      */
     public boolean inWorld(@NotNull World world) {
         return world.equals(getBeaconzWorld());
-    }   
+    }
+
+    /**
+     * Supply the default chunk generator for Beaconz world
+     * @return the chunk generator
+     */
+    @Override
+    public ChunkGenerator getDefaultWorldGenerator(String worldName, String id) {
+        if (chunkGenerator == null) {
+            chunkGenerator = new BeaconzChunkGen(this);
+        }
+        return chunkGenerator;
+    }
 }

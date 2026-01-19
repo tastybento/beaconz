@@ -33,6 +33,7 @@ import java.util.Random;
 import java.util.Set;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Tag;
@@ -150,10 +151,8 @@ public class Region extends BeaconzPluginDependent {
     public void initialize(Boolean newGame) {
 
         if (newGame) {
-            // Set the region's default spawn point; start looking at the center of the region
-            int rad = getRadius();
-            setSpawnPoint(getCenter(), rad);
-
+            // Set the region's default spawn point; the actual spawn point will be calculated just before teleporting
+            spawnPoint = new Location(getBeaconzWorld(), getCenter().getX(), 0, getCenter().getY());
             // That's it. Regenerate() is called from GameMgr or Game
         }
     }
@@ -698,6 +697,7 @@ public class Region extends BeaconzPluginDependent {
      * @param radius maximum search radius in blocks (capped at 20)
      */
     public void setSpawnPoint(Location loc, Integer radius){
+        getLogger().info("DEBUG: set spawn point");
         spawnPoint = findSafeSpot(loc, radius);
     }
 
@@ -744,7 +744,11 @@ public class Region extends BeaconzPluginDependent {
         if (directly) {
             getBeaconzPlugin().getTeleportListener().setDirectTeleportPlayer(player.getUniqueId());
         }
-        player.teleport(spawnPoint);
+        // Make the spawn point safe if it isn't anymore
+        getLogger().info("DEBUG: tp to region");
+        this.setSpawnPoint(spawnPoint, 20);
+        getLogger().info("DEBUG: spawnpoint = " + getSpawnPoint());
+        player.teleportAsync(getSpawnPoint());
         // Remove any Mobs around the area
         for (Entity entity : player.getNearbyEntities(10, 10, 10)) {
             if (entity instanceof Monster) {
@@ -946,16 +950,27 @@ public class Region extends BeaconzPluginDependent {
      * @return a safe Location for player spawn, guaranteed to be non-null
      */
     public Location findSafeSpot (Location location, Integer radius) {
-
+        // First load the chunk
+      Chunk chunk =  location.getWorld().getChunkAt(location);
+       
+        getLogger().info("DEBUG: find safe spot. Chunk loaded? " + location.getWorld().isChunkLoaded(chunk));
         Location safeloc = null;
-
-        // First tell WorldListener to ignore these chunk loads
-        getBeaconzPlugin().ignoreChunkLoad = true;
 
         // Check actual first location
         if (isLocationSafe(location)) {
-            safeloc = location;
+            getLogger().info("DEBUG: location is safe");
+            // We are done
+            return location;
         }
+        // Check for the highest block at this location
+        int y = location.getWorld().getHighestBlockYAt(location);
+        getLogger().info("DEBUG: highest y = " + y);
+        location.setY(y);
+        if (isLocationSafe(location)) {
+            // We are done
+            return location;
+        }
+        // Limit radius search
         if (radius > 20) radius = 20;        
         if (safeloc == null && location != null) {
             // look for a safe spot at location and within radius
@@ -986,7 +1001,7 @@ public class Region extends BeaconzPluginDependent {
             safeloc = new Location(getBeaconzWorld(), location.getX(), getBeaconzWorld().getHighestBlockYAt(location), location.getZ());
             safeloc.getBlock().getRelative(BlockFace.DOWN).setType(Material.BEDROCK);
         }
-
+        getLogger().info("DEBUG: safeloc = " + safeloc);
         // Return the safe location
         return safeloc;
     }
@@ -1011,14 +1026,7 @@ public class Region extends BeaconzPluginDependent {
         final Block space1 = location.getBlock();
         final Block space2 = location.getBlock().getRelative(BlockFace.UP);
 
-        // If ground is AIR, then this is either not good, or they are on slab,
-        // stair, etc.
-        if (ground.getType() == Material.AIR) {
-            Bukkit.getLogger().info("DEBUG: air");
-            return false;
-        }
-        // Liquid is unsafe
-        if (ground.isLiquid() || space1.isLiquid() || space2.isLiquid()) {
+        if (!space1.isPassable() || !space2.isPassable() || ground.isPassable() || ground.isLiquid() || space1.isLiquid() || space2.isLiquid()) {
             return false;
         }
 
