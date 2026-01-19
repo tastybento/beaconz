@@ -454,7 +454,7 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
      */
     private void sendDefensePlacementMessage(Player player, Block block, int levelRequired) {
         Component levelPlaced = levelRequired > 0
-                ? Component.text(" [" + Lang.generalLevel + " " + levelRequired + "]")
+                ? Component.text(" [").append(Lang.generalLevel).append(Component.text(" " + levelRequired + "]"))
                 : Component.text("");
 
         // Check if it's a link block
