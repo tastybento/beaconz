@@ -473,9 +473,12 @@ public class Game extends BeaconzPluginDependent {
 
         // Send appropriate welcome message
         if (newPlayer) {
-            player.sendMessage(Lang.titleWelcomeToGame.replaceText("[name]", gameName.color(NamedTextColor.YELLOW)).color(NamedTextColor.GREEN));
+            player.sendMessage(Lang.titleWelcomeToGame
+                    .replaceText(builder -> builder.matchLiteral("[name]")
+                            .replacement(gameName.color(NamedTextColor.YELLOW))).color(NamedTextColor.GREEN));
         } else {
-            player.sendMessage(Lang.titleWelcomeBackToGame.replaceText("[name]", gameName.color(NamedTextColor.YELLOW)).color(NamedTextColor.GREEN));
+            player.sendMessage(Lang.titleWelcomeBackToGame.replaceText(builder -> builder.matchLiteral("[name]")
+                    .replacement(gameName.color(NamedTextColor.YELLOW))).color(NamedTextColor.GREEN));
         }
 
         // Assign player to a team (balanced assignment if new)
@@ -630,7 +633,8 @@ public class Game extends BeaconzPluginDependent {
             sender.sendMessage(Lang.generalSuccess.color(NamedTextColor.GREEN));
         } else if (sender != null){
             // Player wasn't in this game
-            sender.sendMessage(Lang.errorNotInGame.replaceText("[game]", gameName).color(NamedTextColor.RED));
+            sender.sendMessage(Lang.errorNotInGame.replaceText(builder -> builder.matchLiteral("[game]")
+                    .replacement(gameName.color(NamedTextColor.RED))));
         }
 
         // Teleport player to lobby, do not save inventory
