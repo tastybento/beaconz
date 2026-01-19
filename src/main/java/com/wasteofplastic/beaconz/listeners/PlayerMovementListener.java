@@ -316,7 +316,7 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
 
         // Show barrier particles if player is near the edge of their region
         if (regionFrom != null) {
-            regionFrom.showBarrier(player, 20);
+            regionFrom.showBarrier(player, 1);
         }
 
         // Prevent players from crossing region boundaries
@@ -350,7 +350,7 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
         if (regionTo == null && regionFrom == null) {
             // Non-ops get teleported back to lobby
             if (!player.isOp()) {
-                player.teleport(getGameMgr().getLobby().getSpawnPoint());
+                player.teleportAsync(getGameMgr().getLobby().getSpawnPoint());
                 getLogger().warning(player.getName() + " managed to get outside of the game area and was teleported to the lobby.");
                 return true;
             }
