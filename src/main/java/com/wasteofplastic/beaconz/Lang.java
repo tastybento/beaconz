@@ -12,6 +12,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import net.md_5.bungee.api.chat.BaseComponent;
 
 
 /**
@@ -225,6 +226,7 @@ public class Lang extends BeaconzPluginDependent {
     public static Component linkLostLinks;
     public static Component linkTeamLostLink;
     public static Component linkTeamLostLinks;
+    public static Component beaconBreakToOwn;
     
    
     public void loadLocale(String localeName) {
@@ -298,6 +300,7 @@ public class Lang extends BeaconzPluginDependent {
         adminSignKeyword = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("admin.SignKeyword", "[beaconz]"));
         adminUseSurvival = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("admin.UseSurvival", "Use Survival mode to break signs in lobby."));
         beaconAmplifierBlocksCannotBeRecovered = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("beacon.AmplifierBlocksCannotBeRecovered", "Link amplifier blocks cannot be recovered!"));
+        beaconBreakToOwn = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("beacon.BreakToOwn", "Break the obsidian to own the beacon!"));
         beaconCannotBeExtended = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("beacon.CannotBeExtended", "Cannot be extended any further in this direction!"));
         beaconCannotPlaceLiquids = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("beacon.CannotPlaceLiquids", "You cannot place liquids above a beacon!"));
         beaconClaimedForTeam = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("beacon.ClaimedForTeam", "Beacon claimed for [team] faction"));
