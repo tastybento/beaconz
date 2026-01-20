@@ -39,7 +39,6 @@ import org.bukkit.entity.Fireball;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.entity.SpectralArrow;
-import org.bukkit.entity.TippedArrow;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -50,7 +49,8 @@ import org.bukkit.event.vehicle.VehicleMoveEvent;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.PotionMeta;
-import org.bukkit.material.Dispenser;
+import org.bukkit.block.data.BlockData;
+import org.bukkit.block.data.Directional;
 import org.bukkit.scoreboard.Team;
 import org.bukkit.util.BlockIterator;
 import org.bukkit.util.Vector;
@@ -61,284 +61,512 @@ import com.wasteofplastic.beaconz.BeaconzPluginDependent;
 import com.wasteofplastic.beaconz.DefenseBlock;
 
 /**
- * Handles projectile beacon defenses
- * @author tastybento
+ * Listener class that implements automated projectile defense systems for beacons.
+ * <p>
+ * This class manages the automated turret-style defense mechanism where beacons can shoot
+ * projectiles at approaching enemy players. The defense system works as follows:
+ * <ul>
+ *   <li>Dispensers placed on beacons act as defensive turrets</li>
+ *   <li>When enemy players enter range (10 blocks), dispensers automatically fire</li>
+ *   <li>Supports multiple projectile types: arrows, tipped arrows, spectral arrows, and fireballs</li>
+ *   <li>Implements friendly fire prevention - team members are not damaged</li>
+ *   <li>Calculates line of sight and facing direction for realistic targeting</li>
+ *   <li>Prevents block damage from defensive fireballs</li>
+ * </ul>
  *
+ * The system tracks fired projectiles to apply team-based damage rules and manages
+ * the lifecycle of defensive weapons. It also handles both walking and vehicle-based
+ * player movement to ensure consistent defense activation.
+ *
+ * @author tastybento
+ * @since 1.0
  */
 public class BeaconProjectileDefenseListener extends BeaconzPluginDependent implements Listener {
+
+    /** Maximum range in blocks at which beacon defenses can detect and fire at players */
     private static final int RANGE = 10;
+
+    /**
+     * Tracks projectiles fired by beacon defenses mapped to the team that owns the beacon.
+     * This allows the damage handler to determine if friendly fire should be prevented.
+     * Projectiles are removed from this map once they hit a target or are cleaned up.
+     */
     private final HashMap<UUID, Team> projectiles = new HashMap<>();
     /**
-     * @param plugin
+     * Constructs a new BeaconProjectileDefenseListener.
+     * <p>
+     * Initializes the listener to handle beacon defense projectile firing and damage control.
+     * The projectiles map is initialized empty and will be populated as defenses fire.
+     *
+     * @param plugin The Beaconz plugin instance
      */
     public BeaconProjectileDefenseListener(Beaconz plugin) {
         super(plugin);
     }
 
     /**
-     * Prevents block damage due to explosions from beacon fireballs
-     * Will still hurt players, so that needs to be handled elsewhere
-     * @param e
+     * Prevents block damage from fireball explosions caused by beacon defenses.
+     * <p>
+     * This handler intercepts explosion events from fireballs fired by beacon defense systems
+     * and clears the block damage list to prevent terrain destruction. The fireballs can still
+     * damage players (handled by {@link #onAttackDamage(EntityDamageByEntityEvent)}), but won't
+     * create craters or destroy structures.
+     * <p>
+     * When a tracked defensive fireball explodes:
+     * <ol>
+     *   <li>The block damage list is cleared to prevent terrain damage</li>
+     *   <li>The projectile is removed from tracking (it's completed its purpose)</li>
+     * </ol>
+     *
+     * This ensures beacon defenses are effective against players without causing
+     * collateral damage to the game world.
+     *
+     * @param e The EntityExplodeEvent containing the exploding entity and affected blocks
      */
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onExplosion(final EntityExplodeEvent e) {
-        // Find out what is exploding
+        // Identify which entity is exploding
         Entity expl = e.getEntity();
         if (expl == null) {
-            return;
+            return; // No entity associated with explosion (e.g., bed explosion)
         }
-        // Check world
+
+        // Quick world check - only process events in the Beaconz world
         if (!e.getEntity().getWorld().equals(getBeaconzWorld())) {
             return;
         }
+
+        // Check if this explosion is from one of our tracked defensive projectiles
         if (projectiles.containsKey(expl.getUniqueId())) {
+            // Clear all block damage to prevent terrain destruction
             e.blockList().clear();
+
+            // Remove the projectile from tracking - it's done its job
             projectiles.remove(expl.getUniqueId());
         }
     }
 
     /**
-     * Ensures that damage is not inflicted on defenders
-     * @param event
+     * Implements friendly fire prevention for beacon defense projectiles.
+     * <p>
+     * This handler intercepts damage events from beacon defense projectiles and applies
+     * team-based damage rules. The logic ensures that:
+     * <ul>
+     *   <li>Players are not damaged by projectiles from their own team's beacons</li>
+     *   <li>Players ARE damaged by projectiles from enemy team's beacons</li>
+     *   <li>Projectiles with unknown team ownership are cancelled (safety measure)</li>
+     * </ul>
+     *
+     * The handler uses the {@link #projectiles} map to determine which team fired
+     * each projectile, then compares it against the damaged player's team. After
+     * processing, the projectile is removed from tracking as it has hit its target.
+     *
+     * @param event The EntityDamageByEntityEvent for damage caused by projectiles
      */
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled=true)
     public void onAttackDamage(EntityDamageByEntityEvent event) {
+        // Only protect players - other entities can be damaged freely
         if (!(event.getEntity() instanceof Player)) {
             return;
         }
+
+        // Quick world check - only process events in the Beaconz world
         if (!event.getEntity().getWorld().equals(getBeaconzWorld())) {
             return;
         }
+
         Entity entity = event.getEntity();
         Entity damager = event.getDamager();
+
+        // Check if the damage is from one of our tracked defensive projectiles
         if (damager != null && (damager instanceof Projectile) && projectiles.containsKey(damager.getUniqueId())) {
-            // Get team that fired the projectile
+            // Retrieve which team fired this projectile
             Team team = projectiles.get(damager.getUniqueId());
-            // Remove the projectile from the hashmap
+
+            // Clean up - remove the projectile from tracking now that it's hit something
             projectiles.remove(damager.getUniqueId());
+
             Player player = (Player)entity;
 
-            // Only damage opposing team members
+            // Determine the player's team affiliation
             Team playersTeam = getGameMgr().getPlayerTeam(player);
+
+            // Safety check: if team ownership is unknown, cancel damage
             if (team == null) {
                 event.setCancelled(true);
                 return;
             }
+
+            // Friendly fire prevention: cancel damage if player is on the same team
             if (playersTeam.equals(team)) {
-                // prevented damage to friendly team member
                 event.setCancelled(true);
             }
-            // Else it's fine to hurt!
+            // If teams differ, allow the damage (enemy hit)
         }
     }
 
     /**
-     * Check if player comes within range of a beacon
-     * @param event
+     * Detects when players move within range of beacon defenses while walking.
+     * <p>
+     * This handler monitors player movement and triggers beacon defense systems when
+     * enemy players approach within range. The handler:
+     * <ol>
+     *   <li>Filters out "head-only" movements (looking around without walking)</li>
+     *   <li>Validates the player is in the Beaconz world</li>
+     *   <li>Delegates to {@link #fireOnPlayer(Player, Location, Location)} for defense logic</li>
+     * </ol>
+     *
+     * Note: This handler does NOT detect teleportation - only physical movement.
+     * Teleporting players won't trigger defenses until they move again after teleporting.
+     *
+     * @param event The PlayerMoveEvent containing movement from/to locations
+     * @see #onVehicleMove(VehicleMoveEvent) for vehicle-based movement detection
      */
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onPlayerMove(PlayerMoveEvent event) {
-        // Remember that teleporting is not detected as player movement..
-        // If we want to catch movement by teleportation, we have to keep track of the players to-from by ourselves
-        // Only proceed if there's been a move, not just a head move
-        if (event.getFrom().getBlockX() == event.getTo().getBlockX() && event.getFrom().getBlockY() == event.getTo().getBlockY()
+        // Filter out head-only movements (player looking around without walking)
+        // We only care about actual position changes in X, Y, or Z coordinates
+        if (event.getFrom().getBlockX() == event.getTo().getBlockX()
+                && event.getFrom().getBlockY() == event.getTo().getBlockY()
                 && event.getFrom().getBlockZ() == event.getTo().getBlockZ()) {
             return;
         }
+
+        // Quick world check - only process events in the Beaconz world
         World world = event.getTo().getWorld();
         if (!world.equals(getBeaconzWorld())) {
             return;
         }
 
+        // Delegate to the main defense firing logic
         Player player = event.getPlayer();
         fireOnPlayer(player, event.getFrom(), event.getTo());
     }
 
     /**
-     * Fires a projectile from block at target in the direction of aim from the team.
-     * @param block
-     * @param target
-     * @param aim
-     * @param team
+     * Fires a projectile from a defensive block toward a target player.
+     * <p>
+     * This method implements sophisticated targeting logic that includes:
+     * <ul>
+     *   <li>Line of sight verification - only fires if target is visible</li>
+     *   <li>Dispenser facing validation - only fires if target is in the dispenser's arc</li>
+     *   <li>Lead targeting - aims where the player is moving, not where they are</li>
+     *   <li>Multiple projectile types - arrows, tipped arrows, spectral arrows, fireballs</li>
+     *   <li>Obstruction checking - won't fire if blocked</li>
+     * </ul>
+     *
+     * The firing sequence:
+     * <ol>
+     *   <li>Calculate vector from dispenser to player's head position</li>
+     *   <li>Determine if player is within the dispenser's facing arc</li>
+     *   <li>Check for obstructions between dispenser and player</li>
+     *   <li>Select and spawn appropriate projectile type from dispenser inventory</li>
+     *   <li>Track the projectile for team-based damage rules</li>
+     * </ol>
+     *
+     * @param block The defensive block (typically a dispenser) that will fire
+     * @param target The target player's current location
+     * @param aim The movement vector for lead targeting (where player is heading)
+     * @param team The team that owns this defensive beacon
      */
     private void fireProjectile(Block block, Location target, Vector aim, Team team) {
-        // Check line of sight
-        Vector playerLoc = target.toVector().add(new Vector(0.5D,1.75D,0.5D));
-        // Get start location
-        Vector defenseLoc = block.getLocation().toVector().add(new Vector(0.5D,0.5D,0.5D));
-        // Get the direction to fire the projectile
+        // Calculate the player's head position (add 1.75 blocks for eye height)
+        // Also center the position in the block (add 0.5 to X and Z)
+        Vector playerLoc = target.toVector().add(new Vector(0.5D, 1.75D, 0.5D));
+
+        // Calculate the center of the defensive block as the firing origin
+        Vector defenseLoc = block.getLocation().toVector().add(new Vector(0.5D, 0.5D, 0.5D));
+
+        // Calculate the normalized direction vector from defense to player
         Vector direction = playerLoc.subtract(defenseLoc).normalize();
-        // Get the direction the dispenser is facing
+
+        // Determine which direction the dispenser is facing
         BlockFace blockFace = BlockFace.UP;
         if (block.getType().equals(Material.DISPENSER)) {
-            blockFace = ((Dispenser)block.getState().getData()).getFacing();
+            BlockData blockData = block.getBlockData();
+            if (blockData instanceof Directional directional) {
+                blockFace = directional.getFacing();
+            }
         }
+
+        // Check if there's a block directly in front of the dispenser
         Block inFront = block.getRelative(blockFace);
         if (!inFront.isEmpty()) {
-            return;
+            return; // Can't fire through a solid block
         }
-        // Convert blockface to a location on the block
-        Vector face = new Vector(0.5D,0.4D,0.5D);
-        final double diff = 0.6D;
+
+        // Calculate the spawn position for the projectile on the face of the block
+        // Start at center (0.5, 0.4, 0.5) and adjust based on which face is firing
+        Vector face = new Vector(0.5D, 0.4D, 0.5D);
+        final double diff = 0.6D; // Offset from block center to face edge
         boolean shoot = false;
+
+        // Verify the target is within the dispenser's firing arc
+        // Each face can only shoot in its direction (dispensers have limited arc)
         switch (blockFace) {
         case DOWN:
-            // Negative Y
+            // Fires downward - only shoot if player is below (negative Y direction)
             if (direction.getY() < 0) {
                 shoot = true;
             }
-            face.add(new Vector(0, 0.1 - diff,0));
+            face.add(new Vector(0, 0.1 - diff, 0));
             break;
         case EAST:
-            // Postive X
-            // If X goes negative don't shoot
+            // Fires east - only shoot if player is to the east (positive X direction)
             if (direction.getX() > 0) {
                 shoot = true;
             }
-            face.add(new Vector(diff,0,0));
+            face.add(new Vector(diff, 0, 0));
             break;
         case NORTH:
-            // Negative Z
-            // If Z goes positive then don't shoot
+            // Fires north - only shoot if player is to the north (negative Z direction)
             if (direction.getZ() < 0) {
                 shoot = true;
             }
-            face.add(new Vector(0,0,-diff));
+            face.add(new Vector(0, 0, -diff));
             break;
         case SOUTH:
-            // Positive Z
-            // If Z goes negative don't shoot
+            // Fires south - only shoot if player is to the south (positive Z direction)
             if (direction.getZ() > 0) {
                 shoot = true;
             }
-            face.add(new Vector(0,0,diff));
+            face.add(new Vector(0, 0, diff));
             break;
         case UP:
-            // Postive Y
+            // Fires upward - only shoot if player is above (positive Y direction)
             if (direction.getY() > 0) {
                 shoot = true;
             }
-            face.add(new Vector(0,diff + 0.1 ,0));
+            face.add(new Vector(0, diff + 0.1, 0));
             break;
         case WEST:
-            // Negative X
-            // If X goes positive don't shoot
+            // Fires west - only shoot if player is to the west (negative X direction)
             if (direction.getX() < 0) {
                 shoot = true;
             }
-            face.add(new Vector(-diff,0,0));
+            face.add(new Vector(-diff, 0, 0));
             break;
         default:
             break;
         }
+
         if (!shoot) {
-            // Player is not in view of the dispenser aim arc
+            // Player is not within the dispenser's firing arc
             return;
         }
-        // Check to see if the player is visible
-        BlockIterator iterator = new BlockIterator(target.getWorld(), defenseLoc.add(direction).add(face), direction, 0, RANGE);
+
+        // Perform line-of-sight check to ensure no obstructions
+        // Iterate through blocks from defense to target
+        BlockIterator iterator = new BlockIterator(target.getWorld(),
+                defenseLoc.add(direction).add(face), direction, 0, RANGE);
+
         while (iterator.hasNext()) {
             Block item = iterator.next();
-            if (item.getX() == target.getBlockX() && item.getY() == target.getBlockY() && item.getZ() == target.getBlockZ()) {
-                break;
+
+            // Check if we've reached the target block
+            if (item.getX() == target.getBlockX()
+                    && item.getY() == target.getBlockY()
+                    && item.getZ() == target.getBlockZ()) {
+                break; // Clear line of sight confirmed
             }
+
+            // Check for obstructions (solid blocks or liquids block line of sight)
             if (!item.getType().equals(Material.AIR) && !item.isLiquid()) {
-                // Cannot see you!
-                return;
+                return; // Obstruction found - can't see the target
             }
         }
-        // Saw you!
+
+        // Target is visible! Calculate firing position
         Location from = block.getLocation().add(face);
-        // Change direction to fire where the player is moving to, not where they are
-        // Get all the projectiles in the dispenser
+
+        // Apply lead targeting: aim where the player is moving, not where they are
+        // The 'aim' vector represents the player's velocity/movement direction
+
+        // Fire projectile from dispenser inventory
         if (block.getType().equals(Material.DISPENSER)) {
-            // Checking dispenser for arrows
             Projectile projectile = null;
             org.bukkit.block.Dispenser ih = (org.bukkit.block.Dispenser)block.getState();
+
+            // Check dispenser inventory for different projectile types (in priority order)
             if (ih.getInventory().contains(Material.ARROW)) {
-                // regular arrow
+                // Regular arrow - knockback is handled through arrow mechanics
                 projectile = block.getWorld().spawnArrow(from, direction.add(aim), 1F, 10F);
-                ((Arrow)projectile).setKnockbackStrength(1);
+
             } else if (ih.getInventory().contains(Material.TIPPED_ARROW)) {
-                // Tipped arrow
-                projectile = block.getWorld().spawnArrow(from, direction.add(aim), 1F, 10F, TippedArrow.class);
+                // Tipped arrow with potion effects
+                projectile = block.getWorld().spawnArrow(from, direction.add(aim), 1F, 10F, Arrow.class);
+
+                // Copy the potion effects from the arrow item to the fired arrow
                 ItemStack item = ih.getInventory().getItem(ih.getInventory().first(Material.TIPPED_ARROW));
-                PotionMeta meta = (PotionMeta) item.getItemMeta();
-                ((TippedArrow)projectile).setBasePotionData(meta.getBasePotionData());
+                if (item != null && item.getItemMeta() instanceof PotionMeta meta) {
+                    // Copy potion type using modern API
+                    if (meta.getBasePotionType() != null) {
+                        ((Arrow)projectile).setBasePotionType(meta.getBasePotionType());
+                    }
+                    // Copy custom potion effects as well
+                    if (meta.hasCustomEffects()) {
+                        for (var effect : meta.getCustomEffects()) {
+                            ((Arrow)projectile).addCustomEffect(effect, true);
+                        }
+                    }
+                }
+
             } else if (ih.getInventory().contains(Material.SPECTRAL_ARROW)) {
-                // Spectral arrow
+                // Spectral arrow (causes glowing effect) - knockback is handled through arrow mechanics
                 projectile = block.getWorld().spawnArrow(from, direction.add(aim), 1F, 10F, SpectralArrow.class);
-                ((SpectralArrow)projectile).setKnockbackStrength(1);
+
             } else if (ih.getInventory().contains(Material.FIRE_CHARGE)) {
-                // Fireball
+                // Fireball (explosive projectile)
                 projectile = (Projectile)block.getWorld().spawnEntity(from, EntityType.FIREBALL);
                 ((Fireball)projectile).setDirection(direction.add(aim));
+
             } else {
-                return;
+                return; // No valid ammunition in dispenser
             }
+
+            // Track this projectile for team-based damage rules
             projectiles.put(projectile.getUniqueId(), team);
         }
     }
 
     /**
-     * Check if player comes within range of a beacon
-     * @param event
+     * Detects when players move within range of beacon defenses while riding vehicles.
+     * <p>
+     * This handler complements {@link #onPlayerMove(PlayerMoveEvent)} by detecting movement
+     * when players are in vehicles (boats, minecarts, horses, etc.). Without this handler,
+     * players could approach beacons in vehicles without triggering defenses.
+     * <p>
+     * The handler:
+     * <ol>
+     *   <li>Filters out head-only movements (same as walking detection)</li>
+     *   <li>Validates the vehicle has a passenger and it's a player</li>
+     *   <li>Delegates to {@link #fireOnPlayer(Player, Location, Location)} for defense logic</li>
+     * </ol>
+     *
+     * Note: Like player movement, this does NOT detect teleportation of vehicles.
+     *
+     * @param event The VehicleMoveEvent containing vehicle movement information
+     * @see #onPlayerMove(PlayerMoveEvent) for walking-based movement detection
      */
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onVehicleMove(VehicleMoveEvent event) {
-        // Remember that teleporting is not detected as player movement..
-        // If we want to catch movement by teleportation, we have to keep track of the players to-from by ourselves
-        // Only proceed if there's been a move, not just a head move
-        if (event.getFrom().getBlockX() == event.getTo().getBlockX() && event.getFrom().getBlockY() == event.getTo().getBlockY()
+        // Filter out head-only movements (vehicle orientation changes without position change)
+        // We only care about actual position changes in X, Y, or Z coordinates
+        if (event.getFrom().getBlockX() == event.getTo().getBlockX()
+                && event.getFrom().getBlockY() == event.getTo().getBlockY()
                 && event.getFrom().getBlockZ() == event.getTo().getBlockZ()) {
             return;
         }
+
+        // Quick world check - only process events in the Beaconz world
         World world = event.getTo().getWorld();
         if (!world.equals(getBeaconzWorld())) {
             return;
         }
-        if (event.getVehicle().getPassenger() == null) {
+
+        // Verify the vehicle has passengers
+        if (event.getVehicle().getPassengers().isEmpty()) {
             return;
         }
-        if (!(event.getVehicle().getPassenger() instanceof Player player)) {
+
+        // Verify the first passenger is a player (not another entity)
+        if (!(event.getVehicle().getPassengers().getFirst() instanceof Player player)) {
             return;
         }
+
+        // Delegate to the main defense firing logic
         fireOnPlayer(player, event.getFrom(), event.getTo());
     }
 
+    /**
+     * Main defense activation logic that determines if and how to fire at a moving player.
+     * <p>
+     * This method is called by both {@link #onPlayerMove(PlayerMoveEvent)} and
+     * {@link #onVehicleMove(VehicleMoveEvent)} whenever a player changes position.
+     * It handles the complex logic of:
+     * <ul>
+     *   <li>Filtering out lobby players (defenses don't fire in the lobby)</li>
+     *   <li>Verifying player team membership</li>
+     *   <li>Finding nearby beacons within firing range</li>
+     *   <li>Identifying enemy-owned beacons</li>
+     *   <li>Iterating through defensive blocks on those beacons</li>
+     *   <li>Cleaning up destroyed defense blocks</li>
+     *   <li>Checking dispenser ammunition</li>
+     *   <li>Calculating movement vectors for lead targeting</li>
+     * </ul>
+     *
+     * The method performs defense maintenance by removing AIR blocks from the defense
+     * registry (handles cases where defenses were destroyed by creative mode, gravity, etc.).
+     * <p>
+     * For each enemy beacon within range:
+     * <ol>
+     *   <li>Iterate through all registered defense blocks</li>
+     *   <li>Remove any blocks that have turned to AIR (destroyed defenses)</li>
+     *   <li>For dispensers with valid ammunition, calculate movement vector and fire</li>
+     * </ol>
+     *
+     * @param player The player who is moving
+     * @param from The location the player moved from
+     * @param to The location the player moved to
+     */
     private void fireOnPlayer(Player player, Location from, Location to) {
-        // Nothing from here on applies to Lobby...
+        // Skip defense activation for players in the lobby area
+        // The lobby is a safe zone where combat mechanics don't apply
         if (getGameMgr().isPlayerInLobby(player)) {
             return;
         }
-        // Check if player is in a team
+
+        // Verify the player is assigned to a team
+        // Players without team assignment can't trigger defenses
         Team team = getGameMgr().getPlayerTeam(player);
         if (team == null) {
             return;
         }
+
+        // Find all beacons within firing range of the player's destination
+        // RANGE is typically 10 blocks - the maximum detection distance for defenses
         for (BeaconObj beacon : getRegister().getNearbyBeacons(to, RANGE)) {
-            // Only deal with enemy-owned beacons
+            // Only activate defenses on enemy-owned beacons
+            // Beacons without ownership or owned by the player's team won't fire
             if (beacon.getOwnership() != null && !beacon.getOwnership().equals(team)) {
-                // Offensive beacon
+                // This is an enemy beacon - check its defensive blocks
+
+                // Use an iterator to safely remove destroyed defenses during iteration
                 Iterator<Entry<Block, DefenseBlock>> it = beacon.getDefenseBlocks().entrySet().iterator();
                 while (it.hasNext()) {
                     Entry<Block, DefenseBlock> block = it.next();
-                    // Do different things depending on the type
+
+                    // Handle different defense block types
                     switch (block.getKey().getType()) {
                     case AIR:
-                        // Remove defense - cleans up defenses that have been removed for some reason, like creative mode
-                        // deletion, or gravity falling
+                        // Defense block has been destroyed (creative mode deletion, gravity, etc.)
+                        // Remove it from the registry to keep data clean
                         it.remove();
                         break;
+
                     case DISPENSER:
+                        // Active dispenser defense - check if it has ammunition
                         InventoryHolder ih = (InventoryHolder)block.getKey().getState();
-                        if (ih.getInventory().contains(Material.ARROW) || ih.getInventory().contains(Material.TIPPED_ARROW)
-                                || ih.getInventory().contains(Material.SPECTRAL_ARROW) || ih.getInventory().contains(Material.FIRE_CHARGE)) {
+
+                        // Check for any valid projectile types in the dispenser
+                        if (ih.getInventory().contains(Material.ARROW)
+                                || ih.getInventory().contains(Material.TIPPED_ARROW)
+                                || ih.getInventory().contains(Material.SPECTRAL_ARROW)
+                                || ih.getInventory().contains(Material.FIRE_CHARGE)) {
+
+                            // Calculate the player's movement vector for lead targeting
+                            // This allows the dispenser to aim where the player is going, not where they are
                             Vector adjust = (to.toVector().subtract(from.toVector()));
+
+                            // Fire the projectile with lead targeting
                             fireProjectile(block.getKey(), to, adjust, beacon.getOwnership());
                         }
+                        // If dispenser is empty, no action taken (could be refilled later)
                         break;
+
                     default:
+                        // Other block types are not active defenses (yet)
+                        // Future expansion could add more defense types here
                     }
                 }
             }
