@@ -53,7 +53,6 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.potion.PotionType;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import com.wasteofplastic.beaconz.Params.GameMode;
 import com.wasteofplastic.beaconz.Params.GameScoreGoal;

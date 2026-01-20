@@ -37,7 +37,6 @@ import com.wasteofplastic.beaconz.Params.GameMode;
 import com.wasteofplastic.beaconz.Params.GameScoreGoal;
 
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
 /**
  * Comprehensive test suite for {@link Game} class.

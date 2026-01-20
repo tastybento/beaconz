@@ -22,7 +22,6 @@
 
 package com.wasteofplastic.beaconz.listeners;
 
-import org.bukkit.ChatColor;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;

@@ -1,15 +1,23 @@
 package com.wasteofplastic.beaconz.commands;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
 
-import net.kyori.adventure.text.Component;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -27,9 +35,11 @@ import com.wasteofplastic.beaconz.Beaconz;
 import com.wasteofplastic.beaconz.Game;
 import com.wasteofplastic.beaconz.GameMgr;
 import com.wasteofplastic.beaconz.Lang;
+import com.wasteofplastic.beaconz.Params.GameScoreGoal;
 import com.wasteofplastic.beaconz.Region;
 import com.wasteofplastic.beaconz.Scorecard;
-import com.wasteofplastic.beaconz.Params.GameScoreGoal;
+
+import net.kyori.adventure.text.Component;
 
 /**
  * Comprehensive test suite for {@link CmdHandler} covering all command scenarios.
