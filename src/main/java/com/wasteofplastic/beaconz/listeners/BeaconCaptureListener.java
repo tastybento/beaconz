@@ -748,7 +748,6 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
 
         // Attempt to give the map to the player
         ItemStack offHand = player.getInventory().getItemInOffHand();
-        getLogger().info("offhand = " + offHand);
 
         if (!offHand.getType().equals(Material.AIR)) {
             // Offhand is occupied - try to add to main inventory
