@@ -38,8 +38,8 @@ import org.bukkit.scoreboard.Team;
 import com.wasteofplastic.beaconz.Beaconz;
 import com.wasteofplastic.beaconz.BeaconzPluginDependent;
 import com.wasteofplastic.beaconz.Game;
+import com.wasteofplastic.beaconz.Params.GameMode;
 
-import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
 /**
@@ -90,7 +90,7 @@ public class PlayerDeathListener extends BeaconzPluginDependent implements Liste
             // Process region exit - this may clear the inventory, so do this before the storeInventory call
             if (!gameName.equals(LOBBY)) {
                 getGameMgr().getGame(gameName).getRegion().exit(player);
-                if (getGameMgr().getGame(gameName).getGamemode().equals("minigame")) {                
+                if (getGameMgr().getGame(gameName).getGamemode().equals(GameMode.MINIGAME)) {                
                     event.getDrops().clear();
                 }
             }            

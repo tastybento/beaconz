@@ -116,9 +116,7 @@ class PlayerDeathListenerTest extends CommonTestBase {
         verify(store).setExp(player, GAMENAME, newExp);
         verify(store).setHealth(player, GAMENAME, player.getAttribute(Attribute.MAX_HEALTH).getValue());
         verify(store).setFood(player, GAMENAME,  20);
-        // Note: drops are not cleared because getGamemode() returns GameMode enum but code compares to "minigame" string
-        // This is a bug in the implementation that causes the drops.clear() to never execute
-        assertEquals(1, drops.size()); // Drops should still contain the boat
+        assertEquals(0, drops.size());
     }
 
     /**
