@@ -71,8 +71,6 @@ public class PlayerJoinLeaveListener extends BeaconzPluginDependent implements L
                         getLogger().info("DEBUG: Player is in team - " + game.getScorecard().getTeam(player));
                         getLogger().info("DEBUG: Player is in team - " + game.getScorecard().getTeam(player).getDisplayName());
                     }
-                    // Set inventory
-                    //getBeaconzStore().getInventory(event.getPlayer(), game.getName());   
                     // Join the game but stay at the last location
                     game.join(player, false);
                 }

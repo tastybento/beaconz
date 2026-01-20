@@ -264,12 +264,10 @@ public class Beaconz extends JavaPlugin {
         Settings.linkBlocks = new HashMap<>();
         if (getConfig().contains("links.linkblocks")) {
             for (String material: getConfig().getConfigurationSection("links.linkblocks").getKeys(false)) {
-                //getLogger().info("DEBUG: reading " + material);
                 try {
                     Material mat = Material.getMaterial(material.toUpperCase());
                     if (mat != null) {
                         int value = getConfig().getInt("links.linkblocks." + material);
-                        //getLogger().info("DEBUG: value = " + value);
                         Settings.linkBlocks.put(mat, value);
                     }
                 } catch (Exception e) {
@@ -432,7 +430,7 @@ public class Beaconz extends JavaPlugin {
                         PotionEffectType type = PotionEffectType.getByName(split[0]);
                         if (type != null) {
                             if (NumberUtils.isNumber(split[1])) {
-                                //getLogger().info("DEBUG: adding enemy effect " + type.toString());
+                                // Adding enemy effect
                                 effects.add(new PotionEffect(type, Integer.MAX_VALUE, NumberUtils.toInt(split[1])));
                             } else {
                                 effects.add(new PotionEffect(type, Integer.MAX_VALUE, 1));
@@ -449,13 +447,10 @@ public class Beaconz extends JavaPlugin {
         ConfigurationSection friendlyFieldSection = getConfig().getConfigurationSection("triangles.friendlyfieldeffects");
         // Step through the numbers
         for (Entry<String, Object> part : friendlyFieldSection.getValues(false).entrySet()) {
-            //getLogger().info("DEBUG: Field: " + part.getKey());
             if (NumberUtils.isNumber(part.getKey())) {
-                //getLogger().info("DEBUG: Field is a number");
                 // It is a number, now get the string list
                 List<PotionEffect> effects = new ArrayList<>();
                 List<String> effectsList = getConfig().getStringList("triangles.friendlyfieldeffects." + part.getKey());
-                //getLogger().info("DEBUG: Effects list: " + effectsList);
                 for (String effectString : effectsList) {
                     String[] split = effectString.split(":");
                     if (split.length == 1 || split.length > 2) {
@@ -468,7 +463,6 @@ public class Beaconz extends JavaPlugin {
                         PotionEffectType type = PotionEffectType.getByName(split[0]);
                         if (type != null) {
                             if (NumberUtils.isNumber(split[1])) {
-                                //getLogger().info("DEBUG: adding enemy effect " + type.toString());
                                 effects.add(new PotionEffect(type, Integer.MAX_VALUE, NumberUtils.toInt(split[1])));
                             } else {
                                 effects.add(new PotionEffect(type, Integer.MAX_VALUE, 1));

@@ -87,7 +87,6 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
             // Check if the map has an ID associated with it
             if (mapMeta.hasMapId()) {
                 mapId = mapMeta.getMapId();
-                getLogger().info("DEBUG: The Map ID is: " + mapId);
             }
         }
         if (!event.getAction().equals(Action.RIGHT_CLICK_BLOCK)) {
@@ -131,16 +130,6 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
             event.setCancelled(true);
             return;
         }
-        /*
-        if (event.getItem().getType().equals(Material.PAPER)) {
-            // Give map to player
-            // Remove one paper
-            event.getItem().setAmount(event.getItem().getAmount() - 1);
-            giveBeaconMap(player, beacon);
-            // Stop the beacon inventory opening
-            event.setCancelled(true);
-            return;
-        } else {*/
         // Map!
         BeaconObj mappedBeacon = getRegister().getBeaconMap(mapId);
         if (mappedBeacon == null) {
@@ -216,13 +205,11 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
     private int checkBeaconDistance(BeaconObj beacon, BeaconObj mappedBeacon) {
         int distance = (int)beacon.getPoint().distance(mappedBeacon.getPoint());
         for (DefenseBlock block :beacon.getDefenseBlocks().values()) {
-            //getLogger().info("DEBUG: Blocks on beacon = " + block);
             if (Settings.linkBlocks.containsKey(block.getBlock().getType())) {
                 distance -= Settings.linkBlocks.get(block.getBlock().getType());
             }
         }
         for (DefenseBlock block :mappedBeacon.getDefenseBlocks().values()) {
-            //getLogger().info("DEBUG: Blocks on beacon = " + block);
             if (Settings.linkBlocks.containsKey(block.getBlock().getType())) {
                 distance -= Settings.linkBlocks.get(block.getBlock().getType());
             }

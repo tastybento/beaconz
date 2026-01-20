@@ -236,7 +236,6 @@ public class Lang extends BeaconzPluginDependent {
         }
         File localeFile = new File(localeDir.getPath(), localeName + ".yml");
         if (localeFile.exists()) {
-            //getBeaconzPlugin().getLogger().info("DEBUG: File exists!");
             locale = YamlConfiguration.loadConfiguration(localeFile);
         } else {
             // Look for defaults in the jar

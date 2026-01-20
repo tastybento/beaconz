@@ -287,16 +287,8 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
                     Random rand = new Random();
                     if (beacon.getOwnership().equals(team)) {
                         // Own team
-                        //getLogger().info("DEBUG: own team");
-                        /*
-                         * DEBUG code
-                        for (Entry<Integer, ItemStack> ent : Settings.teamGoodies.entrySet()) {
-                            getLogger().info("DEBUG: " + ent.getKey() + " " + ent.getValue());
-                        }*/
                         int value = rand.nextInt(Settings.teamGoodies.lastKey()) + 1;
-                        //getLogger().info("DEBUG: value = " + value);
                         Entry<Integer, ItemStack> en = Settings.teamGoodies.ceilingEntry(value);
-                        //getLogger().info("DEBUG: en = " + en);
                         if (en != null && en.getValue() != null) {
                             if (en.getValue().getType().equals(Material.FILLED_MAP)) {
                                 giveBeaconMap(player,beacon);                                

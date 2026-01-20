@@ -625,7 +625,6 @@ public class Register extends BeaconzPluginDependent {
      * @return number of links
      */
     public int getTeamLinks(Team team) {
-        //getLogger().info("DEBUG: getting team links " + beaconLinks.get(getGameMgr().getGame(team)));
         int result = 0;
         if (getGameMgr().getGame(team) != null && beaconLinks.containsKey(getGameMgr().getGame(team))) {
             for (BeaconLink pair: beaconLinks.get(getGameMgr().getGame(team))) {
@@ -1044,7 +1043,6 @@ public class Register extends BeaconzPluginDependent {
         while (it.hasNext()) {
             TriangleField triangle = it.next();
             if (triangle.hasVertex(beacon.getPoint())) {
-                //getLogger().info("DEBUG: this beacon was part of a triangle");
                 // Tell folks what's going on
                 if (!quiet && triangle.getOwner() != null) {
                     getMessages().tellTeam(triangle.getOwner(), Lang.triangleYourTeamLostATriangle.color(NamedTextColor.RED));
@@ -1096,7 +1094,6 @@ public class Register extends BeaconzPluginDependent {
      */
     public void addBeaconMap(int i, BeaconObj beacon) {
         beacon.setId(i);
-        //getLogger().info("DEBUG: storing beacon map # " + index + " for beacon at "+ beacon.getLocation());
         this.beaconMaps.put(i, beacon);
     }
 
@@ -1233,7 +1230,6 @@ public class Register extends BeaconzPluginDependent {
             return null;
         }
         Point2D point = new Point2D.Double(location.getBlockX(),location.getBlockZ());
-        //getLogger().info("DEBUG: " + point);
         return baseBlocks.get(point);
     }
 

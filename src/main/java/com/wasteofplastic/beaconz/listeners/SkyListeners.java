@@ -115,7 +115,6 @@ public class SkyListeners extends BeaconzPluginDependent implements Listener {
         }
         World world = event.getBlock().getWorld();
         if (!world.equals(getBeaconzWorld())) {
-            //getLogger().info("DEBUG: not right world");
             return;
         }
         for (Block b : event.getBlocks()) {
@@ -131,10 +130,8 @@ public class SkyListeners extends BeaconzPluginDependent implements Listener {
      */
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onBucketEmpty(final PlayerBucketEmptyEvent event) {
-        //getLogger().info("DEBUG: " + event.getEventName());
         World world = event.getBlockClicked().getWorld();
         if (!world.equals(getBeaconzWorld())) {
-            //getLogger().info("DEBUG: not right world");
             return;
         }
         if (event.getBlockClicked().getY() == BLOCK_HEIGHT) {

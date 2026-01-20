@@ -109,8 +109,6 @@ public class BeaconProjectileDefenseListener extends BeaconzPluginDependent impl
         if (!event.getEntity().getWorld().equals(getBeaconzWorld())) {
             return;
         }
-        //getLogger().info("DEBUG: entity damage by entity event");
-        // getLogger().info("DEBUG: entity = " + event.getEntityType());
         Entity entity = event.getEntity();
         Entity damager = event.getDamager();
         if (damager != null && (damager instanceof Projectile) && projectiles.containsKey(damager.getUniqueId())) {
@@ -123,16 +121,14 @@ public class BeaconProjectileDefenseListener extends BeaconzPluginDependent impl
             // Only damage opposing team members
             Team playersTeam = getGameMgr().getPlayerTeam(player);
             if (team == null) {
-                //getLogger().info("DEBUG: prevented damage to non-player");
                 event.setCancelled(true);
                 return;
             }
             if (playersTeam.equals(team)) {
-                //getLogger().info("DEBUG: prevented damage to friendly team member");
+                // prevented damage to friendly team member
                 event.setCancelled(true);
             }
             // Else it's fine to hurt!
-            //getLogger().info("DEBUG: die!");
         }
     }
 
@@ -170,16 +166,13 @@ public class BeaconProjectileDefenseListener extends BeaconzPluginDependent impl
         Vector playerLoc = target.toVector().add(new Vector(0.5D,1.75D,0.5D));
         // Get start location
         Vector defenseLoc = block.getLocation().toVector().add(new Vector(0.5D,0.5D,0.5D));
-        //getLogger().info("DEBUG: DefenseLoc = " + defenseLoc);
         // Get the direction to fire the projectile
         Vector direction = playerLoc.subtract(defenseLoc).normalize();
-        //getLogger().info("DEBUG: Direction = " + direction);
         // Get the direction the dispenser is facing
         BlockFace blockFace = BlockFace.UP;
         if (block.getType().equals(Material.DISPENSER)) {
             blockFace = ((Dispenser)block.getState().getData()).getFacing();
         }
-        //getLogger().info("DEBUG: dispenser is facing " + blockFace);
         Block inFront = block.getRelative(blockFace);
         if (!inFront.isEmpty()) {
             return;
@@ -239,57 +232,45 @@ public class BeaconProjectileDefenseListener extends BeaconzPluginDependent impl
             break;
         }
         if (!shoot) {
-            //getLogger().info("DEBUG: player is not in view of the dispenser aim arc");
+            // Player is not in view of the dispenser aim arc
             return;
         }
         // Check to see if the player is visible
         BlockIterator iterator = new BlockIterator(target.getWorld(), defenseLoc.add(direction).add(face), direction, 0, RANGE);
-        //getLogger().info("DEBUG: player's vector = " + target.toVector());
         while (iterator.hasNext()) {
             Block item = iterator.next();
             if (item.getX() == target.getBlockX() && item.getY() == target.getBlockY() && item.getZ() == target.getBlockZ()) {
-                //if (item.getLocation().toVector().equals(player.getLocation().toVector())) {
-                //getLogger().info("DEBUG: Saw you directly!");
                 break;
             }
-            /*
-            if (item.getX() == player.getLocation().getBlockX() && item.getY() == player.getLocation().getBlockY() && item.getZ() == player.getLocation().getBlockZ()) {
-                getLogger().info("DEBUG: Saw you directly!");
-                break;
-            }*/
-            //getLogger().info("DEBUG: Block is " + item.getType() + " " + item.getLocation().toVector());
             if (!item.getType().equals(Material.AIR) && !item.isLiquid()) {
-                //getLogger().info("DEBUG: Blocking is " + item.getType() + " " + item.getLocation().toVector());
-                //getLogger().info("DEBUG: Cannot see you!");
+                // Cannot see you!
                 return;
             }
         }
-        //getLogger().info("DEBUG: Saw you!");
-        //Fireball projectile = (Fireball)world.spawnEntity(beacon.getLocation().add(direction).add(new Vector(0,2,0)), EntityType.FIREBALL);
-        //Projectile projectile = (Projectile)world.spawnEntity(beacon.getLocation().add(direction).add(new Vector(0,2,0)), EntityType.ARROW);
+        // Saw you!
         Location from = block.getLocation().add(face);
         // Change direction to fire where the player is moving to, not where they are
         // Get all the projectiles in the dispenser
         if (block.getType().equals(Material.DISPENSER)) {
-            //getLogger().info("DEBUG: Checking dispenser for arrows");
+            // Checking dispenser for arrows
             Projectile projectile = null;
             org.bukkit.block.Dispenser ih = (org.bukkit.block.Dispenser)block.getState();
             if (ih.getInventory().contains(Material.ARROW)) {
-                //getLogger().info("DEBUG: regular arrow");
+                // regular arrow
                 projectile = block.getWorld().spawnArrow(from, direction.add(aim), 1F, 10F);
                 ((Arrow)projectile).setKnockbackStrength(1);
             } else if (ih.getInventory().contains(Material.TIPPED_ARROW)) {
-                //getLogger().info("DEBUG: tipped arrow");
+                // Tipped arrow
                 projectile = block.getWorld().spawnArrow(from, direction.add(aim), 1F, 10F, TippedArrow.class);
                 ItemStack item = ih.getInventory().getItem(ih.getInventory().first(Material.TIPPED_ARROW));
                 PotionMeta meta = (PotionMeta) item.getItemMeta();
                 ((TippedArrow)projectile).setBasePotionData(meta.getBasePotionData());
             } else if (ih.getInventory().contains(Material.SPECTRAL_ARROW)) {
-                //getLogger().info("DEBUG: spectral arrow");
+                // Spectral arrow
                 projectile = block.getWorld().spawnArrow(from, direction.add(aim), 1F, 10F, SpectralArrow.class);
                 ((SpectralArrow)projectile).setKnockbackStrength(1);
             } else if (ih.getInventory().contains(Material.FIRE_CHARGE)) {
-                //getLogger().info("DEBUG: fireball");
+                // Fireball
                 projectile = (Projectile)block.getWorld().spawnEntity(from, EntityType.FIREBALL);
                 ((Fireball)projectile).setDirection(direction.add(aim));
             } else {
@@ -339,31 +320,23 @@ public class BeaconProjectileDefenseListener extends BeaconzPluginDependent impl
             // Only deal with enemy-owned beacons
             if (beacon.getOwnership() != null && !beacon.getOwnership().equals(team)) {
                 // Offensive beacon
-                //getLogger().info("DEBUG: enemy beacon");
                 Iterator<Entry<Block, DefenseBlock>> it = beacon.getDefenseBlocks().entrySet().iterator();
                 while (it.hasNext()) {
                     Entry<Block, DefenseBlock> block = it.next();
                     // Do different things depending on the type
-                    //getLogger().info("DEBUG: defense block = " + block);
-                    //getLogger().info("DEBUG: defense block type = " + block.getKey().getType());
-                    //getLogger().info("DEBUG: defense block location = " + block.getKey().getLocation());
                     switch (block.getKey().getType()) {
                     case AIR:
                         // Remove defense - cleans up defenses that have been removed for some reason, like creative mode
                         // deletion, or gravity falling
                         it.remove();
-                        //getLogger().info("DEBUG: removed");
                         break;
                     case DISPENSER:
                         InventoryHolder ih = (InventoryHolder)block.getKey().getState();
                         if (ih.getInventory().contains(Material.ARROW) || ih.getInventory().contains(Material.TIPPED_ARROW)
                                 || ih.getInventory().contains(Material.SPECTRAL_ARROW) || ih.getInventory().contains(Material.FIRE_CHARGE)) {
-                            //getLogger().info("DEBUG: contains arrow");
                             Vector adjust = (to.toVector().subtract(from.toVector()));
                             fireProjectile(block.getKey(), to, adjust, beacon.getOwnership());
-                            //getLogger().info("DEBUG: velocity = " + adjust);
                         }
-                        //getLogger().info("DEBUG: dispenser");
                         break;
                     default:
                     }

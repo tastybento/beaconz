@@ -315,7 +315,6 @@ public class Scorecard extends BeaconzPluginDependent{
             team.prefix(Component.text("[" + teamDisplayName +"] ").color(teamChatColor(team)));
             team.displayName(Component.text(teamDisplayName));
             // Store the block for the team
-            //getLogger().info("DEBUG: [" +game.getName() + "] Adding team " + team.getDisplayName() + " team block = " + teamBlock);
             teamBlocks.put(team, teamBlock);
             // Get a new spawnpoint for the new team
             Location loc = makeTeamSpawnPoint(team);
@@ -426,14 +425,11 @@ public class Scorecard extends BeaconzPluginDependent{
      * @param ingameOnly
      */
     public void sendPlayersHome(Player player, boolean ingameOnly) {
-        //getLogger().info("DEBUG: Send player home method called");
         Team team = getTeam(player);
         if (!ingameOnly || game.getRegion().isPlayerInRegion(player)) {
             Location loc = teamSpawnPoint.get(team);
             // Teleport player to a captured beacon
-            //getLogger().info("DEBUG: Team is " + team.getName());
             List<BeaconObj> beaconz = getRegister().getTeamBeacons(team);
-            //getLogger().info("DEBUG: # of beaconz = " + beaconz.size());
             if (beaconz.size() > 0) {
                 Random rand = new Random();
                 loc = beaconz.get(rand.nextInt(beaconz.size())).getLocation().add(new Vector(0,1,0));
@@ -706,7 +702,6 @@ public class Scorecard extends BeaconzPluginDependent{
             if (stypes == null) stypes = new HashMap<>();
             stypes.put(scoretype, value);
             score.put(team, stypes);
-            //getLogger().info("saved " + scoretype + " value " + value + " for " + team.getDisplayName());
             refreshSBdisplay(team, scoretype);
         }
     }
@@ -793,7 +788,6 @@ public class Scorecard extends BeaconzPluginDependent{
             teamSP = teamSP.getBlock().getRelative(blockFace, game.getRegion().getRadius() / 4).getLocation();
             teamSP = region.findSafeSpot(teamSP, 20);
         }
-        //getLogger().info("Team spawn: " + team.getDisplayName() + " >> " + teamSP);
 
         // This will result in bedrock blocks being created up and up if the bedrock is covered...
         // TODO these spawn points need special protection, or something. An enemy team could place a lot of blocks
@@ -915,7 +909,6 @@ public class Scorecard extends BeaconzPluginDependent{
      * Ends the game
      */
     public void endGame() {
-        //getLogger().info("DEBUG: end game called");
         // Stop timer
         if (timertaskid != null) timertaskid.cancel();
         // Stop keeping score
@@ -936,13 +929,9 @@ public class Scorecard extends BeaconzPluginDependent{
                 titleline = Lang.scoreTeamWins.replaceText("[team]", winner.displayName());
                 subtitleline = Lang.scoreCongratulations;
             }
-            //getLogger().info("DEBUG: telling team results");
             for (Team team : scoreboard.getTeams()) {
-                //getLogger().info("DEBUG: team = " + team.getDisplayName());
                 for (String entry : team.getEntries()) {
-                    //getLogger().info("DEBUG: entry = " + entry);
                     UUID uuid = getBeaconzPlugin().getNameStore().getPlayerUUID(entry);
-                    //getLogger().info("DEBUG: uuid = " + uuid);
                     if (uuid != null) {
                         Player player = Bukkit.getServer().getPlayer(uuid);
                         if (player != null) {
@@ -1007,7 +996,6 @@ public class Scorecard extends BeaconzPluginDependent{
                         // Beacon timer ran out
                         countdownTimer = 0;
                         timertaskid.cancel();
-                        //getLogger().info("DEBUG: countdown timer expired - ending game");
                         endGame();
                     }
                     seconds = (long) countdownTimer;

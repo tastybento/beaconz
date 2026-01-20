@@ -28,7 +28,6 @@ public class LineVisualizer extends BeaconzPluginDependent {
             @Override
             public void run() {
                 int count = 0;
-                //getLogger().info("Ownership: " + ownership.getDisplayName());
                 Game game = getGameMgr().getGame(beaconPair.getOwner());
                 if (game == null) {
                     return;

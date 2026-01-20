@@ -120,10 +120,9 @@ public class BeaconObj extends BeaconzPluginDependent {
      * @return true if link made, false if not
      */
     public boolean addOutboundLink(BeaconObj beacon) {
-        //getLogger().info("DEBUG: Trying to add link");
         // There is a max of 8 outgoing links allowed
         if (links.size() == 8) {
-            //getLogger().info("DEBUG: outbound link limit reached");
+            // Outbound link limit reached
             return false;
         }
         beacon.addLink(this);
