@@ -7,7 +7,6 @@ public class MapCoordinateConverter {
     private final int centerX;
     private final int centerZ;
 
-    @SuppressWarnings("deprecation")
     public MapCoordinateConverter(MapView map) {
         MapView.Scale scale = map.getScale();
         int multiplier = 1;
