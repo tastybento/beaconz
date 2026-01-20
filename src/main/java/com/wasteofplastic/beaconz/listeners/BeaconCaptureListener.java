@@ -303,251 +303,387 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
                 if (DEBUG)
                     getLogger().info("DEBUG: registered beacon");
 
-                // SCENARIO 1: BEACON CAPTURE (breaking obsidian on unowned beacon)
-                if (block.getType().equals(Material.OBSIDIAN)) {
-                    // Verify the beacon area is clear before allowing capture
-                    if (beacon.isNotClear()) {
-                        player.sendMessage(Lang.errorClearAroundBeacon.color(NamedTextColor.RED));
-                        event.setCancelled(true);
-                        return;
-                    }
-                    if (DEBUG) {
-                        getLogger().info("DEBUG: obsidian");
-                        getLogger().info("DEBUG: team = " + team);
-                        getLogger().info("DEBUG: team = " + team.displayName().toString());
-                        getLogger().info("DEBUG: block ID = " + game.getScorecard().getBlockID(team));
-                    }
-
-                    // Replace obsidian with team's colored block to mark ownership
-                    if (game != null) {
-                        block.setType(game.getScorecard().getBlockID(team));
-                    }
-
-                    // Register the beacon ownership in the system
-                    getRegister().setBeaconOwner(beacon, team);
-
-                    // Notify the player of successful capture
-                    player.sendMessage(Lang.beaconYouCapturedABeacon.color(NamedTextColor.GREEN));
-
-                    // Give the player a custom map centered on this beacon
-                    giveBeaconMap(player, beacon);
-
-                    // Persist the capture to disk for safety
-                    getRegister().saveRegister();
-
-                } else {
-                    // SCENARIO 2: BEACON DESTRUCTION or UNKNOWN BLOCK
-                    if (DEBUG)
-                        getLogger().info("DEBUG: another block");
-
-                    // Check if the beacon has a known team owner
-                    final Team beaconTeam = beacon.getOwnership();
-                    if (beaconTeam != null) {
-                        if (DEBUG)
-                            getLogger().info("DEBUG: known team block");
-
-                        // Prevent teams from destroying their own beacons
-                        if (team != null && team.equals(beaconTeam)) {
-                            player.sendMessage(Lang.beaconYouCannotDestroyYourOwnBeacon.color(NamedTextColor.RED));
-                            event.setCancelled(true);
-                            return;
-                        }
-
-                        // Verify the beacon area is clear before allowing destruction
-                        if (beacon.isNotClear()) {
-                            player.sendMessage(Lang.errorClearAroundBeacon.color(NamedTextColor.GREEN));
-                            event.setCancelled(true);
-                            return;
-                        }
-
-                        // Enemy team has successfully destroyed this beacon!
-
-                        // Notify all other teams about the destruction (taunt message)
-                        if (team != null) {
-                            getMessages().tellOtherTeams(team, Lang.beaconTeamDestroyed
-                                    .replaceText(builder -> builder.matchLiteral("[team1]").replacement(team.displayName()))
-                                    .replaceText(builder -> builder.matchLiteral("[team2]").replacement(beaconTeam.displayName()))
-                                    .color(NamedTextColor.RED));
-                        }
-                        
-                        // Notify the destroyer's team
-                        getMessages().tellTeam(player, Lang.beaconPlayerDestroyed
-                                .replaceText(builder -> builder.matchLiteral("[player]").replacement(player.displayName()))
-                                .replaceText(builder -> builder.matchLiteral("[team]").replacement(beaconTeam.displayName())));
-
-                        // Notify the player who destroyed it
-                        player.sendMessage(Lang.beaconYouDestroyed
-                                .replaceText(builder -> builder.matchLiteral("[team]").replacement(beaconTeam.displayName()))
-                                .color(NamedTextColor.GREEN));
-
-                        // Play dramatic destruction sound
-                        player.getWorld().playSound(player.getLocation(), Sound.BLOCK_CHORUS_FLOWER_DEATH, 1F, 1F);
-
-                        // Remove beacon ownership from the system
-                        getRegister().removeBeaconOwnership(beacon);
-
-                        // Reset the block to obsidian (unclaimed state)
-                        block.setType(Material.OBSIDIAN);
-                        event.setCancelled(true);
-
-                        // Clean up: Remove any players standing on this beacon from tracking
-                        if (BeaconProtectionListener.getStandingOn().containsValue(beacon)) {
-                            BeaconProtectionListener.getStandingOn().inverse().remove(beacon);
-                        }
-                    } else {
-                        // Unknown team block or corruption - reset to obsidian
-                        getRegister().removeBeaconOwnership(beacon);
-                        block.setType(Material.OBSIDIAN);
-                        event.setCancelled(true);
-                        if (DEBUG)
-                            getLogger().info("DEBUG: unknown team block");
-                    }
-                }
+                // Handle capture block (obsidian or team colored block)
+                handleCaptureBlock(event, player, game, team, block, beacon);
             }
         } else {
-            // SCENARIO 3: BEACON MINING (breaking pyramid blocks on owned beacons)
-            // This is for breaking other parts of the beacon structure (not the capture block)
+            // Handle pyramid block mining
+            handlePyramidMining(event, player, team, beacon);
+        }
+    }
 
-            // Only allow mining on beacons that have an owner
-            if (beacon.getOwnership() != null) {
-                // Check cooldown timer - beacons can become "exhausted" after mining
-                // isNewBeacon() returns true for freshly captured beacons (no cooldown)
-                if (beacon.isNewBeacon() || System.currentTimeMillis() > beacon.getHackTimer() + Settings.mineCoolDown) {
-                    // Cooldown has expired or beacon is new - mining is allowed
+    /**
+     * Handles breaking the capture block on a beacon (obsidian or team colored block).
+     * <p>
+     * This method processes two scenarios:
+     * <ol>
+     *   <li>Breaking obsidian - captures the beacon for the player's team</li>
+     *   <li>Breaking a team's colored block - destroys the beacon ownership</li>
+     * </ol>
+     *
+     * @param event The BlockBreakEvent
+     * @param player The player breaking the block
+     * @param game The game instance
+     * @param team The player's team (may be null for ops)
+     * @param block The block being broken
+     * @param beacon The beacon object
+     */
+    private void handleCaptureBlock(BlockBreakEvent event, Player player, Game game, Team team, Block block, BeaconObj beacon) {
+        // SCENARIO 1: BEACON CAPTURE (breaking obsidian on unowned beacon)
+        if (block.getType().equals(Material.OBSIDIAN)) {
+            captureBeacon(event, player, game, team, block, beacon);
+        } else {
+            // SCENARIO 2: BEACON DESTRUCTION (breaking team colored block)
+            destroyBeacon(event, player, team, block, beacon);
+        }
+    }
+
+    /**
+     * Captures an unowned beacon for the player's team.
+     * <p>
+     * This method:
+     * <ul>
+     *   <li>Verifies the beacon area is clear</li>
+     *   <li>Replaces obsidian with team's colored block</li>
+     *   <li>Registers ownership in the system</li>
+     *   <li>Gives the player a beacon map</li>
+     *   <li>Persists changes to disk</li>
+     * </ul>
+     *
+     * @param event The BlockBreakEvent
+     * @param player The player capturing the beacon
+     * @param game The game instance
+     * @param team The player's team
+     * @param block The obsidian block being broken
+     * @param beacon The beacon being captured
+     */
+    private void captureBeacon(BlockBreakEvent event, Player player, Game game, Team team, Block block, BeaconObj beacon) {
+        // Verify the beacon area is clear before allowing capture
+        if (beacon.isNotClear()) {
+            player.sendMessage(Lang.errorClearAroundBeacon.color(NamedTextColor.RED));
+            event.setCancelled(true);
+            return;
+        }
+
+        if (DEBUG) {
+            getLogger().info("DEBUG: obsidian");
+            getLogger().info("DEBUG: team = " + team);
+            if (team != null) {
+                getLogger().info("DEBUG: team = " + team.displayName());
+            }
+            if (game != null && game.getScorecard() != null) {
+                getLogger().info("DEBUG: block ID = " + game.getScorecard().getBlockID(team));
+            }
+        }
+
+        // Replace obsidian with team's colored block to mark ownership
+        if (game != null) {
+            block.setType(game.getScorecard().getBlockID(team));
+        }
+
+        // Register the beacon ownership in the system
+        getRegister().setBeaconOwner(beacon, team);
+
+        // Notify the player of successful capture
+        player.sendMessage(Lang.beaconYouCapturedABeacon.color(NamedTextColor.GREEN));
+
+        // Give the player a custom map centered on this beacon
+        giveBeaconMap(player, beacon);
+
+        // Persist the capture to disk for safety
+        getRegister().saveRegister();
+    }
+
+    /**
+     * Destroys an enemy-owned beacon by breaking its team colored block.
+     * <p>
+     * This method:
+     * <ul>
+     *   <li>Prevents teams from destroying their own beacons</li>
+     *   <li>Verifies the beacon area is clear</li>
+     *   <li>Notifies all teams of the destruction</li>
+     *   <li>Removes ownership and resets to obsidian</li>
+     *   <li>Cleans up player tracking</li>
+     * </ul>
+     *
+     * @param event The BlockBreakEvent
+     * @param player The player destroying the beacon
+     * @param team The player's team
+     * @param block The team colored block being broken
+     * @param beacon The beacon being destroyed
+     */
+    private void destroyBeacon(BlockBreakEvent event, Player player, Team team, Block block, BeaconObj beacon) {
+        if (DEBUG)
+            getLogger().info("DEBUG: another block");
+
+        // Check if the beacon has a known team owner
+        final Team beaconTeam = beacon.getOwnership();
+        if (beaconTeam != null) {
+            if (DEBUG)
+                getLogger().info("DEBUG: known team block");
+
+            // Prevent teams from destroying their own beacons
+            if (team != null && team.equals(beaconTeam)) {
+                player.sendMessage(Lang.beaconYouCannotDestroyYourOwnBeacon.color(NamedTextColor.RED));
+                event.setCancelled(true);
+                return;
+            }
+
+            // Verify the beacon area is clear before allowing destruction
+            if (beacon.isNotClear()) {
+                player.sendMessage(Lang.errorClearAroundBeacon.color(NamedTextColor.GREEN));
+                event.setCancelled(true);
+                return;
+            }
+
+            // Enemy team has successfully destroyed this beacon!
+
+            // Notify all other teams about the destruction (taunt message)
+            if (team != null) {
+                getMessages().tellOtherTeams(team, Lang.beaconTeamDestroyed
+                        .replaceText(builder -> builder.matchLiteral("[team1]").replacement(team.displayName()))
+                        .replaceText(builder -> builder.matchLiteral("[team2]").replacement(beaconTeam.displayName()))
+                        .color(NamedTextColor.RED));
+            }
+
+            // Notify the destroyer's team
+            getMessages().tellTeam(player, Lang.beaconPlayerDestroyed
+                    .replaceText(builder -> builder.matchLiteral("[player]").replacement(player.displayName()))
+                    .replaceText(builder -> builder.matchLiteral("[team]").replacement(beaconTeam.displayName())));
+
+            // Notify the player who destroyed it
+            player.sendMessage(Lang.beaconYouDestroyed
+                    .replaceText(builder -> builder.matchLiteral("[team]").replacement(beaconTeam.displayName()))
+                    .color(NamedTextColor.GREEN));
+
+            // Play dramatic destruction sound
+            player.getWorld().playSound(player.getLocation(), Sound.BLOCK_CHORUS_FLOWER_DEATH, 1F, 1F);
+
+            // Remove beacon ownership from the system
+            getRegister().removeBeaconOwnership(beacon);
+
+            // Reset the block to obsidian (unclaimed state)
+            block.setType(Material.OBSIDIAN);
+            event.setCancelled(true);
+
+            // Clean up: Remove any players standing on this beacon from tracking
+            if (BeaconProtectionListener.getStandingOn().containsValue(beacon)) {
+                BeaconProtectionListener.getStandingOn().inverse().remove(beacon);
+            }
+        } else {
+            // Unknown team block or corruption - reset to obsidian
+            getRegister().removeBeaconOwnership(beacon);
+            block.setType(Material.OBSIDIAN);
+            event.setCancelled(true);
+            if (DEBUG)
+                getLogger().info("DEBUG: unknown team block");
+        }
+    }
+
+    /**
+     * Handles mining pyramid blocks on owned beacons.
+     * <p>
+     * This method manages the beacon mining mechanic where players can extract
+     * resources from beacon pyramids by spending experience points. The system includes:
+     * <ul>
+     *   <li>Cooldown timer to prevent rapid mining (exhaustion)</li>
+     *   <li>Experience requirement validation</li>
+     *   <li>Different rewards for friendly vs enemy beacons</li>
+     *   <li>Penalty system for mining during cooldown</li>
+     * </ul>
+     *
+     * @param event The BlockBreakEvent
+     * @param player The player mining the beacon
+     * @param team The player's team
+     * @param beacon The beacon being mined
+     */
+    private void handlePyramidMining(BlockBreakEvent event, Player player, Team team, BeaconObj beacon) {
+        // Only allow mining on beacons that have an owner
+        if (beacon.getOwnership() == null) {
+            return;
+        }
+
+        // Check cooldown timer - beacons can become "exhausted" after mining
+        // isNewBeacon() returns true for freshly captured beacons (no cooldown)
+        if (beacon.isNewBeacon() || System.currentTimeMillis() > beacon.getHackTimer() + Settings.mineCoolDown) {
+            // Cooldown has expired or beacon is new - mining is allowed
+            performMining(event, player, team, beacon);
+        } else {
+            // COOLDOWN PENALTY - beacon is still exhausted from previous mining
+            applyCooldownPenalty(player, beacon);
+        }
+    }
+
+    /**
+     * Performs the actual mining operation on a beacon pyramid block.
+     * <p>
+     * Validates experience requirements and distributes rewards based on whether
+     * the beacon is friendly or enemy-owned.
+     *
+     * @param event The BlockBreakEvent
+     * @param player The player performing the mining
+     * @param team The player's team
+     * @param beacon The beacon being mined
+     */
+    private void performMining(BlockBreakEvent event, Player player, Team team, BeaconObj beacon) {
+        if (DEBUG)
+            getLogger().info("DEBUG: player has " + player.getTotalExperience() + " and needs " + Settings.beaconMineExpRequired);
+
+        // Verify the player has enough experience points to mine
+        // testForExp returns true if player LACKS sufficient experience
+        if (BeaconLinkListener.testForExp(player, Settings.beaconMineExpRequired)) {
+            player.sendMessage(Lang.errorNotEnoughExperience.color(NamedTextColor.RED));
+            player.getWorld().playSound(player.getLocation(), Sound.BLOCK_ANVIL_BREAK, 1F, 1F);
+            return;
+        }
+
+        // Player has enough experience - proceed with mining
+        Random rand = new Random();
+
+        // Mining rewards differ based on beacon ownership
+        if (beacon.getOwnership().equals(team)) {
+            mineFriendlyBeacon(event, player, beacon, rand);
+        } else {
+            mineEnemyBeacon(event, player, beacon, rand);
+        }
+    }
+
+    /**
+     * Handles mining a friendly team's beacon with better rewards.
+     *
+     * @param event The BlockBreakEvent
+     * @param player The player mining
+     * @param beacon The beacon being mined
+     * @param rand Random number generator for reward selection
+     */
+    private void mineFriendlyBeacon(BlockBreakEvent event, Player player, BeaconObj beacon, Random rand) {
+        // Roll for reward using weighted chance system
+        // teamGoodies is a TreeMap where keys are cumulative weights
+        int value = rand.nextInt(Settings.teamGoodies.lastKey()) + 1;
+        Entry<Integer, ItemStack> en = Settings.teamGoodies.ceilingEntry(value);
+
+        if (en != null && en.getValue() != null) {
+            // Successfully determined a reward
+
+            if (en.getValue().getType().equals(Material.FILLED_MAP)) {
+                // Special case: reward is a beacon map
+                giveBeaconMap(player, beacon);
+            } else {
+                // Normal item reward - drop it at player location
+                player.getWorld().dropItem(event.getPlayer().getLocation(), en.getValue());
+
+                // Roll for exhaustion - chance that beacon becomes temporarily mined out
+                if (rand.nextInt(100) < Settings.beaconMineExhaustChance) {
+                    // Beacon is now exhausted - set cooldown timer
+                    beacon.resetHackTimer();
+
+                    player.sendMessage(Lang.generalSuccess.color(NamedTextColor.GREEN)
+                            .append(Component.text(" "))
+                            .append(Lang.beaconIsExhausted
+                                    .replaceText(builder -> builder.matchLiteral("[minutes]")
+                                            .replacement(Component.text(String.valueOf(Settings.mineCoolDown/60000))))));
+                    player.getWorld().playSound(player.getLocation(), Sound.BLOCK_CHEST_CLOSE, 1F, 1F);
+                } else {
+                    // No exhaustion - player can mine again
+                    player.sendMessage(Lang.generalSuccess.color(NamedTextColor.GREEN));
+                    player.getWorld().playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 1F, 1F);
+                }
+            }
+            // Deduct the experience cost for mining
+            BeaconLinkListener.removeExp(player, Settings.beaconMineExpRequired);
+        } else {
+            // Reward lookup failed (shouldn't happen with proper config)
+            player.sendMessage(Lang.generalFailure.color(NamedTextColor.RED));
+        }
+    }
+
+    /**
+     * Handles mining an enemy team's beacon with worse rewards and potential punishment.
+     *
+     * @param event The BlockBreakEvent
+     * @param player The player mining
+     * @param beacon The beacon being mined
+     * @param rand Random number generator for reward selection
+     */
+    private void mineEnemyBeacon(BlockBreakEvent event, Player player, BeaconObj beacon, Random rand) {
+        // Roll for reward using weighted chance system
+        // enemyGoodies typically has different (often worse) rewards than teamGoodies
+        int value = rand.nextInt(Settings.enemyGoodies.lastKey()) + 1;
+        Entry<Integer, ItemStack> en = Settings.enemyGoodies.ceilingEntry(value);
+
+        if (en != null && en.getValue() != null) {
+            // Successfully determined a reward - drop naturally (with physics)
+            player.getWorld().dropItemNaturally(event.getBlock().getLocation(), en.getValue());
+
+            // Roll for exhaustion
+            if (rand.nextInt(100) < Settings.beaconMineExhaustChance) {
+                // Beacon is now exhausted - set cooldown timer
+                beacon.resetHackTimer();
+
+                player.sendMessage(Lang.generalSuccess
+                        .append(Lang.beaconIsExhausted
+                                .replaceText(builder -> builder.matchLiteral("[minutes]")
+                                        .replacement(Component.text(String.valueOf(Settings.mineCoolDown/60000))))));
+                player.getWorld().playSound(player.getLocation(), Sound.BLOCK_CHEST_CLOSE, 1F, 1F);
+            } else {
+                // No exhaustion - player can mine again
+                player.sendMessage(Lang.generalSuccess.color(NamedTextColor.GREEN));
+                player.getWorld().playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 1F, 1F);
+            }
+            // Deduct the experience cost for mining
+            BeaconLinkListener.removeExp(player, Settings.beaconMineExpRequired);
+        } else {
+            // Reward lookup failed - spawn hostile endermite as punishment
+            player.getWorld().spawnEntity(player.getLocation(), EntityType.ENDERMITE);
+            player.getWorld().playSound(player.getLocation(), Sound.ENTITY_ENDERMITE_AMBIENT, 1F, 1F);
+            player.sendMessage(Lang.generalFailure.append(Component.text(" Watch out!")).color(NamedTextColor.RED));
+        }
+    }
+
+    /**
+     * Applies penalty potion effects when a player tries to mine during cooldown.
+     * <p>
+     * The penalty effects and their amplifiers are configured in Settings.minePenalty.
+     * Effects are applied for the remaining duration of the cooldown.
+     *
+     * @param player The player attempting to mine during cooldown
+     * @param beacon The beacon with active cooldown
+     */
+    private void applyCooldownPenalty(Player player, BeaconObj beacon) {
+        // Calculate how many ticks remain on the cooldown
+        // Convert milliseconds to ticks (1 tick = 50ms)
+        int num = (int) (beacon.getHackTimer() + Settings.mineCoolDown - System.currentTimeMillis()) / 50;
+
+        // Apply configured penalty potion effects for attempting to mine during cooldown
+        for (String effect : Settings.minePenalty) {
+            // Parse effect string format: "EFFECT_NAME:AMPLIFIER"
+            String[] split = effect.split(":");
+            if (split.length == 2) {
+                int amplifier = 1;
+
+                // Extract amplifier value if provided
+                if (NumberUtils.isNumber(split[1])) {
+                    amplifier = Integer.parseInt(split[1]);
+                    if (DEBUG)
+                        getLogger().info("DEBUG: Amplifier is " + amplifier);
+                }
+
+                // Look up the potion effect type by name
+                PotionEffectType potionEffectType = PotionEffectType.getByName(split[0]);
+
+                if (potionEffectType != null) {
+                    // Apply the penalty effect for the remaining cooldown duration
+                    player.addPotionEffect(new PotionEffect(potionEffectType, num, amplifier));
+
+                    // Play sound effect to indicate penalty
+                    player.getWorld().playSound(player.getLocation(), Sound.ENTITY_SPLASH_POTION_BREAK, 1F, 1F);
 
                     if (DEBUG)
-                        getLogger().info("DEBUG: player has " + player.getTotalExperience() + " and needs " + Settings.beaconMineExpRequired);
-
-                    // Verify the player has enough experience points to mine
-                    // testForExp returns true if player LACKS sufficient experience
-                    if (BeaconLinkListener.testForExp(player, Settings.beaconMineExpRequired)) {
-                        player.sendMessage(Lang.errorNotEnoughExperience.color(NamedTextColor.RED));
-                        player.getWorld().playSound(player.getLocation(), Sound.BLOCK_ANVIL_BREAK, 1F, 1F);
-                        return;
-                    }
-
-                    // Player has enough experience - proceed with mining
-                    Random rand = new Random();
-
-                    // Mining rewards differ based on beacon ownership
-                    if (beacon.getOwnership().equals(team)) {
-                        // FRIENDLY BEACON MINING - mining your own team's beacon
-
-                        // Roll for reward using weighted chance system
-                        // teamGoodies is a TreeMap where keys are cumulative weights
-                        int value = rand.nextInt(Settings.teamGoodies.lastKey()) + 1;
-                        Entry<Integer, ItemStack> en = Settings.teamGoodies.ceilingEntry(value);
-
-                        if (en != null && en.getValue() != null) {
-                            // Successfully determined a reward
-
-                            if (en.getValue().getType().equals(Material.FILLED_MAP)) {
-                                // Special case: reward is a beacon map
-                                giveBeaconMap(player, beacon);
-                            } else {
-                                // Normal item reward - drop it at player location
-                                player.getWorld().dropItem(event.getPlayer().getLocation(), en.getValue());
-
-                                // Roll for exhaustion - chance that beacon becomes temporarily mined out
-                                if (rand.nextInt(100) < Settings.beaconMineExhaustChance) {
-                                    // Beacon is now exhausted - set cooldown timer
-                                    beacon.resetHackTimer();
-
-                                    player.sendMessage(Lang.generalSuccess.color(NamedTextColor.GREEN)
-                                            .append(Component.text(" "))
-                                            .append(Lang.beaconIsExhausted
-                                                    .replaceText(builder -> builder.matchLiteral("[minutes]")
-                                                            .replacement(Component.text(String.valueOf(Settings.mineCoolDown/60000))))));
-                                    player.getWorld().playSound(player.getLocation(), Sound.BLOCK_CHEST_CLOSE, 1F, 1F);
-                                } else {
-                                    // No exhaustion - player can mine again
-                                    player.sendMessage(Lang.generalSuccess.color(NamedTextColor.GREEN));
-                                    player.getWorld().playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 1F, 1F);
-                                }
-                            }
-                            // Deduct the experience cost for mining
-                            BeaconLinkListener.removeExp(player, Settings.beaconMineExpRequired);
-                        } else {
-                            // Reward lookup failed (shouldn't happen with proper config)
-                            player.sendMessage(Lang.generalFailure.color(NamedTextColor.RED));
-                        }
-                    } else {
-                        // ENEMY BEACON MINING - mining an enemy team's beacon
-
-                        // Roll for reward using weighted chance system
-                        // enemyGoodies typically has different (often worse) rewards than teamGoodies
-                        int value = rand.nextInt(Settings.enemyGoodies.lastKey()) + 1;
-                        Entry<Integer, ItemStack> en = Settings.enemyGoodies.ceilingEntry(value);
-
-                        if (en != null && en.getValue() != null) {
-                            // Successfully determined a reward - drop naturally (with physics)
-                            player.getWorld().dropItemNaturally(event.getBlock().getLocation(), en.getValue());
-
-                            // Roll for exhaustion
-                            if (rand.nextInt(100) < Settings.beaconMineExhaustChance) {
-                                // Beacon is now exhausted - set cooldown timer
-                                beacon.resetHackTimer();
-
-                                player.sendMessage(Lang.generalSuccess
-                                        .append(Lang.beaconIsExhausted
-                                                .replaceText(builder -> builder.matchLiteral("[minutes]")
-                                                        .replacement(Component.text(String.valueOf(Settings.mineCoolDown/60000))))));
-                                player.getWorld().playSound(player.getLocation(), Sound.BLOCK_CHEST_CLOSE, 1F, 1F);
-                            } else {
-                                // No exhaustion - player can mine again
-                                player.sendMessage(Lang.generalSuccess.color(NamedTextColor.GREEN));
-                                player.getWorld().playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 1F, 1F);
-                            }
-                            // Deduct the experience cost for mining
-                            BeaconLinkListener.removeExp(player, Settings.beaconMineExpRequired);
-                        } else {
-                            // Reward lookup failed - spawn hostile endermite as punishment
-                            player.getWorld().spawnEntity(player.getLocation(), EntityType.ENDERMITE);
-                            player.getWorld().playSound(player.getLocation(), Sound.ENTITY_ENDERMITE_AMBIENT, 1F, 1F);
-                            player.sendMessage(Lang.generalFailure.append(Component.text(" Watch out!")).color(NamedTextColor.RED));
-                        }
-                    }
-                } else {
-                    // COOLDOWN PENALTY - beacon is still exhausted from previous mining
-
-                    // Calculate how many ticks remain on the cooldown
-                    // Convert milliseconds to ticks (1 tick = 50ms)
-                    int num = (int) (beacon.getHackTimer() + Settings.mineCoolDown - System.currentTimeMillis()) / 50;
-
-                    // Apply configured penalty potion effects for attempting to mine during cooldown
-                    for (String effect : Settings.minePenalty) {
-                        // Parse effect string format: "EFFECT_NAME:AMPLIFIER"
-                        String[] split = effect.split(":");
-                        if (split.length == 2) {
-                            int amplifier = 1;
-
-                            // Extract amplifier value if provided
-                            if (NumberUtils.isNumber(split[1])) {
-                                amplifier = Integer.parseInt(split[1]);
-                                if (DEBUG)
-                                    getLogger().info("DEBUG: Amplifier is " + amplifier);
-                            }
-
-                            // Look up the potion effect type by name
-                            PotionEffectType potionEffectType = PotionEffectType.getByName(split[0]);
-
-                            if (potionEffectType != null) {
-                                // Apply the penalty effect for the remaining cooldown duration
-                                player.addPotionEffect(new PotionEffect(potionEffectType, num, amplifier));
-
-                                // Play sound effect to indicate penalty
-                                player.getWorld().playSound(player.getLocation(), Sound.ENTITY_SPLASH_POTION_BREAK, 1F, 1F);
-
-                                if (DEBUG)
-                                    getLogger().info("DEBUG: Applying " + potionEffectType + ":" + amplifier + " for " + num + " ticks");
-                            }
-                        } else {
-                            // Invalid configuration format - log warning
-                            getLogger().warning("Unknown hack cooldown effect" + effect);
-                        }
-
-                    }
+                        getLogger().info("DEBUG: Applying " + potionEffectType + ":" + amplifier + " for " + num + " ticks");
                 }
+            } else {
+                // Invalid configuration format - log warning
+                getLogger().warning("Unknown hack cooldown effect" + effect);
             }
         }
     }
