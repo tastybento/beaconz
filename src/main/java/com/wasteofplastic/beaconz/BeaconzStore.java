@@ -125,7 +125,7 @@ public class BeaconzStore extends BeaconzPluginDependent {
         ymlIndex.set(gameName + "." + player.getUniqueId() + ".inventory", contents);
         ymlIndex.set(gameName + "." + player.getUniqueId() + ".health", player.getHealth());
         ymlIndex.set(gameName + "." + player.getUniqueId() + ".food", player.getFoodLevel());
-        ymlIndex.set(gameName + "." + player.getUniqueId() + ".exp", BeaconLinkListener.getTotalExperience(player));
+        ymlIndex.set(gameName + "." + player.getUniqueId() + ".exp", player.calculateTotalExperiencePoints());
         ymlIndex.set(gameName + "." + player.getUniqueId() + ".location", player.getLocation());
         saveInventories();
         // Clear the player's inventory

@@ -215,6 +215,7 @@ class BeaconLinkListenerTest extends CommonTestBase {
     void testTestForExpInsufficientXP() {
         when(player.getLevel()).thenReturn(0);
         when(player.getExp()).thenReturn(0f);
+        when(player.calculateTotalExperiencePoints()).thenReturn(0);
 
         boolean result = BeaconLinkListener.testForExp(player, 100);
 
@@ -230,35 +231,13 @@ class BeaconLinkListenerTest extends CommonTestBase {
         // Level 30 player has significant XP
         when(player.getLevel()).thenReturn(30);
         when(player.getExp()).thenReturn(0.5f);
+        // Level 30 has accumulated ~1395 XP (sum of tier 1 + tier 2 formula)
+        // We need to mock this to return more than 50 XP required for the test
+        when(player.calculateTotalExperiencePoints()).thenReturn(1395);
 
         boolean result = BeaconLinkListener.testForExp(player, 50);
 
         assertFalse(result, "testForExp should return false when player has enough XP");
-    }
-
-    /** getTotalExperience calculates total XP from level and progress. */
-    @Test
-    void testGetTotalExperienceLevel0() {
-        when(player.getLevel()).thenReturn(0);
-        when(player.getExp()).thenReturn(0f);
-
-        int total = BeaconLinkListener.getTotalExperience(player);
-
-        assertEquals(0, total);
-    }
-
-    /** getTotalExperience at level 10 with 50% progress. */
-    @Test
-    void testGetTotalExperienceLevel10() {
-        when(player.getLevel()).thenReturn(10);
-        when(player.getExp()).thenReturn(0.5f); // 50% to next level
-
-        int total = BeaconLinkListener.getTotalExperience(player);
-
-        // Level 10 is in the <=15 bracket: (2*10)+7 = 27 XP to next level
-        // Total XP to reach level 10: sum of (2*i+7) for i=0..9 = 162
-        // Plus 50% of 27 = 13.5 ~ 14
-        assertTrue(total > 160 && total < 180, "Level 10 player should have ~162+ XP");
     }
 
     /** setTotalExperience with negative value throws exception. */
@@ -295,12 +274,15 @@ class BeaconLinkListenerTest extends CommonTestBase {
     void testRemoveExpSufficient() {
         when(player.getLevel()).thenReturn(10);
         when(player.getExp()).thenReturn(0.5f);
+        when(player.calculateTotalExperiencePoints()).thenReturn(176); // Level 10 with 50% progress
 
         BeaconLinkListener.removeExp(player, 50);
 
-        // Should call setTotalExperience with reduced amount
-        verify(player).setExp(0);
+        // Should call setTotalExperience which resets and then gives XP
         verify(player).setLevel(0);
+        verify(player).setExp(0);  // setExp with int 0 (not float)
+        verify(player).setTotalExperience(0);
+        verify(player).giveExp(126); // 176 - 50 = 126
     }
 
     /** removeExp does nothing if player lacks XP. */
@@ -308,6 +290,7 @@ class BeaconLinkListenerTest extends CommonTestBase {
     void testRemoveExpInsufficient() {
         when(player.getLevel()).thenReturn(0);
         when(player.getExp()).thenReturn(0f);
+        when(player.calculateTotalExperiencePoints()).thenReturn(0);
 
         BeaconLinkListener.removeExp(player, 100);
 

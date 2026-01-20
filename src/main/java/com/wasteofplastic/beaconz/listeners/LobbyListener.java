@@ -67,7 +67,6 @@ public class LobbyListener extends BeaconzPluginDependent implements Listener {
     /**
      * Handles using signs in the lobby to join games
      */
-    @SuppressWarnings("deprecation")
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onSignClick(final PlayerInteractEvent event) {
         // We are only interested in hitting signs
