@@ -313,7 +313,7 @@ public class Params {
                     } else {
                         for (String stype : stypes) {
                             this.scoretypes.add(
-                                    switch (value.toLowerCase()) {
+                                    switch (stype.toLowerCase()) {
                                     case "area" -> GameScoreGoal.AREA;
                                     case "beacons" -> GameScoreGoal.BEACONS;
                                     case "triangles" -> GameScoreGoal.TRIANGLES;

@@ -110,9 +110,7 @@ public class Scorecard extends BeaconzPluginDependent{
     /**
      * Initializes the scoreboard, starts the game
      * Prepares the timer, scoretypes, scores and score values per game mode
-     *
      */
-    @SuppressWarnings("deprecation")
     public void initialize(Boolean newGame) {
         timerinterval = 5;
         showtimer = Settings.showTimer;

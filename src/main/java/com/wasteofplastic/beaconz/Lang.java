@@ -221,6 +221,10 @@ public class Lang extends BeaconzPluginDependent {
     public static String scoreGoalLinks;
     public static Component scoreGame;
     public static Component scoreTeam;
+    public static Component linkLostLink;
+    public static Component linkLostLinks;
+    public static Component linkTeamLostLink;
+    public static Component linkTeamLostLinks;
     
    
     public void loadLocale(String localeName) {
@@ -451,6 +455,10 @@ public class Lang extends BeaconzPluginDependent {
         triangleThisBelongsTo = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("triangle.ThisBelongsTo", "This belongs to [team]!"));
         triangleYourTeamLostATriangle = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("triangle.YourTeamLostATriangle", "Your faction lost a triangle!"));
         triangleTeamLostATriangle = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("triangle.TeamLostATriangle", "[team] lost a triangle!"));
+        linkLostLink = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("link.LostLink", "Your team lost a link!"));
+        linkLostLinks = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("link.LostLinks", "Your team lost [number] links!"));
+        linkTeamLostLink = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("link.TeamLostLink", "[team] lost a link!"));
+        linkTeamLostLinks = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("link.TeamLostLinks", "[team] lost [number links!"));
 
         // Defense text
         defenseText = new HashMap<>();

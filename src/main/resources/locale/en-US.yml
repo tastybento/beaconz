@@ -275,3 +275,8 @@ triangle:
   ThisBelongsTo: "This belongs to [team]!"
   YourTeamLostATriangle: "Your faction lost a triangle!"
   TeamLostATriangle: "[team] lost a triangle!"
+link:
+    LostLink: "Your team lost a link!"
+    LostLinks: "Your team lost [number] links!"
+    TeamLostLink: "[team] lost a link!"
+    TeamLostLinks: "[team] lost [number links!"

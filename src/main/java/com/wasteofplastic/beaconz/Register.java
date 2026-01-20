@@ -36,7 +36,6 @@ import java.util.Set;
 
 import org.apache.commons.lang.math.NumberUtils;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -53,6 +52,7 @@ import org.bukkit.scoreboard.Team;
 import com.wasteofplastic.beaconz.map.BeaconMap;
 import com.wasteofplastic.beaconz.map.TerritoryMapRenderer;
 
+import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
@@ -1025,11 +1025,13 @@ public class Register extends BeaconzPluginDependent {
                 // Tell folks what's going on
                 if (oldOwner != null) {
                     if (linkLossCount == 1 && !quiet) {
-                        getMessages().tellTeam(oldOwner, ChatColor.RED + "Your team lost a link!");
-                        getMessages().tellOtherTeams(oldOwner, ChatColor.GREEN + oldOwner.getDisplayName() + ChatColor.GREEN + " lost a link!");
+                        getMessages().tellTeam(oldOwner, Lang.linkLostLink.color(NamedTextColor.RED));
+                        getMessages().tellOtherTeams(oldOwner,Lang.linkTeamLostLink.replaceText(builder -> builder.matchLiteral("[team]").replacement(oldOwner.displayName())).color(NamedTextColor.GREEN));
                     } else if (linkLossCount > 1) {
-                        getMessages().tellTeam(oldOwner, ChatColor.RED + "Your team lost " + linkLossCount + " links!");
-                        getMessages().tellOtherTeams(oldOwner, ChatColor.GREEN + oldOwner.getDisplayName() + ChatColor.GREEN + " lost " + linkLossCount + " links!");
+                        String count = String.valueOf(linkLossCount);
+                        getMessages().tellTeam(oldOwner, Lang.linkLostLinks.replaceText(builder -> builder.matchLiteral("[number]").replacement(Component.text(count))).color(NamedTextColor.RED));
+                        getMessages().tellOtherTeams(oldOwner, Lang.linkTeamLostLinks.replaceText(builder -> builder.matchLiteral("[team]")
+                                .replacement(oldOwner.displayName())).replaceText(builder -> builder.matchLiteral("[number]").replacement(Component.text(count))).color(NamedTextColor.GREEN));
                     }
                 }
             }
@@ -1046,7 +1048,8 @@ public class Register extends BeaconzPluginDependent {
                 // Tell folks what's going on
                 if (!quiet && triangle.getOwner() != null) {
                     getMessages().tellTeam(triangle.getOwner(), Lang.triangleYourTeamLostATriangle.color(NamedTextColor.RED));
-                    getMessages().tellOtherTeams(triangle.getOwner(), Lang.triangleTeamLostATriangle.replaceText("[team]", triangle.getOwner().displayName()).color(NamedTextColor.GREEN));
+                    getMessages().tellOtherTeams(triangle.getOwner(), Lang.triangleTeamLostATriangle.replaceText(builder -> builder.matchLiteral(
+                            "[team]").replacement(triangle.getOwner().displayName())).color(NamedTextColor.GREEN));
                 }
                 // Find any players in the triangle being removed
                 for (Player player: getServer().getOnlinePlayers()) {
