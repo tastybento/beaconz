@@ -22,7 +22,6 @@
 
 package com.wasteofplastic.beaconz;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -74,83 +73,207 @@ import com.wasteofplastic.beaconz.listeners.PlayerMovementListener;
 import com.wasteofplastic.beaconz.listeners.PlayerTeleportListener;
 import com.wasteofplastic.beaconz.listeners.SkyListeners;
 
+/**
+ * Main plugin class for the Beaconz strategic team-based game.
+ * <p>
+ * Beaconz is a Minecraft mini-game where teams compete to control beacons scattered
+ * across a custom-generated world. Teams can:
+ * <ul>
+ *   <li>Capture beacons by breaking obsidian capstones</li>
+ *   <li>Link beacons together to form strategic connections</li>
+ *   <li>Create triangular fields that control territory</li>
+ *   <li>Mine beacons for resources</li>
+ *   <li>Build defenses to protect their beacons</li>
+ * </ul>
+ *
+ * <h3>Architecture:</h3>
+ * The plugin manages several key components:
+ * <ul>
+ *   <li><b>GameMgr:</b> Manages multiple game instances</li>
+ *   <li><b>Register:</b> Tracks all beacons, links, and triangular fields</li>
+ *   <li><b>BeaconzWorld:</b> Custom world with beacon generation</li>
+ *   <li><b>BeaconzStore:</b> Handles inventory persistence across games</li>
+ *   <li><b>Messages:</b> Queues messages for offline players</li>
+ * </ul>
+ *
+ * <h3>Lifecycle:</h3>
+ * <ol>
+ *   <li><b>onLoad():</b> Create chunk generator</li>
+ *   <li><b>onEnable():</b> Load config, create world, register listeners</li>
+ *   <li><b>onDisable():</b> Save all data (register, inventories, games)</li>
+ * </ol>
+ *
+ * @author tastybento
+ * @since 1.0
+ */
 public class Beaconz extends JavaPlugin {
+    /** The beacon register that tracks all beacons, links, and triangular fields */
     private Register register;
+
+    /** The custom Beaconz world where games take place */
     private World beaconzWorld;
+
+    /** Singleton instance of the plugin */
     private static Beaconz plugin;
+
+    /** Custom chunk generator for creating the Beaconz world with beacons */
     private ChunkGenerator chunkGenerator;
+
+    /** Block populator responsible for placing beacons during world generation */
     private BlockPopulator beaconPopulator;
+
+    /** Game manager that handles multiple game instances */
     private GameMgr gameMgr;
+
+    /** Message queue system for delivering messages to offline players */
     private Messages messages;
+
+    /** Inventory storage system for persisting player inventories across games */
     private BeaconzStore beaconzStore;
+
+    /** Player movement listener that handles triangle field effects */
     protected PlayerMovementListener pml;
+
+    /** Player name database for offline player lookups */
     private TinyDB nameStore;
+
+    /** Teleport listener for managing safe teleportation */
     private PlayerTeleportListener teleportListener;
 
+    /**
+     * Called when the plugin is loaded (before worlds are loaded).
+     * <p>
+     * This is the earliest point in the plugin lifecycle. We use it to:
+     * <ol>
+     *   <li>Store the singleton plugin instance for global access</li>
+     *   <li>Create the chunk generator (must exist before world loads)</li>
+     * </ol>
+     *
+     * The chunk generator is created here because it must be available when
+     * the Beaconz world is loaded by the server.
+     */
     @Override
     public void onLoad() {
+        // Store singleton instance for static access across the plugin
         plugin = this;
+
+        // Create the chunk generator for the Beaconz world
+        // This must happen in onLoad() before worlds are loaded
         chunkGenerator = new BeaconzChunkGen(this);
     }
 
+    /**
+     * Called when the plugin is enabled (after all worlds are loaded).
+     * <p>
+     * This is the main initialization method that sets up the entire plugin:
+     * <ol>
+     *   <li>Load configuration from config.yml</li>
+     *   <li>Register commands (/beaconz and /badmin)</li>
+     *   <li>Initialize metrics tracking</li>
+     *   <li>Start player name database</li>
+     *   <li>Schedule delayed initialization (1 tick later)</li>
+     * </ol>
+     *
+     * <h3>Delayed Initialization (1 tick later):</h3>
+     * Most initialization happens 1 tick after enable to ensure all plugins
+     * and worlds are fully loaded. This includes:
+     * <ul>
+     *   <li>Creating/loading the Beaconz world</li>
+     *   <li>Initializing the game manager and lobby</li>
+     *   <li>Loading the beacon register from disk</li>
+     *   <li>Registering all event listeners</li>
+     *   <li>Loading player message queues</li>
+     *   <li>Hooking into Dynmap (if enabled)</li>
+     *   <li>Creating the default game</li>
+     * </ul>
+     */
     @Override
     public void onEnable() {
-        // Save the default config from the jar
+        // INITIALIZATION PHASE 1: Configuration and Commands
+
+        // Save the default config from the jar if it doesn't exist
         saveDefaultConfig();
+
+        // Load configuration values into Settings class
         loadConfig();
 
-        // Register command(s)
+        // Register player commands
         getCommand("beaconz").setExecutor(new CmdHandler(this));
+
+        // Register admin commands
         getCommand("badmin").setExecutor(new AdminCmdHandler(this));
 
-        // Metrics
+        // INITIALIZATION PHASE 2: Services
+
+        // Initialize bStats metrics tracking
         try {
             final Metrics metrics = new Metrics(this);
             metrics.start();
-        } catch (final IOException localIOException) {}
+        } catch (final IOException localIOException) {
+            // Metrics failure is not critical - silently continue
+        }
 
-        // Start the name store
+        // Start the player name database for offline player lookups
         nameStore = new TinyDB(this);
 
-        // Run commands that need to be run 1 tick after start
+        // INITIALIZATION PHASE 3: Delayed Setup (1 tick later)
+        // Schedule most initialization for 1 tick after enable to ensure
+        // all plugins and worlds are fully loaded by the server
         getServer().getScheduler().runTask(this, () -> {
             
-            // Start the game manager and create the lobby region
+            // Create the game manager and lobby region
             gameMgr = new GameMgr(plugin);
 
-            // Load the beacon register
+            // Load the beacon register from disk (or create new if first run)
             getRegister();
             
-            // Create the block populator
+            // Create the block populator for beacon generation
             getBp();
 
-            // Create the world
+            // Create/load the Beaconz world
             getBeaconzWorld();
 
-            // Create the inventory store
+            // Create the inventory storage system
             beaconzStore = new BeaconzStore(plugin);
 
-            // Register the listeners - block break etc.
+            // LISTENER REGISTRATION
+            // Register all event listeners in order of typical execution
+
+            // Beacon interaction listeners
             getServer().getPluginManager().registerEvents(new BeaconLinkListener(plugin), plugin);
             getServer().getPluginManager().registerEvents(new BeaconCaptureListener(plugin), plugin);
+
+            // Communication listener
             getServer().getPluginManager().registerEvents(new ChatListener(plugin), plugin);
+
+            // Beacon defense listeners
             getServer().getPluginManager().registerEvents(new BeaconPassiveDefenseListener(plugin), plugin);
             getServer().getPluginManager().registerEvents(new BeaconProjectileDefenseListener(plugin), plugin);
             getServer().getPluginManager().registerEvents(new BeaconProtectionListener(plugin), plugin);
+
+            // Player lifecycle listeners
             getServer().getPluginManager().registerEvents(new PlayerDeathListener(plugin), plugin);
             getServer().getPluginManager().registerEvents(new PlayerJoinLeaveListener(plugin), plugin);
+
+            // Player movement listener (stored for triangle effect access)
             pml = new PlayerMovementListener(plugin);
             getServer().getPluginManager().registerEvents(pml, plugin);
+
+            // Teleport listener (stored for reference)
             teleportListener = new PlayerTeleportListener(plugin);
             getServer().getPluginManager().registerEvents(teleportListener, plugin);
+
+            // World/environment listeners
             getServer().getPluginManager().registerEvents(new SkyListeners(plugin), plugin);
             getServer().getPluginManager().registerEvents(new BeaconSurroundListener(plugin), plugin);
+
+            // Lobby listener for sign-based game joining
             getServer().getPluginManager().registerEvents(new LobbyListener(plugin), plugin);
 
-            // Load messages for players
+            // Load player message queues
             messages = new Messages(plugin);
 
-            /* Get dynmap */
+            // OPTIONAL: Dynmap Integration
             if (Settings.useDynmap) {
                 PluginManager pm = getServer().getPluginManager();
                 Plugin dynmap = pm.getPlugin("dynmap");
@@ -159,34 +282,67 @@ public class Beaconz extends JavaPlugin {
                     getServer().getPluginManager().registerEvents(new OurServerListener(plugin, dynmap), plugin);
                 }
             }
-            // Make first game
+
+            // GAME CREATION
+            // Create the default game if no games exist (first run)
             if (gameMgr.getGames().isEmpty()) {
                 gameMgr.newGame(Settings.defaultGameName);
             }
-            // Make spawns
 
         });
     }
 
-
+    /**
+     * Called when the plugin is disabled (server shutdown or plugin reload).
+     * <p>
+     * This method performs critical cleanup and data persistence:
+     * <ol>
+     *   <li>Save beacon register (all beacons, links, triangles)</li>
+     *   <li>Remove map renderers to prevent memory leaks</li>
+     *   <li>Save all player inventories</li>
+     *   <li>Save all game states</li>
+     * </ol>
+     *
+     * All data is saved to disk to ensure no progress is lost when the
+     * server restarts or the plugin is reloaded.
+     */
     @Override
     public void onDisable()
     {
+        // Save beacon register (beacons, links, triangular fields)
         if (register != null) {
             register.saveRegister();
-            // Remove all map renderers
+
+            // Remove all custom map renderers to prevent memory leaks
+            // Maps will get their renderers back when players rejoin
             register.removeMapRenderers();
         }
+
+        // Save all player inventories to disk
         if (beaconzStore != null) {
             beaconzStore.saveInventories();
         }
 
+        // Save all game states (teams, scores, configurations)
         getGameMgr().saveAllGames();
     }
 
 
     /**
-     * @return the gameMgr
+     * Gets the game manager instance, creating it if it doesn't exist.
+     * <p>
+     * The GameMgr handles:
+     * <ul>
+     *   <li>Multiple concurrent game instances</li>
+     *   <li>Lobby region management</li>
+     *   <li>Player-to-game assignment</li>
+     *   <li>Game lifecycle (creation, start, end)</li>
+     * </ul>
+     *
+     * This lazy initialization ensures the game manager exists even if
+     * accessed before onEnable completes.
+     *
+     * @return The game manager instance
      */
     public GameMgr getGameMgr() {
         if (gameMgr == null) {
@@ -196,18 +352,39 @@ public class Beaconz extends JavaPlugin {
     }
 
     /**
-     * @return the register
+     * Gets the beacon register instance, creating and loading it if it doesn't exist.
+     * <p>
+     * The Register tracks all game data:
+     * <ul>
+     *   <li>All beacons in the world</li>
+     *   <li>Links between beacons</li>
+     *   <li>Triangular field territories</li>
+     *   <li>Defense blocks</li>
+     *   <li>Beacon maps</li>
+     * </ul>
+     *
+     * On first access, the register is loaded from disk. If no saved data exists
+     * (first run), an empty register is created.
+     *
+     * @return The beacon register instance
      */
     public Register getRegister() {
         if (register == null) {
             register = new Register(plugin);
+            // Load saved data from disk (or create empty if first run)
             register.loadRegister();
         }
         return register;
     }
 
     /**
-     * @return the bp
+     * Gets the beacon populator instance, creating it if it doesn't exist.
+     * <p>
+     * The BeaconPopulator is responsible for placing beacons during chunk generation.
+     * It uses a grid-based distribution system to ensure beacons are evenly spaced
+     * across the world.
+     *
+     * @return The beacon populator instance
      */
     public BlockPopulator getBp() {
         if (beaconPopulator == null) {
@@ -217,7 +394,13 @@ public class Beaconz extends JavaPlugin {
     }
 
     /**
-     * @return the pml
+     * Gets the player movement listener instance.
+     * <p>
+     * The PlayerMovementListener tracks players moving through triangular fields
+     * and applies/removes triangle-based potion effects. It's stored as a field
+     * so other classes can access the triangle effect tracking.
+     *
+     * @return The player movement listener instance
      */
     public PlayerMovementListener getPml() {
         return pml;
@@ -225,8 +408,33 @@ public class Beaconz extends JavaPlugin {
 
 
     /**
-     * Loads settings from config.yml
-     * Clears all old settings
+     * Loads all configuration settings from config.yml into the Settings class.
+     * <p>
+     * This method reads and validates all game configuration including:
+     * <ul>
+     *   <li><b>General:</b> Game mode, team chat, locking blocks, teleport delay</li>
+     *   <li><b>World:</b> World name, distribution, distance, seed, game center coordinates</li>
+     *   <li><b>Lobby:</b> Location, radius, height, blocks, spawn settings</li>
+     *   <li><b>Teams:</b> Default number of teams, team colors</li>
+     *   <li><b>Links:</b> Max links, link limit, link blocks, experience distance, rewards</li>
+     *   <li><b>Mining:</b> Experience cost, cooldown, exhaustion chance, penalties, rewards</li>
+     *   <li><b>Defense:</b> Defense height, level requirements for building/attacking</li>
+     *   <li><b>Triangles:</b> Enemy and friendly field effects by depth</li>
+     *   <li><b>Scoreboard:</b> Goals, timers, score types for each game mode</li>
+     * </ul>
+     *
+     * <h3>Configuration Validation:</h3>
+     * The method performs validation and correction:
+     * <ul>
+     *   <li>Ensures percentages are 0-100</li>
+     *   <li>Ensures positive values where required</li>
+     *   <li>Aligns coordinates to chunk/region boundaries</li>
+     *   <li>Fills missing level requirements with previous values</li>
+     *   <li>Validates material names and potion effect names</li>
+     * </ul>
+     *
+     * Invalid or missing values are replaced with sensible defaults and warnings
+     * are logged for administrator attention.
      */
     public void loadConfig() {
         // Use scoreboard
@@ -593,13 +801,32 @@ public class Beaconz extends JavaPlugin {
     }
 
     /**
-     * Get the world that Beaconz runs in and if it doesn't exist, make it
-     * @return
+     * Gets the Beaconz world instance, creating it if it doesn't exist.
+     * <p>
+     * The Beaconz world is a custom-generated world featuring:
+     * <ul>
+     *   <li>Grid-distributed beacons across the landscape</li>
+     *   <li>Custom terrain generation via {@link BeaconzChunkGen}</li>
+     *   <li>Configurable seed and world center</li>
+     *   <li>Normal environment but with beacon structures</li>
+     * </ul>
+     *
+     * On first access, the world is created using:
+     * <ul>
+     *   <li>World name from Settings.worldName</li>
+     *   <li>Seed from Settings.seedAdjustment</li>
+     *   <li>Custom chunk generator (BeaconzChunkGen)</li>
+     * </ul>
+     *
+     * Note: This method can be called asynchronously during chunk generation,
+     * so it cannot modify world properties that require the main thread.
+     *
+     * @return The Beaconz world, or null if world creation fails
      */
     public World getBeaconzWorld() {
-        // Check to see if the world exists, and if not, make it
+        // Check if world is already loaded
         if (beaconzWorld == null) {
-            // World doesn't exist, so make it
+            // World doesn't exist yet - create it
             getLogger().info("World is '" + Settings.worldName + "'");
             try {
                 beaconzWorld = WorldCreator
@@ -607,25 +834,34 @@ public class Beaconz extends JavaPlugin {
                         .type(WorldType.NORMAL)
                         .environment(World.Environment.NORMAL)
                         .seed(Settings.seedAdjustment)
-                        .generator(chunkGenerator)
+                        .generator(chunkGenerator)  // Custom beacon world generator
                         .createWorld();
             } catch (Exception e) {
+                // World creation failed (likely during async chunk generation)
                 getLogger().info("Could not make world yet..");
                 return null;
             }
         }
-        // This is not allowed in this function as it can be called async
-        //beaconzWorld.setSpawnLocation(Settings.xCenter, beaconzWorld.getHighestBlockYAt(Settings.xCenter, Settings.zCenter), Settings.zCenter);
-        /*
-        if (!beaconzWorld.getPopulators().contains(getBp())) {
-            beaconzWorld.getPopulators().add(getBp());
-        }
-         */
+
+        // Note: Cannot set spawn location here as this method may be called async
+        // during chunk generation. Spawn location is set during onEnable.
+
         return beaconzWorld;
     }
 
     /**
-     * @return the beaconzStore
+     * Gets the inventory storage system.
+     * <p>
+     * BeaconzStore handles:
+     * <ul>
+     *   <li>Saving player inventories when switching games</li>
+     *   <li>Restoring inventories when rejoining games</li>
+     *   <li>Lobby inventory separate from game inventories</li>
+     *   <li>Experience point persistence</li>
+     *   <li>Health and hunger state</li>
+     * </ul>
+     *
+     * @return The inventory storage instance
      */
     public BeaconzStore getBeaconzStore() {
         return beaconzStore;
@@ -633,10 +869,52 @@ public class Beaconz extends JavaPlugin {
 
 
     /**
-     * @return the messages
+     * Gets the player message queue system.
+     * <p>
+     * Messages handles:
+     * <ul>
+     *   <li>Queuing messages for offline players</li>
+     *   <li>Delivering messages when players log in</li>
+     *   <li>Team broadcast messages</li>
+     *   <li>Cross-game notifications</li>
+     * </ul>
+     *
+     * @return The messages instance
      */
     public Messages getMessages() {
         return messages;
+    }
+
+    /**
+     * Gets the teleport listener instance.
+     * <p>
+     * The PlayerTeleportListener ensures safe teleportation by:
+     * <ul>
+     *   <li>Preventing teleports into unsafe locations</li>
+     *   <li>Applying configured teleport delays</li>
+     *   <li>Managing cross-world teleports</li>
+     * </ul>
+     *
+     * @return The teleport listener instance
+     */
+    public PlayerTeleportListener getTeleportListener() {
+        return teleportListener;
+    }
+
+    /**
+     * Gets the player name database.
+     * <p>
+     * TinyDB stores player names mapped to UUIDs for:
+     * <ul>
+     *   <li>Showing beacon ownership when owners are offline</li>
+     *   <li>Admin commands that reference players by name</li>
+     *   <li>Team rosters and scoreboards</li>
+     * </ul>
+     *
+     * @return The player name database instance
+     */
+    public TinyDB getNameStore() {
+        return nameStore;
     }
 
 
@@ -969,20 +1247,6 @@ public class Beaconz extends JavaPlugin {
     }
 
 
-    /**
-     * @return the nameStore
-     */
-    public TinyDB getNameStore() {
-        return nameStore;
-    }
-
-
-    /**
-     * @return the teleportListener
-     */
-    public PlayerTeleportListener getTeleportListener() {
-        return teleportListener;
-    }
 
     /**
      * Reloads the world after it has been unloaded.
@@ -996,24 +1260,13 @@ public class Beaconz extends JavaPlugin {
      * Sends a message to the command sender
      * Allows for null senders and messages
      *
-     * @param sender
-     * @param msg
+     * @param sender sender
+     * @param msg message
      */
     public void senderMsg(CommandSender sender, String msg) {
         if (sender!=null && msg!=null && !msg.isEmpty()) {
             sender.sendMessage(msg);
-        } else {
         }
-    }
-
-
-    /**
-     * Check if world is covered by Beaconz
-     * @param world world
-     * @return True if world is a Beaconz world.
-     */
-    public boolean inWorld(@NotNull World world) {
-        return world.equals(getBeaconzWorld());
     }
 
     /**
