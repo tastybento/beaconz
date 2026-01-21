@@ -127,7 +127,7 @@ public class LobbyListener extends BeaconzPluginDependent implements Listener {
         }
 
         // Only process left-clicks (right-click would be for editing)
-        if (!event.getAction().equals(Action.LEFT_CLICK_BLOCK)) {
+        if (!event.getAction().equals(Action.LEFT_CLICK_BLOCK) || event.getClickedBlock() == null) {
             return;
         }
 
@@ -193,7 +193,7 @@ public class LobbyListener extends BeaconzPluginDependent implements Listener {
      *
      * If validation succeeds, the admin receives a confirmation message.
      * If the sign has the keyword but no valid games, an error is shown.
-     *
+     * <p>
      * Note: This is informational only and doesn't prevent sign creation.
      * Invalid signs will simply not function when players click them.
      *
@@ -209,11 +209,11 @@ public class LobbyListener extends BeaconzPluginDependent implements Listener {
         // Verify the sign is being placed in the lobby region
         if (getGameMgr().getLobby().isPlayerInRegion(event.getPlayer())) {
             // Check if line 0 contains the configured sign keyword
-            if (event.line(0).contains(Lang.adminSignKeyword)) {
+            if (event.line(0) != null && event.line(0).contains(Lang.adminSignKeyword)) {
                 // Check lines 1-3 for valid game names
                 for (int i = 1; i < 4; i++) {
                     // Verify a game with this name exists in the system
-                    if (getGameMgr().getGame(event.line(i)) != null) {
+                    if (event.line(i) != null && getGameMgr().getGame(event.line(i)) != null) {
                         // Success! Inform the admin that the sign is valid and functional
                         event.getPlayer().sendMessage(Lang.adminGameSignPlaced
                                 .append(Component.text(" - ")
