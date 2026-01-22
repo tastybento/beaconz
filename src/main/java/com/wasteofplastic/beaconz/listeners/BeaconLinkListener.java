@@ -44,14 +44,14 @@ import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
 import org.bukkit.scoreboard.Team;
 
-import com.wasteofplastic.beaconz.BeaconObj;
+import com.wasteofplastic.beaconz.core.BeaconObj;
 import com.wasteofplastic.beaconz.Beaconz;
 import com.wasteofplastic.beaconz.BeaconzPluginDependent;
-import com.wasteofplastic.beaconz.DefenseBlock;
-import com.wasteofplastic.beaconz.Lang;
-import com.wasteofplastic.beaconz.LinkResult;
-import com.wasteofplastic.beaconz.Params.GameScoreGoal;
-import com.wasteofplastic.beaconz.Settings;
+import com.wasteofplastic.beaconz.core.DefenseBlock;
+import com.wasteofplastic.beaconz.config.Lang;
+import com.wasteofplastic.beaconz.util.LinkResult;
+import com.wasteofplastic.beaconz.config.Params.GameScoreGoal;
+import com.wasteofplastic.beaconz.config.Settings;
 import com.wasteofplastic.beaconz.map.TerritoryMapRenderer;
 
 import net.kyori.adventure.text.Component;

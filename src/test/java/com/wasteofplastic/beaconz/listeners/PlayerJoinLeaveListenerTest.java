@@ -26,10 +26,10 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
 import com.google.common.collect.HashBiMap;
-import com.wasteofplastic.beaconz.Lang;
-import com.wasteofplastic.beaconz.Messages;
-import com.wasteofplastic.beaconz.Region;
-import com.wasteofplastic.beaconz.TinyDB;
+import com.wasteofplastic.beaconz.config.Lang;
+import com.wasteofplastic.beaconz.storage.Messages;
+import com.wasteofplastic.beaconz.core.Region;
+import com.wasteofplastic.beaconz.storage.TinyDB;
 
 import net.kyori.adventure.text.Component;
 

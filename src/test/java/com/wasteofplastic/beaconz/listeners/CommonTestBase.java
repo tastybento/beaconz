@@ -25,16 +25,16 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
-import com.wasteofplastic.beaconz.BeaconObj;
+import com.wasteofplastic.beaconz.core.BeaconObj;
 import com.wasteofplastic.beaconz.Beaconz;
-import com.wasteofplastic.beaconz.BeaconzStore;
-import com.wasteofplastic.beaconz.Game;
-import com.wasteofplastic.beaconz.GameMgr;
-import com.wasteofplastic.beaconz.Lang;
-import com.wasteofplastic.beaconz.Messages;
-import com.wasteofplastic.beaconz.Register;
-import com.wasteofplastic.beaconz.Scorecard;
-import com.wasteofplastic.beaconz.TinyDB;
+import com.wasteofplastic.beaconz.storage.BeaconzStore;
+import com.wasteofplastic.beaconz.game.Game;
+import com.wasteofplastic.beaconz.game.GameMgr;
+import com.wasteofplastic.beaconz.config.Lang;
+import com.wasteofplastic.beaconz.storage.Messages;
+import com.wasteofplastic.beaconz.game.Register;
+import com.wasteofplastic.beaconz.game.Scorecard;
+import com.wasteofplastic.beaconz.storage.TinyDB;
 
 import net.kyori.adventure.text.Component;
 

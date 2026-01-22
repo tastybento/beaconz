@@ -45,13 +45,13 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.scoreboard.Team;
 
-import com.wasteofplastic.beaconz.BeaconObj;
+import com.wasteofplastic.beaconz.core.BeaconObj;
 import com.wasteofplastic.beaconz.Beaconz;
 import com.wasteofplastic.beaconz.BeaconzPluginDependent;
-import com.wasteofplastic.beaconz.DefenseBlock;
-import com.wasteofplastic.beaconz.Lang;
-import com.wasteofplastic.beaconz.Scorecard;
-import com.wasteofplastic.beaconz.Settings;
+import com.wasteofplastic.beaconz.core.DefenseBlock;
+import com.wasteofplastic.beaconz.config.Lang;
+import com.wasteofplastic.beaconz.game.Scorecard;
+import com.wasteofplastic.beaconz.config.Settings;
 
 import net.kyori.adventure.text.Component;
 

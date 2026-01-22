@@ -48,12 +48,12 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scoreboard.Team;
 
-import com.wasteofplastic.beaconz.BeaconObj;
+import com.wasteofplastic.beaconz.core.BeaconObj;
 import com.wasteofplastic.beaconz.Beaconz;
 import com.wasteofplastic.beaconz.BeaconzPluginDependent;
-import com.wasteofplastic.beaconz.Game;
-import com.wasteofplastic.beaconz.Lang;
-import com.wasteofplastic.beaconz.Settings;
+import com.wasteofplastic.beaconz.game.Game;
+import com.wasteofplastic.beaconz.config.Lang;
+import com.wasteofplastic.beaconz.config.Settings;
 import com.wasteofplastic.beaconz.map.BeaconMap;
 import com.wasteofplastic.beaconz.map.TerritoryMapRenderer;
 

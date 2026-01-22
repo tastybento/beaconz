@@ -26,6 +26,10 @@ import java.io.File;
 import java.util.List;
 import java.util.logging.Logger;
 
+import com.wasteofplastic.beaconz.game.GameMgr;
+import com.wasteofplastic.beaconz.game.Register;
+import com.wasteofplastic.beaconz.storage.BeaconzStore;
+import com.wasteofplastic.beaconz.storage.Messages;
 import org.bukkit.Server;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;

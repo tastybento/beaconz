@@ -27,7 +27,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
-import com.wasteofplastic.beaconz.Settings;
+import com.wasteofplastic.beaconz.config.Settings;
 
 import net.kyori.adventure.text.Component;
 

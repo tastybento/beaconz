@@ -23,11 +23,11 @@ import org.bukkit.map.MapView;
 import org.bukkit.scoreboard.Team;
 import org.jetbrains.annotations.NotNull;
 
-import com.wasteofplastic.beaconz.BeaconObj;
+import com.wasteofplastic.beaconz.core.BeaconObj;
 import com.wasteofplastic.beaconz.Beaconz;
-import com.wasteofplastic.beaconz.Game;
-import com.wasteofplastic.beaconz.Scorecard;
-import com.wasteofplastic.beaconz.TriangleField;
+import com.wasteofplastic.beaconz.game.Game;
+import com.wasteofplastic.beaconz.game.Scorecard;
+import com.wasteofplastic.beaconz.core.TriangleField;
 
 /**
  * Overlays all beacons, links, and triangles onto a map. Overlapping triangles make progressively darker colors.

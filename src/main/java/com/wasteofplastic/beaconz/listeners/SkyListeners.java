@@ -39,7 +39,7 @@ import org.bukkit.event.player.PlayerBucketEmptyEvent;
 
 import com.wasteofplastic.beaconz.Beaconz;
 import com.wasteofplastic.beaconz.BeaconzPluginDependent;
-import com.wasteofplastic.beaconz.Lang;
+import com.wasteofplastic.beaconz.config.Lang;
 
 /**
  * Class to protect the top layer of blocks in the sky (the glass lines) so that they can't be broken or

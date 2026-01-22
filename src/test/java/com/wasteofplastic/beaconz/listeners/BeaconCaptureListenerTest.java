@@ -19,7 +19,7 @@ import org.bukkit.event.block.BlockDamageEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.wasteofplastic.beaconz.Lang;
+import com.wasteofplastic.beaconz.config.Lang;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;

@@ -28,6 +28,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 
+import com.wasteofplastic.beaconz.config.Lang;
+import com.wasteofplastic.beaconz.config.Settings;
+import com.wasteofplastic.beaconz.game.GameMgr;
+import com.wasteofplastic.beaconz.game.Register;
+import com.wasteofplastic.beaconz.generator.BeaconPopulator;
+import com.wasteofplastic.beaconz.integration.Metrics;
+import com.wasteofplastic.beaconz.storage.BeaconzStore;
+import com.wasteofplastic.beaconz.storage.Messages;
+import com.wasteofplastic.beaconz.storage.TinyDB;
 import org.apache.commons.lang.math.NumberUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -51,13 +60,12 @@ import org.bukkit.potion.PotionData;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.potion.PotionType;
-import org.jetbrains.annotations.NotNull;
 
-import com.wasteofplastic.beaconz.Params.GameMode;
-import com.wasteofplastic.beaconz.Params.GameScoreGoal;
+import com.wasteofplastic.beaconz.config.Params.GameMode;
+import com.wasteofplastic.beaconz.config.Params.GameScoreGoal;
 import com.wasteofplastic.beaconz.commands.AdminCmdHandler;
 import com.wasteofplastic.beaconz.commands.CmdHandler;
-import com.wasteofplastic.beaconz.dynmap.OurServerListener;
+import com.wasteofplastic.beaconz.integration.dynmap.OurServerListener;
 import com.wasteofplastic.beaconz.generator.BeaconzChunkGen;
 import com.wasteofplastic.beaconz.listeners.BeaconCaptureListener;
 import com.wasteofplastic.beaconz.listeners.BeaconLinkListener;
@@ -436,6 +444,7 @@ public class Beaconz extends JavaPlugin {
      * Invalid or missing values are replaced with sensible defaults and warnings
      * are logged for administrator attention.
      */
+    @SuppressWarnings("deprecation")
     public void loadConfig() {
         // Use scoreboard
         Settings.useScoreboard = getConfig().getBoolean("general.usescoreboard");

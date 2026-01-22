@@ -38,8 +38,8 @@ import org.bukkit.scoreboard.Team;
 
 import com.wasteofplastic.beaconz.Beaconz;
 import com.wasteofplastic.beaconz.BeaconzPluginDependent;
-import com.wasteofplastic.beaconz.Scorecard;
-import com.wasteofplastic.beaconz.Settings;
+import com.wasteofplastic.beaconz.game.Scorecard;
+import com.wasteofplastic.beaconz.config.Settings;
 
 
 /**

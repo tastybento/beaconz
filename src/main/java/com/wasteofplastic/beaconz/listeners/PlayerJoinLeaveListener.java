@@ -13,8 +13,8 @@ import org.bukkit.potion.PotionEffect;
 
 import com.wasteofplastic.beaconz.Beaconz;
 import com.wasteofplastic.beaconz.BeaconzPluginDependent;
-import com.wasteofplastic.beaconz.Game;
-import com.wasteofplastic.beaconz.Lang;
+import com.wasteofplastic.beaconz.game.Game;
+import com.wasteofplastic.beaconz.config.Lang;
 
 /**
  * Listener class that manages player connection and disconnection events.

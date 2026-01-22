@@ -26,7 +26,7 @@ import org.bukkit.event.world.StructureGrowEvent;
 import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.Test;
 
-import com.wasteofplastic.beaconz.BeaconObj;
+import com.wasteofplastic.beaconz.core.BeaconObj;
 
 /**
  * Tests BeaconSurroundListener behaviors for block damage protection, explosion filtering, and tree growth prevention near beacons.

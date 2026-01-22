@@ -53,10 +53,10 @@ import org.bukkit.util.Vector;
 
 import com.wasteofplastic.beaconz.Beaconz;
 import com.wasteofplastic.beaconz.BeaconzPluginDependent;
-import com.wasteofplastic.beaconz.Lang;
-import com.wasteofplastic.beaconz.Region;
-import com.wasteofplastic.beaconz.Settings;
-import com.wasteofplastic.beaconz.TriangleField;
+import com.wasteofplastic.beaconz.config.Lang;
+import com.wasteofplastic.beaconz.core.Region;
+import com.wasteofplastic.beaconz.config.Settings;
+import com.wasteofplastic.beaconz.core.TriangleField;
 
 import net.kyori.adventure.text.Component;
 

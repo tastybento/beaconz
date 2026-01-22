@@ -42,8 +42,8 @@ import org.jetbrains.annotations.NotNull;
 
 import com.wasteofplastic.beaconz.Beaconz;
 import com.wasteofplastic.beaconz.BeaconzPluginDependent;
-import com.wasteofplastic.beaconz.Lang;
-import com.wasteofplastic.beaconz.Settings;
+import com.wasteofplastic.beaconz.config.Lang;
+import com.wasteofplastic.beaconz.config.Settings;
 
 import net.kyori.adventure.text.Component;
 

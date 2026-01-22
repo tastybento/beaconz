@@ -32,9 +32,9 @@ import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
 import org.bukkit.map.MinecraftFont;
 
-import com.wasteofplastic.beaconz.BeaconObj;
+import com.wasteofplastic.beaconz.core.BeaconObj;
 import com.wasteofplastic.beaconz.Beaconz;
-import com.wasteofplastic.beaconz.Lang;
+import com.wasteofplastic.beaconz.config.Lang;
 
 /**
  * Custom map renderer that displays beacon information on in-game maps.
