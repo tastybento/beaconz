@@ -1,11 +1,13 @@
 package com.wasteofplastic.beaconz.core;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.util.UUID;
 
@@ -29,12 +31,6 @@ public class DefenseBlockTest {
         // Create mock blocks
         block1 = mock(Block.class);
         block2 = mock(Block.class);
-
-        // Set up block equality
-        when(block1.equals(block1)).thenReturn(true);
-        when(block1.equals(block2)).thenReturn(false);
-        when(block2.equals(block1)).thenReturn(false);
-        when(block2.equals(block2)).thenReturn(true);
 
         playerUuid = UUID.randomUUID();
     }
