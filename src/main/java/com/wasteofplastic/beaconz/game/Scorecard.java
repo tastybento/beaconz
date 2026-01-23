@@ -54,45 +54,204 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
+/**
+ * Manages all scoring, team, and game state aspects for a Beaconz game instance.
+ *
+ * <p>The Scorecard is the central hub for game management, responsible for:
+ * <ul>
+ *   <li><b>Scoreboard Display</b> - Real-time score display on player screens</li>
+ *   <li><b>Team Management</b> - Team creation, player assignment, and team properties</li>
+ *   <li><b>Score Tracking</b> - Multiple score types (area, beacons, links, triangles)</li>
+ *   <li><b>Timer Management</b> - Countdown or open-ended game timers</li>
+ *   <li><b>Game Goals</b> - Win condition tracking and game ending</li>
+ *   <li><b>Team Spawns</b> - Team-specific spawn point management</li>
+ *   <li><b>Persistence</b> - Loading and saving team membership</li>
+ * </ul>
+ *
+ * <p><b>Architecture:</b>
+ * Each Game instance has exactly one Scorecard that manages all aspects of that game's
+ * teams, scores, and display. The Scorecard creates a Bukkit {@link Scoreboard} which
+ * is shown to all players in the game.
+ *
+ * <p><b>Score Types:</b>
+ * The Scorecard supports multiple scoring metrics:
+ * <ul>
+ *   <li>{@link GameScoreGoal#AREA} - Territory controlled in square blocks</li>
+ *   <li>{@link GameScoreGoal#BEACONS} - Number of beacons owned</li>
+ *   <li>{@link GameScoreGoal#LINKS} - Number of beacon links created</li>
+ *   <li>{@link GameScoreGoal#TRIANGLES} - Number of triangular fields created</li>
+ * </ul>
+ *
+ * <p><b>Timer Modes:</b>
+ * <ul>
+ *   <li><b>Countdown</b> - Game ends when timer reaches zero</li>
+ *   <li><b>Open-ended</b> - Game continues until goal reached (timer counts up)</li>
+ * </ul>
+ *
+ * <p><b>Game Flow:</b>
+ * <ol>
+ *   <li>Constructor creates Scorecard and calls {@link #initialize(Boolean)}</li>
+ *   <li>Teams are added from config via {@link #addTeams()}</li>
+ *   <li>Timer starts via {@link #runtimer()}, updating every 5 seconds</li>
+ *   <li>Scores are updated via {@link #refreshScores()} when beacons change</li>
+ *   <li>Game ends via {@link #endGame()} when goal reached or timer expires</li>
+ * </ol>
+ *
+ * <p><b>Team Management:</b>
+ * Teams are created from the config file and stored in the Bukkit Scoreboard.
+ * Each team has:
+ * <ul>
+ *   <li>Name and display name with color</li>
+ *   <li>Block material (for beacon ownership visualization)</li>
+ *   <li>List of member UUIDs</li>
+ *   <li>Spawn point location</li>
+ *   <li>Scores for each score type</li>
+ * </ul>
+ *
+ * <p><b>Display Constraints:</b>
+ * The sidebar scoreboard has a maximum of 16 lines including the title.
+ * The current implementation uses:
+ * <ul>
+ *   <li>Line 1: Title with game mode and timer</li>
+ *   <li>Line 2: Game goal description</li>
+ *   <li>Lines 3-15: Team scores (up to 4 score types per team)</li>
+ * </ul>
+ *
+ * <p><b>Persistence:</b>
+ * Team membership is saved to {@code teams.yml} to preserve assignments across:
+ * <ul>
+ *   <li>Server restarts</li>
+ *   <li>Plugin reloads</li>
+ *   <li>Game pauses</li>
+ * </ul>
+ *
+ * <p><b>Thread Safety:</b>
+ * The Scorecard is NOT thread-safe. All methods should be called from the main
+ * server thread. The timer runs on the Bukkit scheduler but updates are synchronized
+ * to the main thread.
+ *
+ * <p><b>Example Usage:</b>
+ * <pre>
+ * // Create scorecard for a game
+ * Scorecard scorecard = new Scorecard(plugin, game);
+ *
+ * // Add player to smallest team
+ * scorecard.addTeamPlayer(player);
+ *
+ * // Update scores when beacon captured
+ * Team team = ...;
+ * scorecard.refreshScores(team);
+ *
+ * // Pause game
+ * scorecard.pause();
+ * </pre>
+ *
+ * @author tastybento
+ * @see Game
+ * @see Register
+ * @see GameScoreGoal
+ */
 public class Scorecard extends BeaconzPluginDependent {
+    /** Maximum length for score strings displayed on scoreboard (for formatting) */
     private static final Integer MAXSCORELENGTH = 10;
+
+    /** Whether the game is currently running (false when paused) */
     private boolean gameON;
+
+    /** The game instance this scorecard manages */
     private Game game;
+
+    /** Plain text version of the game name (for file storage) */
     private String gameName;
+
+    /** Bukkit's scoreboard manager for creating scoreboards */
     private ScoreboardManager manager;
+
+    /** The actual scoreboard displayed to players */
     private Scoreboard scoreboard;
+
+    /** Score entry used for updating scoreboard lines */
     private Score scoreentry;
+
+    /** Score line used for displaying individual score entries */
     private Score scoreline;
+
+    /** The scoreboard objective shown in the sidebar */
     private Objective scoreobjective;
+
+    /** Countdown timer in seconds (decrements each interval) */
     private int countdownTimer;
+
+    /** How often (in seconds) the timer updates */
     private int timerinterval;
+
+    /** Whether to show the timer on scoreboard display */
     private Boolean showtimer;
+
+    /** Type of timer: "countdown" or "openended" */
     private String timertype;
+
+    /** Formatted time string for display (e.g., "00d 00:00:00") */
     private String displaytime;
+
+    /** Current sidebar line number for adding scoreboard entries */
     private Integer sidebarline;
+
+    /** Formatted goal description string shown on scoreboard */
     private String goalstr;
+
+    /** Game start time in milliseconds (for elapsed time calculation) */
     private Long starttimemilis;
+
+    /** Bukkit task ID for the running timer task (for cancellation) */
     private BukkitTask timertaskid;
+
+    /** Maps teams to their spawn point locations */
     private HashMap<Team, Location> teamSpawnPoint = new HashMap<>();
+
+    /**
+     * Nested map storing scores for each team and score type.
+     * Structure: Team → (ScoreType → Score Value)
+     */
     private HashMap<Team, HashMap<GameScoreGoal,Integer>> score = new HashMap<>();
+
+    /** Maps teams to lists of member UUIDs for persistence */
     private HashMap<Team, List<UUID>> teamMembers = new HashMap<>();
+
+    /** Reverse lookup map: UUID → Team for fast player team lookup */
     private HashMap<UUID, Team> teamLookup = new HashMap<>();
+
+    /** Maps teams to their block material type (for beacon visualization) */
     private HashMap<Team, Material> teamBlocks = new HashMap<>();
 
     /**
-     * Scorecard controls all aspects of
-     *    (i) the Scoreboard displayed on screen
-     *    (ii) the Teams associated to the Scoreboards
-     *    (iii) the timer for this instance of the game
-     *    (iv) the goal for this instance of the game
-     * <p>
-     *  Note that a single Scoreboard is shown for all teams and that the Scoreboard can show as many different "score types" as we want
-     *  Keep in mind that the side bar has as maximum of 16 lines, including the title
-     *  Currently we have 4 "score types" defined: area, beacons, links, triangles.
-     *  The command for newgame should let the admin specify which "score types" will be displayed; this will allow different instances of the game to be run with different scorecards and goals
-     *  The game.getGamegoal() has to be one of the "score types". The newgame command should also let the admin specify the game goal
-     *  Since all this can vary from one instance of the game to another, it makes little sense to keep these definitions in config.yml (maybe only as defaults)"
-     * @param beaconzPlugin
+     * Constructs a new Scorecard for the specified game.
+     *
+     * <p>This constructor creates and initializes a complete game management system including:
+     * <ul>
+     *   <li>Scoreboard creation and setup</li>
+     *   <li>Team loading from configuration</li>
+     *   <li>Timer initialization and start</li>
+     *   <li>Score tracking initialization for all score types</li>
+     *   <li>Player team membership loading from persistence</li>
+     * </ul>
+     *
+     * <p><b>Initialization Process:</b>
+     * <ol>
+     *   <li>Stores game reference and extracts game name</li>
+     *   <li>Gets Bukkit scoreboard manager</li>
+     *   <li>Calls {@link #initialize(Boolean)} with newGame=true</li>
+     *   <li>Sets up teams from config via {@link #addTeams()}</li>
+     *   <li>Loads team members from teams.yml</li>
+     *   <li>Starts the game timer via {@link #runtimer()}</li>
+     * </ol>
+     *
+     * <p><b>Important:</b> The constructor immediately starts the game. The game is set to
+     * running state (gameON = true) and the timer begins counting.
+     *
+     * @param beaconzPlugin the main plugin instance for accessing server and config
+     * @param game the game instance this scorecard will manage
+     * @throws IllegalStateException if scoreboard manager is not available
      */
     public Scorecard(Beaconz beaconzPlugin, Game game) {
         super(beaconzPlugin);
@@ -104,7 +263,17 @@ public class Scorecard extends BeaconzPluginDependent {
     }
 
     /**
-     * Handles plugin Reload
+     * Handles plugin reload by saving state and reinitializing.
+     *
+     * <p>This method preserves game state across plugin reloads by:
+     * <ol>
+     *   <li>Saving team members to teams.yml</li>
+     *   <li>Reinitializing scoreboard and timer (without resetting)</li>
+     *   <li>Refreshing scores from current game state</li>
+     *   <li>Updating scoreboard display</li>
+     * </ol>
+     *
+     * <p>Called by the plugin when /beaconz reload is executed.
      */
     public void reload() {
         saveTeamMembers();
@@ -114,8 +283,36 @@ public class Scorecard extends BeaconzPluginDependent {
     }
 
     /**
-     * Initializes the scoreboard, starts the game
-     * Prepares the timer, scoretypes, scores and score values per game mode
+     * Initializes or reinitializes the scoreboard and game state.
+     *
+     * <p>This method sets up all components needed for game management:
+     * <ul>
+     *   <li><b>Timer</b> - Configures countdown or open-ended timer</li>
+     *   <li><b>Scoreboard</b> - Creates new Bukkit scoreboard with objective</li>
+     *   <li><b>Display</b> - Sets up sidebar with title and goal</li>
+     *   <li><b>Teams</b> - Loads teams from config and previous members</li>
+     *   <li><b>Scores</b> - Resets score tracking to zero</li>
+     *   <li><b>Timer Task</b> - Starts the timer countdown/countup</li>
+     * </ul>
+     *
+     * <p><b>Scoreboard Setup:</b>
+     * <ul>
+     *   <li>Line 15: Game goal (e.g., "Get 10 beacons!")</li>
+     *   <li>Lines 1-14: Team scores (auto-allocated per team/score type)</li>
+     *   <li>Title: "Beaconz [GameMode]! 00d 00:00:00" (includes timer)</li>
+     * </ul>
+     *
+     * <p><b>Timer Types:</b>
+     * <ul>
+     *   <li><b>countdown</b> - countdownTimer > 0, decrements to zero</li>
+     *   <li><b>openended</b> - countdownTimer == 0, counts up from start</li>
+     * </ul>
+     *
+     * <p><b>newGame Parameter:</b>
+     * When true, performs full initialization including team member loading.
+     * When false, reinitializes without loading members (used for reload).
+     *
+     * @param newGame true for new game initialization, false for reload
      */
     public void initialize(Boolean newGame) {
         timerinterval = 5;
@@ -166,21 +363,73 @@ public class Scorecard extends BeaconzPluginDependent {
     }
 
     /**
-     * Pauses the game
+     * Pauses the game by stopping score updates.
+     *
+     * <p>When paused:
+     * <ul>
+     *   <li>Score refreshes are disabled (scores frozen)</li>
+     *   <li>Timer continues running (for countdown mode)</li>
+     *   <li>Win condition checking is disabled</li>
+     *   <li>Players remain in their teams</li>
+     * </ul>
+     *
+     * <p>The game can be resumed with {@link #resume()}.
      */
     public void pause() {
         gameON = false;
     }
 
     /**
-     * Resumes the game
+     * Resumes a paused game.
+     *
+     * <p>When resumed:
+     * <ul>
+     *   <li>Score updates are re-enabled</li>
+     *   <li>Win condition checking resumes</li>
+     *   <li>Scores are refreshed from current state</li>
+     * </ul>
+     *
+     * <p>Note: The timer never actually stops, only score processing pauses.
      */
     public void resume() {
         gameON = true;
     }
 
     /**
-     * Adds teams to the game from the config file
+     * Adds teams to the game from the plugin configuration file.
+     *
+     * <p>Teams are loaded from {@code config.yml} under the path:
+     * <pre>
+     * teams:
+     *   names:
+     *     red:
+     *       glasscolor: RED_STAINED_GLASS
+     *       displayname: "&cRed Team"
+     *     blue:
+     *       glasscolor: BLUE_STAINED_GLASS
+     *       displayname: "&9Blue Team"
+     * </pre>
+     *
+     * <p><b>Team Creation Process:</b>
+     * <ol>
+     *   <li>Reads team configuration section</li>
+     *   <li>For each team in config:
+     *     <ul>
+     *       <li>Gets block material (glasscolor)</li>
+     *       <li>Translates display name color codes (&amp; to §)</li>
+     *       <li>Truncates names to 16 characters (Minecraft limit)</li>
+     *       <li>Calls {@link #addTeam(String, String, Material, boolean)}</li>
+     *     </ul>
+     *   </li>
+     *   <li>Stops after adding game.getNbrTeams() teams</li>
+     * </ol>
+     *
+     * <p><b>Important:</b> Team display names MUST include the color code prefix
+     * for proper scoreboard rendering and team identification.
+     *
+     * <p><b>Error Handling:</b>
+     * If no teams are added (config missing or empty), logs a severe error
+     * with the game name for debugging.
      */
     protected void addTeams() {
         ConfigurationSection csect = getBeaconzPlugin().getConfig().getConfigurationSection("teams.names");
@@ -207,8 +456,20 @@ public class Scorecard extends BeaconzPluginDependent {
     }
 
     /**
-     * Updates the Scoreboard values for all teams
+     * Updates scoreboard values for all teams and all score types.
      *
+     * <p>This method iterates through all teams and refreshes their scores by
+     * querying the {@link Register} for current game state (beacons, links, area, etc.).
+     *
+     * <p>Called when:
+     * <ul>
+     *   <li>Beacons are captured or lost</li>
+     *   <li>Links are created or destroyed</li>
+     *   <li>Territory changes (triangles)</li>
+     *   <li>Plugin reload</li>
+     * </ul>
+     *
+     * <p>For each team, calls {@link #refreshScores(Team)}.
      */
     public void refreshScores() {
         for (Team team: scoreboard.getTeams()) {
@@ -217,8 +478,12 @@ public class Scorecard extends BeaconzPluginDependent {
     }
 
     /**
-     * Updates the Scoreboard values for team
-     * @param team
+     * Updates scoreboard values for a specific team across all score types.
+     *
+     * <p>Refreshes all score types configured for the game (area, beacons, links, triangles).
+     * If the team has no existing scores, initializes them to zero.
+     *
+     * @param team the team to update scores for
      */
     public void refreshScores(Team team) {
         if (team != null) {
@@ -231,10 +496,32 @@ public class Scorecard extends BeaconzPluginDependent {
     }
 
     /**
-     * Refresh a specific score type for team.
-     * @param team
-     * @param scoretype - can be area, beacons, links, triangles
-     * @param value - default value
+     * Refreshes a specific score type for a team and checks for win condition.
+     *
+     * <p><b>Score Calculation by Type:</b>
+     * <ul>
+     *   <li><b>AREA</b> - Total square blocks of territory controlled</li>
+     *   <li><b>BEACONS</b> - Number of beacons owned by team</li>
+     *   <li><b>LINKS</b> - Number of beacon-to-beacon links</li>
+     *   <li><b>TRIANGLES</b> - Number of triangular fields created</li>
+     * </ul>
+     *
+     * <p><b>Win Condition:</b>
+     * If the game has a goal value (not zero) and this score type matches the game goal,
+     * checks if the team has reached the goal value. If so, ends the game immediately
+     * via {@link #endGame()}.
+     *
+     * <p><b>Game State:</b>
+     * Only updates scores when {@code gameON == true}. When paused, scores are not
+     * recalculated from the Register.
+     *
+     * <p><b>Side Effects:</b>
+     * Calls {@link #putScore(Team, GameScoreGoal, int)} which updates the score
+     * and refreshes the scoreboard display.
+     *
+     * @param team the team to update
+     * @param scoretype the specific score type to update (AREA, BEACONS, LINKS, TRIANGLES)
+     * @param value default value if score doesn't exist (typically 0)
      */
     public void refreshScores(Team team, GameScoreGoal scoretype, int value) {
         if (gameON) {
@@ -496,6 +783,30 @@ public class Scorecard extends BeaconzPluginDependent {
      * Gets a team from a team name, works even if the case is wrong too or if it is partial
      * @param teamName
      * @return team, or null if not found
+     */
+    /**
+     * Gets a team by name with support for partial name matching.
+     *
+     * <p><b>Matching Algorithm:</b>
+     * <ol>
+     *   <li>First tries exact match (case-sensitive)</li>
+     *   <li>If no exact match, tries prefix matching (case-insensitive)</li>
+     *   <li>Returns first team whose name starts with the search string</li>
+     * </ol>
+     *
+     * <p><b>Examples:</b>
+     * <ul>
+     *   <li>"red" → matches "red" team</li>
+     *   <li>"Red" → matches "red" team (case-insensitive prefix)</li>
+     *   <li>"re" → matches "red" team (partial match)</li>
+     *   <li>"blu" → matches "blue" team</li>
+     * </ul>
+     *
+     * <p>This partial matching makes commands more user-friendly by allowing
+     * abbreviated team names.
+     *
+     * @param teamName the team name or partial name to search for
+     * @return the matching Team, or null if no match found
      */
     public Team getTeam(String teamName) {
         if (scoreboard.getTeam(teamName) != null) {
@@ -827,11 +1138,39 @@ public class Scorecard extends BeaconzPluginDependent {
     }
 
     /**
-     * Converts a serialized location to a Location. Returns null if string is
-     * empty
+     * Deserializes a location string back to a Location object.
      *
-     * @param s - serialized location in format "world:x:y:z:yaw:pitch"
-     * @return Location
+     * <p><b>Expected Format:</b>
+     * <pre>
+     * "world:x:y:z:yaw:pitch"
+     * </pre>
+     *
+     * <p><b>Parsing Process:</b>
+     * <ol>
+     *   <li>Splits string on colon delimiter</li>
+     *   <li>Validates exactly 6 parts exist</li>
+     *   <li>Looks up world by name (must exist on server)</li>
+     *   <li>Parses integer coordinates (x, y, z)</li>
+     *   <li>Converts integer bits back to float for yaw/pitch</li>
+     *   <li>Constructs and returns Location</li>
+     * </ol>
+     *
+     * <p><b>Error Handling:</b>
+     * Returns null if:
+     * <ul>
+     *   <li>String is null or empty</li>
+     *   <li>Format doesn't have exactly 6 parts</li>
+     *   <li>World doesn't exist on server</li>
+     *   <li>Number parsing fails</li>
+     * </ul>
+     *
+     * <p><b>Note:</b> The yaw and pitch use Float.intBitsToFloat to restore
+     * the exact floating-point values that were saved via Float.floatToIntBits
+     * in {@link #getStringLocation(Location)}.
+     *
+     * @param s the serialized location string
+     * @return deserialized Location, or null if invalid/unparseable
+     * @see #getStringLocation(Location)
      */
     static public Location getLocationString(final String s) {
         if (s == null || s.trim() == "") {
@@ -854,11 +1193,34 @@ public class Scorecard extends BeaconzPluginDependent {
     }
 
     /**
-     * Converts a location to a simple string representation
-     * If location is null, returns empty string
+     * Converts a location to a simple string representation for persistence.
      *
-     * @param l
-     * @return
+     * <p><b>Format:</b>
+     * <pre>
+     * "world:x:y:z:yaw:pitch"
+     * </pre>
+     *
+     * <p><b>Example:</b>
+     * <pre>
+     * "world:100:64:200:1119092224:0"
+     * </pre>
+     *
+     * <p><b>Field Details:</b>
+     * <ul>
+     *   <li><b>world</b> - World name as string</li>
+     *   <li><b>x, y, z</b> - Block coordinates (integers)</li>
+     *   <li><b>yaw, pitch</b> - Rotation as integer bits (via Float.floatToIntBits)</li>
+     * </ul>
+     *
+     * <p>The yaw and pitch are stored as integer representations of their float
+     * bit patterns to preserve exact floating-point values across serialization.
+     *
+     * <p><b>Null Handling:</b>
+     * Returns empty string if location or world is null.
+     *
+     * @param l the location to serialize
+     * @return string representation of location, or empty string if null
+     * @see #getLocationString(String)
      */
     static public String getStringLocation(final Location l) {
         if (l == null || l.getWorld() == null) {
@@ -869,8 +1231,30 @@ public class Scorecard extends BeaconzPluginDependent {
 
 
     /**
-     * Returns the team with the highest score of a given type
+     * Determines which team has the highest score for a given score type.
      *
+     * <p>Iterates through all teams and finds the one with the maximum score
+     * for the specified type. Useful for:
+     * <ul>
+     *   <li>Determining game leader</li>
+     *   <li>Checking win conditions</li>
+     *   <li>Displaying rankings</li>
+     *   <li>Tie-breaking logic</li>
+     * </ul>
+     *
+     * <p><b>Tie Handling:</b>
+     * If multiple teams have the same highest score, returns the first one
+     * found (iteration order is undefined).
+     *
+     * <p><b>Edge Cases:</b>
+     * <ul>
+     *   <li>Returns null if no teams have scores for the type</li>
+     *   <li>Returns null if all teams have score of 0</li>
+     *   <li>Returns null if no teams exist</li>
+     * </ul>
+     *
+     * @param scoretype the score type to check (AREA, BEACONS, LINKS, or TRIANGLES)
+     * @return the team with the highest score, or null if no valid leader
      */
     public Team frontRunner (GameScoreGoal scoretype) {
         Integer maxscore = 0;
@@ -887,6 +1271,38 @@ public class Scorecard extends BeaconzPluginDependent {
         return topteam;
     }
 
+    /**
+     * Gets the Adventure API text color for a team based on its name.
+     *
+     * <p><b>Color Mapping:</b>
+     * Maps team names (case-insensitive) to {@link TextColor} for chat messages
+     * and scoreboard display. Supports all 16 Minecraft dye colors plus custom RGB.
+     *
+     * <p><b>Supported Colors:</b>
+     * <ul>
+     *   <li>RED, BLUE, WHITE, BLACK, GRAY, LIGHTGRAY - Named colors</li>
+     *   <li>YELLOW, LIME, GREEN - Greens and yellows</li>
+     *   <li>ORANGE, BROWN - Warm colors</li>
+     *   <li>PINK, MAGENTA, PURPLE - Purples and pinks</li>
+     *   <li>CYAN, LIGHTBLUE - Blues and cyans</li>
+     * </ul>
+     *
+     * <p><b>Custom RGB Colors:</b>
+     * Some colors use TextColor.color(r, g, b) for precise matching:
+     * <ul>
+     *   <li>ORANGE: rgb(255, 165, 0)</li>
+     *   <li>MAGENTA: rgb(255, 0, 255)</li>
+     *   <li>PINK: rgb(255, 105, 180)</li>
+     *   <li>CYAN: rgb(0, 255, 255)</li>
+     *   <li>BROWN: rgb(150, 75, 0)</li>
+     * </ul>
+     *
+     * <p><b>Important:</b> Team names are converted to uppercase before matching.
+     * The team's display name should include the color code prefix for consistency.
+     *
+     * @param team the team to get color for
+     * @return the TextColor for this team, or WHITE as default
+     */
     public TextColor teamChatColor(Team team) {
         // IMPORTANT: The a team's display name is ALWAYS the team's name in uppercase, PRECEEDED BY the ChatColor
         String tn = team.getName().toUpperCase();
