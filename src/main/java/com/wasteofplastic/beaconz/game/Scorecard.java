@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 - 2025 tastybento
+ * Copyright (c) 2015 - 2026 tastybento
  */
 
 package com.wasteofplastic.beaconz.game;

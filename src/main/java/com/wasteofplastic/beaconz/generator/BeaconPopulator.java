@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 - 2025 tastybento, planetguy
+ * Copyright (c) 2015 - 2026 tastybento, planetguy
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
