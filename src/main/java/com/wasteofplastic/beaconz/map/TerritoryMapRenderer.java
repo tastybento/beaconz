@@ -100,7 +100,10 @@ public class TerritoryMapRenderer extends MapRenderer {
         if (inMainHand.getType().equals(Material.FILLED_MAP) || inOffHand.getType().equals(Material.FILLED_MAP)) {
             // Throttle rendering to once per second (20 ticks)
             if (tick > TICKS_PER_REFRESH) tick = 0;
-            if (tick != 0) return; // Skip rendering this tick
+            if (tick != 0) {
+                tick++;
+                return; // Skip rendering this tick
+            }
             tick++;
             
             // Create a snapshot of the current beacon state

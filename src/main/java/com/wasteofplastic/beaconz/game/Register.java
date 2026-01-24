@@ -959,7 +959,6 @@ public class Register extends BeaconzPluginDependent {
             if (DEBUG) getLogger().info("DEBUG: obsidian or stained glass ");
             Block below = block.getRelative(BlockFace.DOWN);
             if (!below.getType().equals(Material.BEACON)) {
-                getLogger().info("DEBUG: no beacon below here");
                 return null;
             }
             point = new Point2D.Double(below.getLocation().getBlockX(),below.getLocation().getBlockZ());
