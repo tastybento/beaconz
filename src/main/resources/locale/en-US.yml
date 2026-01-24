@@ -36,7 +36,7 @@ admin:
   UseSurvival: "Use Survival mode to break signs in lobby."
 beacon:
   AmplifierBlocksCannotBeRecovered: "Link amplifier blocks cannot be recovered!" 
-  BreakToOwn: "Break the obsidian to own the beacon!";
+  BreakToOwn: "Break the obsidian to own the beacon!"
   CannotBeExtended: "Cannot be extended any further in this direction!"
   CannotPlaceLiquids: "You cannot place liquids above a beacon!"
   ClaimedForTeam: "Beacon claimed for [team] faction!"

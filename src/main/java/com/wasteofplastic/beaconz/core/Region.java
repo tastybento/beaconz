@@ -1081,10 +1081,11 @@ public class Region extends BeaconzPluginDependent {
      */
     public void makePlatform() {
         Random rand = new Random();
+        int height = Math.min(getBeaconzWorld().getMaxHeight() - 1, Settings.lobbyHeight);
         if (corners.length == 2) {
             for (int x = (int)corners[0].getX(); x <= (int)corners[1].getX(); x++) {
                 for (int z = (int)corners[0].getY(); z <= (int)corners[1].getY(); z++) {
-                    Block block = getBeaconzWorld().getBlockAt(x, Settings.lobbyHeight, z);
+                    Block block = getBeaconzWorld().getBlockAt(x, height, z);
                     String matType = Settings.lobbyBlocks.get(rand.nextInt(Settings.lobbyBlocks.size()));
                     Material material = Material.getMaterial(matType);
                     if (material != null) {
@@ -1098,7 +1099,8 @@ public class Region extends BeaconzPluginDependent {
         // Set spawn
         int x = (int)((corners[0].getX() + corners[1].getX()) / 2D);
         int z = (int)((corners[0].getY() + corners[1].getY()) / 2D);
-        spawnPoint = new Location(getBeaconzWorld(),x,Settings.lobbyHeight+1,z+2);
+        int y = Math.min((Settings.lobbyHeight+1), getBeaconzWorld().getMaxHeight() - 2);
+        spawnPoint = new Location(getBeaconzWorld(), x, y, z+2);
         // Place sign
         Block sign = getBeaconzWorld().getBlockAt(spawnPoint.getBlockX(), spawnPoint.getBlockY(), spawnPoint.getBlockZ());
         sign.setType(Material.OAK_SIGN);

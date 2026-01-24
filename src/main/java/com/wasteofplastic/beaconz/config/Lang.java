@@ -23,7 +23,7 @@ import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
  *
  */
 public class Lang extends BeaconzPluginDependent {
-    
+
     private FileConfiguration locale = null;
 
     public Lang(Beaconz beaconzPlugin) {
@@ -229,8 +229,8 @@ public class Lang extends BeaconzPluginDependent {
     public static Component linkTeamLostLink;
     public static Component linkTeamLostLinks;
     public static Component beaconBreakToOwn;
-    
-   
+
+
     public void loadLocale(String localeName) {
         File localeDir = new File(getBeaconzPlugin().getDataFolder() + File.separator + "locale");
         if (!localeDir.exists()) {
@@ -466,12 +466,14 @@ public class Lang extends BeaconzPluginDependent {
 
         // Defense text
         defenseText = new HashMap<>();
-        for (String material : locale.getConfigurationSection("defenseText").getKeys(false)) {
-            try {
-                Material mat = Material.valueOf(material.toUpperCase());
-                defenseText.put(mat,LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("defenseText." + material,"")));
-            } catch (Exception e) {
-                getLogger().severe("No not know what defenseText." + material + " is in locale file " + localeName + ".yml, skipping...");
+        if (locale.isConfigurationSection("defenseText")) {
+            for (String material : locale.getConfigurationSection("defenseText").getKeys(false)) {
+                try {
+                    Material mat = Material.valueOf(material.toUpperCase());
+                    defenseText.put(mat,LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("defenseText." + material,"")));
+                } catch (Exception e) {
+                    getLogger().severe("No not know what defenseText." + material + " is in locale file " + localeName + ".yml, skipping...");
+                }
             }
         }
     }
@@ -491,7 +493,7 @@ public class Lang extends BeaconzPluginDependent {
         if (color == null) {
             color = NamedTextColor.GOLD;
         }
-        
+
         return color;
     }
 }

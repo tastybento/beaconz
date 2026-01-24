@@ -30,7 +30,6 @@ import java.util.Map.Entry;
 
 import org.apache.commons.lang.math.NumberUtils;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -43,14 +42,11 @@ import org.bukkit.entity.Player;
 import org.bukkit.generator.BlockPopulator;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.potion.PotionData;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.potion.PotionType;
 
 import com.wasteofplastic.beaconz.commands.AdminCmdHandler;
 import com.wasteofplastic.beaconz.commands.CmdHandler;
@@ -80,6 +76,7 @@ import com.wasteofplastic.beaconz.listeners.SkyListeners;
 import com.wasteofplastic.beaconz.storage.BeaconzStore;
 import com.wasteofplastic.beaconz.storage.Messages;
 import com.wasteofplastic.beaconz.storage.TinyDB;
+import com.wasteofplastic.beaconz.util.ItemRewardParser;
 
 /**
  * Main plugin class for the Beaconz strategic team-based game.
@@ -1060,199 +1057,50 @@ public class Beaconz extends JavaPlugin {
     }
 
     /**
-     * Gives player item rewards
-     * @param player
-     * @param itemRewards
-     * @return a list of what was given to the player
+     * Gives items to a player based on reward configuration strings.
+     * Uses modern ItemRewardParser for consistent item parsing.
+     *
+     * <p>Supported formats:
+     * <ul>
+     *   <li>Simple: MATERIAL:QUANTITY (e.g., "DIAMOND:5")</li>
+     *   <li>Potion: POTION:POTION_TYPE:QUANTITY (e.g., "POTION:STRONG_HEALING:2")</li>
+     *   <li>With name: MATERIAL:QUANTITY:DisplayName (e.g., "DIAMOND_SWORD:1:Excalibur")</li>
+     * </ul>
+     *
+     * @param player The player to give items to
+     * @param itemRewards List of reward configuration strings
+     * @return List of ItemStacks that were successfully given
      */
     public List<ItemStack> giveItems(Player player, List<String> itemRewards) {
         List<ItemStack> rewardedItems = new ArrayList<>();
-        Material rewardItem;
-        int rewardQty;
-        // Build the item stack of rewards to give the player
-        for (final String s : itemRewards) {
-            final String[] element = s.split(":");
-            if (element.length == 2) {
-                try {
-                    rewardItem = Material.getMaterial(element[0].toUpperCase());
-                    rewardQty = Integer.parseInt(element[1]);
-                    ItemStack item = new ItemStack(rewardItem, rewardQty);
-                    rewardedItems.add(item);
-                    final HashMap<Integer, ItemStack> leftOvers = player.getInventory().addItem(item);
-                    if (!leftOvers.isEmpty()) {
-                        player.getWorld().dropItemNaturally(player.getLocation(), leftOvers.get(0));
-                    }                  
-                    player.getWorld().playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 1F, 1F);                    
-                } catch (Exception e) {
-                    player.sendMessage(Lang.errorError);
-                    plugin.getLogger().severe("Could not give " + element[0] + ":" + element[1] + " to " + player.getName() + " as reward!");
-                    StringBuilder materialList = new StringBuilder();
-                    boolean hint = false;
-                    for (Material m : Material.values()) {
-                        materialList.append(m.toString()).append(",");
-                        if (element[0].length() > 3) {
-                            if (m.toString().startsWith(element[0].substring(0, 3))) {
-                                plugin.getLogger().severe("Did you mean " + m + "?");
-                                hint = true;
-                            }
-                        }
-                    }
-                    if (!hint) {
-                        plugin.getLogger().severe("Sorry, I have no idea what " + element[0] + " is. Pick from one of these:");
-                        plugin.getLogger().severe(materialList.substring(0, materialList.length() - 1));
-                    }
-                }
-            } else if (element.length == 3) {
-                try {
-                    rewardItem = Material.getMaterial(element[0].toUpperCase());
-                    rewardQty = Integer.parseInt(element[2]);                    
-                    // Check for POTION
-                    if (rewardItem.equals(Material.POTION)) {
-                        givePotion(player, rewardedItems, element, rewardQty);
-                    } else {
-                        ItemStack item = null;
-                        int rewMod = Integer.parseInt(element[1]);
-                        item = new ItemStack(rewardItem, rewardQty, (short) rewMod);
-                        if (item != null) {
-                            rewardedItems.add(item);
-                            final HashMap<Integer, ItemStack> leftOvers = player.getInventory().addItem(
-                                    item);
-                            if (!leftOvers.isEmpty()) {
-                                player.getWorld().dropItemNaturally(player.getLocation(), leftOvers.get(0));
-                            }
-                        }
-                    }
-                    player.getWorld().playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 1F, 1F);
-                } catch (Exception e) {
-                    player.sendMessage(ChatColor.RED + "There was a problem giving your reward. Ask Admin to check log!");
-                    plugin.getLogger().severe("Could not give " + element[0] + ":" + element[1] + " to " + player.getName() + " for challenge reward!");
-                    StringBuilder materialList = new StringBuilder();
-                    boolean hint = false;
-                    for (Material m : Material.values()) {
-                        materialList.append(m.toString()).append(",");
-                        if (m.toString().startsWith(element[0].substring(0, 3))) {
-                            plugin.getLogger().severe("Did you mean " + m + "? If so, put that in challenges.yml.");
-                            hint = true;
-                        }
-                    }
-                    if (!hint) {
-                        plugin.getLogger().severe("Sorry, I have no idea what " + element[0] + " is. Pick from one of these:");
-                        plugin.getLogger().severe(materialList.substring(0, materialList.length() - 1));
-                    }
-                    //}
-                    return null;
-                }
-            } else if (element.length == 6) {
-                //plugin.getLogger().info("DEBUG: 6 element reward");
-                // Potion format = POTION:name:level:extended:splash:qty
-                try {
-                    rewardItem = Material.getMaterial(element[0].toUpperCase());
-                    rewardQty = Integer.parseInt(element[5]);
-                    // Check for POTION
-                    if (rewardItem.equals(Material.POTION)) {
-                        givePotion(player, rewardedItems, element, rewardQty);
-                    }
-                } catch (Exception e) {
-                    player.sendMessage(ChatColor.RED + "There was a problem giving your reward. Ask Admin to check log!");
-                    plugin.getLogger().severe("Problem with reward potion: " + s);
-                    plugin.getLogger().severe("Format POTION:NAME:<LEVEL>:<EXTENDED>:<SPLASH/LINGER>:QTY");
-                    plugin.getLogger().severe("LEVEL, EXTENDED and SPLASH are optional");
-                    plugin.getLogger().severe("LEVEL is a number");
-                    plugin.getLogger().severe("Examples:");
-                    plugin.getLogger().severe("POTION:STRENGTH:1:EXTENDED:SPLASH:1");
-                    plugin.getLogger().severe("POTION:JUMP:2:NOTEXTENDED:NOSPLASH:1");
-                    plugin.getLogger().severe("POTION:WEAKNESS:::::1   -  any weakness potion");
-                    plugin.getLogger().severe("Available names are:");
-                    StringBuilder potionNames = new StringBuilder();
-                    for (PotionType p : PotionType.values()) {
-                        potionNames.append(p.toString()).append(", ");
-                    }
-                    plugin.getLogger().severe(potionNames.substring(0, potionNames.length()-2));
-                    return null;
+
+        if (itemRewards == null || itemRewards.isEmpty()) {
+            return rewardedItems;
+        }
+
+        ItemRewardParser parser = new ItemRewardParser(getLogger());
+        List<ItemStack> parsedItems = parser.parseRewards(itemRewards);
+
+        for (ItemStack item : parsedItems) {
+            if (item == null) {
+                continue;
+            }
+
+            rewardedItems.add(item);
+
+            // Try to add to inventory, drop leftovers
+            HashMap<Integer, ItemStack> leftOvers = player.getInventory().addItem(item);
+            if (!leftOvers.isEmpty()) {
+                for (ItemStack leftOver : leftOvers.values()) {
+                    player.getWorld().dropItemNaturally(player.getLocation(), leftOver);
                 }
             }
+
+            // Play pickup sound
+            player.getWorld().playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 1F, 1F);
         }
+
         return rewardedItems;
-    }
-
-    private void givePotion(Player player, List<ItemStack> rewardedItems, String[] element, int rewardQty) {
-        ItemStack item = getPotion(element, rewardQty);
-        rewardedItems.add(item);
-        final HashMap<Integer, ItemStack> leftOvers = player.getInventory().addItem(item);
-        if (!leftOvers.isEmpty()) {
-            player.getWorld().dropItemNaturally(player.getLocation(), leftOvers.get(0));
-        }
-    }
-
-    /**
-     * Converts a serialized potion to a ItemStack of that potion
-     * @param element - array of potion parameters
-     * @param rewardQty - quantity of potions
-     * @return ItemStack of the potion
-     */
-    public static ItemStack getPotion(String[] element, int rewardQty) {
-        // Check for potion aspects
-        boolean splash = false;
-        boolean extended = false;
-        boolean linger = false;
-        int level = 1;
-
-        if (element.length > 2) {
-            // Add level etc.
-            if (!element[2].isEmpty()) {
-                try {
-                    level = Integer.parseInt(element[2]);
-                } catch (Exception e) {
-                    level = 1;
-                }
-            }
-        }
-        if (element.length > 3) {
-            //plugin.getLogger().info("DEBUG: level = " + Integer.valueOf(element[2]));
-            if (element[3].equalsIgnoreCase("EXTENDED")) {
-                //plugin.getLogger().info("DEBUG: Extended");
-                extended = true;
-            }
-        }
-        if (element.length > 4) {
-            if (element[4].equalsIgnoreCase("SPLASH")) {
-                //plugin.getLogger().info("DEBUG: splash");
-                splash = true;                
-            }
-            if (element[4].equalsIgnoreCase("LINGER")) {
-                //plugin.getLogger().info("DEBUG: linger");
-                linger = true;
-            } 
-        }
-
-        // 1.9
-        try {
-            ItemStack result = new ItemStack(Material.POTION, rewardQty);
-            if (splash) {
-                result = new ItemStack(Material.SPLASH_POTION, rewardQty);
-            }
-            if (linger) {
-                result = new ItemStack(Material.LINGERING_POTION, rewardQty);
-            }
-            PotionMeta potionMeta = (PotionMeta) result.getItemMeta();
-            try {
-                PotionData potionData = new PotionData(PotionType.valueOf(element[1].toUpperCase()), extended, level > 1);
-                potionMeta.setBasePotionData(potionData); 
-            } catch (IllegalArgumentException iae) {
-                plugin.getLogger().severe("Potion parsing problem with " + element[1] +": " + iae.getMessage());
-                potionMeta.setBasePotionData(new PotionData(PotionType.WATER));
-            }
-            result.setItemMeta(potionMeta);
-            return result;
-        } catch (Exception e) {
-            e.printStackTrace();
-            plugin.getLogger().severe("Potion effect '" + element[1] + "' is unknown - skipping!");
-            plugin.getLogger().severe("Use one of the following:");
-            for (PotionType name : PotionType.values()) {
-                plugin.getLogger().severe(name.name());
-            }
-            return new ItemStack(Material.POTION, rewardQty);
-        } 
     }
 
 

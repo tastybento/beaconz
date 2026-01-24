@@ -21,7 +21,7 @@ world:
   # For 'minigame' mode games, player XP is set to this value every time they reenter the game
   initialXP: 100
   
-  # Format Material:Qty or Material:Data:Qty
+  # Format: MATERIAL:QUANTITY
   # Note that any type of pickaxe can eventually break the obsidian capstones.
   newbiekit:
   - "DIAMOND_PICKAXE:1"
@@ -84,11 +84,18 @@ links:
   removelongestlink: false
 
   # What will be given to the player when they make a link 
-  # Material:Durability:Quantity - all three are mandatory
-  # For potions, POTION:NAME:<LEVEL>:<EXTENDED>:<SPLASH/LINGER>:QTY
+  # Format: MATERIAL:QUANTITY or POTION_TYPE:POTION_NAME:QUANTITY
+  # Examples:
+  #   - EMERALD:1          (simple item)
+  #   - DIAMOND:5          (multiple items)
+  #   - POTION:STRONG_HEALING:2       (regular potion)
+  #   - SPLASH_POTION:POISON:1        (splash potion)
+  #   - LINGERING_POTION:REGENERATION:3  (lingering potion)
+  #   - DIAMOND_SWORD:1:Excalibur     (item with display name)
   linkrewards:
-  - EMERALD:0:1
-
+  - EMERALD:1
+  - BREAD:1
+  
   # Link commands
   # Commands that will be run when the player makes a link. Command is run as console.
   # [player] is the linking player
