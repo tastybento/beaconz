@@ -24,6 +24,7 @@ package com.wasteofplastic.beaconz;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
@@ -510,8 +511,10 @@ public class Beaconz extends JavaPlugin {
         Settings.gamemode = (GameMode) getConfig().get("general.gamemode", GameMode.STRATEGY);
 
         // Get the default score types to show
-        Settings.minigameScoreTypes = (List<GameScoreGoal>) getConfig().getList("scoreboard.sidebar.minigame", List.of(GameScoreGoal.BEACONS, GameScoreGoal.LINKS, GameScoreGoal.TRIANGLES));
-        Settings.strategyScoreTypes = (List<GameScoreGoal>) getConfig().getList("scoreboard.sidebar.strategy", List.of(GameScoreGoal.AREA, GameScoreGoal.TRIANGLES));
+        Settings.minigameScoreTypes = parseScoreGoalList("scoreboard.sidebar.minigame",
+            List.of(GameScoreGoal.BEACONS, GameScoreGoal.LINKS, GameScoreGoal.TRIANGLES));
+        Settings.strategyScoreTypes = parseScoreGoalList("scoreboard.sidebar.strategy",
+            List.of(GameScoreGoal.AREA, GameScoreGoal.TRIANGLES));
 
         // Get the default goals for each game mode
         String mgGoal = getConfig().getString("scoreboard.goal.minigame", "triangles:0");
@@ -760,8 +763,74 @@ public class Beaconz extends JavaPlugin {
     }
 
     /**
+     * Safely parses a list of GameScoreGoal enums from config.
+     * Supports both formats:
+     * - String: "AREA:BEACONS:LINKS" (colon-delimited)
+     * - List: ["AREA", "BEACONS", "LINKS"]
+     *
+     * @param configPath The path to the config value
+     * @param defaultValue The default list to use if parsing fails or value is not set
+     * @return List of GameScoreGoal enums
+     */
+    private List<GameScoreGoal> parseScoreGoalList(String configPath, List<GameScoreGoal> defaultValue) {
+        Object configValue = getConfig().get(configPath);
+
+        if (configValue == null) {
+            return defaultValue;
+        }
+
+        List<String> stringValues = new ArrayList<>();
+
+        // Handle string format: "AREA:BEACONS:LINKS"
+        if (configValue instanceof String) {
+            String str = (String) configValue;
+            if (str.trim().isEmpty()) {
+                return defaultValue;
+            }
+            stringValues.addAll(Arrays.asList(str.split(":")));
+        }
+        // Handle list format: ["AREA", "BEACONS", "LINKS"]
+        else if (configValue instanceof List<?>) {
+            List<?> list = (List<?>) configValue;
+            for (Object item : list) {
+                if (item instanceof String) {
+                    stringValues.add((String) item);
+                } else {
+                    getLogger().warning("Invalid score goal type in config at '" + configPath + "': " + item);
+                }
+            }
+        }
+        else {
+            getLogger().warning("Invalid format for '" + configPath + "'. Expected string or list. Using default.");
+            return defaultValue;
+        }
+
+        // Convert strings to GameScoreGoal enums
+        List<GameScoreGoal> result = new ArrayList<>();
+        for (String value : stringValues) {
+            try {
+                String trimmed = value.trim().toUpperCase();
+                if (!trimmed.isEmpty()) {
+                    result.add(GameScoreGoal.valueOf(trimmed));
+                }
+            } catch (IllegalArgumentException e) {
+                getLogger().warning("Unknown score goal type '" + value + "' in config at '" + configPath + "'. Skipping.");
+                getLogger().warning("Valid values are: " + Arrays.toString(GameScoreGoal.values()));
+            }
+        }
+
+        // If no valid values were parsed, use default
+        if (result.isEmpty()) {
+            getLogger().warning("No valid score goals found in '" + configPath + "'. Using default.");
+            return defaultValue;
+        }
+
+        return result;
+    }
+
+    /**
      * Format is Material:Qty or Material:Data:Qty or Integer:Qty or Integer:Data:Qty
-     * @param item the string to parse
+     * @param goodie the string to parse
      * @return the ItemStack or null if error
      */
     @SuppressWarnings("deprecation")

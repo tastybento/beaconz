@@ -295,13 +295,22 @@ teams:
 scoreboard:
   # Settings can be changed in game, per game using the admin commands.   
   # Sidebar scoreboard options: area, beacons, links, triangles
+  # Supports two formats:
+  #   String format: "area:beacons:links:triangles"
+  #   List format:
+  #     - area
+  #     - beacons
+  #     - links
+  #     - triangles
   # remember that the sidebar only has 15 lines, if there are too many teams
   # there will not be enough room to display everything
   sidebar:
+    minigame: "beacons:links:triangles"
     strategy: "area:beacons:links:triangles"
     # Default goal to win the game
     # The goal must be one of the scores displayed on the sidebar
   goal:
+    minigame: "triangles:10"
     strategy: "area:3000000"
 
 general:

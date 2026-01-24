@@ -36,6 +36,7 @@ class ItemRewardParserTest {
 
     @BeforeEach
     void setUp() {
+        MockBukkit.unmock();
         server = MockBukkit.mock();
         logger = Logger.getLogger("ItemRewardParserTest");
         parser = new ItemRewardParser(logger);
