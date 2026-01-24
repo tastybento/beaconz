@@ -16,12 +16,6 @@ import java.io.File;
 import java.util.LinkedHashMap;
 import java.util.List;
 
-import com.wasteofplastic.beaconz.Beaconz;
-import com.wasteofplastic.beaconz.config.Lang;
-import com.wasteofplastic.beaconz.config.Params;
-import com.wasteofplastic.beaconz.config.Settings;
-import com.wasteofplastic.beaconz.core.Region;
-import com.wasteofplastic.beaconz.storage.BeaconzStore;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Biome;
@@ -36,8 +30,14 @@ import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.ServerMock;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
 
+import com.wasteofplastic.beaconz.Beaconz;
+import com.wasteofplastic.beaconz.config.Lang;
+import com.wasteofplastic.beaconz.config.Params;
 import com.wasteofplastic.beaconz.config.Params.GameMode;
 import com.wasteofplastic.beaconz.config.Params.GameScoreGoal;
+import com.wasteofplastic.beaconz.config.Settings;
+import com.wasteofplastic.beaconz.core.Region;
+import com.wasteofplastic.beaconz.storage.BeaconzStore;
 
 import net.kyori.adventure.text.Component;
 

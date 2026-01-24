@@ -1,8 +1,19 @@
 package com.wasteofplastic.beaconz.map;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.awt.Color;
 
@@ -14,20 +25,23 @@ import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.map.MapCanvas;
 import org.bukkit.map.MapView;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import com.wasteofplastic.beaconz.Beaconz;
-import com.wasteofplastic.beaconz.core.BeaconObj;
-import com.wasteofplastic.beaconz.game.Register;
-
 import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.ServerMock;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
+
+import com.wasteofplastic.beaconz.Beaconz;
+import com.wasteofplastic.beaconz.config.Lang;
+import com.wasteofplastic.beaconz.core.BeaconObj;
+import com.wasteofplastic.beaconz.game.Register;
 
 /**
  * Comprehensive test suite for {@link BeaconMap} class using JUnit 5 and MockBukkit.
@@ -46,6 +60,7 @@ import org.mockbukkit.mockbukkit.ServerMock;
  * @author tastybento
  */
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("BeaconMap Tests")
 class BeaconMapTest {
 
@@ -113,6 +128,29 @@ class BeaconMapTest {
     @AfterEach
     void tearDown() {
         MockBukkit.unmock();
+    }
+    
+    /**
+     * Initialize Lang static strings used by enums BEFORE any test runs.
+     * This must be done in @BeforeAll because enums are initialized once per JVM,
+     * and if they reference null Lang strings, those null values persist across all tests.
+     */
+    @BeforeAll
+    static void setupLangStrings() {
+        // Initialize strings used by GameMode enum
+        Lang.scoreGameModeMiniGame = "Minigame";
+        Lang.scoreStrategy = "Strategy";
+
+        // Initialize strings used by GameScoreGoal enum
+        Lang.scoreGoalArea = "Area";
+        Lang.scoreGoalBeacons = "Beacons";
+        Lang.scoreGoalTime = "Time";
+        Lang.scoreGoalTriangles = "Triangles";
+        Lang.scoreGoalLinks = "Links";
+
+        // Initialize strings used by BeaconMap (if any)
+        Lang.beaconMapBeaconMap = "Beacon Map";
+        Lang.beaconMapUnknownBeacon = "Unknown Beacon";
     }
 
     @Nested
@@ -512,8 +550,8 @@ class BeaconMapTest {
             beaconMap.render(mapView, canvas, player);
 
             // Verify complete rendering occurred
-            verify(canvas).drawText(10, 10, any(), contains("Beacon Map"));
-            verify(canvas).drawText(10, 20, any(), contains("IntegrationBeacon"));
+            verify(canvas).drawText(eq(10), eq(10), any(), contains("Beacon Map"));
+            verify(canvas).drawText(eq(10), eq(20), any(), contains("IntegrationBeacon"));
             verify(canvas).setPixelColor(64, 64, Color.WHITE);
         }
 

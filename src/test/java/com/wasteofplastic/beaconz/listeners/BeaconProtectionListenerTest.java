@@ -41,9 +41,9 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 
+import com.wasteofplastic.beaconz.config.Lang;
 import com.wasteofplastic.beaconz.core.BeaconObj;
 import com.wasteofplastic.beaconz.game.Game;
-import com.wasteofplastic.beaconz.config.Lang;
 
 import net.kyori.adventure.text.Component;
 

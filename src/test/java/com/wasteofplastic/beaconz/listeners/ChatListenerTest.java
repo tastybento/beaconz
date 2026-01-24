@@ -24,8 +24,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
-import com.wasteofplastic.beaconz.game.Scorecard;
 import com.wasteofplastic.beaconz.config.Settings;
+import com.wasteofplastic.beaconz.game.Scorecard;
 
 /**
  * Tests for {@link ChatListener} covering team chat routing, spying, and broadcast fallbacks.

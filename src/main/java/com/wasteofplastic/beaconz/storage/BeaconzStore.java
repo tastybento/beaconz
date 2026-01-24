@@ -27,13 +27,13 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-import com.wasteofplastic.beaconz.Beaconz;
-import com.wasteofplastic.beaconz.BeaconzPluginDependent;
 import org.bukkit.Location;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
+import com.wasteofplastic.beaconz.Beaconz;
+import com.wasteofplastic.beaconz.BeaconzPluginDependent;
 import com.wasteofplastic.beaconz.listeners.BeaconLinkListener;
 
 /**

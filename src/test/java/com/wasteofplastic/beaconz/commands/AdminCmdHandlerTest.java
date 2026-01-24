@@ -37,18 +37,18 @@ import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.ServerMock;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
 
-import com.wasteofplastic.beaconz.core.BeaconObj;
 import com.wasteofplastic.beaconz.Beaconz;
-import com.wasteofplastic.beaconz.game.Game;
-import com.wasteofplastic.beaconz.game.GameMgr;
 import com.wasteofplastic.beaconz.GlobalTestSetup;
 import com.wasteofplastic.beaconz.config.Lang;
 import com.wasteofplastic.beaconz.config.Params.GameMode;
 import com.wasteofplastic.beaconz.config.Params.GameScoreGoal;
+import com.wasteofplastic.beaconz.config.Settings;
+import com.wasteofplastic.beaconz.core.BeaconObj;
 import com.wasteofplastic.beaconz.core.Region;
+import com.wasteofplastic.beaconz.game.Game;
+import com.wasteofplastic.beaconz.game.GameMgr;
 import com.wasteofplastic.beaconz.game.Register;
 import com.wasteofplastic.beaconz.game.Scorecard;
-import com.wasteofplastic.beaconz.config.Settings;
 
 import net.kyori.adventure.text.Component;
 

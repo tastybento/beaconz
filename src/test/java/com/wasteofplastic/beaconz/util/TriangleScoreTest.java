@@ -8,11 +8,12 @@ import java.awt.geom.Point2D;
 import java.util.HashSet;
 import java.util.Set;
 
-import com.wasteofplastic.beaconz.core.TriangleField;
 import org.bukkit.scoreboard.Team;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+
+import com.wasteofplastic.beaconz.core.TriangleField;
 
 /**
  * Comprehensive test suite for {@link TriangleScorer}.

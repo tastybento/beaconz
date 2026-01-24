@@ -29,16 +29,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
-import com.wasteofplastic.beaconz.Beaconz;
-import com.wasteofplastic.beaconz.BeaconzPluginDependent;
-import com.wasteofplastic.beaconz.game.Game;
-import com.wasteofplastic.beaconz.game.Scorecard;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Team;
 import org.jetbrains.annotations.NotNull;
+
+import com.wasteofplastic.beaconz.Beaconz;
+import com.wasteofplastic.beaconz.BeaconzPluginDependent;
+import com.wasteofplastic.beaconz.game.Game;
+import com.wasteofplastic.beaconz.game.Scorecard;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;

@@ -46,13 +46,13 @@ import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 import org.jetbrains.annotations.NotNull;
 
-import com.wasteofplastic.beaconz.core.BeaconObj;
 import com.wasteofplastic.beaconz.Beaconz;
 import com.wasteofplastic.beaconz.BeaconzPluginDependent;
-import com.wasteofplastic.beaconz.game.Game;
 import com.wasteofplastic.beaconz.config.Lang;
 import com.wasteofplastic.beaconz.config.Params;
 import com.wasteofplastic.beaconz.config.Settings;
+import com.wasteofplastic.beaconz.core.BeaconObj;
+import com.wasteofplastic.beaconz.game.Game;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;

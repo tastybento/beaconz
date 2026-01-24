@@ -343,7 +343,7 @@ public class TriangleField {
     @Override
     public String toString() {
         return (int)a.getX() + ":" + (int)a.getY() + ":" + (int)b.getX() + ":" + (int)b.getY() + ":"
-                + (int)c.getX() + ":" + (int)c.getY() + ":" + owner.getName();
+                + (int)c.getX() + ":" + (int)c.getY() + ":" + (owner == null ? "null" : owner.getName());
     }
 
     /**

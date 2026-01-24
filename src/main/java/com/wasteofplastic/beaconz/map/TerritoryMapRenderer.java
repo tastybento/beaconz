@@ -23,11 +23,11 @@ import org.bukkit.map.MapView;
 import org.bukkit.scoreboard.Team;
 import org.jetbrains.annotations.NotNull;
 
-import com.wasteofplastic.beaconz.core.BeaconObj;
 import com.wasteofplastic.beaconz.Beaconz;
+import com.wasteofplastic.beaconz.core.BeaconObj;
+import com.wasteofplastic.beaconz.core.TriangleField;
 import com.wasteofplastic.beaconz.game.Game;
 import com.wasteofplastic.beaconz.game.Scorecard;
-import com.wasteofplastic.beaconz.core.TriangleField;
 
 /**
  * Overlays all beacons, links, and triangles onto a map. Overlapping triangles make progressively darker colors.
@@ -99,10 +99,10 @@ public class TerritoryMapRenderer extends MapRenderer {
         ItemStack inOffHand = player.getInventory().getItemInOffHand();
         if (inMainHand.getType().equals(Material.FILLED_MAP) || inOffHand.getType().equals(Material.FILLED_MAP)) {
             // Throttle rendering to once per second (20 ticks)
-            tick++;
             if (tick > TICKS_PER_REFRESH) tick = 0;
             if (tick != 0) return; // Skip rendering this tick
-
+            tick++;
+            
             // Create a snapshot of the current beacon state
             Map<Point2D, CachedBeacon> newCache = makeBeaconCache();
             MapCoordinateConverter coordConverter = new MapCoordinateConverter(map);

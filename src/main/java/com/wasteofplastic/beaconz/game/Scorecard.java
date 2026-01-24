@@ -15,12 +15,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 
-import com.wasteofplastic.beaconz.Beaconz;
-import com.wasteofplastic.beaconz.BeaconzPluginDependent;
-import com.wasteofplastic.beaconz.config.Lang;
-import com.wasteofplastic.beaconz.config.Settings;
-import com.wasteofplastic.beaconz.core.BeaconObj;
-import com.wasteofplastic.beaconz.core.Region;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
@@ -47,7 +41,13 @@ import org.bukkit.scoreboard.ScoreboardManager;
 import org.bukkit.scoreboard.Team;
 import org.bukkit.util.Vector;
 
+import com.wasteofplastic.beaconz.Beaconz;
+import com.wasteofplastic.beaconz.BeaconzPluginDependent;
+import com.wasteofplastic.beaconz.config.Lang;
 import com.wasteofplastic.beaconz.config.Params.GameScoreGoal;
+import com.wasteofplastic.beaconz.config.Settings;
+import com.wasteofplastic.beaconz.core.BeaconObj;
+import com.wasteofplastic.beaconz.core.Region;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;

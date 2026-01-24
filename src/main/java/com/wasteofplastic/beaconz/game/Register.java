@@ -34,12 +34,6 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 
-import com.wasteofplastic.beaconz.*;
-import com.wasteofplastic.beaconz.config.Lang;
-import com.wasteofplastic.beaconz.core.*;
-import com.wasteofplastic.beaconz.util.LineVisualizer;
-import com.wasteofplastic.beaconz.util.LinkResult;
-import com.wasteofplastic.beaconz.util.TriangleScorer;
 import org.apache.commons.lang.math.NumberUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -55,8 +49,19 @@ import org.bukkit.map.MapView;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.scoreboard.Team;
 
+import com.wasteofplastic.beaconz.Beaconz;
+import com.wasteofplastic.beaconz.BeaconzPluginDependent;
+import com.wasteofplastic.beaconz.config.Lang;
+import com.wasteofplastic.beaconz.core.BeaconLink;
+import com.wasteofplastic.beaconz.core.BeaconObj;
+import com.wasteofplastic.beaconz.core.DefenseBlock;
+import com.wasteofplastic.beaconz.core.Region;
+import com.wasteofplastic.beaconz.core.TriangleField;
 import com.wasteofplastic.beaconz.map.BeaconMap;
 import com.wasteofplastic.beaconz.map.TerritoryMapRenderer;
+import com.wasteofplastic.beaconz.util.LineVisualizer;
+import com.wasteofplastic.beaconz.util.LinkResult;
+import com.wasteofplastic.beaconz.util.TriangleScorer;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;

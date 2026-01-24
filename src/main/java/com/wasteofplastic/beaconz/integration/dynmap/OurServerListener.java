@@ -26,8 +26,8 @@ import org.dynmap.markers.MarkerSet;
 
 import com.wasteofplastic.beaconz.Beaconz;
 import com.wasteofplastic.beaconz.BeaconzPluginDependent;
-import com.wasteofplastic.beaconz.game.Game;
 import com.wasteofplastic.beaconz.core.TriangleField;
+import com.wasteofplastic.beaconz.game.Game;
 
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 

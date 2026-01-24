@@ -28,15 +28,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 
-import com.wasteofplastic.beaconz.config.Lang;
-import com.wasteofplastic.beaconz.config.Settings;
-import com.wasteofplastic.beaconz.game.GameMgr;
-import com.wasteofplastic.beaconz.game.Register;
-import com.wasteofplastic.beaconz.generator.BeaconPopulator;
-import com.wasteofplastic.beaconz.integration.Metrics;
-import com.wasteofplastic.beaconz.storage.BeaconzStore;
-import com.wasteofplastic.beaconz.storage.Messages;
-import com.wasteofplastic.beaconz.storage.TinyDB;
 import org.apache.commons.lang.math.NumberUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -61,12 +52,18 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.potion.PotionType;
 
-import com.wasteofplastic.beaconz.config.Params.GameMode;
-import com.wasteofplastic.beaconz.config.Params.GameScoreGoal;
 import com.wasteofplastic.beaconz.commands.AdminCmdHandler;
 import com.wasteofplastic.beaconz.commands.CmdHandler;
-import com.wasteofplastic.beaconz.integration.dynmap.OurServerListener;
+import com.wasteofplastic.beaconz.config.Lang;
+import com.wasteofplastic.beaconz.config.Params.GameMode;
+import com.wasteofplastic.beaconz.config.Params.GameScoreGoal;
+import com.wasteofplastic.beaconz.config.Settings;
+import com.wasteofplastic.beaconz.game.GameMgr;
+import com.wasteofplastic.beaconz.game.Register;
+import com.wasteofplastic.beaconz.generator.BeaconPopulator;
 import com.wasteofplastic.beaconz.generator.BeaconzChunkGen;
+import com.wasteofplastic.beaconz.integration.Metrics;
+import com.wasteofplastic.beaconz.integration.dynmap.OurServerListener;
 import com.wasteofplastic.beaconz.listeners.BeaconCaptureListener;
 import com.wasteofplastic.beaconz.listeners.BeaconLinkListener;
 import com.wasteofplastic.beaconz.listeners.BeaconPassiveDefenseListener;
@@ -80,6 +77,9 @@ import com.wasteofplastic.beaconz.listeners.PlayerJoinLeaveListener;
 import com.wasteofplastic.beaconz.listeners.PlayerMovementListener;
 import com.wasteofplastic.beaconz.listeners.PlayerTeleportListener;
 import com.wasteofplastic.beaconz.listeners.SkyListeners;
+import com.wasteofplastic.beaconz.storage.BeaconzStore;
+import com.wasteofplastic.beaconz.storage.Messages;
+import com.wasteofplastic.beaconz.storage.TinyDB;
 
 /**
  * Main plugin class for the Beaconz strategic team-based game.

@@ -28,12 +28,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 
-import com.wasteofplastic.beaconz.*;
-import com.wasteofplastic.beaconz.config.Lang;
-import com.wasteofplastic.beaconz.config.Params;
-import com.wasteofplastic.beaconz.config.Settings;
-import com.wasteofplastic.beaconz.core.BeaconObj;
-import com.wasteofplastic.beaconz.core.Region;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -44,8 +38,15 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.MapMeta;
 import org.bukkit.scoreboard.Team;
 
+import com.wasteofplastic.beaconz.Beaconz;
+import com.wasteofplastic.beaconz.BeaconzPluginDependent;
+import com.wasteofplastic.beaconz.config.Lang;
+import com.wasteofplastic.beaconz.config.Params;
 import com.wasteofplastic.beaconz.config.Params.GameMode;
 import com.wasteofplastic.beaconz.config.Params.GameScoreGoal;
+import com.wasteofplastic.beaconz.config.Settings;
+import com.wasteofplastic.beaconz.core.BeaconObj;
+import com.wasteofplastic.beaconz.core.Region;
 import com.wasteofplastic.beaconz.listeners.BeaconLinkListener;
 
 import net.kyori.adventure.text.Component;

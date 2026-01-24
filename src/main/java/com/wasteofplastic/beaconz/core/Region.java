@@ -32,13 +32,6 @@ import java.util.Locale;
 import java.util.Random;
 import java.util.Set;
 
-import com.wasteofplastic.beaconz.*;
-import com.wasteofplastic.beaconz.config.Lang;
-import com.wasteofplastic.beaconz.config.Settings;
-import com.wasteofplastic.beaconz.game.Game;
-import com.wasteofplastic.beaconz.game.Register;
-import com.wasteofplastic.beaconz.storage.BeaconzStore;
-import com.wasteofplastic.beaconz.util.Pair;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
@@ -62,7 +55,15 @@ import org.bukkit.scoreboard.Score;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
+import com.wasteofplastic.beaconz.Beaconz;
+import com.wasteofplastic.beaconz.BeaconzPluginDependent;
+import com.wasteofplastic.beaconz.config.Lang;
 import com.wasteofplastic.beaconz.config.Params.GameMode;
+import com.wasteofplastic.beaconz.config.Settings;
+import com.wasteofplastic.beaconz.game.Game;
+import com.wasteofplastic.beaconz.game.Register;
+import com.wasteofplastic.beaconz.storage.BeaconzStore;
+import com.wasteofplastic.beaconz.util.Pair;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -106,20 +107,20 @@ public class Region extends BeaconzPluginDependent {
     private Location spawnPoint;
     /** The game associated with this region, null for lobby */
     private Game game = null;
-    
+
     /** Title timing configuration: 500ms fade-in, 3000ms stay, 500ms fade-out */
     Title.Times times = Title.Times.times(
             Duration.ofMillis(500),  // 10 ticks
             Duration.ofMillis(3000), // 60 ticks
             Duration.ofMillis(500)   // 10 ticks
-    );
+            );
 
     /** Pre-configured title shown to players entering this region */
     Title title = Title.title(
             Lang.titleWelcome.color(Lang.titleWelcomeColor),
             Lang.titleSubTitle.color(Lang.titleSubTitleColor), 
             times
-    );
+            );
 
     /**
      * Constructs a new Region with the specified boundaries.
@@ -236,7 +237,7 @@ public class Region extends BeaconzPluginDependent {
 
         // Step 8: Delete structure and village data files
         deleteStructureData();
-        
+
         sender.sendMessage(Component.text("Success"));
     }
 
@@ -255,11 +256,11 @@ public class Region extends BeaconzPluginDependent {
         for (int blockX = xMin; blockX <= xMax; blockX += 16) {
             for (int blockZ = zMin; blockZ <= zMax; blockZ += 16) {
                 int chunkX = blockX >> 4;  // Divide by 16 using bit shift
-                int chunkZ = blockZ >> 4;
-                if (getBeaconzWorld().isChunkLoaded(chunkX, chunkZ)) {
-                    getBeaconzWorld().unloadChunk(chunkX, chunkZ);
-                    chunksUnloaded++;
-                }
+            int chunkZ = blockZ >> 4;
+            if (getBeaconzWorld().isChunkLoaded(chunkX, chunkZ)) {
+                getBeaconzWorld().unloadChunk(chunkX, chunkZ);
+                chunksUnloaded++;
+            }
             }
         }
         getLogger().info("Unloaded " + chunksUnloaded + " chunk(s)");
@@ -288,14 +289,14 @@ public class Region extends BeaconzPluginDependent {
             for (int blockZ = zMin; blockZ <= zMax; blockZ += 16) {
                 // Convert block coordinates to chunk coordinates
                 int chunkX = blockX >> 4;  // Divide by 16
-                int chunkZ = blockZ >> 4;
+            int chunkZ = blockZ >> 4;
 
-                // Convert chunk coordinates to region file coordinates
-                // Each region file contains 32x32 chunks
-                int regionX = Math.floorDiv(chunkX, 32);
-                int regionZ = Math.floorDiv(chunkZ, 32);
+            // Convert chunk coordinates to region file coordinates
+            // Each region file contains 32x32 chunks
+            int regionX = Math.floorDiv(chunkX, 32);
+            int regionZ = Math.floorDiv(chunkZ, 32);
 
-                regionFiles.add(new Pair(regionX, regionZ));
+            regionFiles.add(new Pair(regionX, regionZ));
             }
         }
 
@@ -328,8 +329,8 @@ public class Region extends BeaconzPluginDependent {
 
             // Delete terrain file (.mca)
             File terrainFile = new File(worldContainer,
-                worldName + File.separator + "region" + File.separator +
-                "r." + regionX + "." + regionZ + ".mca");
+                    worldName + File.separator + "region" + File.separator +
+                    "r." + regionX + "." + regionZ + ".mca");
             if (terrainFile.exists() && terrainFile.delete()) {
                 filesDeleted++;
                 getLogger().fine("Deleted terrain file: r." + regionX + "." + regionZ + ".mca");
@@ -337,8 +338,8 @@ public class Region extends BeaconzPluginDependent {
 
             // Delete entity file (.mcc) - introduced in Minecraft 1.17
             File entityFile = new File(worldContainer,
-                worldName + File.separator + "entities" + File.separator +
-                "r." + regionX + "." + regionZ + ".mcc");
+                    worldName + File.separator + "entities" + File.separator +
+                    "r." + regionX + "." + regionZ + ".mcc");
             if (entityFile.exists() && entityFile.delete()) {
                 filesDeleted++;
                 getLogger().fine("Deleted entity file: r." + regionX + "." + regionZ + ".mcc");
@@ -346,8 +347,8 @@ public class Region extends BeaconzPluginDependent {
 
             // Delete POI (Point of Interest) file
             File poiFile = new File(worldContainer,
-                worldName + File.separator + "poi" + File.separator +
-                "r." + regionX + "." + regionZ + ".mca");
+                    worldName + File.separator + "poi" + File.separator +
+                    "r." + regionX + "." + regionZ + ".mca");
             if (poiFile.exists() && poiFile.delete()) {
                 filesDeleted++;
                 getLogger().fine("Deleted POI file: r." + regionX + "." + regionZ + ".mca");
@@ -372,7 +373,7 @@ public class Region extends BeaconzPluginDependent {
      */
     private void deleteStructureData() {
         File dataFolder = new File(getServer().getWorldContainer().getAbsolutePath() +
-            File.separator + getBeaconzWorld().getName() + File.separator + "data");
+                File.separator + getBeaconzWorld().getName() + File.separator + "data");
 
         if (!dataFolder.exists() || !dataFolder.isDirectory()) {
             getLogger().warning("Data folder not found: " + dataFolder.getAbsolutePath());
@@ -385,8 +386,8 @@ public class Region extends BeaconzPluginDependent {
             for (File file : files) {
                 // Delete .dat files but preserve level.dat and level.dat_old
                 if (!file.isDirectory() &&
-                    file.getName().endsWith(".dat") &&
-                    !file.getName().startsWith("level")) {
+                        file.getName().endsWith(".dat") &&
+                        !file.getName().startsWith("level")) {
 
                     if (file.delete()) {
                         datFilesDeleted++;
@@ -701,7 +702,6 @@ public class Region extends BeaconzPluginDependent {
      * @param radius maximum search radius in blocks (capped at 20)
      */
     public void setSpawnPoint(Location loc, Integer radius){
-        getLogger().info("DEBUG: set spawn point");
         spawnPoint = findSafeSpot(loc, radius);
     }
 
@@ -749,9 +749,7 @@ public class Region extends BeaconzPluginDependent {
             getBeaconzPlugin().getTeleportListener().setDirectTeleportPlayer(player.getUniqueId());
         }
         // Make the spawn point safe if it isn't anymore
-        getLogger().info("DEBUG: tp to region");
         this.setSpawnPoint(spawnPoint, 20);
-        getLogger().info("DEBUG: spawnpoint = " + getSpawnPoint());
         player.teleportAsync(getSpawnPoint());
         // Remove any Mobs around the area
         for (Entity entity : player.getNearbyEntities(10, 10, 10)) {
@@ -955,20 +953,17 @@ public class Region extends BeaconzPluginDependent {
      */
     public Location findSafeSpot (Location location, Integer radius) {
         // First load the chunk
-      Chunk chunk =  location.getWorld().getChunkAt(location);
-       
-        getLogger().info("DEBUG: find safe spot. Chunk loaded? " + location.getWorld().isChunkLoaded(chunk));
+        location.getWorld().getChunkAt(location);
+
         Location safeloc = null;
 
         // Check actual first location
         if (isLocationSafe(location)) {
-            getLogger().info("DEBUG: location is safe");
             // We are done
             return location;
         }
         // Check for the highest block at this location
         int y = location.getWorld().getHighestBlockYAt(location);
-        getLogger().info("DEBUG: highest y = " + y);
         location.setY(y);
         if (isLocationSafe(location)) {
             // We are done
@@ -1005,7 +1000,6 @@ public class Region extends BeaconzPluginDependent {
             safeloc = new Location(getBeaconzWorld(), location.getX(), getBeaconzWorld().getHighestBlockYAt(location), location.getZ());
             safeloc.getBlock().getRelative(BlockFace.DOWN).setType(Material.BEDROCK);
         }
-        getLogger().info("DEBUG: safeloc = " + safeloc);
         // Return the safe location
         return safeloc;
     }
@@ -1019,9 +1013,6 @@ public class Region extends BeaconzPluginDependent {
      * @return true if safe, otherwise false
      */
     public Boolean isLocationSafe(Location location) {
-        // TODO: improve the safe location finding.
-        // note: water lilies should not be safe
-
         if (location == null) {
             return false;
         }

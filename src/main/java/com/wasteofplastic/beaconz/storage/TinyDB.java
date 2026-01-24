@@ -32,8 +32,9 @@ import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.wasteofplastic.beaconz.Beaconz;
 import org.bukkit.scheduler.BukkitRunnable;
+
+import com.wasteofplastic.beaconz.Beaconz;
 
 /**
  * Tiny database for a hashmap that is not used very often, but could be very big so I

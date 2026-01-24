@@ -32,11 +32,11 @@ import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.ServerMock;
 
 import com.wasteofplastic.beaconz.Beaconz;
-import com.wasteofplastic.beaconz.game.Game;
-import com.wasteofplastic.beaconz.game.GameMgr;
 import com.wasteofplastic.beaconz.config.Lang;
 import com.wasteofplastic.beaconz.config.Params.GameScoreGoal;
 import com.wasteofplastic.beaconz.core.Region;
+import com.wasteofplastic.beaconz.game.Game;
+import com.wasteofplastic.beaconz.game.GameMgr;
 import com.wasteofplastic.beaconz.game.Scorecard;
 
 import net.kyori.adventure.text.Component;

@@ -37,8 +37,8 @@ import org.bukkit.scoreboard.Team;
 
 import com.wasteofplastic.beaconz.Beaconz;
 import com.wasteofplastic.beaconz.BeaconzPluginDependent;
-import com.wasteofplastic.beaconz.game.Game;
 import com.wasteofplastic.beaconz.config.Params.GameMode;
+import com.wasteofplastic.beaconz.game.Game;
 
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 

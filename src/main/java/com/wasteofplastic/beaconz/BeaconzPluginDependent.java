@@ -26,10 +26,6 @@ import java.io.File;
 import java.util.List;
 import java.util.logging.Logger;
 
-import com.wasteofplastic.beaconz.game.GameMgr;
-import com.wasteofplastic.beaconz.game.Register;
-import com.wasteofplastic.beaconz.storage.BeaconzStore;
-import com.wasteofplastic.beaconz.storage.Messages;
 import org.bukkit.Server;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
@@ -37,7 +33,11 @@ import org.bukkit.entity.Player;
 import org.bukkit.generator.BlockPopulator;
 import org.bukkit.inventory.ItemStack;
 
+import com.wasteofplastic.beaconz.game.GameMgr;
+import com.wasteofplastic.beaconz.game.Register;
 import com.wasteofplastic.beaconz.listeners.PlayerMovementListener;
+import com.wasteofplastic.beaconz.storage.BeaconzStore;
+import com.wasteofplastic.beaconz.storage.Messages;
 
 /**
  * Base class for classes that depend on a {@link org.bukkit.plugin.Plugin}.

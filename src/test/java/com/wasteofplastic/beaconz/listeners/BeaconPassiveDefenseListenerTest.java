@@ -38,10 +38,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
-import com.wasteofplastic.beaconz.core.DefenseBlock;
 import com.wasteofplastic.beaconz.config.Lang;
-import com.wasteofplastic.beaconz.core.Region;
 import com.wasteofplastic.beaconz.config.Settings;
+import com.wasteofplastic.beaconz.core.DefenseBlock;
+import com.wasteofplastic.beaconz.core.Region;
 
 import net.kyori.adventure.text.Component;
 

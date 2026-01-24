@@ -3,13 +3,14 @@ package com.wasteofplastic.beaconz.util;
 import java.awt.geom.Point2D;
 import java.util.Iterator;
 
+import org.bukkit.Material;
+import org.bukkit.block.Block;
+import org.bukkit.scheduler.BukkitRunnable;
+
 import com.wasteofplastic.beaconz.Beaconz;
 import com.wasteofplastic.beaconz.BeaconzPluginDependent;
 import com.wasteofplastic.beaconz.core.BeaconLink;
 import com.wasteofplastic.beaconz.game.Game;
-import org.bukkit.Material;
-import org.bukkit.block.Block;
-import org.bukkit.scheduler.BukkitRunnable;
 
 /**
  * Class to visualize a line with blocks for a team. Runs async.

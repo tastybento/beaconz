@@ -33,10 +33,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
 
-import com.wasteofplastic.beaconz.*;
-import com.wasteofplastic.beaconz.config.Settings;
-import com.wasteofplastic.beaconz.game.Scorecard;
-import com.wasteofplastic.beaconz.util.LineVisualizer;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -46,6 +42,11 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.scoreboard.Team;
 
 import com.destroystokyo.paper.MaterialTags;
+import com.wasteofplastic.beaconz.Beaconz;
+import com.wasteofplastic.beaconz.BeaconzPluginDependent;
+import com.wasteofplastic.beaconz.config.Settings;
+import com.wasteofplastic.beaconz.game.Scorecard;
+import com.wasteofplastic.beaconz.util.LineVisualizer;
 
 /**
  * Represents a beacon in the Beaconz game world.

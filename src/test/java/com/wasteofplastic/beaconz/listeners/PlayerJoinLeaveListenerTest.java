@@ -27,8 +27,8 @@ import org.mockito.MockedStatic;
 
 import com.google.common.collect.HashBiMap;
 import com.wasteofplastic.beaconz.config.Lang;
-import com.wasteofplastic.beaconz.storage.Messages;
 import com.wasteofplastic.beaconz.core.Region;
+import com.wasteofplastic.beaconz.storage.Messages;
 import com.wasteofplastic.beaconz.storage.TinyDB;
 
 import net.kyori.adventure.text.Component;

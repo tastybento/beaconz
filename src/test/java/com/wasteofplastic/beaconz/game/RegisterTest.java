@@ -20,12 +20,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import com.wasteofplastic.beaconz.Beaconz;
-import com.wasteofplastic.beaconz.config.Settings;
-import com.wasteofplastic.beaconz.core.BeaconObj;
-import com.wasteofplastic.beaconz.core.Region;
-import com.wasteofplastic.beaconz.core.TriangleField;
-import com.wasteofplastic.beaconz.util.LinkResult;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -38,6 +32,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.ServerMock;
+
+import com.wasteofplastic.beaconz.Beaconz;
+import com.wasteofplastic.beaconz.config.Settings;
+import com.wasteofplastic.beaconz.core.BeaconObj;
+import com.wasteofplastic.beaconz.core.Region;
+import com.wasteofplastic.beaconz.core.TriangleField;
+import com.wasteofplastic.beaconz.util.LinkResult;
 
 /**
  * Comprehensive test suite for {@link Register} covering all registry operations.

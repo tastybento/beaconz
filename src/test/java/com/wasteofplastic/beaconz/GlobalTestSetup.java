@@ -1,8 +1,9 @@
 package com.wasteofplastic.beaconz;
 
-import com.wasteofplastic.beaconz.config.Lang;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
+
+import com.wasteofplastic.beaconz.config.Lang;
 
 /**
  * Global test setup that initializes Lang static strings before any test class runs.
