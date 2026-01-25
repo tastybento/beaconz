@@ -1,6 +1,7 @@
 package com.wasteofplastic.beaconz.storage;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -78,8 +79,8 @@ class TinyDBTest {
         @Test
         @DisplayName("Should create database file if it doesn't exist")
         void shouldCreateDatabaseFile() {
-            // The constructor should have created the file
-            File dbFile = new File(plugin.getDataFolder(), "name-uuid.txt");
+            // The constructor should have created the file or parent directory
+            File dbFile = new File(plugin.getDataFolder(), "name-uuid.jsonl");
             assertTrue(dbFile.exists() || dbFile.getParentFile().exists(),
                 "Database file or parent directory should exist");
         }
@@ -87,7 +88,7 @@ class TinyDBTest {
         @Test
         @DisplayName("Should not fail when database file already exists")
         void shouldHandleExistingDatabaseFile() throws IOException {
-            File dbFile = new File(plugin.getDataFolder(), "name-uuid.txt");
+            File dbFile = new File(plugin.getDataFolder(), "name-uuid.jsonl");
             //noinspection ResultOfMethodCallIgnored
             dbFile.getParentFile().mkdirs();
             //noinspection ResultOfMethodCallIgnored
@@ -202,7 +203,7 @@ class TinyDBTest {
 
             tinyDB.saveDB();
 
-            File dbFile = new File(plugin.getDataFolder(), "name-uuid.txt");
+            File dbFile = new File(plugin.getDataFolder(), "name-uuid.jsonl");
             if (dbFile.exists()) {
                 assertTrue(dbFile.length() > 0, "Database file should have content");
             }
@@ -211,17 +212,16 @@ class TinyDBTest {
         @Test
         @DisplayName("Should load database from file")
         void shouldLoadDatabase() throws IOException {
-            File dbFile = new File(plugin.getDataFolder(), "name-uuid.txt");
+            File dbFile = new File(plugin.getDataFolder(), "name-uuid.jsonl");
             //noinspection ResultOfMethodCallIgnored
             dbFile.getParentFile().mkdirs();
 
             UUID testUUID = UUID.randomUUID();
             String playerName = "FilePlayer";
 
-            // Write directly to file
+            // Write directly to file in tab-separated format
             try (PrintWriter writer = new PrintWriter(dbFile)) {
-                writer.println(playerName.toLowerCase());
-                writer.println(testUUID);
+                writer.println(playerName.toLowerCase() + "\t" + testUUID);
             }
 
             // Create new instance that should read the file
@@ -234,28 +234,30 @@ class TinyDBTest {
         @Test
         @DisplayName("Should preserve old entries when saving")
         void shouldPreserveOldEntries() throws IOException {
-            File dbFile = new File(plugin.getDataFolder(), "name-uuid.txt");
+            File dbFile = new File(plugin.getDataFolder(), "name-uuid.jsonl");
             //noinspection ResultOfMethodCallIgnored
             dbFile.getParentFile().mkdirs();
 
             UUID oldUUID = UUID.randomUUID();
             String oldPlayer = "OldPlayer";
 
-            // Write an old entry
+            // Write an old entry in tab-separated format
             try (PrintWriter writer = new PrintWriter(dbFile)) {
-                writer.println(oldPlayer.toLowerCase());
-                writer.println(oldUUID);
+                writer.println(oldPlayer.toLowerCase() + "\t" + oldUUID);
             }
+
+            // Create a new TinyDB instance that will load the old entry
+            TinyDB freshDB = new TinyDB(plugin);
 
             // Add a new entry and save
             UUID newUUID = UUID.randomUUID();
-            tinyDB.savePlayerName("NewPlayer", newUUID);
-            tinyDB.saveDB();
+            freshDB.savePlayerName("NewPlayer", newUUID);
+            freshDB.saveDB();
 
-            // Both should be in the file
-            TinyDB newDB = new TinyDB(plugin);
-            assertEquals(newUUID, newDB.getPlayerUUID("NewPlayer"));
-            assertEquals(oldUUID, newDB.getPlayerUUID(oldPlayer));
+            // Both should be in the file - create another instance to verify
+            TinyDB verifyDB = new TinyDB(plugin);
+            assertEquals(newUUID, verifyDB.getPlayerUUID("NewPlayer"), "New player should be in database");
+            assertEquals(oldUUID, verifyDB.getPlayerUUID(oldPlayer), "Old player should still be in database");
         }
 
         @Test
@@ -273,13 +275,14 @@ class TinyDBTest {
             tinyDB.saveDB();
 
             // Count occurrences in file
-            File dbFile = new File(plugin.getDataFolder(), "name-uuid.txt");
+            File dbFile = new File(plugin.getDataFolder(), "name-uuid.jsonl");
             if (dbFile.exists()) {
                 int count = 0;
                 try (BufferedReader reader = new BufferedReader(new FileReader(dbFile))) {
                     String line;
                     while ((line = reader.readLine()) != null) {
-                        if (line.equalsIgnoreCase(playerName)) {
+                        // Check if the line starts with the player name (tab-separated format)
+                        if (line.toLowerCase().startsWith(playerName.toLowerCase() + "\t")) {
                             count++;
                         }
                     }
@@ -296,7 +299,7 @@ class TinyDBTest {
         @Test
         @DisplayName("Should handle empty database file")
         void shouldHandleEmptyFile() throws IOException {
-            File dbFile = new File(plugin.getDataFolder(), "name-uuid.txt");
+            File dbFile = new File(plugin.getDataFolder(), "name-uuid.jsonl");
             //noinspection ResultOfMethodCallIgnored
             dbFile.getParentFile().mkdirs();
             //noinspection ResultOfMethodCallIgnored
@@ -310,14 +313,13 @@ class TinyDBTest {
         @Test
         @DisplayName("Should handle corrupted database file")
         void shouldHandleCorruptedFile() throws IOException {
-            File dbFile = new File(plugin.getDataFolder(), "name-uuid.txt");
+            File dbFile = new File(plugin.getDataFolder(), "name-uuid.jsonl");
             //noinspection ResultOfMethodCallIgnored
             dbFile.getParentFile().mkdirs();
 
-            // Write malformed data
+            // Write malformed data (missing UUID part after tab)
             try (PrintWriter writer = new PrintWriter(dbFile)) {
-                writer.println("Player1");
-                writer.println("not-a-valid-uuid");
+                writer.println("Player1\tnot-a-valid-uuid");
             }
 
             TinyDB newDB = new TinyDB(plugin);
@@ -328,13 +330,13 @@ class TinyDBTest {
         }
 
         @Test
-        @DisplayName("Should handle odd number of lines in file")
-        void shouldHandleOddLineCount() throws IOException {
-            File dbFile = new File(plugin.getDataFolder(), "name-uuid.txt");
+        @DisplayName("Should handle malformed lines in file")
+        void shouldHandleMalformedLines() throws IOException {
+            File dbFile = new File(plugin.getDataFolder(), "name-uuid.jsonl");
             //noinspection ResultOfMethodCallIgnored
             dbFile.getParentFile().mkdirs();
 
-            // Write incomplete entry (name without UUID)
+            // Write incomplete entry (name without UUID - no tab separator)
             try (PrintWriter writer = new PrintWriter(dbFile)) {
                 writer.println("IncompletePlayer");
             }
@@ -372,7 +374,7 @@ class TinyDBTest {
     class FileFormatTests {
 
         @Test
-        @DisplayName("Should write entries in name-uuid pairs")
+        @DisplayName("Should write entries in tab-separated format")
         void shouldWriteCorrectFormat() throws IOException {
             UUID uuid1 = UUID.randomUUID();
             UUID uuid2 = UUID.randomUUID();
@@ -381,15 +383,22 @@ class TinyDBTest {
             tinyDB.savePlayerName("Player2", uuid2);
             tinyDB.saveDB();
 
-            File dbFile = new File(plugin.getDataFolder(), "name-uuid.txt");
+            File dbFile = new File(plugin.getDataFolder(), "name-uuid.jsonl");
             if (dbFile.exists()) {
                 try (BufferedReader reader = new BufferedReader(new FileReader(dbFile))) {
+                    String line;
                     int lineCount = 0;
-                    while (reader.readLine() != null) {
+                    boolean hasTabSeparator = false;
+                    while ((line = reader.readLine()) != null) {
                         lineCount++;
+                        // Each line should contain a tab separator
+                        if (line.contains("\t")) {
+                            hasTabSeparator = true;
+                        }
                     }
-                    // Should have even number of lines (pairs)
-                    assertEquals(0, lineCount % 2, "File should have even number of lines");
+                    // Should have 2 lines (one per player)
+                    assertEquals(2, lineCount, "File should have one line per player");
+                    assertTrue(hasTabSeparator, "Lines should contain tab separator");
                 }
             }
         }
@@ -401,12 +410,17 @@ class TinyDBTest {
             tinyDB.savePlayerName("MixedCasePlayer", testUUID);
             tinyDB.saveDB();
 
-            File dbFile = new File(plugin.getDataFolder(), "name-uuid.txt");
+            File dbFile = new File(plugin.getDataFolder(), "name-uuid.jsonl");
             if (dbFile.exists()) {
                 try (BufferedReader reader = new BufferedReader(new FileReader(dbFile))) {
                     String line = reader.readLine();
-                    if (line != null && line.contains("player")) {
-                        assertEquals(line, line.toLowerCase(), "Names should be stored in lowercase");
+                    if (line != null) {
+                        String[] parts = line.split("\t");
+                        if (parts.length > 0) {
+                            String storedName = parts[0];
+                            assertEquals(storedName, storedName.toLowerCase(),
+                                "Names should be stored in lowercase");
+                        }
                     }
                 }
             }
@@ -474,6 +488,43 @@ class TinyDBTest {
             // The implementation uses Files.move with REPLACE_EXISTING which handles cleanup
             // We just verify that saveDB completes successfully without errors
             assertTrue(true, "SaveDB completed without throwing exceptions");
+        }
+    }
+
+    @Nested
+    @DisplayName("Utility Method Tests")
+    class UtilityTests {
+
+        @Test
+        @DisplayName("Should return correct size")
+        void shouldReturnSize() {
+            assertEquals(0, tinyDB.size());
+
+            tinyDB.savePlayerName("Player1", UUID.randomUUID());
+            assertEquals(1, tinyDB.size());
+
+            tinyDB.savePlayerName("Player2", UUID.randomUUID());
+            assertEquals(2, tinyDB.size());
+
+            // Updating existing player should not change size
+            tinyDB.savePlayerName("Player1", UUID.randomUUID());
+            assertEquals(2, tinyDB.size());
+        }
+
+        @Test
+        @DisplayName("Should check if player exists with hasPlayer")
+        void shouldCheckPlayerExists() {
+            UUID uuid = UUID.randomUUID();
+            String playerName = "TestPlayer";
+
+            assertFalse(tinyDB.hasPlayer(playerName), "hasPlayer should return false for non-existent player");
+
+            tinyDB.savePlayerName(playerName, uuid);
+            assertTrue(tinyDB.hasPlayer(playerName), "hasPlayer should return true after saving");
+
+            // Should be case-insensitive
+            assertTrue(tinyDB.hasPlayer("testplayer"));
+            assertTrue(tinyDB.hasPlayer("TESTPLAYER"));
         }
     }
 }

@@ -5,7 +5,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -99,8 +98,7 @@ public class TinyDB {
             }
 
             // Atomic move to replace old database
-            Files.move(tempPath, databasePath, StandardCopyOption.REPLACE_EXISTING,
-                    StandardCopyOption.ATOMIC_MOVE);
+            Files.move(tempPath, databasePath, StandardCopyOption.REPLACE_EXISTING);
 
         } catch (IOException e) {
             plugin.getLogger().severe("Failed to save database: " + e.getMessage());
