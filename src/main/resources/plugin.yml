@@ -4,7 +4,7 @@ version: ${version}
 description: Capture the beacons game
 author: tastybento
 api-version: "1.21"
-load: startup
+load: STARTUP
 loadbefore: [Multiverse-Core]
 softdepend: [dynmap]
 commands:

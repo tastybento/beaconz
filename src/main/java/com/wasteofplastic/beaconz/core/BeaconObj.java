@@ -127,7 +127,7 @@ public class BeaconObj extends BeaconzPluginDependent {
      * Whether this is a newly captured beacon.
      * New beacons have no mining cooldown initially.
      */
-    private boolean newBeacon = true;
+    private boolean newBeacon;
 
     /**
      * The 8 cardinal and ordinal directions around a beacon.
@@ -924,7 +924,7 @@ public class BeaconObj extends BeaconzPluginDependent {
             }
             
             // STEP 1: Calculate required blocks proportional to team size
-            int reqLocking = 3; // Default minimum
+            int reqLocking; // Default minimum
             int maxSize = ownership.getSize();
 
             // Find the largest team in the game for proportional scaling

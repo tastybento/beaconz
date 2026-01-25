@@ -977,7 +977,7 @@ public class Scorecard extends BeaconzPluginDependent {
      */
     public String getDisplayTime(String type) {
         // type is either "short" or "long"
-        if (type == "short") {
+        if (type.equals("short")) {
             return displaytime;
         } else {
             return displaytime + " (" + timertype + ")";
@@ -1162,7 +1162,7 @@ public class Scorecard extends BeaconzPluginDependent {
      * @see #getStringLocation(Location)
      */
     static public Location getLocationString(final String s) {
-        if (s == null || s.trim() == "") {
+        if (s == null || s.trim().equals("")) {
             return null;
         }
         final String[] parts = s.split(":");
@@ -1395,7 +1395,7 @@ public class Scorecard extends BeaconzPluginDependent {
         timertaskid = getBeaconzPlugin().getServer().getScheduler().runTaskTimerAsynchronously(getBeaconzPlugin(), () -> {
 
             if (gameON) {
-                long seconds = 0L;
+                long seconds;
                 int t = timerinterval;
 
                 if (timertype.equals("openended")) {
@@ -1409,7 +1409,7 @@ public class Scorecard extends BeaconzPluginDependent {
                         timertaskid.cancel();
                         endGame();
                     }
-                    seconds = (long) countdownTimer;
+                    seconds = countdownTimer;
                 }
 
                 // display the timer

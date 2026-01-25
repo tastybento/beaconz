@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.io.UnsupportedEncodingException;
 import java.net.Proxy;
 import java.net.URL;
 import java.net.URLConnection;
@@ -118,7 +117,7 @@ public class Metrics {
                 configuration.load(getConfigFile());
             } catch (final IOException | InvalidConfigurationException ex) {
                 if (debug) {
-                    Bukkit.getLogger().log(Level.INFO, "[Metrics] " + ex.getMessage());
+                    plugin.getLogger().log(Level.INFO, "[Metrics] " + ex.getMessage());
                 }
                 return true;
             }
@@ -224,7 +223,7 @@ public class Metrics {
                         firstPost = false;
                     } catch (final IOException e) {
                         if (debug) {
-                            Bukkit.getLogger().log(Level.INFO, "[Metrics] " + e.getMessage());
+                            plugin.getLogger().log(Level.INFO, "[Metrics] " + e.getMessage());
                         }
                     }
                 }

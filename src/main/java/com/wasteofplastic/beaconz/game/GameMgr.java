@@ -187,7 +187,7 @@ public class GameMgr extends BeaconzPluginDependent {
      */
     public void saveGame(String name) {
         // Look up game by name (was incorrectly using literal "name")
-        Game game = games.get(name);
+        Game game = games.get(Component.text(name));
         if (game != null) {
             game.save();
         }
@@ -349,7 +349,7 @@ public class GameMgr extends BeaconzPluginDependent {
         CompletableFuture<Boolean> result = new CompletableFuture<>();
         // Get the location for creating the new region
         Point2D ctr = nextRegionLocation();
-        Double radius = rup16(defaultParameters.getSize() / 2.0);
+        double radius = rup16(defaultParameters.getSize() / 2.0);
         if (ctr == null) {
             getLogger().warning("Could not find a location to create the next region.");
             result.complete(false);
@@ -953,10 +953,10 @@ public class GameMgr extends BeaconzPluginDependent {
         double x2 = Double.parseDouble(c.split(":")[2]);
         double z2 = Double.parseDouble(c.split(":")[3]);
         // Normalize so first point has smaller x-coordinate
-        Double a1 = x1 < x2 ? x1 : x2;
-        Double b1 = x1 < x2 ? z1 : z2;
-        Double a2 = x1 < x2 ? x2 : x1;
-        Double b2 = x1 < x2 ? z2 : z1;
+        double a1 = Math.min(x1, x2);
+        double b1 = x1 < x2 ? z1 : z2;
+        double a2 = Math.max(x1, x2);
+        double b2 = x1 < x2 ? z2 : z1;
         return new Point2D [] {new Point2D.Double(a1,b1), new Point2D.Double(a2,b2)};
     }
 

@@ -444,7 +444,7 @@ public class Register extends BeaconzPluginDependent {
                 BeaconObj dest = beaconRegister.get(new Point2D.Double(Double.parseDouble(args[0]), Double.parseDouble(args[1])));
                 if (dest != null) {
                     // Extract timestamp (or assign sequential timestamp if missing from old saves)
-                    long linkTime = 0L;
+                    long linkTime;
                     if (args.length == 3) {
                         linkTime = Long.parseLong(args[2]);
                     } else {

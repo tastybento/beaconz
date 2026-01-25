@@ -988,7 +988,7 @@ public class Beaconz extends JavaPlugin {
     public String cleanString(String strToClean, String basevalues, String defaultIfEmpty) {
         strToClean = strToClean + ":";
         basevalues = basevalues + ":";
-        boolean removestr = false;
+        boolean removestr;
         // Remove extraneous text
         for (String str : strToClean.split(":")) {
             removestr = true;
@@ -1054,7 +1054,7 @@ public class Beaconz extends JavaPlugin {
      * @return Location
      */
     static public Location getLocationString(final String s) {
-        if (s == null || s.trim() == "") {
+        if (s == null || s.trim().equals("")) {
             return null;
         }
         final String[] parts = s.split(":");

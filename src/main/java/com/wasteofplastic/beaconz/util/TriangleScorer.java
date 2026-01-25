@@ -61,7 +61,7 @@ public class TriangleScorer {
             // Remove it from the list as its area will be counted even if there are no unions
             mainIt.remove();
             // Flag to track the status of unions
-            boolean noMoreUnions = true;
+            boolean noMoreUnions;
             // Loop until there are no more unions - due to ordering, a triangle later in the list could enable
             // a triangle earlier in the list to be unionable, so it must be do repeatedly until there are no more
             // unions.

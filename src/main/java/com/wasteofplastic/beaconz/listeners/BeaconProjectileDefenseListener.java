@@ -384,7 +384,7 @@ public class BeaconProjectileDefenseListener extends BeaconzPluginDependent impl
 
         // Fire projectile from dispenser inventory
         if (block.getType().equals(Material.DISPENSER)) {
-            Projectile projectile = null;
+            Projectile projectile;
             org.bukkit.block.Dispenser ih = (org.bukkit.block.Dispenser)block.getState();
 
             // Check dispenser inventory for different projectile types (in priority order)

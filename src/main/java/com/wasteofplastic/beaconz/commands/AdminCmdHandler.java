@@ -1087,7 +1087,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
     @Override
     public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, String[] args) {
         final List<String> options = new ArrayList<>();
-        Player player = null;
+        Player player;
 
         // Permission check - only admins/ops get completions
         if (sender instanceof Player) {

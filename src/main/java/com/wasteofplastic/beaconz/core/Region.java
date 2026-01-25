@@ -804,8 +804,8 @@ public class Region extends BeaconzPluginDependent {
                 // This runs after a few seconds, so make sure that player is still in the lobby
                 if (getGameMgr().isPlayerInLobby(player)) {
                     Scoreboard sb = plugin.getServer().getScoreboardManager().getNewScoreboard();
-                    Objective sbobj = null;
-                    Score scoreline = null;
+                    Objective sbobj;
+                    Score scoreline;
                     player.setScoreboard(sb);
 
                     try {
@@ -976,7 +976,7 @@ public class Region extends BeaconzPluginDependent {
             List<Pair> used = new ArrayList<>();
 
             // sweep in a concentric cube pattern to check for a safe spot
-            Location checkloc = null;
+            Location checkloc;
             outerloop:
                 for (int rad = 0; rad < radius; rad++) {
                     for (int z = -rad; z <= rad; z++) {

@@ -66,7 +66,7 @@ public class BeaconPopulator extends BlockPopulator {
 
     @Override
     public void populate(World world, Random unused, Chunk source) {
-        boolean cornerBeacon = false;
+        boolean cornerBeacon;
         Integer cornerX = null;
         Integer cornerZ = null;
 
@@ -150,7 +150,7 @@ public class BeaconPopulator extends BlockPopulator {
         double nd = gen.nextDouble();
 
         // Compare the pseudo-random double generated with the game's beacon distribution threshold        
-        Double distribution = plugin.getGameMgr().getRegion(source.getX() << 4, source.getZ() << 4).getGame().getGamedistribution();
+        double distribution = plugin.getGameMgr().getRegion(source.getX() << 4, source.getZ() << 4).getGame().getGamedistribution();
         if (nd < distribution || cornerBeacon) {
             int x;
             int z;

@@ -268,7 +268,7 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
         // These should be processed without any inventory/region logic
         if (barrierPlayers.contains(player.getUniqueId())) {
             barrierPlayers.remove(player.getUniqueId());
-            return; // Skip all other processing
+            // Skip all other processing
 
         } else {
             // ===== TELEPORTING OUT OF A GAME =====
