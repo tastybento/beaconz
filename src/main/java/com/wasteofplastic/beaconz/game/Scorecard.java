@@ -575,14 +575,12 @@ public class Scorecard extends BeaconzPluginDependent {
     public void refreshSBdisplay(Team team, GameScoreGoal scoretype) {
         // The setScore values are actually line numbers on the scoreboard
         // the actual scores go in the score description
-
         // Refresh the team scores for the given score type, if it can be shown
         if (gameON && game.getScoretypes().contains(scoretype)) {
             HashMap<GameScoreGoal, Integer> stypes = score.get(team);
             int sv = 0;
             if (stypes != null && stypes.get(scoretype) != null) sv = stypes.get(scoretype);
             String scorestring = fixScoreString(team, scoretype, sv, MAXSCORELENGTH);
-
             String oldentry = sbEntry(team, scoretype);
             int line = scoreobjective.getScore(oldentry).getScore();
             scoreboard.resetScores(oldentry);
@@ -652,11 +650,11 @@ public class Scorecard extends BeaconzPluginDependent {
      * Returns the first scoreboard Entry for a given team + score type - and *** there can be only ONE ***
      *
      */
-    public String sbEntry (Team team, GameScoreGoal scoretype) {
+    public String sbEntry (Team team, GameScoreGoal scoreType) {
         String scoreboardentry = "";
         String teamName = PlainTextComponentSerializer.plainText().serialize(team.displayName());
         for (String entry : scoreboard.getEntries()) {
-            if (entry.contains(teamName + " " + scoretype)) {
+            if (entry.contains(teamName + " " + scoreType.getName())) {
                 scoreboardentry = entry;
                 break;
             }
