@@ -1031,7 +1031,7 @@ public class Beaconz extends JavaPlugin {
      * @return height of first non-air block
      */
     public int getHighestBlockYAt(int x, int z) {
-        for (int y = 254; y > 0; y--) {
+        for (int y = getBeaconzWorld().getMaxHeight() - 1; y > 0; y--) {
             if (!getBeaconzWorld().getBlockAt(x, y, z).getType().equals(Material.AIR)) {
                 return y+1;
             }

@@ -36,6 +36,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.util.Vector;
 
@@ -143,9 +144,8 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled=true)
     public void onWorldEnter(final PlayerChangedWorldEvent event) {
         final Player player = event.getPlayer();
-
         // Only process when entering the Beaconz world
-        if (player.getWorld().equals((getBeaconzWorld()))) {
+        if (!inWorld(event.getFrom()) && inWorld(player.getWorld()) ) {
             // Save player name to database for future UUID->name lookups
             getBeaconzPlugin().getNameStore().savePlayerName(player.getName(), player.getUniqueId());
 
@@ -198,7 +198,7 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onWorldExit(final PlayerChangedWorldEvent event) {
         // Only process when exiting the Beaconz world
-        if (event.getFrom().equals((getBeaconzWorld()))) {
+        if (inWorld(event.getFrom())) {
             // Remove player from beacon tracking map
             BeaconProtectionListener.getStandingOn().remove(event.getPlayer().getUniqueId());
 
@@ -243,119 +243,123 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
      *
      * @param event the player teleport event
      */
-    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onTeleport(final PlayerTeleportEvent event) {
 
         // Only handle teleports originating in the Beaconz world
-        if (event.getFrom().getWorld().equals(getBeaconzWorld())) {
-            // Gather context information about this teleport
-            final Player player  = event.getPlayer();
-            final boolean teleporting = teleportingPlayers.containsKey(player.getUniqueId());
-            final Game fromGame = getGameMgr().getGame(event.getFrom());
-            final Game toGame = getGameMgr().getGame(event.getTo());
-            final boolean fromLobby = getGameMgr().isLocationInLobby(event.getFrom());
-            final boolean toLobby = getGameMgr().isLocationInLobby(event.getTo());
+        if (!event.getFrom().getWorld().equals(getBeaconzWorld()) 
+                || (event.getCause() != TeleportCause.PLUGIN
+                && event.getCause() != TeleportCause.UNKNOWN
+                && event.getCause() != TeleportCause.COMMAND)) {
+            return;
+        }
+        // Gather context information about this teleport
+        final Player player  = event.getPlayer();
+        final boolean teleporting = teleportingPlayers.containsKey(player.getUniqueId());
+        final Game fromGame = getGameMgr().getGame(event.getFrom());
+        final Game toGame = getGameMgr().getGame(event.getTo());
+        final boolean fromLobby = getGameMgr().isLocationInLobby(event.getFrom());
+        final boolean toLobby = getGameMgr().isLocationInLobby(event.getTo());
 
-            // Clear beacon tracking - any teleport removes player from beacon
-            BeaconProtectionListener.getStandingOn().remove(player.getUniqueId());
+        // Clear beacon tracking - any teleport removes player from beacon
+        BeaconProtectionListener.getStandingOn().remove(player.getUniqueId());
 
-            // Handle barrier pushback teleports (player hitting invisible wall)
-            // These should be processed without any inventory/region logic
-            if (barrierPlayers.contains(player.getUniqueId())) {
-                barrierPlayers.remove(player.getUniqueId());
-                return; // Skip all other processing
+        // Handle barrier pushback teleports (player hitting invisible wall)
+        // These should be processed without any inventory/region logic
+        if (barrierPlayers.contains(player.getUniqueId())) {
+            barrierPlayers.remove(player.getUniqueId());
+            return; // Skip all other processing
 
-            } else {
-                // ===== TELEPORTING OUT OF A GAME =====
-                if (fromGame != null) {
-                    // Ignore teleporting within the same game (no inventory swap needed)
-                    if (fromGame.equals(toGame)) {
-                        return;
-                    } else {
-                        // Player is leaving a game
-                        if (!teleporting) {
-                            // First stage: Check if delay is needed
-                            // Skip delay if: game is restarting, game is over, or player is admin
-                            if (!fromGame.isGameRestart() && !fromGame.isOver() && !directTeleportPlayers.contains(player.getUniqueId())) {
-                                // Cancel this teleport and start delay timer
-                                Game lobby = getGameMgr().getGame(LOBBY);
-                                delayTeleport(player, event.getFrom(), event.getTo(), fromGame, lobby);
-                                event.setCancelled(true);
-                                return;
-                            } else {
-                                // Direct teleport (no delay) - process exit immediately
-                                fromGame.getRegion().exit(player); // Call exit handler (may clear inventory)
-                                String gameName = PlainTextComponentSerializer.plainText().serialize(fromGame.getName());
-                                getBeaconzStore().storeInventory(player, gameName, event.getFrom());
-                            }
+        } else {
+            // ===== TELEPORTING OUT OF A GAME =====
+            if (fromGame != null) {
+                // Ignore teleporting within the same game (no inventory swap needed)
+                if (fromGame.equals(toGame)) {
+                    return;
+                } else {
+                    // Player is leaving a game
+                    if (!teleporting) {
+                        // First stage: Check if delay is needed
+                        // Skip delay if: game is restarting, game is over, or player is admin
+                        if (!fromGame.isGameRestart() && !fromGame.isOver() && !directTeleportPlayers.contains(player.getUniqueId())) {
+                            // Cancel this teleport and start delay timer
+                            Game lobby = getGameMgr().getGame(LOBBY);
+                            delayTeleport(player, event.getFrom(), event.getTo(), fromGame, lobby);
+                            event.setCancelled(true);
+                            return;
                         } else {
-                            // Second stage: This is the completion of a delayed teleport
-                            directTeleportPlayers.remove(player.getUniqueId());
+                            // Direct teleport (no delay) - process exit immediately
                             fromGame.getRegion().exit(player); // Call exit handler (may clear inventory)
                             String gameName = PlainTextComponentSerializer.plainText().serialize(fromGame.getName());
                             getBeaconzStore().storeInventory(player, gameName, event.getFrom());
-                        }                
-                    }
-                }
-
-                // ===== TELEPORTING OUT OF THE LOBBY =====
-                if (fromLobby) {
-                    // Ignore teleporting within the lobby
-                    if (toLobby) {
-                        return;
-                    } else {
-                        // Leaving lobby - call exit handler
-                        getGameMgr().getLobby().exit(player);
-                    }
-                }
-
-                // ===== TELEPORTING INTO A GAME =====
-                if (toGame != null) {
-                    // Ignore teleporting within the same game
-                    if (fromGame != null && fromGame.equals(toGame)) {
-                        return;
-                    } else {
-                        // Verify player is allowed to enter this game
-                        if (toGame.hasPlayer(player) || player.isOp()) {
-                            // Restore game-specific inventory
-                            String gameName = PlainTextComponentSerializer.plainText().serialize(toGame.getName());
-                            Location newTo = getBeaconzStore().getInventory(player, gameName);
-                            if (newTo != null) {
-                                // Find a safe spawn location near the saved position
-                                newTo = toGame.getRegion().findSafeSpot(newTo, 20);
-                                event.setTo(newTo);
-                            }
-                            // Call region enter handler
-                            toGame.getRegion().enter(player);
-
-                            // Minigames always give fresh starting kit when entering
-                            if (toGame.getGamemode() == GameMode.MINIGAME) {
-                                toGame.giveStartingKit(player);
-                            }
-
-                        } else {
-                            // Player is not authorized for this game - redirect to lobby
-                            player.sendMessage(Lang.errorNotInGame
-                                    .replaceText(builder -> builder.matchLiteral("[game]").replacement(toGame.getName()))
-                                    .color(NamedTextColor.RED));
-                            event.setTo(getGameMgr().getLobby().getSpawnPoint());
                         }
+                    } else {
+                        // Second stage: This is the completion of a delayed teleport
+                        directTeleportPlayers.remove(player.getUniqueId());
+                        fromGame.getRegion().exit(player); // Call exit handler (may clear inventory)
+                        String gameName = PlainTextComponentSerializer.plainText().serialize(fromGame.getName());
+                        getBeaconzStore().storeInventory(player, gameName, event.getFrom());
+                    }                
+                }
+            }
+
+            // ===== TELEPORTING OUT OF THE LOBBY =====
+            if (fromLobby) {
+                // Ignore teleporting within the lobby
+                if (toLobby) {
+                    return;
+                } else {
+                    // Leaving lobby - call exit handler
+                    getGameMgr().getLobby().exit(player);
+                }
+            }
+
+            // ===== TELEPORTING INTO A GAME =====
+            if (toGame != null) {
+                // Ignore teleporting within the same game
+                if (fromGame != null && fromGame.equals(toGame)) {
+                    return;
+                } else {
+                    // Verify player is allowed to enter this game
+                    if (toGame.hasPlayer(player) || player.isOp()) {
+                        // Restore game-specific inventory
+                        String gameName = PlainTextComponentSerializer.plainText().serialize(toGame.getName());
+                        Location newTo = getBeaconzStore().getInventory(player, gameName);
+                        if (newTo != null) {
+                            // Find a safe spawn location near the saved position
+                            newTo = toGame.getRegion().findSafeSpot(newTo, 20);
+                            event.setTo(newTo);
+                        }
+                        // Call region enter handler
+                        toGame.getRegion().enter(player);
+
+                        // Minigames always give fresh starting kit when entering
+                        if (toGame.getGamemode() == GameMode.MINIGAME) {
+                            toGame.giveStartingKit(player);
+                        }
+
+                    } else {
+                        // Player is not authorized for this game - redirect to lobby
+                        player.sendMessage(Lang.errorNotInGame
+                                .replaceText(builder -> builder.matchLiteral("[game]").replacement(toGame.getName()))
+                                .color(NamedTextColor.RED));
+                        event.setTo(getGameMgr().getLobby().getSpawnPoint());
                     }
                 }
+            }
 
-                // ===== TELEPORTING INTO THE LOBBY =====
-                if (toLobby) {
-                    // Ignore teleporting within the lobby
-                    if (fromLobby) {
-                        // No action needed
-                    } else {
-                        // Entering lobby - call enter handler
-                        directTeleportPlayers.remove(player.getUniqueId());
-                        getGameMgr().getLobby().enterLobby(player);
+            // ===== TELEPORTING INTO THE LOBBY =====
+            if (toLobby) {
+                // Ignore teleporting within the lobby
+                if (fromLobby) {
+                    // No action needed
+                } else {
+                    // Entering lobby - call enter handler
+                    directTeleportPlayers.remove(player.getUniqueId());
+                    getGameMgr().getLobby().enterLobby(player);
 
-                    }
-                }   
-            }                                
+                }
+            }   
         }
     }
 

@@ -26,6 +26,7 @@ import java.io.File;
 import java.util.List;
 import java.util.logging.Logger;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Server;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
@@ -79,6 +80,14 @@ public abstract class BeaconzPluginDependent {
         return this.beaconzPlugin.getBeaconzWorld();
     }
 
+    public final boolean inWorld(World world) {
+        World nether = Bukkit.getWorld(getBeaconzWorld().getName() + "_nether");
+        World end = Bukkit.getWorld(getBeaconzWorld().getName() + "_the_end");
+        return world.equals(getBeaconzWorld())
+                && (nether != null ? world.equals(nether) : true)
+                        && (end != null ? world.equals(end) : true);
+    }
+
     public final Server getServer() {
         return this.beaconzPlugin.getServer();
     }
@@ -111,7 +120,7 @@ public abstract class BeaconzPluginDependent {
     public final BeaconzStore getBeaconzStore() {
         return this.beaconzPlugin.getBeaconzStore();
     }
-    
+
     /**
      * Runs commands for a player or on a player
      * @param player
@@ -120,7 +129,7 @@ public abstract class BeaconzPluginDependent {
     public void runCommands(Player player, List<String> commands) {
         this.beaconzPlugin.runCommands(player, commands);
     }
-    
+
     /**
      * Gives player item rewards
      * @param player
@@ -130,7 +139,7 @@ public abstract class BeaconzPluginDependent {
     public List<ItemStack> giveItems(Player player, List<String> itemRewards) {
         return this.beaconzPlugin.giveItems(player, itemRewards);
     }
-    
+
     /**
      * Get the PlayerMovementListener object
      * @return PlayerMovementListner object
