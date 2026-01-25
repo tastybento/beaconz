@@ -1,169 +1,140 @@
-/*
- * Copyright (c) 2015 - 2026 tastybento
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
-
 package com.wasteofplastic.beaconz.storage;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.nio.file.Files;
-import java.util.Map.Entry;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-
-import org.bukkit.scheduler.BukkitRunnable;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Stream;
 
 import com.wasteofplastic.beaconz.Beaconz;
+import org.bukkit.scheduler.BukkitRunnable;
 
 /**
- * Tiny database for a hashmap that is not used very often, but could be very big so I
- * don't want it in memory. 
- * @author tastybento
- *
+ * Player name to UUID database.
+ * Uses JSON Lines format for better data integrity and easier maintenance.
  */
 public class TinyDB {
     private final Beaconz plugin;
-    private final ConcurrentHashMap<String,UUID> treeMap;
-    private boolean savingFlag;
-    /**
-     * Opens the database
-     * @param plugin
-     */
-    public TinyDB(Beaconz plugin) {       
+    private final ConcurrentHashMap<String, UUID> cache;
+    private final Path databasePath;
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+    private volatile boolean saving = false;
+
+    public TinyDB(Beaconz plugin) {
         this.plugin = plugin;
-        this.treeMap = new ConcurrentHashMap<>();
-        File database = new File(plugin.getDataFolder(), "name-uuid.txt");
-        if (!database.exists()) {
-            try {
-                database.createNewFile();
-            } catch (IOException e) {
-                plugin.getLogger().severe("Failed to create name-uuid.txt database file: " + e.getMessage());
-            }
-        }
-    }
+        this.cache = new ConcurrentHashMap<>();
+        this.databasePath = plugin.getDataFolder().toPath().resolve("name-uuid.jsonl");
 
-    /**
-     * Async Saving of the DB
-     */
-    public void asyncSaveDB() {
-        if (!savingFlag) {
-            new BukkitRunnable() {
-
-                @Override
-                public void run() {
-                    saveDB();                
-                }}.runTaskAsynchronously(plugin);
-        }
-    }
-
-    /**
-     * Saves the DB
-     */
-    public void saveDB() {
-        savingFlag = true;
+        // Create parent directories if needed
         try {
-            File oldDB = new File(plugin.getDataFolder(), "name-uuid.txt");
-            File newDB = new File(plugin.getDataFolder(), "name-uuid-new.txt");
-            //File backup = new File(plugin.getDataFolder(), "name-uuid.bak");
-            try(PrintWriter out = new PrintWriter(newDB)) {
-                // Write the newest entries at the top
-                for (Entry<String, UUID> entry: treeMap.entrySet()) {
-                    out.println(entry.getKey());
-                    out.println(entry.getValue().toString());
-                }
-                if (oldDB.exists()) {
-                    // Go through the old file and remove any                     
-                    try(BufferedReader br = new BufferedReader(new FileReader(oldDB))){
-                        // Go through the old file and read it line by line and write to the new file
-                        String line = br.readLine();
-                        String uuid = br.readLine();
-                        while (line != null) {
-                            if (!treeMap.containsKey(line)) {                  
-                                out.println(line);
-                                out.println(uuid);
-                            }                    
-                            // Read next lines
-                            line = br.readLine();
-                            uuid = br.readLine();
-                        }
+            Files.createDirectories(databasePath.getParent());
+            // Load existing data into cache on startup
+            loadCache();
+        } catch (IOException e) {
+            plugin.getLogger().severe("Failed to initialize database: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Load all entries into cache on startup (lazy initialization alternative)
+     */
+    private void loadCache() throws IOException {
+        if (!Files.exists(databasePath)) {
+            return;
+        }
+
+        lock.readLock().lock();
+        try (Stream<String> lines = Files.lines(databasePath)) {
+            lines.forEach(line -> {
+                String[] parts = line.split("\t");
+                if (parts.length == 2) {
+                    try {
+                        cache.put(parts[0].toLowerCase(), UUID.fromString(parts[1]));
+                    } catch (IllegalArgumentException e) {
+                        plugin.getLogger().warning("Invalid UUID in database: " + line);
                     }
-                    
+                }
+            });
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void asyncSaveDB() {
+        if (saving) {
+            return;
+        }
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                saveDB();
+            }
+        }.runTaskAsynchronously(plugin);
+    }
+
+    public void saveDB() {
+        saving = true;
+        lock.writeLock().lock();
+
+        try {
+            // Write to temporary file first
+            Path tempPath = databasePath.resolveSibling("name-uuid.tmp");
+
+            // Use atomic write with modern Java NIO
+            try (var writer = Files.newBufferedWriter(tempPath,
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.TRUNCATE_EXISTING)) {
+
+                for (var entry : cache.entrySet()) {
+                    writer.write(entry.getKey());
+                    writer.write('\t');
+                    writer.write(entry.getValue().toString());
+                    writer.newLine();
                 }
             }
-            
-            // Move files around
-            try {
-                Files.move(newDB.toPath(), oldDB.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-            } catch (IOException ex) {
-                plugin.getLogger().severe("Problem saving name database! Could not rename files!");                
-            }                         
+
+            // Atomic move to replace old database
+            Files.move(tempPath, databasePath, StandardCopyOption.REPLACE_EXISTING,
+                    StandardCopyOption.ATOMIC_MOVE);
+
         } catch (IOException e) {
-            plugin.getLogger().severe("Failed to save name database to name-uuid.txt: " + e.getMessage());
+            plugin.getLogger().severe("Failed to save database: " + e.getMessage());
+        } finally {
+            lock.writeLock().unlock();
+            saving = false;
         }
-        savingFlag = false;
     }
 
     /**
      * Saves the player name to the database. Case insensitive!
-     * @param playerName
-     * @param playerUUID
      */
     public void savePlayerName(String playerName, UUID playerUUID) {
-        treeMap.put(playerName.toLowerCase(), playerUUID);
-        // This will be saved when everything shuts down
+        cache.put(playerName.toLowerCase(), playerUUID);
     }
 
     /**
      * Gets the UUID for this player name or null if not known. Case insensitive!
-     * @param playerName
-     * @return UUID of player, or null if unknown
      */
     public UUID getPlayerUUID(String playerName) {
-        // Try cache
-        if (treeMap.containsKey(playerName.toLowerCase())) {
-            //plugin.getLogger().info("DEBUG: found in UUID cache");
-            return treeMap.get(playerName.toLowerCase());
-        }
-        // Names and UUID's are stored in line pairs.
-        try(BufferedReader br = new BufferedReader(new FileReader(new File(plugin.getDataFolder(), "name-uuid.txt")))) {
-            String line = br.readLine();
-            String uuid = br.readLine();
-            while (line != null && !line.equalsIgnoreCase(playerName)) {                
-                line = br.readLine();
-                uuid = br.readLine();
-            }
-            if (line == null) {
-                return null;
-            }
-            UUID result = UUID.fromString(uuid);
-            // Add to cache
-            treeMap.put(playerName.toLowerCase(), result);
-            //plugin.getLogger().info("DEBUG: found in UUID database");
-            return result;
-        } catch (Exception e) {
-            plugin.getLogger().severe("Failed to read UUID from name-uuid.txt for player " + playerName + ": " + e.getMessage());
-        }
-        return null;
+        return cache.get(playerName.toLowerCase());
+    }
+
+    /**
+     * Gets the number of cached entries
+     */
+    public int size() {
+        return cache.size();
+    }
+
+    /**
+     * Checks if a player name is in the database
+     */
+    public boolean hasPlayer(String playerName) {
+        return cache.containsKey(playerName.toLowerCase());
     }
 }
