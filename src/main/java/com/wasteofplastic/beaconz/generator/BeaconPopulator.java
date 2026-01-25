@@ -212,8 +212,6 @@ public class BeaconPopulator extends BlockPopulator {
             }
 
             // Else make it into a beacon
-            //beacons.add(new Vector(x,y,z));
-            //Bukkit.getLogger().info("DEBUG: made beacon at " + (source.getX() * 16 + x) + " " + y + " " + (source.getZ()*16 + z) );
             b.setType(Material.BEACON);
             // Add the capstone
             b.getRelative(BlockFace.UP).setType(Material.OBSIDIAN);

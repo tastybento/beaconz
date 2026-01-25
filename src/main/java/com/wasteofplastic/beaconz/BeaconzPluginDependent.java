@@ -84,8 +84,8 @@ public abstract class BeaconzPluginDependent {
         World nether = Bukkit.getWorld(getBeaconzWorld().getName() + "_nether");
         World end = Bukkit.getWorld(getBeaconzWorld().getName() + "_the_end");
         return world.equals(getBeaconzWorld())
-                && (nether != null ? world.equals(nether) : true)
-                        && (end != null ? world.equals(end) : true);
+                && (nether == null || world.equals(nether))
+                        && (end == null || world.equals(end));
     }
 
     public final Server getServer() {

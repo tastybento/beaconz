@@ -238,15 +238,10 @@ public class Params {
 
         // Check that *ALL* arguments are valid parms
         for (String arg : args) {
-            String parm = null;
-            String value = null;
-            try {
-                // Parse parameter:value format
-                parm = arg.split(":")[0];
-                value = arg.split(":")[1];
-            } catch (Exception e) {
-                // Silently handle split exceptions - will be caught below
-            }
+            // Parse parameter:value format
+            String[] parts = arg.split(":", 2);
+            final String parm = parts.length > 0 ? parts[0] : null;
+            final String value = parts.length > 1 ? parts[1] : null;
 
             // Validate parameter format
             if (parm == null || value == null) {
@@ -314,8 +309,8 @@ public class Params {
                     break;
                 case "scoretypes":
                     Component stmsg = Component.text("<< 'scoretypes:' must be a list of the goals to display on the scoreboard, such as 'area-beacons'. Possible goals are 'area', 'beacons', 'links' and 'triangles' >>");
-                    value = value.replace(" ", "");
-                    String[] stypes = value.split("-");
+                    String trimmedValue = value.replace(" ", "");
+                    String[] stypes = trimmedValue.split("-");
                     if (stypes.length == 0) {
                         errormsg = errormsg.append(stmsg);
                     } else {
@@ -348,7 +343,7 @@ public class Params {
                     }
                     break;
                 default:
-                    errormsg = errormsg.append(Lang.adminParmsDoesNotExist.replaceText("[name]", Component.text(parm)));
+                    errormsg = errormsg.append(Lang.adminParmsDoesNotExist.replaceText(builder -> builder.matchLiteral("[name]").replacement(Component.text(parm))));
                     break;
                 }
             }

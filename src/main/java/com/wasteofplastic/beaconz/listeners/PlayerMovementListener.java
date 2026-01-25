@@ -403,7 +403,6 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
      * @param toTriangles list of triangle fields at the new location (stacked fields)
      * @return true if the movement should be canceled (teamless player, non-op)
      */
-    @SuppressWarnings("deprecation")
     public boolean applyTriangleEffects(Player player,
             List<TriangleField> fromTriangles, List<TriangleField> toTriangles) {
         // Get the player's team (null if not on a team)

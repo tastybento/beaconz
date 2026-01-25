@@ -96,7 +96,7 @@ import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
  */
 public class AdminCmdHandler extends BeaconzPluginDependent implements CommandExecutor, TabCompleter {
 
-    private Set<UUID> deleteConfirm = new HashSet<>();
+    private final Set<UUID> deleteConfirm = new HashSet<>();
 
     /**
      * Constructs a new AdminCmdHandler.
@@ -179,11 +179,10 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
         // Can be used on self (1 arg) or on another player (2 args)
         if (args.length == 1) {
             // Switch sender's own team
-            if (!(sender instanceof Player)) {
+            if (!(sender instanceof Player player)) {
                 sender.sendMessage(Lang.errorOnlyPlayers);
                 return false;
             } else {
-                Player player = (Player)sender;
                 Team team = getGameMgr().getPlayerTeam(player);
 
                 // Validate player is in a team

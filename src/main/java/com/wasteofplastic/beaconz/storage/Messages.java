@@ -99,7 +99,7 @@ public class Messages extends BeaconzPluginDependent {
             File messageFile = new File(getDataFolder(), "messages.yml");
             messageStore.save(messageFile);
         } catch (Exception e) {
-            e.printStackTrace();
+            getLogger().severe("Failed to save offline messages to messages.yml: " + e.getMessage());
         }
     }
 
@@ -121,7 +121,7 @@ public class Messages extends BeaconzPluginDependent {
             }
             return true;
         } catch (Exception e) {
-            e.printStackTrace();
+            getLogger().severe("Failed to load offline messages from messages.yml: " + e.getMessage());
             return false;
         }
     }

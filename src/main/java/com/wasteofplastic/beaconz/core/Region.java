@@ -33,7 +33,6 @@ import java.util.Random;
 import java.util.Set;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Tag;
@@ -109,14 +108,14 @@ public class Region extends BeaconzPluginDependent {
     private Game game = null;
 
     /** Title timing configuration: 500ms fade-in, 3000ms stay, 500ms fade-out */
-    Title.Times times = Title.Times.times(
+    final Title.Times times = Title.Times.times(
             Duration.ofMillis(500),  // 10 ticks
             Duration.ofMillis(3000), // 60 ticks
             Duration.ofMillis(500)   // 10 ticks
             );
 
     /** Pre-configured title shown to players entering this region */
-    Title title = Title.title(
+    final Title title = Title.title(
             Lang.titleWelcome.color(Lang.titleWelcomeColor),
             Lang.titleSubTitle.color(Lang.titleSubTitleColor), 
             times
@@ -811,7 +810,7 @@ public class Region extends BeaconzPluginDependent {
 
                     try {
                         sb.clearSlot(DisplaySlot.SIDEBAR);
-                    } catch (Exception e){ }
+                    } catch (Exception ignored){ }
 
                     // Properly serialize Component to plain text before splitting
                     String lobbyInfoText = PlainTextComponentSerializer.plainText().serialize(Lang.titleLobbyInfo);

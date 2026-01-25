@@ -485,7 +485,7 @@ public class Beaconz extends JavaPlugin {
                         Settings.linkBlocks.put(mat, value);
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    getLogger().severe("Failed to load link block material '" + material + "': " + e.getMessage());
                 }
             }
         }
@@ -620,7 +620,7 @@ public class Beaconz extends JavaPlugin {
         }
         // Distance should always be a multiple of 512
         int alignment = 512;
-        Settings.gameDistance = (getConfig().getInt("world.distance", 20000) + (alignment - 1)) & ~(alignment - 1);
+        Settings.gameDistance = (getConfig().getInt("world.distance", 20000) + (alignment - 1)) & -alignment;
         // Place center of the game based on gameDistance and region boundaries        
         Settings.xCenter = getConfig().getInt("world.xcenter", Settings.gameDistance + alignment);
         Settings.zCenter = getConfig().getInt("world.zcenter", Settings.gameDistance + alignment);
@@ -714,12 +714,6 @@ public class Beaconz extends JavaPlugin {
                 }
             }
         }
-        // Debug
-        /*
-        for (Entry<Integer, ItemStack> ent : Settings.enemyGoodies.entrySet()) {
-            plugin.getLogger().info("DEBUG: " + ent.getKey() + " " + ent.getValue());
-        }
-         */
         // Team goodies
         goodies = getConfig().getStringList("mining.teamgoodies");
         Settings.teamGoodies.clear();
@@ -744,12 +738,6 @@ public class Beaconz extends JavaPlugin {
             }
         }
 
-        // Own team
-        /* 
-        for (Entry<Integer, ItemStack> ent : Settings.teamGoodies.entrySet()) {
-            plugin.getLogger().info("DEBUG: " + ent.getKey() + " " + ent.getValue());
-        }
-         */
         // Add initial inventory
         List<String> newbieKit = getConfig().getStringList("world.newbiekit");
         Settings.newbieKit.clear();
@@ -782,16 +770,14 @@ public class Beaconz extends JavaPlugin {
         List<String> stringValues = new ArrayList<>();
 
         // Handle string format: "AREA:BEACONS:LINKS"
-        if (configValue instanceof String) {
-            String str = (String) configValue;
+        if (configValue instanceof String str) {
             if (str.trim().isEmpty()) {
                 return defaultValue;
             }
             stringValues.addAll(Arrays.asList(str.split(":")));
         }
         // Handle list format: ["AREA", "BEACONS", "LINKS"]
-        else if (configValue instanceof List<?>) {
-            List<?> list = (List<?>) configValue;
+        else if (configValue instanceof List<?> list) {
             for (Object item : list) {
                 if (item instanceof String) {
                     stringValues.add((String) item);
@@ -1105,7 +1091,6 @@ public class Beaconz extends JavaPlugin {
                     getLogger().severe("Problem executing island command executed by player - skipping!");
                     getLogger().severe("Command was : " + cmd);
                     getLogger().severe("Error was: " + e.getMessage());
-                    e.printStackTrace();
                 }
 
                 continue;
@@ -1120,7 +1105,6 @@ public class Beaconz extends JavaPlugin {
                 getLogger().severe("Problem executing challenge reward commands - skipping!");
                 getLogger().severe("Command was : " + cmd);
                 getLogger().severe("Error was: " + e.getMessage());
-                e.printStackTrace();
             }
         }
     }

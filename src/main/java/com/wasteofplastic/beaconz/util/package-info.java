@@ -11,7 +11,7 @@
  *   <li>{@link com.wasteofplastic.beaconz.util.LinkResult} - Result wrapper for link operations</li>
  *   <li>{@link com.wasteofplastic.beaconz.util.Pair} - Generic pair/tuple utility class</li>
  *   <li>{@link com.wasteofplastic.beaconz.util.TriangleScorer} - Calculates scores for triangular fields</li>
- *   <li>{@link com.wasteofplastic.beaconz.util.TinyDB} - Lightweight key-value database for player names</li>
+ *   <li>{@link com.wasteofplastic.beaconz.storage.TinyDB} - Lightweight key-value database for player names</li>
  * </ul>
  *
  * <h2>Line Utilities:</h2>

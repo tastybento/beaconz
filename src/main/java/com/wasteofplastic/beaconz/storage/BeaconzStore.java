@@ -73,8 +73,8 @@ public class BeaconzStore extends BeaconzPluginDependent {
 
     /**
      * Gets items for world. Changes the inventory of player immediately.
-     * @param player
-     * @param gameName
+     * @param player - the player
+     * @param gameName - the game name for the inventory being retrieved
      * @return last location of the player in the game or null if there is none
      */
     public Location getInventory(Player player, String gameName) {
@@ -104,7 +104,7 @@ public class BeaconzStore extends BeaconzPluginDependent {
 
     /**
      * Store the player's inventory in the game
-     * @param player
+     * @param player - the player
      * @param gameName - the game name for the inventory being store
      * @param from - the last position of the player in this game
      */
@@ -114,9 +114,9 @@ public class BeaconzStore extends BeaconzPluginDependent {
 
     /**
      * Puts the player's inventory into the right chest
-     * @param player
-     * @param game
-     * @param from
+     * @param player - the player
+     * @param gameName - the game name for the inventory being store
+     * @param from - the last position of the player in this game
      * @param storeInv - whether the inventory should be stored or not
      */
     public void storeInventory(Player player, String gameName, Location from, boolean storeInv) {
@@ -140,7 +140,7 @@ public class BeaconzStore extends BeaconzPluginDependent {
 
     /**
      * Removes all inventories for this game
-     * @param gameName
+     * @param gameName - the game name
      */
     public void removeGame(String gameName) {
         ymlIndex.set(gameName, null);
@@ -161,9 +161,9 @@ public class BeaconzStore extends BeaconzPluginDependent {
 
     /**
      * Sets the player's food level in game
-     * @param player
-     * @param gameName
-     * @param foodLevel
+     * @param player - the player
+     * @param gameName - the game name
+     * @param foodLevel - the food level
      */
     public void setFood(Player player, String gameName, int foodLevel) {
         ymlIndex.set(gameName + "." + player.getUniqueId() + ".food", foodLevel);
@@ -172,9 +172,9 @@ public class BeaconzStore extends BeaconzPluginDependent {
     
     /**
      * Sets player's health in game
-     * @param player
-     * @param gameName
-     * @param maxHealth
+     * @param player - the player
+     * @param gameName - the game name
+     * @param maxHealth - the health
      */
     public void setHealth(Player player, String gameName, double maxHealth) {
         ymlIndex.set(gameName + "." + player.getUniqueId() + ".health", maxHealth);
@@ -183,9 +183,9 @@ public class BeaconzStore extends BeaconzPluginDependent {
 
     /**
      * Sets player's exp in game
-     * @param player
-     * @param gameName
-     * @param newExp
+     * @param player - the player
+     * @param gameName - the game name
+     * @param newExp - the experience points
      */
     public void setExp(Player player, String gameName, int newExp) {
         ymlIndex.set(gameName + "." + player.getUniqueId() + ".exp", newExp);

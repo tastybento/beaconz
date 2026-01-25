@@ -288,8 +288,7 @@ public class Register extends BeaconzPluginDependent {
         try {
             beaconzYml.save(beaconzFile);
         } catch (IOException e) {
-            getLogger().severe("Problem saving beacons file!");
-            e.printStackTrace();
+            getLogger().severe("Failed to save beaconz.yml file: " + e.getMessage());
         }
     }
 
@@ -339,10 +338,9 @@ public class Register extends BeaconzPluginDependent {
         try {
             beaconzYml.load(beaconzFile);
         } catch (IOException e) {
-            e.printStackTrace();
+            getLogger().severe("Failed to load beaconz.yml file: " + e.getMessage());
         } catch (InvalidConfigurationException e) {
-            getLogger().severe("Problem with beaconz.yml formatting");
-            e.printStackTrace();
+            getLogger().severe("Invalid YAML configuration in beaconz.yml: " + e.getMessage());
         }
 
         // === PHASE 1: Load all beacons ===
@@ -616,7 +614,7 @@ public class Register extends BeaconzPluginDependent {
                                     fieldsFailed++;
                                 }
                             } catch (IllegalArgumentException e) {
-                                e.printStackTrace();
+                                getLogger().severe("Failed to add triangle during beacon loading: " + e.getMessage());
                             }
                             // Continue checking - one link can complete multiple triangles
                         }
@@ -1316,7 +1314,7 @@ public class Register extends BeaconzPluginDependent {
                                     getRegister().addTriangle(firstPoint.getBeacon1().getPoint(), secondPoint.getPoint(),
                                             thirdPoint.getPoint(), firstPoint.getOwner());
                                 } catch (IllegalArgumentException e) {
-                                    e.printStackTrace();
+                                    getLogger().severe("Failed to add triangle when checking for triangles: " + e.getMessage());
                                 }
                                 // There could be more than one, so continue
                             }

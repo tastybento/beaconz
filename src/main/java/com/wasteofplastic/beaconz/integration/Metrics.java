@@ -32,7 +32,7 @@ public class Metrics {
         return URLEncoder.encode(text, StandardCharsets.UTF_8);
     }
 
-    private static void encodeDataPair(final StringBuilder buffer, final String key, final String value) throws UnsupportedEncodingException {
+    private static void encodeDataPair(final StringBuilder buffer, final String key, final String value) {
         buffer.append('&').append(encode(key)).append('=').append(encode(value));
     }
 
@@ -107,7 +107,7 @@ public class Metrics {
         try {
             Class.forName("mineshafter.MineServer");
             return true;
-        } catch (final Exception e) {
+        } catch (final Exception ignored) {
         }
         return false;
     }

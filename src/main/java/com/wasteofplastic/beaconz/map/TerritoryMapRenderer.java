@@ -528,7 +528,7 @@ public class TerritoryMapRenderer extends MapRenderer {
      * Stores only the essential properties needed to detect if a beacon has changed:
      * - Team ownership
      * - Set of linked beacons
-     *
+     * <p>
      * By comparing the current state with a cached state, we can avoid expensive
      * re-rendering when nothing has changed.
      */

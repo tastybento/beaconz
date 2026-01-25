@@ -6,7 +6,7 @@
  *
  * <h2>Main Components:</h2>
  * <ul>
- *   <li>{@link com.wasteofplastic.beaconz.integration.OurServerListener} - Dynmap integration</li>
+ *   <li>{@link com.wasteofplastic.beaconz.integration.dynmap.OurServerListener} - Dynmap integration</li>
  *   <li>{@link com.wasteofplastic.beaconz.integration.Metrics} - bStats metrics collection</li>
  * </ul>
  *

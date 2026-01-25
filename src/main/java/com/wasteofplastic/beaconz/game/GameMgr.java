@@ -155,8 +155,7 @@ public class GameMgr extends BeaconzPluginDependent {
         try {
             gamesYml.save(gamesFile);
         } catch (IOException e) {
-            getLogger().severe("Problem saving lobby in games file!");
-            e.printStackTrace();
+            getLogger().severe("Failed to save lobby data to games.yml: " + e.getMessage());
         }
 
         // Delegate to each game to save its own data
@@ -196,9 +195,6 @@ public class GameMgr extends BeaconzPluginDependent {
 
     /**
      * Clears current game state and reloads all games from disk.
-     *
-     * <p>This is a convenience method that clears all in-memory games and regions,
-     * then delegates to {@link #loadGames(String)} with null to load everything.</p>
      */
     public void loadAllGames() {
         regions.clear();
@@ -208,7 +204,6 @@ public class GameMgr extends BeaconzPluginDependent {
 
     /**
      * Loads game data from the games.yml file.
-     * @param gameName the specific game to load, or null to load all games
      */
     public void loadGames() {
         File gamesFile = new File(getBeaconzPlugin().getDataFolder(),"games.yml");
@@ -217,10 +212,9 @@ public class GameMgr extends BeaconzPluginDependent {
             try {
                 gamesYml.load(gamesFile);
             } catch (IOException e) {
-                e.printStackTrace();
+                getLogger().severe("Failed to load games.yml file: " + e.getMessage());
             } catch (InvalidConfigurationException e) {
-                getLogger().severe("Problem with games.yml formatting");
-                e.printStackTrace();
+                getLogger().severe("Invalid YAML configuration in games.yml: " + e.getMessage());
             }
 
             ConfigurationSection csec = gamesYml.getConfigurationSection("lobby");
@@ -348,7 +342,7 @@ public class GameMgr extends BeaconzPluginDependent {
      * <p>If a suitable location cannot be found or the game name is already taken,
      * the creation fails and a warning is logged.</p>
      *
-     * @param gameName unique identifier for the new game
+     * @param gName unique identifier for the new game
      */
     public CompletableFuture<Boolean> newGame(String gName) {
         Component gameName = Component.text(gName);
@@ -591,14 +585,7 @@ public class GameMgr extends BeaconzPluginDependent {
      * Non-null parameters override the configuration values. Game mode affects which
      * default values are selected (minigame vs strategy mode have different defaults).</p>
      *
-     * @param mode game mode (minigame or strategy)
-     * @param size distance/size of game regions in blocks
-     * @param teams number of teams in new games
-     * @param goal win condition type
-     * @param goalvalue win condition threshold value
-     * @param countdown countdown timer duration
-     * @param scoretypes score types to track
-     * @param distribution beacon distribution pattern
+     * @param parameters the parameters to override defaults, or null to use config values
      */
     public void setGameDefaultParms(Params parameters) {
         this.defaultParameters = parameters;

@@ -134,7 +134,7 @@ public class OurServerListener extends BeaconzPluginDependent implements Listene
             try {
                 cfg.load(dynmapFile);
             } catch (Exception e) {
-                e.printStackTrace();
+                getLogger().severe("Failed to load dynmap.yml configuration file: " + e.getMessage());
             }
         }
 
@@ -507,11 +507,6 @@ public class OurServerListener extends BeaconzPluginDependent implements Listene
         if(!teamstyle.isEmpty()) {
             //info("DEBUG: ownerstyle is not empty " + getServer().getOfflinePlayer(island.getOwner()).getName());
             as = teamstyle.get(name);
-            /*
-        if (as != null) {
-        info("DEBUG: fill color = " + as.fillcolor);
-        info("DEBUG: stroke color = " + as.strokecolor);
-        }*/
         }
 
         // Fall back to default style if no team-specific style found
@@ -529,13 +524,6 @@ public class OurServerListener extends BeaconzPluginDependent implements Listene
         } catch (NumberFormatException nfx) {
             // If parsing fails, colors remain at default red (0xFF0000)
         }
-
-        /*
-    if (sc == 0xFF0000) {
-        info("DEBUG: stroke is red");
-    } else {
-        info("DEBUG: stroke is not red");
-    }*/
 
         // Apply the stroke (border) styling: weight, opacity, and color
         m.setLineStyle(as.strokeweight, as.strokeopacity, sc);

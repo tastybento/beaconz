@@ -254,7 +254,7 @@ public class PlayerDeathListener extends BeaconzPluginDependent implements Liste
      *
      * When the player rejoins a game, their game-specific inventory will be
      * restored by the game join mechanics.
-     *
+     * <p>
      * Note: This uses LOWEST priority to run early in the event processing chain,
      * before other plugins modify the respawn behavior.
      *

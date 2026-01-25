@@ -58,7 +58,7 @@ public class TinyDB {
             try {
                 database.createNewFile();
             } catch (IOException e) {
-                e.printStackTrace();
+                plugin.getLogger().severe("Failed to create name-uuid.txt database file: " + e.getMessage());
             }
         }
     }
@@ -119,8 +119,7 @@ public class TinyDB {
                 plugin.getLogger().severe("Problem saving name database! Could not rename files!");                
             }                         
         } catch (IOException e) {
-            plugin.getLogger().severe("Problem saving name database!");
-            e.printStackTrace();
+            plugin.getLogger().severe("Failed to save name database to name-uuid.txt: " + e.getMessage());
         }
         savingFlag = false;
     }
@@ -163,9 +162,8 @@ public class TinyDB {
             //plugin.getLogger().info("DEBUG: found in UUID database");
             return result;
         } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } 
+            plugin.getLogger().severe("Failed to read UUID from name-uuid.txt for player " + playerName + ": " + e.getMessage());
+        }
         return null;
     }
 }

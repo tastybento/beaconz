@@ -190,27 +190,4 @@ public class BeaconLink implements Comparable<Object> {
         return new Line2D.Double(this.beacon2.getPoint(), this.beacon1.getPoint());
     }
 
-    /**
-     * Returns a hash code for this link.
-     *
-     * <p><b>Important:</b> This method is not overridden, which can cause issues
-     * when using BeaconLink objects in HashSet or HashMap. The default Object.hashCode()
-     * is inconsistent with the overridden equals() method, violating the equals-hashCode contract.
-     *
-     * <p><b>Recommendation:</b> Override this method to be consistent with equals():
-     * <pre>
-     * &#64;Override
-     * public int hashCode() {
-     *     // Symmetric hash: same result regardless of beacon order
-     *     return beacon1.hashCode() + beacon2.hashCode();
-     * }
-     * </pre>
-     *
-     * @return hash code value for this object
-     */
-    @Override
-    public int hashCode() {
-        // Using default Object.hashCode() - see warning in JavaDoc
-        return super.hashCode();
-    }
 }

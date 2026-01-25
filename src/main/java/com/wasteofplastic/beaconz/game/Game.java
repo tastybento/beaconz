@@ -158,7 +158,7 @@ public class Game extends BeaconzPluginDependent {
      * <p>
      * <b>Important:</b> Each game belongs to exactly one Region; a game cannot exist without a region.
      *
-     * @param beaconzPlugin the main plugin instance
+     * @param plugin the main plugin instance
      * @param region the physical region where this game takes place
      * @param gameName unique identifier for this game
      * @param params game parameters
@@ -361,8 +361,7 @@ public class Game extends BeaconzPluginDependent {
         try {
             gamesYml.save(gamesFile);
         } catch (IOException e) {
-            getLogger().severe("Problem saving games file for " + gameName + "!");
-            e.printStackTrace();
+            getLogger().severe("Failed to save games.yml file for game " + gameName + ": " + e.getMessage());
         }
 
         // Save team membership data separately
@@ -423,8 +422,7 @@ public class Game extends BeaconzPluginDependent {
         try {
             gamesYml.save(gamesFile);
         } catch (IOException e) {
-            getLogger().severe("Problem saving games file!");
-            e.printStackTrace();
+            getLogger().severe("Failed to save games.yml file when deleting game " + gameName + ": " + e.getMessage());
         }
 
     }

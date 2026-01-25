@@ -159,13 +159,13 @@ public class Scorecard extends BeaconzPluginDependent {
     private boolean gameON;
 
     /** The game instance this scorecard manages */
-    private Game game;
+    private final Game game;
 
     /** Plain text version of the game name (for file storage) */
-    private String gameName;
+    private final String gameName;
 
     /** Bukkit's scoreboard manager for creating scoreboards */
-    private ScoreboardManager manager;
+    private final ScoreboardManager manager;
 
     /** The actual scoreboard displayed to players */
     private Scoreboard scoreboard;
@@ -207,19 +207,19 @@ public class Scorecard extends BeaconzPluginDependent {
     private BukkitTask timertaskid;
 
     /** Maps teams to their spawn point locations */
-    private HashMap<Team, Location> teamSpawnPoint = new HashMap<>();
+    private final HashMap<Team, Location> teamSpawnPoint = new HashMap<>();
 
     /**
      * Nested map storing scores for each team and score type.
      * Structure: Team → (ScoreType → Score Value)
      */
-    private HashMap<Team, HashMap<GameScoreGoal,Integer>> score = new HashMap<>();
+    private final HashMap<Team, HashMap<GameScoreGoal,Integer>> score = new HashMap<>();
 
     /** Maps teams to lists of member UUIDs for persistence */
-    private HashMap<Team, List<UUID>> teamMembers = new HashMap<>();
+    private final HashMap<Team, List<UUID>> teamMembers = new HashMap<>();
 
     /** Reverse lookup map: UUID → Team for fast player team lookup */
-    private HashMap<UUID, Team> teamLookup = new HashMap<>();
+    private final HashMap<UUID, Team> teamLookup = new HashMap<>();
 
     /** Maps teams to their block material type (for beacon visualization) */
     private HashMap<Team, Material> teamBlocks = new HashMap<>();
@@ -323,10 +323,10 @@ public class Scorecard extends BeaconzPluginDependent {
         // Define the scoreboard
         try {
             scoreboard.clearSlot(DisplaySlot.SIDEBAR);
-        } catch (Exception e){ }
+        } catch (Exception ignored){ }
         try {
             scoreobjective.unregister();
-        } catch (Exception e){ }
+        } catch (Exception ignored){ }
 
         scoreboard = manager.getNewScoreboard();
         //scoreobjective = scoreboard.registerNewObjective("score", "beaconz");
@@ -418,7 +418,6 @@ public class Scorecard extends BeaconzPluginDependent {
      *       <li>Gets block material (glasscolor)</li>
      *       <li>Translates display name color codes (&amp; to §)</li>
      *       <li>Truncates names to 16 characters (Minecraft limit)</li>
-     *       <li>Calls {@link #addTeam(String, String, Material, boolean)}</li>
      *     </ul>
      *   </li>
      *   <li>Stops after adding game.getNbrTeams() teams</li>
@@ -723,7 +722,7 @@ public class Scorecard extends BeaconzPluginDependent {
             Location loc = teamSpawnPoint.get(team);
             // Teleport player to a captured beacon
             List<BeaconObj> beaconz = getRegister().getTeamBeacons(team);
-            if (beaconz.size() > 0) {
+            if (!beaconz.isEmpty()) {
                 Random rand = new Random();
                 loc = beaconz.get(rand.nextInt(beaconz.size())).getLocation().add(new Vector(0,1,0));
             }
@@ -779,11 +778,6 @@ public class Scorecard extends BeaconzPluginDependent {
     }
 
 
-    /**
-     * Gets a team from a team name, works even if the case is wrong too or if it is partial
-     * @param teamName
-     * @return team, or null if not found
-     */
     /**
      * Gets a team by name with support for partial name matching.
      *
@@ -851,7 +845,7 @@ public class Scorecard extends BeaconzPluginDependent {
     public String getTeamListString() {
         StringBuilder result = new StringBuilder();
         for (Team team : scoreboard.getTeams()) {
-            if (result.length() == 0) {
+            if (result.isEmpty()) {
                 result = new StringBuilder(team.getName());
             } else {
                 result.append(", ").append(team.getName());
@@ -890,11 +884,9 @@ public class Scorecard extends BeaconzPluginDependent {
         try {
             teamsYml.load(teamFile);
         } catch (IOException e) {
-            // Catch block
-            e.printStackTrace();
+            getLogger().severe("Failed to load teams.yml file for game " + gameName + ": " + e.getMessage());
         } catch (InvalidConfigurationException e) {
-            getLogger().severe("Problem with teams.yml formatting");
-            e.printStackTrace();
+            getLogger().severe("Invalid YAML configuration in teams.yml for game " + gameName + ": " + e.getMessage());
         }
         for (Team team: scoreboard.getTeams()) {
             List<String> members = teamsYml.getStringList(gameName + "." + team.getName() + ".members");
@@ -941,8 +933,7 @@ public class Scorecard extends BeaconzPluginDependent {
         try {
             teamsYml.save(teamsFile);
         } catch (IOException e) {
-            // Catch block
-            e.printStackTrace();
+            getLogger().severe("Failed to save teams.yml file for game " + gameName + ": " + e.getMessage());
         }
     }
 
@@ -994,8 +985,8 @@ public class Scorecard extends BeaconzPluginDependent {
     }
 
     /**
-     * @param team
-     * @return
+     * @param team - the team
+     * @param scoretype - the score type
      * @return score for team
      * TODO: simplify this
      */
@@ -1009,9 +1000,9 @@ public class Scorecard extends BeaconzPluginDependent {
 
     /**
      * Set the score for a team
-     * @param team
-     * @param scoretype
-     * @param value
+     * @param team - the team
+     * @param scoretype - the score type
+     * @param value - the value to set
      */
     public void putScore(Team team, GameScoreGoal scoretype, int value) {
         if (gameON && team != null && scoretype != null) {
@@ -1025,9 +1016,9 @@ public class Scorecard extends BeaconzPluginDependent {
 
     /**
      * Adds score to team
-     * @param team
-     * @param scoretype
-     * @param value
+     * @param team - the team
+     * @param scoretype - the score type
+     * @param value - the value to add
      */
     public void addScore(Team team, GameScoreGoal scoretype, int value) {
         if (score.containsKey(team)) {
@@ -1042,9 +1033,9 @@ public class Scorecard extends BeaconzPluginDependent {
 
     /**
      * Subtracts score from team
-     * @param team
-     * @param scoretype
-     * @param value
+     * @param team - the team
+     * @param scoretype - the score type
+     * @param value - the value to subtract
      */
     public void subtractScore(Team team, GameScoreGoal scoretype, int value) {
         addScore(team, scoretype, -value);
@@ -1053,8 +1044,8 @@ public class Scorecard extends BeaconzPluginDependent {
 
     /**
      * Returns the location where a team should spawn, based on the region's spawn point
-     * @param playerTeam
-     * @return Location
+     * @param team - the team
+     * @return Location - the spawn location
      */
     public Location makeTeamSpawnPoint(Team team) {
         Region region = game.getRegion();
@@ -1069,11 +1060,9 @@ public class Scorecard extends BeaconzPluginDependent {
         try {
             teamsYml.load(teamFile);
         } catch (IOException e) {
-            // Catch block
-            e.printStackTrace();
+            getLogger().severe("Failed to load teams.yml file for team spawn point in game " + gameName + ": " + e.getMessage());
         } catch (InvalidConfigurationException e) {
-            getLogger().severe("Problem with teams.yml formatting");
-            e.printStackTrace();
+            getLogger().severe("Invalid YAML configuration in teams.yml for team spawn point in game " + gameName + ": " + e.getMessage());
         }
         String location = teamsYml.getString(gameName + "." + team.getName() + ".spawnpoint");
         if (location != null) {
@@ -1348,7 +1337,7 @@ public class Scorecard extends BeaconzPluginDependent {
             Component titleline = Component.text(Lang.scoreGameOver);
             Component subtitleline = Lang.scoreNoWinners;
             if (winner != null) {
-                titleline = Lang.scoreTeamWins.replaceText("[team]", winner.displayName());
+                titleline = Lang.scoreTeamWins.replaceText(builder -> builder.matchLiteral("[team]").replacement(winner.displayName()));
                 subtitleline = Lang.scoreCongratulations;
             }
             for (Team team : scoreboard.getTeams()) {
@@ -1397,7 +1386,7 @@ public class Scorecard extends BeaconzPluginDependent {
 
     /**
      * Timer
-     *
+     * <p>
      * This runs a countdown if Settings.minigameTimer or Settings.strategyTimer > 0, open-ended clock otherwise
      *
      */
@@ -1468,8 +1457,7 @@ public class Scorecard extends BeaconzPluginDependent {
         try {
             teamsYml.save(teamsFile);
         } catch (IOException e) {
-            // Catch block
-            e.printStackTrace();
+            getLogger().severe("Failed to save teams.yml file when deleting team members for game " + gameName + ": " + e.getMessage());
         }
 
     }
