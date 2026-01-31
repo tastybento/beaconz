@@ -14,6 +14,7 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import java.util.logging.Level;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -329,7 +330,6 @@ public class Scorecard extends BeaconzPluginDependent {
         } catch (Exception ignored){ }
 
         scoreboard = manager.getNewScoreboard();
-        //scoreobjective = scoreboard.registerNewObjective("score", "beaconz");
         scoreobjective = scoreboard.registerNewObjective("score", Criteria.DUMMY, Lang.titleBeaconz);
         scoreobjective.setDisplaySlot(DisplaySlot.SIDEBAR);
         sidebarline = 15;
@@ -591,15 +591,8 @@ public class Scorecard extends BeaconzPluginDependent {
      *
      * <p><b>How Minecraft Scoreboards Work:</b>
      * <ul>
-     *   <li>Each scoreboard line has a <b>display text</b> (e.g., "Red Team Beacons")</li>
-     *   <li>The <b>score value</b> controls the line's position (higher = higher on sidebar)</li>
-     *   <li>To update a line's text, we must: remove old entry → create new entry with same position</li>
+     *   <li>Each scoreboard line has a <b>display text</b> (e.g., "Red Team Beacons") folllowed by the score</li>
      * </ul>
-     *
-     * <p><b>Why We Replace Instead of Update:</b><br>
-     * Minecraft doesn't allow changing the display text of an existing score entry.
-     * We must remove the old entry and create a new one to update the displayed text
-     * (which includes the score value in the text itself).
      *
      * @param team the team whose score display should be updated
      * @param scoreType the type of score to update (BEACONS, LINKS, TRIANGLES, or AREA)
@@ -610,17 +603,16 @@ public class Scorecard extends BeaconzPluginDependent {
             return;
         }
 
-        // STEP 1: Find the old scoreboard entry and get its line position
+        // STEP 1: Find the old scoreboard entry
         String oldScoreboardEntry = sbEntry(team, scoreType);
-        int lineNumber = scoreobjective.getScore(oldScoreboardEntry).getScore();
 
         // STEP 2: Remove the old scoreboard entry
         scoreboard.resetScores(oldScoreboardEntry);
 
-        // STEP 3: Create new scoreboard entry with updated text and restore line position
+        // STEP 3: Create new scoreboard entry with updated score
         String newScoreboardEntry = getScoreString(team, scoreType, MAXSCORELENGTH);
         scoreentry = scoreobjective.getScore(newScoreboardEntry);
-        scoreentry.setScore(lineNumber); // Restore the line position (higher = higher on sidebar)
+        scoreentry.setScore(this.getScore(team, scoreType)); 
     }
 
     /**
@@ -643,21 +635,8 @@ public class Scorecard extends BeaconzPluginDependent {
             // Get a new spawnpoint for the new team
             Location loc = makeTeamSpawnPoint(team);
             teamSpawnPoint.put(team, loc);
-            // Now it gets tricky... the setScore values are actually line numbers on the scoreboard
-            // the actual scores go in the score description
-            for (GameScoreGoal st : game.getScoretypes()) {
-                sidebarline -= 1;
-                if (sidebarline > 0 ) {
-                    String scorestring = getScoreString(team, st, 8);
-                    scoreentry = scoreobjective.getScore(scorestring);
-                    scoreentry.setScore(sidebarline);
-                } else {
-                    getLogger().warning("Could not show new team scores on the sidebar, ran out of lines. Team = " + teamName);
-                }
-            }
+            this.refreshSBdisplay(team);
         }
-        //Refresh the scores, save the game and return
-        //refreshScores(team);
         if (save) game.save();
 
     }
@@ -1013,7 +992,6 @@ public class Scorecard extends BeaconzPluginDependent {
      * @param team - the team
      * @param scoretype - the score type
      * @return score for team
-     * TODO: simplify this
      */
     public Integer getScore(Team team, GameScoreGoal scoretype) {
         if (score.containsKey(team)) {
@@ -1354,7 +1332,7 @@ public class Scorecard extends BeaconzPluginDependent {
         // Change the objective line in the scoreboard
         scoreboard.resetScores(goalstr);
         scoreline = scoreobjective.getScore(Lang.scoreGameOver);
-        scoreline.setScore(15);
+        scoreline.setScore(0);
         // Wait a second to let all other messages display first
         getBeaconzPlugin().getServer().getScheduler().runTaskLater(getBeaconzPlugin(), () -> {
             // Announce winner to all players
