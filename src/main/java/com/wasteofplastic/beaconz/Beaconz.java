@@ -903,10 +903,26 @@ public class Beaconz extends JavaPlugin {
                 return null;
             }
         }
-
-        // Note: Cannot set spawn location here as this method may be called async
-        // during chunk generation. Spawn location is set during onEnable.
-
+        // Nether - vanilla
+        if (getConfig().getBoolean("world.make-nether", true) && Bukkit.getWorld(Settings.worldName + "_nether") == null) {
+            getLogger().info("Making " + Settings.worldName + "'s Nether");
+            WorldCreator
+            .name(Settings.worldName + "_nether")
+            .type(WorldType.NORMAL)
+            .environment(World.Environment.NETHER)
+            .seed(Settings.seedAdjustment)
+            .createWorld();
+        }
+        // End - vanilla
+        if (getConfig().getBoolean("world.make-end", true) && Bukkit.getWorld(Settings.worldName + "_the_end") == null) {
+            getLogger().info("Making " + Settings.worldName + "'s End");
+            WorldCreator
+            .name(Settings.worldName + "_the_end")
+            .type(WorldType.NORMAL)
+            .environment(World.Environment.THE_END)
+            .seed(Settings.seedAdjustment)
+            .createWorld();
+        }
         return beaconzWorld;
     }
 

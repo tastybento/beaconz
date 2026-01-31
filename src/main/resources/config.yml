@@ -3,6 +3,12 @@
 world:
   # Beaconz world name
   name: beaconz_world  
+  
+  # Make nether
+  make-nether: true
+  
+  # Make end
+  make-end: true
 
   # Default name for first game created when the plugin starts for the first time.
   defaultgamename: Beaconz
@@ -29,6 +35,9 @@ world:
 
 # Lobby settings
 lobby:
+  # If true, players will not be teleported to a lobby area when they join the game.
+  # They will be automatically assigned to a team and spawned near their team's beacon.
+  skip-lobby: false
   # Coordinates for the lobby area - a square.
   # These coordinates must be divisible by 16, otherwise they will be adjusted
   lobbyx: 0
