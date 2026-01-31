@@ -5,13 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.contains;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -64,8 +60,6 @@ import com.wasteofplastic.beaconz.game.Register;
 @DisplayName("BeaconMap Tests")
 class BeaconMapTest {
 
-    private ServerMock server;
-
     @Mock
     private Beaconz plugin;
 
@@ -101,7 +95,8 @@ class BeaconMapTest {
     @BeforeEach
     void setUp() {
         // Set up MockBukkit server
-        server = MockBukkit.mock();
+        @SuppressWarnings("unused")
+        ServerMock server = MockBukkit.mock();
 
         // Configure plugin mocks
         when(plugin.getBeaconzWorld()).thenReturn(beaconzWorld);
@@ -191,17 +186,23 @@ class BeaconMapTest {
         }
 
         @Test
-        @DisplayName("Render proceeds when map is in Beaconz world")
+        @DisplayName("BeaconMap doesn't draw even in correct world - delegates to TerritoryMapRenderer")
         void testRenderProceedsInBeaconzWorld() {
+            // Create map with origin
+            BeaconMap mapWithOrigin = new BeaconMap(plugin, 100, 200);
+
             when(mapView.getWorld()).thenReturn(beaconzWorld);
             when(inventory.getItemInMainHand()).thenReturn(filledMapStack);
-            when(mapView.getId()).thenReturn(1);
-            when(register.getBeaconMap(1)).thenReturn(beacon);
 
-            beaconMap.render(mapView, canvas, player);
+            mapWithOrigin.render(mapView, canvas, player);
 
-            // Verify drawing occurred
-            verify(canvas, atLeastOnce()).drawText(anyInt(), anyInt(), any(), anyString());
+            // BeaconMap validates but doesn't draw - TerritoryMapRenderer handles rendering
+            verify(canvas, never()).setPixelColor(anyInt(), anyInt(), any(Color.class));
+            verify(canvas, never()).drawText(anyInt(), anyInt(), any(), anyString());
+
+            // Origin is still stored
+            org.junit.jupiter.api.Assertions.assertEquals(100, mapWithOrigin.getOriginX());
+            org.junit.jupiter.api.Assertions.assertEquals(200, mapWithOrigin.getOriginZ());
         }
     }
 
@@ -219,7 +220,8 @@ class BeaconMapTest {
 
             beaconMap.render(mapView, canvas, player);
 
-            verify(canvas, atLeastOnce()).drawText(anyInt(), anyInt(), any(), anyString());
+            // New behavior: no text is drawn without origin
+            verify(canvas, never()).drawText(anyInt(), anyInt(), any(), anyString());
         }
 
         @Test
@@ -232,7 +234,8 @@ class BeaconMapTest {
 
             beaconMap.render(mapView, canvas, player);
 
-            verify(canvas, atLeastOnce()).drawText(anyInt(), anyInt(), any(), anyString());
+            // New behavior: no text is drawn without origin
+            verify(canvas, never()).drawText(anyInt(), anyInt(), any(), anyString());
         }
 
         @Test
@@ -272,8 +275,8 @@ class BeaconMapTest {
         }
 
         @Test
-        @DisplayName("Render displays beacon name when beacon exists")
-        void testRenderDisplaysBeaconName() {
+        @DisplayName("Render does not display text when beacon exists")
+        void testRenderNoTextDisplay() {
             int mapId = 42;
             when(mapView.getId()).thenReturn(mapId);
             when(register.getBeaconMap(mapId)).thenReturn(beacon);
@@ -281,155 +284,50 @@ class BeaconMapTest {
 
             beaconMap.render(mapView, canvas, player);
 
-            // Verify title is drawn
-            verify(canvas).drawText(eq(10), eq(10), any(), contains("Beacon Map"));
-
-            // Verify beacon name is drawn
-            verify(canvas).drawText(eq(10), eq(20), any(), contains("MyBeacon"));
+            // New behavior: no text is drawn
+            verify(canvas, never()).drawText(anyInt(), anyInt(), any(), anyString());
         }
 
         @Test
-        @DisplayName("Render displays unknown beacon when beacon not found")
-        void testRenderDisplaysUnknownBeacon() {
+        @DisplayName("Render does not display text when beacon not found")
+        void testRenderNoTextForUnknownBeacon() {
             int mapId = 99;
             when(mapView.getId()).thenReturn(mapId);
             when(register.getBeaconMap(mapId)).thenReturn(null);
 
             beaconMap.render(mapView, canvas, player);
 
-            // Verify title is drawn
-            verify(canvas).drawText(eq(10), eq(10), any(), contains("Beacon Map"));
-
-            // Verify unknown beacon message is drawn
-            verify(canvas).drawText(eq(10), eq(20), any(), contains("Unknown Beacon"));
+            // New behavior: no text is drawn
+            verify(canvas, never()).drawText(anyInt(), anyInt(), any(), anyString());
         }
 
         @Test
-        @DisplayName("Render draws center marker when beacon exists")
-        void testRenderDrawsCenterMarker() {
+        @DisplayName("Render does not draw center marker when no origin set")
+        void testRenderNoCenterMarkerWithoutOrigin() {
             int mapId = 1;
             when(mapView.getId()).thenReturn(mapId);
             when(register.getBeaconMap(mapId)).thenReturn(beacon);
 
             beaconMap.render(mapView, canvas, player);
 
-            // Verify center marker (white pixel at 64, 64)
-            verify(canvas).setPixelColor(64, 64, Color.WHITE);
+            // No origin set, so no pixels should be drawn
+            verify(canvas, never()).setPixelColor(anyInt(), anyInt(), any(Color.class));
         }
 
         @Test
         @DisplayName("Render does not draw center marker when beacon not found")
-        void testRenderNoCenterMarkerForUnknownBeacon() {
+        void testRenderNoMarkerForUnknownBeacon() {
             int mapId = 1;
             when(mapView.getId()).thenReturn(mapId);
             when(register.getBeaconMap(mapId)).thenReturn(null);
 
             beaconMap.render(mapView, canvas, player);
 
-            // Verify no center marker is drawn
+            // No origin, so no marker is drawn
             verify(canvas, never()).setPixelColor(anyInt(), anyInt(), any(Color.class));
         }
     }
 
-    @Nested
-    @DisplayName("Text Rendering Tests")
-    class TextRenderingTests {
-
-        @BeforeEach
-        void setUpValidRenderConditions() {
-            when(mapView.getWorld()).thenReturn(beaconzWorld);
-            when(inventory.getItemInMainHand()).thenReturn(filledMapStack);
-            when(mapView.getId()).thenReturn(1);
-        }
-
-        @Test
-        @DisplayName("Title is rendered at correct position")
-        void testTitlePosition() {
-            when(register.getBeaconMap(1)).thenReturn(beacon);
-
-            beaconMap.render(mapView, canvas, player);
-
-            // Title should be at (10, 10)
-            verify(canvas).drawText(eq(10), eq(10), any(), anyString());
-        }
-
-        @Test
-        @DisplayName("Location text is rendered at correct position")
-        void testLocationTextPosition() {
-            when(register.getBeaconMap(1)).thenReturn(beacon);
-
-            beaconMap.render(mapView, canvas, player);
-
-            // Location should be at (10, 20)
-            verify(canvas).drawText(eq(10), eq(20), any(), anyString());
-        }
-
-        @Test
-        @DisplayName("Exactly two text lines are drawn when beacon exists")
-        void testTwoTextLinesForBeacon() {
-            when(register.getBeaconMap(1)).thenReturn(beacon);
-
-            beaconMap.render(mapView, canvas, player);
-
-            // Should draw exactly 2 text lines (title + location)
-            verify(canvas, times(2)).drawText(anyInt(), anyInt(), any(), anyString());
-        }
-
-        @Test
-        @DisplayName("Exactly two text lines are drawn when beacon not found")
-        void testTwoTextLinesForUnknownBeacon() {
-            when(register.getBeaconMap(1)).thenReturn(null);
-
-            beaconMap.render(mapView, canvas, player);
-
-            // Should draw exactly 2 text lines (title + unknown message)
-            verify(canvas, times(2)).drawText(anyInt(), anyInt(), any(), anyString());
-        }
-    }
-
-    @Nested
-    @DisplayName("Center Marker Tests")
-    class CenterMarkerTests {
-
-        @BeforeEach
-        void setUpValidRenderConditions() {
-            when(mapView.getWorld()).thenReturn(beaconzWorld);
-            when(inventory.getItemInMainHand()).thenReturn(filledMapStack);
-            when(mapView.getId()).thenReturn(1);
-        }
-
-        @Test
-        @DisplayName("Center marker is white color")
-        void testCenterMarkerColor() {
-            when(register.getBeaconMap(1)).thenReturn(beacon);
-
-            beaconMap.render(mapView, canvas, player);
-
-            verify(canvas).setPixelColor(64, 64, Color.WHITE);
-        }
-
-        @Test
-        @DisplayName("Center marker is at exact center coordinates")
-        void testCenterMarkerPosition() {
-            when(register.getBeaconMap(1)).thenReturn(beacon);
-
-            beaconMap.render(mapView, canvas, player);
-
-            // Map center is at (64, 64)
-            verify(canvas).setPixelColor(eq(64), eq(64), any(Color.class));
-        }
-
-        @Test
-        @DisplayName("Only one pixel is drawn for center marker")
-        void testOnlyOnePixelDrawn() {
-            when(register.getBeaconMap(1)).thenReturn(beacon);
-
-            beaconMap.render(mapView, canvas, player);
-
-            // Should only draw one pixel
-            verify(canvas, times(1)).setPixelColor(anyInt(), anyInt(), any(Color.class));
-        }
-    }
 
     @Nested
     @DisplayName("Map ID Tests")
@@ -450,11 +348,12 @@ class BeaconMapTest {
 
             beaconMap.render(mapView, canvas, player);
 
-            verify(register).getBeaconMap(eq(mapId));
+            // Verify no drawing since no origin is set
+            verify(canvas, never()).setPixelColor(anyInt(), anyInt(), any(Color.class));
         }
 
         @Test
-        @DisplayName("Different map IDs retrieve different beacons")
+        @DisplayName("Different map IDs work correctly")
         void testDifferentMapIds() {
             BeaconObj beacon2 = mock(BeaconObj.class);
             when(beacon2.getName()).thenReturn("SecondBeacon");
@@ -471,8 +370,8 @@ class BeaconMapTest {
             when(register.getBeaconMap(2)).thenReturn(beacon2);
             beaconMap.render(mapView, canvas, player);
 
-            // Verify second beacon name was used
-            verify(canvas).drawText(eq(10), eq(20), any(), contains("SecondBeacon"));
+            // No drawing in either case without origin
+            verify(canvas, never()).setPixelColor(anyInt(), anyInt(), any(Color.class));
         }
 
         @Test
@@ -483,8 +382,8 @@ class BeaconMapTest {
 
             beaconMap.render(mapView, canvas, player);
 
-            verify(register).getBeaconMap(0);
-            verify(canvas, atLeastOnce()).drawText(anyInt(), anyInt(), any(), anyString());
+            // No drawing without origin
+            verify(canvas, never()).setPixelColor(anyInt(), anyInt(), any(Color.class));
         }
 
         @Test
@@ -495,8 +394,8 @@ class BeaconMapTest {
 
             beaconMap.render(mapView, canvas, player);
 
-            verify(register).getBeaconMap(-1);
-            verify(canvas).drawText(eq(10), eq(20), any(), contains("Unknown Beacon"));
+            // No drawing without origin
+            verify(canvas, never()).setPixelColor(anyInt(), anyInt(), any(Color.class));
         }
     }
 
@@ -512,9 +411,9 @@ class BeaconMapTest {
 
             beaconMap.render(mapView, canvas, player);
 
-            // Should not check inventory or map ID
-            verify(mapView, never()).getId();
+            // Should not draw anything
             verify(canvas, never()).drawText(anyInt(), anyInt(), any(), anyString());
+            verify(canvas, never()).setPixelColor(anyInt(), anyInt(), any(Color.class));
         }
 
         @Test
@@ -526,10 +425,9 @@ class BeaconMapTest {
 
             beaconMap.render(mapView, canvas, player);
 
-            // Should not look up beacon or draw
-            verify(mapView, never()).getId();
-            verify(register, never()).getBeaconMap(anyInt());
+            // Should not draw anything
             verify(canvas, never()).drawText(anyInt(), anyInt(), any(), anyString());
+            verify(canvas, never()).setPixelColor(anyInt(), anyInt(), any(Color.class));
         }
     }
 
@@ -538,51 +436,59 @@ class BeaconMapTest {
     class IntegrationTests {
 
         @Test
-        @DisplayName("Complete render flow with all conditions met")
-        void testCompleteRenderFlow() {
+        @DisplayName("BeaconMap stores origin but doesn't render")
+        void testBeaconMapStoresOriginOnly() {
+            // Create map with origin
+            BeaconMap mapWithOrigin = new BeaconMap(plugin, 100, 200);
+
             // Set up all conditions for successful render
             when(mapView.getWorld()).thenReturn(beaconzWorld);
             when(inventory.getItemInMainHand()).thenReturn(filledMapStack);
-            when(mapView.getId()).thenReturn(100);
-            when(register.getBeaconMap(100)).thenReturn(beacon);
-            when(beacon.getName()).thenReturn("IntegrationBeacon");
 
-            beaconMap.render(mapView, canvas, player);
+            mapWithOrigin.render(mapView, canvas, player);
 
-            // Verify complete rendering occurred
-            verify(canvas).drawText(eq(10), eq(10), any(), contains("Beacon Map"));
-            verify(canvas).drawText(eq(10), eq(20), any(), contains("IntegrationBeacon"));
-            verify(canvas).setPixelColor(64, 64, Color.WHITE);
+            // BeaconMap does NOT draw - rendering is done by TerritoryMapRenderer
+            verify(canvas, never()).setPixelColor(anyInt(), anyInt(), any(Color.class));
+            verify(canvas, never()).drawText(anyInt(), anyInt(), any(), anyString());
+
+            // But origin coordinates are stored
+            org.junit.jupiter.api.Assertions.assertEquals(100, mapWithOrigin.getOriginX());
+            org.junit.jupiter.api.Assertions.assertEquals(200, mapWithOrigin.getOriginZ());
         }
 
         @Test
-        @DisplayName("Render handles beacon with special characters in name")
-        void testBeaconWithSpecialCharacters() {
+        @DisplayName("Render without origin draws nothing")
+        void testRenderWithoutOrigin() {
             when(mapView.getWorld()).thenReturn(beaconzWorld);
             when(inventory.getItemInMainHand()).thenReturn(filledMapStack);
-            when(mapView.getId()).thenReturn(1);
-            when(register.getBeaconMap(1)).thenReturn(beacon);
-            when(beacon.getName()).thenReturn("Beacon-123_Test!");
 
             beaconMap.render(mapView, canvas, player);
 
-            verify(canvas).drawText(eq(10), eq(20), any(), contains("Beacon-123_Test!"));
+            // Should not draw anything
+            verify(canvas, never()).drawText(anyInt(), anyInt(), any(), anyString());
+            verify(canvas, never()).setPixelColor(anyInt(), anyInt(), any(Color.class));
         }
 
         @Test
-        @DisplayName("Render handles beacon with empty name")
-        void testBeaconWithEmptyName() {
+        @DisplayName("Origin can be set dynamically")
+        void testDynamicOriginSetting() {
             when(mapView.getWorld()).thenReturn(beaconzWorld);
             when(inventory.getItemInMainHand()).thenReturn(filledMapStack);
-            when(mapView.getId()).thenReturn(1);
-            when(register.getBeaconMap(1)).thenReturn(beacon);
-            when(beacon.getName()).thenReturn("");
 
+            // First render without origin
             beaconMap.render(mapView, canvas, player);
+            verify(canvas, never()).setPixelColor(anyInt(), anyInt(), any(Color.class));
 
-            // Should still render, just with empty name
-            verify(canvas).drawText(eq(10), eq(20), any(), anyString());
-            verify(canvas).setPixelColor(64, 64, Color.WHITE);
+            // Set origin
+            beaconMap.setOrigin(500, 600);
+
+            // Verify origin is stored
+            org.junit.jupiter.api.Assertions.assertEquals(500, beaconMap.getOriginX());
+            org.junit.jupiter.api.Assertions.assertEquals(600, beaconMap.getOriginZ());
+
+            // Render again - still no drawing (TerritoryMapRenderer handles that)
+            beaconMap.render(mapView, canvas, player);
+            verify(canvas, never()).setPixelColor(anyInt(), anyInt(), any(Color.class));
         }
     }
 
@@ -600,7 +506,8 @@ class BeaconMapTest {
 
             assertDoesNotThrow(() -> beaconMap.render(mapView, canvas, player));
 
-            verify(canvas).drawText(eq(10), eq(20), any(), contains("Unknown Beacon"));
+            // No origin set, so nothing is drawn
+            verify(canvas, never()).drawText(anyInt(), anyInt(), any(), anyString());
             verify(canvas, never()).setPixelColor(anyInt(), anyInt(), any(Color.class));
         }
 
@@ -615,8 +522,9 @@ class BeaconMapTest {
 
             beaconMap.render(mapView, canvas, player);
 
-            // Should still render normally
-            verify(canvas, times(2)).drawText(anyInt(), anyInt(), any(), anyString());
+            // No origin set, so nothing is drawn
+            verify(canvas, never()).drawText(anyInt(), anyInt(), any(), anyString());
+            verify(canvas, never()).setPixelColor(anyInt(), anyInt(), any(Color.class));
         }
 
         @Test
@@ -630,7 +538,108 @@ class BeaconMapTest {
 
             beaconMap.render(mapView, canvas, player);
 
-            verify(canvas, atLeastOnce()).drawText(anyInt(), anyInt(), any(), anyString());
+            // No origin set, so nothing is drawn
+            verify(canvas, never()).drawText(anyInt(), anyInt(), any(), anyString());
+            verify(canvas, never()).setPixelColor(anyInt(), anyInt(), any(Color.class));
+        }
+    }
+
+    @Nested
+    @DisplayName("Origin Marker Tests")
+    class OriginMarkerTests {
+
+        @Test
+        @DisplayName("Should store origin coordinates when constructed with coordinates")
+        void shouldStoreOriginCoordinates() {
+            // Create map with origin coordinates
+            BeaconMap mapWithOrigin = new BeaconMap(plugin, 100, 200);
+
+            // Verify coordinates are stored
+            org.junit.jupiter.api.Assertions.assertEquals(100, mapWithOrigin.getOriginX());
+            org.junit.jupiter.api.Assertions.assertEquals(200, mapWithOrigin.getOriginZ());
+        }
+
+        @Test
+        @DisplayName("Should not draw anything - rendering is delegated to TerritoryMapRenderer")
+        void shouldNotDrawAnything() {
+            // Create map with origin coordinates
+            BeaconMap mapWithOrigin = new BeaconMap(plugin, 100, 200);
+
+            when(mapView.getWorld()).thenReturn(beaconzWorld);
+            when(inventory.getItemInMainHand()).thenReturn(filledMapStack);
+            when(inventory.getItemInOffHand()).thenReturn(emptyStack);
+
+            mapWithOrigin.render(mapView, canvas, player);
+
+            // BeaconMap no longer draws anything - TerritoryMapRenderer handles rendering
+            verify(canvas, never()).setPixelColor(anyInt(), anyInt(), any(Color.class));
+            verify(canvas, never()).drawText(anyInt(), anyInt(), any(), anyString());
+        }
+
+        @Test
+        @DisplayName("Should set origin coordinates via setter")
+        void shouldSetOriginCoordinates() {
+            beaconMap.setOrigin(500, 600);
+
+            // Verify coordinates are stored
+            org.junit.jupiter.api.Assertions.assertEquals(500, beaconMap.getOriginX());
+            org.junit.jupiter.api.Assertions.assertEquals(600, beaconMap.getOriginZ());
+        }
+
+        @Test
+        @DisplayName("Should get origin X coordinate")
+        void shouldGetOriginX() {
+            BeaconMap mapWithOrigin = new BeaconMap(plugin, 123, 456);
+            org.junit.jupiter.api.Assertions.assertEquals(123, mapWithOrigin.getOriginX());
+        }
+
+        @Test
+        @DisplayName("Should get origin Z coordinate")
+        void shouldGetOriginZ() {
+            BeaconMap mapWithOrigin = new BeaconMap(plugin, 123, 456);
+            org.junit.jupiter.api.Assertions.assertEquals(456, mapWithOrigin.getOriginZ());
+        }
+
+        @Test
+        @DisplayName("Should return null for unset origin coordinates")
+        void shouldReturnNullForUnsetOrigin() {
+            org.junit.jupiter.api.Assertions.assertNull(beaconMap.getOriginX());
+            org.junit.jupiter.api.Assertions.assertNull(beaconMap.getOriginZ());
+        }
+
+        @Test
+        @DisplayName("Should allow updating origin coordinates via setter")
+        void shouldAllowUpdatingOrigin() {
+            BeaconMap mapWithOrigin = new BeaconMap(plugin, 100, 200);
+
+            // Initial values
+            org.junit.jupiter.api.Assertions.assertEquals(100, mapWithOrigin.getOriginX());
+            org.junit.jupiter.api.Assertions.assertEquals(200, mapWithOrigin.getOriginZ());
+
+            // Update values
+            mapWithOrigin.setOrigin(300, 400);
+
+            // Verify updated values
+            org.junit.jupiter.api.Assertions.assertEquals(300, mapWithOrigin.getOriginX());
+            org.junit.jupiter.api.Assertions.assertEquals(400, mapWithOrigin.getOriginZ());
+        }
+
+        @Test
+        @DisplayName("Should handle setting origin on map created without origin")
+        void shouldHandleSettingOriginOnEmptyMap() {
+            // Create map without origin
+            BeaconMap map = new BeaconMap(plugin);
+
+            // Verify no origin initially
+            org.junit.jupiter.api.Assertions.assertNull(map.getOriginX());
+            org.junit.jupiter.api.Assertions.assertNull(map.getOriginZ());
+
+            // Set origin
+            map.setOrigin(500, 600);
+
+            // Verify origin is now set
+            org.junit.jupiter.api.Assertions.assertEquals(500, map.getOriginX());
+            org.junit.jupiter.api.Assertions.assertEquals(600, map.getOriginZ());
         }
     }
 }

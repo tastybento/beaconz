@@ -30,43 +30,21 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.map.MapCanvas;
 import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
-import org.bukkit.map.MinecraftFont;
 
 import com.wasteofplastic.beaconz.Beaconz;
-import com.wasteofplastic.beaconz.config.Lang;
-import com.wasteofplastic.beaconz.core.BeaconObj;
 
 /**
- * Custom map renderer that displays beacon information on in-game maps.
+ * Custom map renderer that stores origin coordinates for beacon maps.
  * <p>
- * This renderer extends Bukkit's {@link MapRenderer} to create specialized "beacon maps"
- * that show players information about specific beacons. These maps are given to players
- * when they capture a beacon and can be used for:
- * <ul>
- *   <li>Identifying beacon locations by name</li>
- *   <li>Creating links between beacons (when right-clicking another beacon with the map)</li>
- *   <li>Visual reference with a center marker showing the beacon position</li>
- * </ul>
- *
- * <h3>Map Display Format:</h3>
- * <pre>
- * Line 1 (y=10): "Beacon Map" (title)
- * Line 2 (y=20): "Location: [Beacon Name]" or "Unknown Beacon"
- * Center Mark:   White pixel at (64, 64) showing beacon center
- * </pre>
- *
- * <h3>Rendering Conditions:</h3>
- * The map only renders when:
- * <ul>
- *   <li>The map view is in the Beaconz world</li>
- *   <li>The player is holding a filled map in either hand</li>
- * </ul>
- *
- * This prevents unnecessary rendering when maps are in inventory or in other worlds.
+ * This renderer maintains the origin coordinates (where the map was created)
+ * but delegates the actual rendering of the red X marker to {@link TerritoryMapRenderer}
+ * to ensure the marker appears on top of all other map elements.
+ * <p>
+ * The origin coordinates are persisted via the Register's map origin storage
+ * and survive server restarts.
  *
  * @author tastybento
- * @see BeaconObj
- * @see org.bukkit.map.MapRenderer
+ * @see TerritoryMapRenderer
  * @since 1.0
  */
 public class BeaconMap extends MapRenderer {
@@ -78,6 +56,18 @@ public class BeaconMap extends MapRenderer {
     private final Beaconz plugin;
 
     /**
+     * X coordinate of the beacon that generated this map (origin point).
+     * This is marked with a red X on the rendered map.
+     */
+    private Integer originX;
+
+    /**
+     * Z coordinate of the beacon that generated this map (origin point).
+     * This is marked with a red X on the rendered map.
+     */
+    private Integer originZ;
+
+    /**
      * Constructs a new BeaconMap renderer.
      * <p>
      * This renderer is attached to MapViews when beacon maps are created,
@@ -87,6 +77,52 @@ public class BeaconMap extends MapRenderer {
      */
     public BeaconMap(Beaconz plugin) {
         this.plugin = plugin;
+    }
+
+    /**
+     * Constructs a new BeaconMap renderer with a specific origin point.
+     * <p>
+     * The origin point is the beacon location where this map was created,
+     * and will be marked with a red X on the rendered map.
+     *
+     * @param plugin The Beaconz plugin instance for accessing game data
+     * @param originX The X coordinate of the origin beacon
+     * @param originZ The Z coordinate of the origin beacon
+     */
+    public BeaconMap(Beaconz plugin, int originX, int originZ) {
+        this.plugin = plugin;
+        this.originX = originX;
+        this.originZ = originZ;
+    }
+
+    /**
+     * Sets the origin coordinates for this map.
+     * The origin is the beacon location where this map was created.
+     *
+     * @param x The X coordinate of the origin beacon
+     * @param z The Z coordinate of the origin beacon
+     */
+    public void setOrigin(int x, int z) {
+        this.originX = x;
+        this.originZ = z;
+    }
+
+    /**
+     * Gets the X coordinate of the origin beacon.
+     *
+     * @return The origin X coordinate, or null if not set
+     */
+    public Integer getOriginX() {
+        return originX;
+    }
+
+    /**
+     * Gets the Z coordinate of the origin beacon.
+     *
+     * @return The origin Z coordinate, or null if not set
+     */
+    public Integer getOriginZ() {
+        return originZ;
     }
 
     /**
@@ -121,6 +157,22 @@ public class BeaconMap extends MapRenderer {
      * @see org.bukkit.map.MapCanvas
      * @see org.bukkit.map.MinecraftFont
      */
+    /**
+     * Performs validation checks for map rendering.
+     * <p>
+     * This method validates that:
+     * <ul>
+     *   <li>The map is in the Beaconz world</li>
+     *   <li>The player is holding a filled map</li>
+     * </ul>
+     * <p>
+     * The actual rendering of the origin marker is handled by {@link TerritoryMapRenderer}
+     * which retrieves the origin coordinates from the Register's map origin storage.
+     *
+     * @param map The MapView being rendered (contains map ID and world)
+     * @param canvas The MapCanvas to draw on (unused, kept for interface compatibility)
+     * @param player The player viewing the map (used to check held items)
+     */
     @Override
     public void render(MapView map, MapCanvas canvas, Player player) {
         // VALIDATION 1: World check
@@ -138,35 +190,8 @@ public class BeaconMap extends MapRenderer {
 
         // Check both hands for a filled map
         if (inMainHand.getType().equals(Material.FILLED_MAP) || inOffHand.getType().equals(Material.FILLED_MAP)) {
-
-            // RENDERING: Draw map content
-
-            // Draw title at top of map (10 pixels from left, 10 pixels from top)
-            canvas.drawText(10, 10, MinecraftFont.Font, Lang.beaconMapBeaconMap);
-
-            // Look up the beacon associated with this map ID
-            // Each beacon map has a unique ID that links to a specific beacon
-            BeaconObj beacon = plugin.getRegister().getBeaconMap(map.getId());
-
-            if (beacon != null) {
-                // SCENARIO 1: Beacon found - display its information
-
-                // Draw beacon location name (10 pixels from left, 20 pixels from top)
-                // This appears below the title
-                canvas.drawText(10, 20, MinecraftFont.Font, Lang.generalLocation + ": " + beacon.getName());
-
-                // Draw center marker - a single white pixel at the map's center (64, 64)
-                // This visually indicates where the beacon is located on the map
-                canvas.setPixelColor(64, 64, Color.WHITE);
-
-            } else {
-                // SCENARIO 2: Beacon not found - display error message
-                // This can happen if:
-                // - The beacon was destroyed
-                // - The map ID is invalid
-                // - The beacon register was cleared
-                canvas.drawText(10, 20, MinecraftFont.Font, Lang.beaconMapUnknownBeacon);
-            }
+            // Note: The red X origin marker is now drawn by TerritoryMapRenderer
+            // to ensure it appears on top of all other map elements
         }
     }
 }

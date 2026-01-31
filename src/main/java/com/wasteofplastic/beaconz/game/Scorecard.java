@@ -153,7 +153,7 @@ import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
  */
 public class Scorecard extends BeaconzPluginDependent {
     /** Maximum length for score strings displayed on scoreboard (for formatting) */
-    private static final Integer MAXSCORELENGTH = 10;
+    private static final Integer MAXSCORELENGTH = 20;
 
     /** Whether the game is currently running (false when paused) */
     private boolean gameON;
@@ -557,7 +557,7 @@ public class Scorecard extends BeaconzPluginDependent {
     }
 
     /**
-     * Updates the Scoreboard display
+     * Updates the Scoreboard display for all teams for all score types
      *
      */
     public void refreshSBdisplay() {
@@ -565,6 +565,12 @@ public class Scorecard extends BeaconzPluginDependent {
             refreshSBdisplay(team);
         }
     }
+
+    /**
+     * Updates the Scoreboard display for a specific team for all score types
+     *
+     * @param team team to refresh scoreboard display for
+     */
     public void refreshSBdisplay(Team team) {
         if (score.get(team) != null) {
             for (GameScoreGoal st : game.getScoretypes()) {
@@ -572,21 +578,49 @@ public class Scorecard extends BeaconzPluginDependent {
             }
         }
     }
-    public void refreshSBdisplay(Team team, GameScoreGoal scoretype) {
-        // The setScore values are actually line numbers on the scoreboard
-        // the actual scores go in the score description
-        // Refresh the team scores for the given score type, if it can be shown
-        if (gameON && game.getScoretypes().contains(scoretype)) {
-            HashMap<GameScoreGoal, Integer> stypes = score.get(team);
-            int sv = 0;
-            if (stypes != null && stypes.get(scoretype) != null) sv = stypes.get(scoretype);
-            String scorestring = fixScoreString(team, scoretype, sv, MAXSCORELENGTH);
-            String oldentry = sbEntry(team, scoretype);
-            int line = scoreobjective.getScore(oldentry).getScore();
-            scoreboard.resetScores(oldentry);
-            scoreentry = scoreobjective.getScore(scorestring);
-            scoreentry.setScore(line);
+
+    /**
+     * Updates the scoreboard sidebar display for a specific team and score type.
+     *
+     * <p>This method performs a three-step update:
+     * <ol>
+     *   <li><b>Retrieve</b> - Gets the current score value for the team/scoreType combination</li>
+     *   <li><b>Remove</b> - Finds and removes the old scoreboard entry for this team/scoreType</li>
+     *   <li><b>Replace</b> - Creates a new scoreboard entry with updated score value</li>
+     * </ol>
+     *
+     * <p><b>How Minecraft Scoreboards Work:</b>
+     * <ul>
+     *   <li>Each scoreboard line has a <b>display text</b> (e.g., "Red Team Beacons")</li>
+     *   <li>The <b>score value</b> controls the line's position (higher = higher on sidebar)</li>
+     *   <li>To update a line's text, we must: remove old entry → create new entry with same position</li>
+     * </ul>
+     *
+     * <p><b>Why We Replace Instead of Update:</b><br>
+     * Minecraft doesn't allow changing the display text of an existing score entry.
+     * We must remove the old entry and create a new one to update the displayed text
+     * (which includes the score value in the text itself).
+     *
+     * @param team the team whose score display should be updated
+     * @param scoreType the type of score to update (BEACONS, LINKS, TRIANGLES, or AREA)
+     */
+    private void refreshSBdisplay(Team team, GameScoreGoal scoreType) {
+        // Only update if game is running and this score type is tracked for this game
+        if (!gameON || !game.getScoretypes().contains(scoreType)) {
+            return;
         }
+
+        // STEP 1: Find the old scoreboard entry and get its line position
+        String oldScoreboardEntry = sbEntry(team, scoreType);
+        int lineNumber = scoreobjective.getScore(oldScoreboardEntry).getScore();
+
+        // STEP 2: Remove the old scoreboard entry
+        scoreboard.resetScores(oldScoreboardEntry);
+
+        // STEP 3: Create new scoreboard entry with updated text and restore line position
+        String newScoreboardEntry = getScoreString(team, scoreType, MAXSCORELENGTH);
+        scoreentry = scoreobjective.getScore(newScoreboardEntry);
+        scoreentry.setScore(lineNumber); // Restore the line position (higher = higher on sidebar)
     }
 
     /**
@@ -596,7 +630,7 @@ public class Scorecard extends BeaconzPluginDependent {
      * @param teamBlock
      * @param save      - if true, saves game to file after adding team
      */
-    public void addTeam(String teamName, String teamDisplayName, Material teamBlock, Boolean save) {
+    private void addTeam(String teamName, String teamDisplayName, Material teamBlock, Boolean save) {
         Team team = scoreboard.getTeam(teamName);
         if (team == null) {
             // Create the team
@@ -614,7 +648,7 @@ public class Scorecard extends BeaconzPluginDependent {
             for (GameScoreGoal st : game.getScoretypes()) {
                 sidebarline -= 1;
                 if (sidebarline > 0 ) {
-                    String scorestring = fixScoreString(team, st, 0, 8);
+                    String scorestring = getScoreString(team, st, 8);
                     scoreentry = scoreobjective.getScore(scorestring);
                     scoreentry.setScore(sidebarline);
                 } else {
@@ -629,28 +663,21 @@ public class Scorecard extends BeaconzPluginDependent {
     }
 
     /**
-     * Fixes the string to show on the sidebar
-     * Since the sidebar only shows scores in decreasing order, the only way to sort them
-     * the way we want is to use the scores for line numbers and keep our own
-     * scores in the score description.
-     * This method takes a team, a score's name, a score value and a max length
-     * and returns a string to be displayed in the sidebar.
-     * For instance, fixScoreString (redteam, "beacons", 10, 8) will return "______10 RED beacons"
+     * Gets the score string to show
      */
-    public String fixScoreString (Team team, GameScoreGoal scoretype, Integer score, Integer maxlen) {
+    private String getScoreString(Team team, GameScoreGoal scoretype, int maxlen) {
         TextColor teamcolor = teamChatColor(team);
-        String formattedScore = String.format(Locale.US, "%,d", score);
-        String padstring = "____________________".substring(0, Math.max(0, maxlen - 1 - formattedScore.length()));
-        Component fixed = Component.text(padstring).color(NamedTextColor.GRAY).append(Component.text(formattedScore + " ").color(teamcolor))
-                .append(team.displayName()).append(Component.text(" " + scoretype.getName()));
-        return PlainTextComponentSerializer.plainText().serialize(fixed);
+        Component fixed = team.displayName().color(teamcolor).append(Component.text(" "+ scoretype.getName()));
+        String scoreString = PlainTextComponentSerializer.plainText().serialize(fixed);
+        scoreString = scoreString.substring(0, Math.min(maxlen, scoreString.length()));
+        return scoreString;
     }
 
     /**
      * Returns the first scoreboard Entry for a given team + score type - and *** there can be only ONE ***
      *
      */
-    public String sbEntry (Team team, GameScoreGoal scoreType) {
+    private String sbEntry(Team team, GameScoreGoal scoreType) {
         String scoreboardentry = "";
         String teamName = PlainTextComponentSerializer.plainText().serialize(team.displayName());
         for (String entry : scoreboard.getEntries()) {
@@ -1367,18 +1394,6 @@ public class Scorecard extends BeaconzPluginDependent {
                     }
                 }
             }  
-            // If working with QueueMgr, tell it the game ended:
-            /*
-            if (getServer().getPluginManager().getPlugin("QueueMgr") != null) {
-                QueueMgrInterface qMgr = getServer().getServicesManager().load(QueueMgrInterface.class);
-                if (qMgr != null && winner != null) {
-                    qMgr.endGame(game.getName());
-                    qMgr.setWinnerVar(game.getName(), winner.getDisplayName().toUpperCase(), null);
-                    qMgr.setGameOverVar1(game.getName(), "THAT WAS A GREAT GAME!", null);
-                    qMgr.setGameOverVar2(game.getName(), "THANK YOU FOR PLAYING!", null);
-                }
-            }
-             */
         }, 30);        
     }
 

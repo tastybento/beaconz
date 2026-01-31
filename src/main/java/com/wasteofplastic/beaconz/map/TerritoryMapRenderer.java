@@ -122,8 +122,8 @@ public class TerritoryMapRenderer extends MapRenderer {
                 renderFromPixelCache(canvas); // Apply cache to canvas
             }
 
-            // Add beacon location markers to the map
-            setCursors(canvas, coordConverter, canvas.getCursors(), player.hasPermission(MAP_UNCLAIMED_PERMISSION));
+            // Add beacon location markers to the map (skip origin beacon - it gets a red X instead)
+            setCursors(canvas, coordConverter, canvas.getCursors(), player.hasPermission(MAP_UNCLAIMED_PERMISSION), map.getId());
 
             // Add player position cursor
             int x = coordConverter.blockXToPixelX(player.getLocation().getBlockX());
@@ -138,6 +138,70 @@ public class TerritoryMapRenderer extends MapRenderer {
             // Add the player cursor with their current facing direction
             byte dir = direction(player);
             canvas.getCursors().addCursor(x, z, dir);
+
+            // FINAL STEP: Draw the map origin marker (red X) on top of everything else
+            // This marks the beacon that generated this map
+            drawMapOriginMarker(canvas, map, coordConverter);
+        }
+    }
+
+    /**
+     * Draws a red X marker at the map's origin point (the beacon that created this map).
+     * This is drawn last to ensure it appears on top of all other map elements.
+     * The origin coordinates are retrieved from the Register's map origin storage.
+     *
+     * @param canvas the map canvas to draw on
+     * @param map the map view containing the map ID
+     * @param coordConverter coordinate converter for the map
+     */
+    private void drawMapOriginMarker(MapCanvas canvas, MapView map, MapCoordinateConverter coordConverter) {
+        // Get the origin coordinates for this map from the register
+        Point2D origin = beaconz.getRegister().getMapOrigin(map.getId());
+        if (origin == null) {
+            return; // No origin set for this map
+        }
+
+        int originX = (int) origin.getX();
+        int originZ = (int) origin.getY(); // Point2D uses Y for Z coordinate
+
+        // Convert world coordinates to pixel coordinates
+        int pixelX = coordConverter.blockXToPixelX(originX);
+        int pixelZ = coordConverter.blockZToPixelZ(originZ);
+
+        // Only draw if the origin is visible on the map
+        if (pixelX >= 0 && pixelX < 128 && pixelZ >= 0 && pixelZ < 128) {
+            // Draw a red X marker (5x5 pixels) at the origin
+            drawRedX(canvas, pixelX, pixelZ);
+        }
+    }
+
+    /**
+     * Draws a red X marker on the map canvas.
+     * The X is 5x5 pixels centered on the given coordinates.
+     *
+     * @param canvas the map canvas to draw on
+     * @param centerX the X pixel coordinate for the center of the X
+     * @param centerZ the Z pixel coordinate for the center of the X
+     */
+    private void drawRedX(MapCanvas canvas, int centerX, int centerZ) {
+        Color red = Color.RED;
+
+        // Draw diagonal line from top-left to bottom-right
+        for (int i = -2; i <= 2; i++) {
+            int x = centerX + i;
+            int z = centerZ + i;
+            if (x >= 0 && x < 128 && z >= 0 && z < 128) {
+                canvas.setPixelColor(x, z, red);
+            }
+        }
+
+        // Draw diagonal line from top-right to bottom-left
+        for (int i = -2; i <= 2; i++) {
+            int x = centerX + i;
+            int z = centerZ - i;
+            if (x >= 0 && x < 128 && z >= 0 && z < 128) {
+                canvas.setPixelColor(x, z, red);
+            }
         }
     }
 
@@ -255,17 +319,22 @@ public class TerritoryMapRenderer extends MapRenderer {
     /**
      * Places the beacon cursors on the map to mark beacon locations.
      * Each beacon gets a colored banner cursor based on its team ownership.
+     * The origin beacon (where the map was created) is skipped so only the red X shows.
      *
      * @param canvas the map canvas to draw on
      * @param coordConverter coordinate converter for the map
      * @param cursors map cursor collection to add cursors to
      * @param showUnclaimedBeacons whether to show unclaimed beacons (requires permission)
+     * @param mapId the ID of the current map (used to identify origin beacon)
      */
-    private void setCursors(MapCanvas canvas, MapCoordinateConverter coordConverter, MapCursorCollection cursors, boolean showUnclaimedBeacons) {
+    private void setCursors(MapCanvas canvas, MapCoordinateConverter coordConverter, MapCursorCollection cursors, boolean showUnclaimedBeacons, int mapId) {
         // Clear existing cursors (except player cursor which is added later)
         for (int i = 0; i < cursors.size(); i++) {
             cursors.removeCursor(cursors.getCursor(i));
         }
+
+        // Get the origin coordinates for this map (if any)
+        Point2D origin = beaconz.getRegister().getMapOrigin(mapId);
 
         // Add a cursor for each beacon
         for (Map.Entry<Point2D, CachedBeacon> entry : beaconRegisterCache.entrySet()) {
@@ -275,6 +344,11 @@ public class TerritoryMapRenderer extends MapRenderer {
             if (!showUnclaimedBeacons && team == null) continue;
 
             Point2D point = entry.getKey();
+
+            // Skip the origin beacon - it will be marked with a red X instead of a cursor
+            if (origin != null && (int)point.getX() == (int)origin.getX() && (int)point.getY() == (int)origin.getY()) {
+                continue;
+            }
 
             // Convert beacon world position to map pixel coordinates
             int x = coordConverter.blockXToPixelX((int) point.getX());

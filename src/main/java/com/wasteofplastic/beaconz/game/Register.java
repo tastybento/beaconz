@@ -132,6 +132,9 @@ public class Register extends BeaconzPluginDependent {
     /** Maps Minecraft map item IDs to their associated beacon objects for territory display */
     private final HashMap<Integer, BeaconObj> beaconMaps = new HashMap<>();
 
+    /** Maps Minecraft map item IDs to their origin coordinates (where the map was created) */
+    private final HashMap<Integer, Point2D> mapOrigins = new HashMap<>();
+
     /**
      * Primary beacon lookup table - maps 2D coordinates (x,z) to beacon objects.
      * This is the authoritative registry of all beacons in the game.
@@ -277,6 +280,12 @@ public class Register extends BeaconzPluginDependent {
                     // Verify the map still exists on the server before saving
                     if (Bukkit.getMap(id) != null) {
                         maps.add(String.valueOf(id));
+                        // Save the origin coordinates for this map
+                        Point2D origin = mapOrigins.get(id);
+                        if (origin != null) {
+                            beaconzYml.set("beacon." + count + ".maporigin." + id,
+                                    (int)origin.getX() + ":" + (int)origin.getY());
+                        }
                     }
                 }
             }
@@ -413,6 +422,22 @@ public class Register extends BeaconzPluginDependent {
                             for (String mapNumber: maps) {
                                 int id = Integer.parseInt(mapNumber);
                                 beaconMaps.put(id, newBeacon);
+
+                                // Load map origin coordinates
+                                String originStr = configSec.getString(beacon + ".maporigin." + id);
+                                if (originStr != null) {
+                                    String[] parts = originStr.split(":");
+                                    if (parts.length == 2) {
+                                        try {
+                                            int originX = Integer.parseInt(parts[0]);
+                                            int originZ = Integer.parseInt(parts[1]);
+                                            mapOrigins.put(id, new Point2D.Double(originX, originZ));
+                                        } catch (NumberFormatException e) {
+                                            getLogger().warning("Invalid map origin coordinates for map " + id + ": " + originStr);
+                                        }
+                                    }
+                                }
+
                                 MapView map = Bukkit.getMap(id);
                                 if (map != null) {
                                     // Remove old renderers and add fresh ones
@@ -422,7 +447,14 @@ public class Register extends BeaconzPluginDependent {
                                         }
                                     }
                                     map.addRenderer(new TerritoryMapRenderer(getBeaconzPlugin()));
-                                    map.addRenderer(new BeaconMap(getBeaconzPlugin()));
+
+                                    // Create BeaconMap renderer with origin coordinates if available
+                                    Point2D origin = mapOrigins.get(id);
+                                    if (origin != null) {
+                                        map.addRenderer(new BeaconMap(getBeaconzPlugin(), (int)origin.getX(), (int)origin.getY()));
+                                    } else {
+                                        map.addRenderer(new BeaconMap(getBeaconzPlugin()));
+                                    }
                                 } else {
                                     getLogger().severe("Could not load map #" + id + " as it doesn't exist on this server. Skipping...");
                                 }
@@ -1106,10 +1138,46 @@ public class Register extends BeaconzPluginDependent {
     }
 
     /**
+     * Adds a beacon map with origin coordinates.
+     *
+     * @param i the map ID
+     * @param beacon the beacon this map is associated with
+     * @param originX the X coordinate where the map was created
+     * @param originZ the Z coordinate where the map was created
+     */
+    public void addBeaconMap(int i, BeaconObj beacon, int originX, int originZ) {
+        beacon.setId(i);
+        this.beaconMaps.put(i, beacon);
+        this.mapOrigins.put(i, new Point2D.Double(originX, originZ));
+    }
+
+    /**
+     * Gets the origin coordinates for a map.
+     *
+     * @param mapId the map ID
+     * @return the origin point, or null if not set
+     */
+    public Point2D getMapOrigin(int mapId) {
+        return mapOrigins.get(mapId);
+    }
+
+    /**
+     * Sets the origin coordinates for a map.
+     *
+     * @param mapId the map ID
+     * @param x the origin X coordinate
+     * @param z the origin Z coordinate
+     */
+    public void setMapOrigin(int mapId, int x, int z) {
+        this.mapOrigins.put(mapId, new Point2D.Double(x, z));
+    }
+
+    /**
      * @param index the map index to remove
      */
     public void removeBeaconMap(int index) {
         this.beaconMaps.remove(index);
+        this.mapOrigins.remove(index);
     }
 
     /**

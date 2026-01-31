@@ -727,16 +727,20 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
 
         // Remove default renderers and add custom ones
         mapView.getRenderers().clear();
-        mapView.addRenderer(new TerritoryMapRenderer(getBeaconzPlugin())); // Shows territory ownership
-        mapView.addRenderer(new BeaconMap(getBeaconzPlugin()));            // Shows beacon locations
+
+        // Add TerritoryMapRenderer first (draws territories, links, and cursors)
+        mapView.addRenderer(new TerritoryMapRenderer(getBeaconzPlugin()));
+
+        // Add BeaconMap renderer last with origin coordinates
+        // This ensures the red X origin marker is drawn on top of everything else
+        BeaconMap beaconMapRenderer = new BeaconMap(getBeaconzPlugin(), beacon.getX(), beacon.getZ());
+        mapView.addRenderer(beaconMapRenderer);
 
         // Create the physical map item (use FILLED_MAP, not deprecated MAP)
         ItemStack newMap = new ItemStack(Material.FILLED_MAP);
 
         // Configure the map's metadata
         if (newMap.getItemMeta() instanceof MapMeta meta) {
-            // Set a custom display name identifying which beacon this map shows
-            meta.displayName(Component.text("Beacon map for " + beacon.getName()));
 
             // Connect the ItemStack to our custom MapView
             // This ensures the map displays our custom renderers
@@ -772,7 +776,8 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
 
         // Register the map in the system for tracking and future reference
         // This allows the plugin to associate this map ID with this specific beacon
-        getRegister().addBeaconMap(mapView.getId(), beacon);
+        // and stores the origin coordinates where the map was created
+        getRegister().addBeaconMap(mapView.getId(), beacon, beacon.getX(), beacon.getZ());
 
     }
 }
