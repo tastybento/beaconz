@@ -38,6 +38,7 @@ import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
 import org.jetbrains.annotations.NotNull;
 
 import com.wasteofplastic.beaconz.Beaconz;
@@ -94,6 +95,20 @@ public class LobbyListener extends BeaconzPluginDependent implements Listener {
         super(plugin);
     }
 
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled=true)
+    public void onLobbyEnter(final PlayerTeleportEvent event) {
+        if (DEBUG) {
+            getLogger().info(event.getEventName());
+        }
+        // Check if the player is teleporting into the lobby region
+        if (getGameMgr().getLobby().isPlayerInRegion(event.getPlayer())) {
+            if (this.getBeaconzPlugin().getConfig().getBoolean("lobby.skip-lobby", false)) {
+                // Skip the lobby and send the player directly to an available game
+                getGameMgr().sendPlayerToAvailableGame(event.getPlayer());
+            }
+        }
+    }
+
     /**
      * Handles player interactions with game signs in the lobby.
      * <p>
@@ -119,7 +134,7 @@ public class LobbyListener extends BeaconzPluginDependent implements Listener {
      *
      * @param event The PlayerInteractEvent for clicking blocks
      */
-    @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled=true)
     public void onSignClick(final PlayerInteractEvent event) {
         // Verify the player clicked a block (not air)
         if (!event.hasBlock()) {

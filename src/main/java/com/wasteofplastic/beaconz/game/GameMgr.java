@@ -50,6 +50,7 @@ import com.wasteofplastic.beaconz.generator.BeaconzChunkGen;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Manages the lifecycle and spatial organization of Beaconz games and regions.
@@ -1008,6 +1009,20 @@ public class GameMgr extends BeaconzPluginDependent {
      */
     public List<String> getAllGameNames() {
         return games.keySet().stream().map(PlainTextComponentSerializer.plainText()::serialize).toList();
+    }
+
+    /**
+     * Sends a player to an available game that is not over. If no such game exists, does nothing.
+     * @param player platyer to send to a game
+     */
+    public void sendPlayerToAvailableGame(@NotNull Player player) {
+        for (Game game : games.values()) {
+            if (!game.isOver()) {
+                // Join the player to the game
+                game.join(player);
+                return;
+            }
+        }
     }
 }
 
