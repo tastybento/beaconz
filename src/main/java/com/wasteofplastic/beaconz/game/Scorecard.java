@@ -53,6 +53,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import net.kyori.adventure.title.Title;
 
 /**
  * Manages all scoring, team, and game state aspects for a Beaconz game instance.
@@ -1350,11 +1351,11 @@ public class Scorecard extends BeaconzPluginDependent {
                         if (player != null) {
                             // Tell players in the game
                             if (game.getRegion().isPlayerInRegion(player)) {
-                                // TODO - update this!
-                                getServer().dispatchCommand(getServer().getConsoleSender(),
-                                        "title " + player.getName() + " title {\"text\":\"" + titleline + "\", \"color\":\"" + "gold" + "\"}");
-                                getServer().dispatchCommand(getServer().getConsoleSender(),
-                                        "title " + player.getName() + " subtitle {\"text\":\"" + subtitleline + "\", \"color\":\"" + "gold" + "\"}");
+                                // Show title and subtitle using proper API
+                                player.showTitle(Title.title(
+                                    titleline.color(NamedTextColor.GOLD),
+                                    subtitleline.color(NamedTextColor.GOLD)
+                                ));
                                 player.sendMessage(Lang.helpLine);
                                 player.sendMessage(titleline);
                                 player.sendMessage(subtitleline);
