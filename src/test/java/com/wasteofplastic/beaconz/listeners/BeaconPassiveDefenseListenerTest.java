@@ -977,4 +977,436 @@ class BeaconPassiveDefenseListenerTest extends CommonTestBase {
 
         assertNull(result);
     }
+
+    // ==================== Locking Block Position Tests ====================
+
+    /** Test isBlockDirectlyAboveBeacon returns true when block is at beacon center. */
+    @Test
+    void testIsBlockDirectlyAboveBeaconAtCenter() {
+        when(block.getX()).thenReturn(100);
+        when(block.getZ()).thenReturn(200);
+        when(beacon.getX()).thenReturn(100);
+        when(beacon.getZ()).thenReturn(200);
+
+        boolean result = listener.isBlockDirectlyAboveBeacon(block, beacon);
+
+        assertTrue(result, "Block at beacon center should be directly above");
+    }
+
+    /** Test isBlockDirectlyAboveBeacon returns true for all 8 positions around beacon center. */
+    @Test
+    void testIsBlockDirectlyAboveBeaconAllFootprintPositions() {
+        when(beacon.getX()).thenReturn(100);
+        when(beacon.getZ()).thenReturn(200);
+
+        // Test all 9 positions in the 3x3 footprint (including center)
+        int[][] footprintPositions = {
+            {100, 200}, // center
+            {99, 199},  // NW corner
+            {100, 199}, // N edge
+            {101, 199}, // NE corner
+            {99, 200},  // W edge
+            {101, 200}, // E edge
+            {99, 201},  // SW corner
+            {100, 201}, // S edge
+            {101, 201}  // SE corner
+        };
+
+        for (int[] pos : footprintPositions) {
+            when(block.getX()).thenReturn(pos[0]);
+            when(block.getZ()).thenReturn(pos[1]);
+
+            boolean result = listener.isBlockDirectlyAboveBeacon(block, beacon);
+
+            assertTrue(result, String.format("Block at (%d, %d) should be within footprint of beacon at (100, 200)",
+                pos[0], pos[1]));
+        }
+    }
+
+    /** Test isBlockDirectlyAboveBeacon returns false when block is 2 blocks away in X direction. */
+    @Test
+    void testIsBlockDirectlyAboveBeaconTooFarX() {
+        when(block.getX()).thenReturn(102); // 2 blocks away
+        when(block.getZ()).thenReturn(200);
+        when(beacon.getX()).thenReturn(100);
+        when(beacon.getZ()).thenReturn(200);
+
+        boolean result = listener.isBlockDirectlyAboveBeacon(block, beacon);
+
+        assertFalse(result, "Block 2 blocks away in X should not be directly above");
+    }
+
+    /** Test isBlockDirectlyAboveBeacon returns false when block is 2 blocks away in Z direction. */
+    @Test
+    void testIsBlockDirectlyAboveBeaconTooFarZ() {
+        when(block.getX()).thenReturn(100);
+        when(block.getZ()).thenReturn(202); // 2 blocks away
+        when(beacon.getX()).thenReturn(100);
+        when(beacon.getZ()).thenReturn(200);
+
+        boolean result = listener.isBlockDirectlyAboveBeacon(block, beacon);
+
+        assertFalse(result, "Block 2 blocks away in Z should not be directly above");
+    }
+
+    /** Test isBlockDirectlyAboveBeacon returns false when block is 2 blocks away diagonally. */
+    @Test
+    void testIsBlockDirectlyAboveBeaconTooFarDiagonal() {
+        when(block.getX()).thenReturn(102); // 2 blocks away in X
+        when(block.getZ()).thenReturn(202); // 2 blocks away in Z
+        when(beacon.getX()).thenReturn(100);
+        when(beacon.getZ()).thenReturn(200);
+
+        boolean result = listener.isBlockDirectlyAboveBeacon(block, beacon);
+
+        assertFalse(result, "Block 2 blocks away diagonally should not be directly above");
+    }
+
+    /** Test isBlockDirectlyAboveBeacon handles negative coordinates correctly. */
+    @Test
+    void testIsBlockDirectlyAboveBeaconNegativeCoordinates() {
+        when(block.getX()).thenReturn(-100);
+        when(block.getZ()).thenReturn(-200);
+        when(beacon.getX()).thenReturn(-100);
+        when(beacon.getZ()).thenReturn(-200);
+
+        boolean result = listener.isBlockDirectlyAboveBeacon(block, beacon);
+
+        assertTrue(result, "Should work with negative coordinates");
+    }
+
+    /** Test isBlockDirectlyAboveBeacon edge case: exactly at boundary (1 block offset). */
+    @Test
+    void testIsBlockDirectlyAboveBeaconAtBoundary() {
+        when(beacon.getX()).thenReturn(100);
+        when(beacon.getZ()).thenReturn(200);
+
+        // Test all 4 cardinal edges at exactly 1 block offset
+        int[][] edgePositions = {
+            {100, 199}, // North edge (-1 Z)
+            {100, 201}, // South edge (+1 Z)
+            {99, 200},  // West edge (-1 X)
+            {101, 200}  // East edge (+1 X)
+        };
+
+        for (int[] pos : edgePositions) {
+            when(block.getX()).thenReturn(pos[0]);
+            when(block.getZ()).thenReturn(pos[1]);
+
+            boolean result = listener.isBlockDirectlyAboveBeacon(block, beacon);
+
+            assertTrue(result, String.format("Block at boundary (%d, %d) should be within footprint",
+                pos[0], pos[1]));
+        }
+    }
+
+    /** Test isBlockDirectlyAboveBeacon just outside boundary (2 blocks offset). */
+    @Test
+    void testIsBlockDirectlyAboveBeaconJustOutsideBoundary() {
+        when(beacon.getX()).thenReturn(100);
+        when(beacon.getZ()).thenReturn(200);
+
+        // Test positions just outside the 3x3 footprint
+        int[][] outsidePositions = {
+            {100, 198}, // 2 blocks North
+            {100, 202}, // 2 blocks South
+            {98, 200},  // 2 blocks West
+            {102, 200}, // 2 blocks East
+            {98, 198},  // NW corner (2 blocks away)
+            {102, 202}  // SE corner (2 blocks away)
+        };
+
+        for (int[] pos : outsidePositions) {
+            when(block.getX()).thenReturn(pos[0]);
+            when(block.getZ()).thenReturn(pos[1]);
+
+            boolean result = listener.isBlockDirectlyAboveBeacon(block, beacon);
+
+            assertFalse(result, String.format("Block at (%d, %d) should be outside footprint",
+                pos[0], pos[1]));
+        }
+    }
+
+    // ==================== Top-Down Removal Tests ====================
+
+    /** Test isBlockAtHighestLevel returns true when block is at the highest level. */
+    @Test
+    void testIsBlockAtHighestLevelAtTop() {
+        when(defenseBlock.getLevel()).thenReturn(5);
+
+        boolean result = listener.isBlockAtHighestLevel(defenseBlock, 5);
+
+        assertTrue(result, "Block at level 5 should be removable when highest is 5");
+    }
+
+    /** Test isBlockAtHighestLevel returns false when block is below highest level. */
+    @Test
+    void testIsBlockAtHighestLevelBelowTop() {
+        when(defenseBlock.getLevel()).thenReturn(3);
+
+        boolean result = listener.isBlockAtHighestLevel(defenseBlock, 5);
+
+        assertFalse(result, "Block at level 3 should NOT be removable when highest is 5");
+    }
+
+    /** Test isBlockAtHighestLevel returns true when block is above highest level (edge case). */
+    @Test
+    void testIsBlockAtHighestLevelAboveTop() {
+        when(defenseBlock.getLevel()).thenReturn(6);
+
+        boolean result = listener.isBlockAtHighestLevel(defenseBlock, 5);
+
+        assertTrue(result, "Block at level 6 should be removable when highest is 5 (shouldn't happen but handles gracefully)");
+    }
+
+    /** Test isBlockAtHighestLevel returns true at level 0. */
+    @Test
+    void testIsBlockAtHighestLevelZero() {
+        when(defenseBlock.getLevel()).thenReturn(0);
+
+        boolean result = listener.isBlockAtHighestLevel(defenseBlock, 0);
+
+        assertTrue(result, "Block at level 0 should be removable when highest is 0");
+    }
+
+    /** Test isBlockAtHighestLevel returns false when block is much lower than highest. */
+    @Test
+    void testIsBlockAtHighestLevelMuchLower() {
+        when(defenseBlock.getLevel()).thenReturn(1);
+
+        boolean result = listener.isBlockAtHighestLevel(defenseBlock, 10);
+
+        assertFalse(result, "Block at level 1 should NOT be removable when highest is 10");
+    }
+
+    /** Test isBlockAtHighestLevel returns false when block is one level below highest. */
+    @Test
+    void testIsBlockAtHighestLevelOneBelowTop() {
+        when(defenseBlock.getLevel()).thenReturn(4);
+
+        boolean result = listener.isBlockAtHighestLevel(defenseBlock, 5);
+
+        assertFalse(result, "Block at level 4 should NOT be removable when highest is 5 (top-down enforcement)");
+    }
+
+    /** Test isBlockAtHighestLevel with negative levels (edge case). */
+    @Test
+    void testIsBlockAtHighestLevelNegative() {
+        when(defenseBlock.getLevel()).thenReturn(-1);
+
+        boolean result = listener.isBlockAtHighestLevel(defenseBlock, -1);
+
+        assertTrue(result, "Block at level -1 should be removable when highest is -1 (handles edge case)");
+    }
+
+    /** Test top-down removal scenario: multiple blocks at same level. */
+    @Test
+    void testIsBlockAtHighestLevelMultipleBlocksAtTopLevel() {
+        // Simulate scenario where multiple blocks are at the highest level (level 5)
+        when(defenseBlock.getLevel()).thenReturn(5);
+
+        boolean result = listener.isBlockAtHighestLevel(defenseBlock, 5);
+
+        assertTrue(result, "When multiple blocks are at level 5 (highest), all should be removable");
+    }
+
+    /** Test top-down removal enforces strict ordering. */
+    @Test
+    void testTopDownRemovalStrictOrdering() {
+        // Test that levels 1-4 cannot be removed when level 5 exists
+        int highestLevel = 5;
+
+        for (int level = 1; level < highestLevel; level++) {
+            when(defenseBlock.getLevel()).thenReturn(level);
+
+            boolean result = listener.isBlockAtHighestLevel(defenseBlock, highestLevel);
+
+            assertFalse(result, String.format("Level %d should NOT be removable when highest is %d",
+                level, highestLevel));
+        }
+    }
+
+    /** Test top-down removal allows removal after top is destroyed. */
+    @Test
+    void testTopDownRemovalAfterTopDestroyed() {
+        // After level 5 is destroyed, level 4 becomes the highest and can be removed
+        when(defenseBlock.getLevel()).thenReturn(4);
+
+        boolean resultBefore = listener.isBlockAtHighestLevel(defenseBlock, 5);
+        boolean resultAfter = listener.isBlockAtHighestLevel(defenseBlock, 4);
+
+        assertFalse(resultBefore, "Level 4 should NOT be removable when level 5 exists");
+        assertTrue(resultAfter, "Level 4 should be removable when it becomes the highest");
+    }
+
+    // ==================== Defense Block Cleanup Tests ====================
+
+    /** Test cleanupStaleDefenseBlocks removes AIR blocks. */
+    @Test
+    void testCleanupStaleDefenseBlocksRemovesAirBlocks() {
+        HashMap<Block, DefenseBlock> defenseBlocks = new HashMap<>();
+
+        // Create AIR block that should be removed
+        Block airBlock = mock(Block.class);
+        when(airBlock.getType()).thenReturn(Material.AIR);
+        when(airBlock.getX()).thenReturn(100);
+        when(airBlock.getY()).thenReturn(65);
+        when(airBlock.getZ()).thenReturn(200);
+
+        DefenseBlock airDefense = mock(DefenseBlock.class);
+        when(airDefense.getLevel()).thenReturn(3);
+
+        defenseBlocks.put(airBlock, airDefense);
+        when(beacon.getDefenseBlocks()).thenReturn(defenseBlocks);
+
+        int removed = listener.cleanupStaleDefenseBlocks(beacon);
+
+        assertEquals(1, removed, "Should remove 1 AIR block");
+        assertTrue(defenseBlocks.isEmpty(), "Defense blocks map should be empty after cleanup");
+    }
+
+    /** Test cleanupStaleDefenseBlocks keeps solid blocks. */
+    @Test
+    void testCleanupStaleDefenseBlocksKeepsSolidBlocks() {
+        HashMap<Block, DefenseBlock> defenseBlocks = new HashMap<>();
+
+        // Create solid block that should be kept
+        Block solidBlock = mock(Block.class);
+        when(solidBlock.getType()).thenReturn(Material.STONE);
+
+        DefenseBlock solidDefense = mock(DefenseBlock.class);
+        when(solidDefense.getLevel()).thenReturn(2);
+
+        defenseBlocks.put(solidBlock, solidDefense);
+        when(beacon.getDefenseBlocks()).thenReturn(defenseBlocks);
+
+        int removed = listener.cleanupStaleDefenseBlocks(beacon);
+
+        assertEquals(0, removed, "Should not remove solid blocks");
+        assertEquals(1, defenseBlocks.size(), "Solid block should remain");
+    }
+
+    /** Test cleanupStaleDefenseBlocks handles mixed AIR and solid blocks. */
+    @Test
+    void testCleanupStaleDefenseBlocksMixedBlocks() {
+        HashMap<Block, DefenseBlock> defenseBlocks = new HashMap<>();
+
+        // AIR block 1
+        Block airBlock1 = mock(Block.class);
+        when(airBlock1.getType()).thenReturn(Material.AIR);
+        when(airBlock1.getX()).thenReturn(100);
+        when(airBlock1.getY()).thenReturn(65);
+        when(airBlock1.getZ()).thenReturn(200);
+        defenseBlocks.put(airBlock1, mock(DefenseBlock.class));
+
+        // Solid block
+        Block solidBlock = mock(Block.class);
+        when(solidBlock.getType()).thenReturn(Material.OBSIDIAN);
+        defenseBlocks.put(solidBlock, mock(DefenseBlock.class));
+
+        // AIR block 2
+        Block airBlock2 = mock(Block.class);
+        when(airBlock2.getType()).thenReturn(Material.AIR);
+        when(airBlock2.getX()).thenReturn(101);
+        when(airBlock2.getY()).thenReturn(66);
+        when(airBlock2.getZ()).thenReturn(201);
+        defenseBlocks.put(airBlock2, mock(DefenseBlock.class));
+
+        when(beacon.getDefenseBlocks()).thenReturn(defenseBlocks);
+
+        int removed = listener.cleanupStaleDefenseBlocks(beacon);
+
+        assertEquals(2, removed, "Should remove 2 AIR blocks");
+        assertEquals(1, defenseBlocks.size(), "Only solid block should remain");
+        assertTrue(defenseBlocks.containsKey(solidBlock), "Solid block should still be in map");
+    }
+
+    /** Test cleanupStaleDefenseBlocks handles empty defense map. */
+    @Test
+    void testCleanupStaleDefenseBlocksEmptyMap() {
+        HashMap<Block, DefenseBlock> defenseBlocks = new HashMap<>();
+        when(beacon.getDefenseBlocks()).thenReturn(defenseBlocks);
+
+        int removed = listener.cleanupStaleDefenseBlocks(beacon);
+
+        assertEquals(0, removed, "Should return 0 when map is empty");
+    }
+
+    /** Test cleanupStaleDefenseBlocks handles null beacon. */
+    @Test
+    void testCleanupStaleDefenseBlocksNullBeacon() {
+        int removed = listener.cleanupStaleDefenseBlocks(null);
+
+        assertEquals(0, removed, "Should handle null beacon gracefully");
+    }
+
+    /** Test cleanupStaleDefenseBlocks handles all AIR blocks. */
+    @Test
+    void testCleanupStaleDefenseBlocksAllAir() {
+        HashMap<Block, DefenseBlock> defenseBlocks = new HashMap<>();
+
+        // Create 3 AIR blocks
+        for (int i = 0; i < 3; i++) {
+            Block airBlock = mock(Block.class);
+            when(airBlock.getType()).thenReturn(Material.AIR);
+            when(airBlock.getX()).thenReturn(100 + i);
+            when(airBlock.getY()).thenReturn(65 + i);
+            when(airBlock.getZ()).thenReturn(200 + i);
+            defenseBlocks.put(airBlock, mock(DefenseBlock.class));
+        }
+
+        when(beacon.getDefenseBlocks()).thenReturn(defenseBlocks);
+
+        int removed = listener.cleanupStaleDefenseBlocks(beacon);
+
+        assertEquals(3, removed, "Should remove all 3 AIR blocks");
+        assertTrue(defenseBlocks.isEmpty(), "Map should be empty after cleanup");
+    }
+
+    /** Test cleanupStaleDefenseBlocks handles different block types. */
+    @Test
+    void testCleanupStaleDefenseBlocksDifferentMaterials() {
+        HashMap<Block, DefenseBlock> defenseBlocks = new HashMap<>();
+
+        // Add various block types
+        Material[] materials = {Material.STONE, Material.OBSIDIAN, Material.DIRT, Material.COBBLESTONE};
+
+        for (Material mat : materials) {
+            Block solidBlock = mock(Block.class);
+            when(solidBlock.getType()).thenReturn(mat);
+            defenseBlocks.put(solidBlock, mock(DefenseBlock.class));
+        }
+
+        when(beacon.getDefenseBlocks()).thenReturn(defenseBlocks);
+
+        int removed = listener.cleanupStaleDefenseBlocks(beacon);
+
+        assertEquals(0, removed, "Should not remove any solid blocks");
+        assertEquals(4, defenseBlocks.size(), "All solid blocks should remain");
+    }
+
+    /** Test cleanupStaleDefenseBlocks tracks correct levels being removed. */
+    @Test
+    void testCleanupStaleDefenseBlocksTracksLevels() {
+        HashMap<Block, DefenseBlock> defenseBlocks = new HashMap<>();
+
+        // Create AIR block at high level
+        Block airBlock = mock(Block.class);
+        when(airBlock.getType()).thenReturn(Material.AIR);
+        when(airBlock.getX()).thenReturn(100);
+        when(airBlock.getY()).thenReturn(70);
+        when(airBlock.getZ()).thenReturn(200);
+
+        DefenseBlock highLevelDefense = mock(DefenseBlock.class);
+        when(highLevelDefense.getLevel()).thenReturn(10);
+
+        defenseBlocks.put(airBlock, highLevelDefense);
+        when(beacon.getDefenseBlocks()).thenReturn(defenseBlocks);
+        when(beacon.getName()).thenReturn("100, 200");
+
+        int removed = listener.cleanupStaleDefenseBlocks(beacon);
+
+        assertEquals(1, removed, "Should remove the high-level AIR block");
+        assertTrue(defenseBlocks.isEmpty(), "Defense blocks map should be empty after cleanup");
+    }
 }

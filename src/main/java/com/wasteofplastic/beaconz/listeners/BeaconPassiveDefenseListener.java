@@ -416,8 +416,8 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
             return;
         }
         
-        // Check if block is placed directly above beacon's base (within 2 blocks in x and z)
-        if (Math.abs(block.getX() - beacon.getX()) < 2 && Math.abs(block.getZ() - beacon.getZ()) < 2) {
+        // Check if block is placed directly above the beacon's footprint
+        if (isBlockDirectlyAboveBeacon(block, beacon)) {
             int blocksNeeded = beacon.nbrToLock(block.getY());
 
             if (blocksNeeded == 0) {
@@ -434,6 +434,38 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
                                 .replacement(Component.text(blocksNeeded))));
             }
         }
+    }
+
+    /**
+     * Checks if a block is positioned directly above a beacon's footprint.
+     *
+     * <p>A beacon occupies a 3x3 area in Minecraft (the beacon block itself plus
+     * a 1-block border on all sides). This method validates that the block's
+     * X and Z coordinates are within this footprint.
+     *
+     * <p><b>Beacon Footprint Example:</b>
+     * <pre>
+     *   X X X    (Z-1 to Z+1)
+     *   X B X    B = beacon center at (X, Z)
+     *   X X X    (X-1 to X+1)
+     * </pre>
+     *
+     * @param block the block to check
+     * @param beacon the beacon to check against
+     * @return true if the block is within the beacon's 3x3 footprint, false otherwise
+     */
+    boolean isBlockDirectlyAboveBeacon(Block block, BeaconObj beacon) {
+        int blockX = block.getX();
+        int blockZ = block.getZ();
+        int beaconX = beacon.getX();
+        int beaconZ = beacon.getZ();
+
+        // Check if block is within 1 block of beacon center in both X and Z directions
+        // This creates a 3x3 area: beacon center ± 1 block
+        int deltaX = Math.abs(blockX - beaconX);
+        int deltaZ = Math.abs(blockZ - beaconZ);
+
+        return deltaX <= 1 && deltaZ <= 1;
     }
 
     /**
@@ -712,15 +744,51 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
             getLogger().info("DEBUG: highest block is " + highestLevel);
         }
 
-        // Enforce top-down removal
-        int blockLevel = defenseBlock.getLevel();
-        if (blockLevel < highestLevel) {
+        // Enforce top-down removal - block must be at highest level
+        if (!isBlockAtHighestLevel(defenseBlock, highestLevel)) {
             player.sendMessage(Lang.beaconDefenseRemoveTopDown);
             event.setCancelled(true);
             return false;
         }
 
         return true;
+    }
+
+    /**
+     * Checks if a defense block is at the highest level and can be removed.
+     *
+     * <p>This enforces the top-down removal rule: only the highest-level defense blocks
+     * can be broken by attacking teams. This prevents teams from bypassing strong defenses
+     * by breaking lower-level blocks first.
+     *
+     * <p><b>Top-Down Removal Example:</b>
+     * <pre>
+     *   Level 5: [OBSIDIAN] ← Can be removed (highest)
+     *   Level 4: [OBSIDIAN] ← Cannot be removed (not highest)
+     *   Level 3: [STONE]    ← Cannot be removed (not highest)
+     *   Level 2: [COBBLE]   ← Cannot be removed (not highest)
+     *   Level 1: [DIRT]     ← Cannot be removed (not highest)
+     *   Level 0: [BEACON]   ← Protected
+     * </pre>
+     *
+     * <p><b>Algorithm:</b>
+     * A block can be removed if and only if its level equals the highest level
+     * of any defense block on the beacon.
+     *
+     * @param defenseBlock the defense block being checked for removal
+     * @param highestLevel the highest defense block level on the beacon
+     * @return true if the block is at the highest level and can be removed, false otherwise
+     */
+    boolean isBlockAtHighestLevel(DefenseBlock defenseBlock, int highestLevel) {
+        int blockLevel = defenseBlock.getLevel();
+
+        if (DEBUG) {
+            getLogger().info(String.format("DEBUG: isBlockAtHighestLevel - blockLevel=%d, highestLevel=%d",
+                blockLevel, highestLevel));
+        }
+
+        // Block can only be removed if it's at the highest level
+        return blockLevel >= highestLevel;
     }
 
     /**
@@ -814,24 +882,86 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
     }
 
     /**
-     * Cleans up defense blocks that have been removed (are now AIR) and finds the highest remaining level.
-     * This handles blocks removed by creative mode or gravity.
+     * Performs maintenance on beacon defense blocks by removing stale entries.
      *
-     * @param beacon the beacon to clean up
-     * @return the highest defense block level remaining
+     * <p>This method removes defense blocks that are no longer valid (have been
+     * converted to AIR by creative mode, gravity, or other means). This cleanup
+     * prevents memory leaks and ensures the defense block map stays accurate.
+     *
+     * <p><b>When to use this method:</b>
+     * <ul>
+     *   <li>Before calculating highest defense level for enemy attacks</li>
+     *   <li>During defense validation checks</li>
+     *   <li>As periodic maintenance if needed</li>
+     * </ul>
+     *
+     * <p><b>Why cleanup is needed:</b>
+     * Defense blocks can become AIR without triggering break events when:
+     * <ul>
+     *   <li>Players in creative mode remove blocks</li>
+     *   <li>Gravity-affected blocks (sand, gravel) fall</li>
+     *   <li>Other plugins modify blocks</li>
+     *   <li>WorldEdit or similar tools change blocks</li>
+     * </ul>
+     *
+     * @param beacon the beacon whose defense blocks should be cleaned up
+     * @return the number of stale defense blocks that were removed
      */
-    private int cleanupAndFindHighestLevel(BeaconObj beacon) {
-        int highestLevel = 0;
+    int cleanupStaleDefenseBlocks(BeaconObj beacon) {
+        if (beacon == null || beacon.getDefenseBlocks().isEmpty()) {
+            return 0;
+        }
+
+        int removedCount = 0;
         Iterator<Entry<Block, DefenseBlock>> iterator = beacon.getDefenseBlocks().entrySet().iterator();
 
         while (iterator.hasNext()) {
             Entry<Block, DefenseBlock> entry = iterator.next();
-            if (entry.getKey().getType() == Material.AIR) {
-                // Clean up blocks removed by creative mode or gravity
+            Block block = entry.getKey();
+
+            // Remove blocks that have been converted to AIR
+            if (block.getType() == Material.AIR) {
+                if (DEBUG) {
+                    getLogger().info(String.format("DEBUG: Cleaning up stale defense block at (%d, %d, %d) - Level %d",
+                        block.getX(), block.getY(), block.getZ(), entry.getValue().getLevel()));
+                }
                 iterator.remove();
-            } else {
-                highestLevel = Math.max(highestLevel, entry.getValue().getLevel());
+                removedCount++;
             }
+        }
+
+        if (DEBUG && removedCount > 0) {
+            getLogger().info(String.format("DEBUG: Cleaned up %d stale defense block(s) for beacon at %s",
+                removedCount, beacon.getName()));
+        }
+
+        return removedCount;
+    }
+
+    /**
+     * Cleans up stale defense blocks and finds the highest remaining level.
+     *
+     * <p>This is a convenience method that combines {@link #cleanupStaleDefenseBlocks(BeaconObj)}
+     * with finding the highest defense level. Use this when you need both operations.
+     *
+     * <p><b>Use case:</b> Enemy team attacks - need to know the highest level after cleanup
+     * to enforce top-down removal and level requirements.
+     *
+     * @param beacon the beacon to clean up and analyze
+     * @return the highest defense block level remaining after cleanup, or 0 if no blocks remain
+     */
+    private int cleanupAndFindHighestLevel(BeaconObj beacon) {
+        // First, perform cleanup
+        cleanupStaleDefenseBlocks(beacon);
+
+        // Then find the highest level among remaining blocks
+        int highestLevel = 0;
+        for (DefenseBlock defenseBlock : beacon.getDefenseBlocks().values()) {
+            highestLevel = Math.max(highestLevel, defenseBlock.getLevel());
+        }
+
+        if (DEBUG) {
+            getLogger().info(String.format("DEBUG: Highest defense level after cleanup: %d", highestLevel));
         }
 
         return highestLevel;
