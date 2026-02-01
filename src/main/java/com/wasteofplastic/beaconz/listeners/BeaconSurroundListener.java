@@ -203,7 +203,7 @@ public class BeaconSurroundListener extends BeaconzPluginDependent implements Li
         if (rand.nextDouble() < PROBABILITY) {
             // Block the damage - player cannot break this block
             event.setCancelled(true);
-            getLogger().info("DEBUG: cancel");
+            if (DEBUG) getLogger().info("DEBUG: cancel");
             event.getBlock().getWorld().playSound(event.getBlock().getLocation(), Sound.BLOCK_ANVIL_HIT, 1F, 1F);
             // Visual feedback - show particle effect when block fails to break
             event.getBlock().getWorld().spawnParticle(org.bukkit.Particle.CRIT,
@@ -212,38 +212,37 @@ public class BeaconSurroundListener extends BeaconzPluginDependent implements Li
             // Step 7: Optional tool durability damage
             // Punish failed break attempts by damaging the player's tool
             ItemStack item = event.getPlayer().getInventory().getItemInMainHand();
-            if (!item.getType().equals(Material.AIR)) {
-                short maxDurability = item.getType().getMaxDurability();
+            if (!item.getType().equals(Material.AIR) && item.getItemMeta() instanceof org.bukkit.inventory.meta.Damageable damageable) {
+                int maxDurability = item.getType().getMaxDurability();
                 if (DEBUG)
                     getLogger().info("DEBUG: max durability = " + maxDurability);
 
                 // Only damage items that have durability (tools/armor)
                 if (maxDurability > 0) {
-                    short durability = item.getDurability();
+                    int currentDamage = damageable.getDamage();
                     if (DEBUG)
-                        getLogger().info("DEBUG: durability = " + durability);
+                        getLogger().info("DEBUG: current damage = " + currentDamage);
 
                     // Calculate damage amount as percentage of max durability
-                    short damage = (short)((double)maxDurability * DAMAGE);
+                    int damageToAdd = (int)((double)maxDurability * DAMAGE);
                     if (DEBUG)
-                        getLogger().info("DEBUG: damager = " + damage);
+                        getLogger().info("DEBUG: damage to add = " + damageToAdd);
 
-                    durability += damage;
+                    int newDamage = currentDamage + damageToAdd;
 
                     // Check if tool should break from this damage
-                    if (durability >= maxDurability) {
+                    if (newDamage >= maxDurability) {
                         // Tool breaks - remove from inventory
                         event.getPlayer().getInventory().setItemInMainHand(null);
                         event.getPlayer().getWorld().playSound(event.getPlayer().getLocation(),
                                 Sound.ENTITY_ITEM_BREAK, 1F, 1F);
                     } else {
-                        // Tool damaged but not broken - play damage sound
+                        // Tool damaged but not broken - apply damage and play sound
+                        damageable.setDamage(newDamage);
+                        item.setItemMeta(damageable);
                         event.getPlayer().getWorld().playSound(event.getPlayer().getLocation(),
                                 Sound.ENTITY_ITEM_BREAK, 2F, 2F);
                     }
-
-                    // Apply the durability change
-                    item.setDurability(durability);
                 }
             }
         }

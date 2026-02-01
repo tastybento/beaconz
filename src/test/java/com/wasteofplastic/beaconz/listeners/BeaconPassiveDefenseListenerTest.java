@@ -538,6 +538,8 @@ class BeaconPassiveDefenseListenerTest extends CommonTestBase {
 
         BlockBreakEvent event = new BlockBreakEvent(block, player);
 
+        when(block.getRelative(any())).thenReturn(block);
+
         listener.onBeaconBreak(event);
 
         assertFalse(event.isCancelled());
@@ -571,6 +573,8 @@ class BeaconPassiveDefenseListenerTest extends CommonTestBase {
 
         BlockBreakEvent event = new BlockBreakEvent(block, player);
 
+        when(block.getRelative(any())).thenReturn(block);
+
         listener.onBeaconBreak(event);
 
         assertTrue(event.isCancelled());
@@ -600,6 +604,8 @@ class BeaconPassiveDefenseListenerTest extends CommonTestBase {
         defenseBlocks.put(block, defenseBlock);
         doReturn(defenseBlocks).when(beacon).getDefenseBlocks();
 
+        when(block.getRelative(any())).thenReturn(block);
+
         BlockBreakEvent event = new BlockBreakEvent(block, player);
 
         listener.onBeaconBreak(event);
@@ -627,6 +633,8 @@ class BeaconPassiveDefenseListenerTest extends CommonTestBase {
         when(beacon.getHighestBlockLevel()).thenReturn(10);
         when(register.getBeaconAt(new Point2D.Double(100, 100))).thenReturn(beacon);
 
+        when(block.getRelative(any())).thenReturn(block);
+
         Map<Block, DefenseBlock> defenseBlocks = new HashMap<>();
         when(defenseBlock.getLevel()).thenReturn(10);
         defenseBlocks.put(block, defenseBlock);
@@ -638,7 +646,7 @@ class BeaconPassiveDefenseListenerTest extends CommonTestBase {
 
         assertTrue(event.isCancelled());
         verify(player).sendMessage(argThat((Component component) ->
-            component.equals(Lang.errorYouNeedToBeLevel.replaceText("[value]", Component.text("10")))
+            component.equals(Lang.errorYouNeedToBeLevel.replaceText(builder -> builder.matchLiteral("[value]").replacement(Component.text("10"))))
         ));
     }
 
@@ -666,6 +674,8 @@ class BeaconPassiveDefenseListenerTest extends CommonTestBase {
         when(defenseBlock.getLevel()).thenReturn(5); // Not highest
         defenseBlocks.put(block, defenseBlock);
         doReturn(defenseBlocks).when(beacon).getDefenseBlocks();
+
+        when(block.getRelative(any())).thenReturn(block);
 
         BlockBreakEvent event = new BlockBreakEvent(block, player);
 
