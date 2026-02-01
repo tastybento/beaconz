@@ -3,6 +3,7 @@ package com.wasteofplastic.beaconz.core;
 import java.awt.geom.Line2D;
 
 import org.bukkit.scoreboard.Team;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Represents a directional link between two beacons in the game.
@@ -110,7 +111,7 @@ public class BeaconLink implements Comparable<Object> {
      * @throws ClassCastException if o is not a BeaconLink instance
      */
     @Override
-    public int compareTo(Object o) {
+    public int compareTo(@NotNull Object o) {
         if (!(o instanceof BeaconLink)) {
             throw new ClassCastException("A BeaconPair object expected.");             
         }

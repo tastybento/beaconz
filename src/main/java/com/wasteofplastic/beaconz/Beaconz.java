@@ -78,6 +78,7 @@ import com.wasteofplastic.beaconz.storage.BeaconzStore;
 import com.wasteofplastic.beaconz.storage.Messages;
 import com.wasteofplastic.beaconz.storage.TinyDB;
 import com.wasteofplastic.beaconz.util.ItemRewardParser;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Main plugin class for the Beaconz strategic team-based game.
@@ -1070,7 +1071,7 @@ public class Beaconz extends JavaPlugin {
      * @return Location
      */
     static public Location getLocationString(final String s) {
-        if (s == null || s.trim().equals("")) {
+        if (s == null || s.trim().isEmpty()) {
             return null;
         }
         final String[] parts = s.split(":");
@@ -1200,7 +1201,7 @@ public class Beaconz extends JavaPlugin {
      * @return the chunk generator
      */
     @Override
-    public ChunkGenerator getDefaultWorldGenerator(String worldName, String id) {
+    public ChunkGenerator getDefaultWorldGenerator(@NotNull String worldName, String id) {
         if (chunkGenerator == null) {
             chunkGenerator = new BeaconzChunkGen(this);
         }

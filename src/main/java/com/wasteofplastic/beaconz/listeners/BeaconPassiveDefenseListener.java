@@ -187,7 +187,7 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
         Player player = event.getPlayer();
 
         // Check lobby restrictions
-        if (!validateLobbyAccess(player, event)) {
+        if (validateLobbyAccess(player, event)) {
             return;
         }
 
@@ -237,11 +237,11 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
             }
             if (!player.isOp()) {
                 event.setCancelled(true);
-                return false;
+                return true;
             }
-            return false; // Op can interact, but don't process further
+            return true; // Op can interact, but don't process further
         }
-        return true;
+        return false;
     }
 
     /**
@@ -497,7 +497,7 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
         Player player = event.getPlayer();
 
         // Check lobby restrictions
-        if (!validateLobbyAccess(player, event)) {
+        if (validateLobbyAccess(player, event)) {
             return;
         }
 
@@ -516,7 +516,7 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
         Block block = event.getBlock();
         BeaconObj beacon = getRegister().getBeacon(block);
 
-        if (!isDefenseBlock(block, beacon)) {
+        if (isDefenseBlock(block, beacon)) {
             return;
         }
 
@@ -551,7 +551,7 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
             if (DEBUG) {
                 getLogger().info("DEBUG: This is not a beacon");
             }
-            return false;
+            return true;
         }
 
         // Check if block is above beacon height
@@ -559,7 +559,7 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
             if (DEBUG) {
                 getLogger().info("DEBUG: below beacon");
             }
-            return false;
+            return true;
         }
         
         // Check if this block is registered as a defense block
@@ -567,10 +567,10 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
             if (DEBUG) {
                 getLogger().info("DEBUG: not defense block");
             }
-            return false;
+            return true;
         }
 
-        return true;
+        return false;
     }
 
     /**
@@ -707,7 +707,7 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
         Player player = event.getPlayer();
 
         // Check lobby restrictions
-        if (!validateLobbyAccess(player, event)) {
+        if (validateLobbyAccess(player, event)) {
             return;
         }
 
@@ -722,7 +722,7 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
         Block block = event.getBlock();
         BeaconObj beacon = getRegister().getBeaconAt(new Point2D.Double(block.getX(), block.getZ()));
 
-        if (!isDefenseBlock(block, beacon)) {
+        if (isDefenseBlock(block, beacon)) {
             return;
         }
 

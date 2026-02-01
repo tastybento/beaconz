@@ -22,14 +22,13 @@
 
 package com.wasteofplastic.beaconz.map;
 
-import java.awt.Color;
-
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.map.MapCanvas;
 import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
+import org.jetbrains.annotations.NotNull;
 
 import com.wasteofplastic.beaconz.Beaconz;
 
@@ -126,72 +125,21 @@ public class BeaconMap extends MapRenderer {
     }
 
     /**
-     * Renders the beacon map display onto the canvas.
+     * No-op render method - this renderer only stores origin coordinates.
      * <p>
-     * This method is called by Bukkit whenever the map needs to be rendered for a player.
-     * It draws beacon-specific information including:
-     * <ol>
-     *   <li>Map title ("Beacon Map")</li>
-     *   <li>Beacon location name or "Unknown Beacon" if not found</li>
-     *   <li>Center marker (white pixel at map center)</li>
-     * </ol>
-     *
-     * <h3>Performance Optimization:</h3>
-     * The method performs early-exit checks to minimize rendering overhead:
-     * <ul>
-     *   <li>Skips rendering if not in the Beaconz world</li>
-     *   <li>Skips rendering if map is not being actively held</li>
-     * </ul>
-     *
-     * <h3>Map Coordinate System:</h3>
-     * <ul>
-     *   <li>Origin (0,0) is top-left corner</li>
-     *   <li>Map size is typically 128x128 pixels</li>
-     *   <li>Center is at (64, 64)</li>
-     *   <li>Text is drawn at specified (x, y) coordinates</li>
-     * </ul>
-     *
-     * @param map The MapView being rendered (contains map ID and world)
-     * @param canvas The MapCanvas to draw on (provides drawing methods)
-     * @param player The player viewing the map (used to check held items)
-     * @see org.bukkit.map.MapCanvas
-     * @see org.bukkit.map.MinecraftFont
-     */
-    /**
-     * Performs validation checks for map rendering.
+     * The actual rendering of the red X origin marker is handled by {@link TerritoryMapRenderer}
+     * which retrieves the origin coordinates from the Register's map origin storage and draws
+     * the marker as its final rendering step to ensure it appears on top of all other map elements.
      * <p>
-     * This method validates that:
-     * <ul>
-     *   <li>The map is in the Beaconz world</li>
-     *   <li>The player is holding a filled map</li>
-     * </ul>
-     * <p>
-     * The actual rendering of the origin marker is handled by {@link TerritoryMapRenderer}
-     * which retrieves the origin coordinates from the Register's map origin storage.
+     * This method must exist to satisfy the {@link MapRenderer} contract, but it performs no
+     * rendering operations.
      *
-     * @param map The MapView being rendered (contains map ID and world)
-     * @param canvas The MapCanvas to draw on (unused, kept for interface compatibility)
-     * @param player The player viewing the map (used to check held items)
+     * @param map The MapView being rendered (unused)
+     * @param canvas The MapCanvas to draw on (unused)
+     * @param player The player viewing the map (unused)
      */
     @Override
-    public void render(MapView map, MapCanvas canvas, Player player) {
-        // VALIDATION 1: World check
-        // Only render maps in the Beaconz world to avoid wasting resources
-        // on maps in other worlds where beacons don't exist
-        if (!map.getWorld().equals(plugin.getBeaconzWorld())) {
-            return;
-        }
-
-        // VALIDATION 2: Hand check
-        // Only render if the map is actively being held
-        // This prevents unnecessary rendering for maps in inventory/frames
-        ItemStack inMainHand = player.getInventory().getItemInMainHand();
-        ItemStack inOffHand = player.getInventory().getItemInOffHand();
-
-        // Check both hands for a filled map
-        if (inMainHand.getType().equals(Material.FILLED_MAP) || inOffHand.getType().equals(Material.FILLED_MAP)) {
-            // Note: The red X origin marker is now drawn by TerritoryMapRenderer
-            // to ensure it appears on top of all other map elements
-        }
+    public void render(@NotNull MapView map, @NotNull MapCanvas canvas, @NotNull Player player) {
+        // Intentionally empty - all rendering is delegated to TerritoryMapRenderer
     }
 }

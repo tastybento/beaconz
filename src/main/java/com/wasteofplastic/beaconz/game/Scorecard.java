@@ -171,9 +171,6 @@ public class Scorecard extends BeaconzPluginDependent {
     /** The actual scoreboard displayed to players */
     private Scoreboard scoreboard;
 
-    /** Score entry used for updating scoreboard lines */
-    private Score scoreentry;
-
     /** Score line used for displaying individual score entries */
     private Score scoreline;
 
@@ -194,9 +191,6 @@ public class Scorecard extends BeaconzPluginDependent {
 
     /** Formatted time string for display (e.g., "00d 00:00:00") */
     private String displaytime;
-
-    /** Current sidebar line number for adding scoreboard entries */
-    private Integer sidebarline;
 
     /** Formatted goal description string shown on scoreboard */
     private String goalstr;
@@ -332,7 +326,8 @@ public class Scorecard extends BeaconzPluginDependent {
         scoreboard = manager.getNewScoreboard();
         scoreobjective = scoreboard.registerNewObjective("score", Criteria.DUMMY, Lang.titleBeaconz);
         scoreobjective.setDisplaySlot(DisplaySlot.SIDEBAR);
-        sidebarline = 15;
+        /** Current sidebar line number for adding scoreboard entries */
+        Integer sidebarline = 15;
 
         // Set up the scoreboard with the goal
         scoreobjective.displayName(Lang.titleBeaconz.append(Component.text(" " + game.getGamemode().getName() + "! 00d 00:00:00").color(NamedTextColor.GREEN)));
@@ -610,8 +605,9 @@ public class Scorecard extends BeaconzPluginDependent {
         scoreboard.resetScores(oldScoreboardEntry);
 
         // STEP 3: Create new scoreboard entry with updated score
-        String newScoreboardEntry = getScoreString(team, scoreType, MAXSCORELENGTH);
-        scoreentry = scoreobjective.getScore(newScoreboardEntry);
+        String newScoreboardEntry = getScoreString(team, scoreType);
+        /** Score entry used for updating scoreboard lines */
+        Score scoreentry = scoreobjective.getScore(newScoreboardEntry);
         scoreentry.setScore(this.getScore(team, scoreType)); 
     }
 
@@ -644,11 +640,11 @@ public class Scorecard extends BeaconzPluginDependent {
     /**
      * Gets the score string to show
      */
-    private String getScoreString(Team team, GameScoreGoal scoretype, int maxlen) {
+    private String getScoreString(Team team, GameScoreGoal scoretype) {
         TextColor teamcolor = teamChatColor(team);
         Component fixed = team.displayName().color(teamcolor).append(Component.text(" "+ scoretype.getName()));
         String scoreString = PlainTextComponentSerializer.plainText().serialize(fixed);
-        scoreString = scoreString.substring(0, Math.min(maxlen, scoreString.length()));
+        scoreString = scoreString.substring(0, Math.min(Scorecard.MAXSCORELENGTH, scoreString.length()));
         return scoreString;
     }
 
@@ -705,12 +701,10 @@ public class Scorecard extends BeaconzPluginDependent {
      * Send players to their team spawn location
      */
     public void sendPlayersHome(Boolean ingameOnly) {
-        if (teamLookup != null) {
-            for (UUID uuid : teamLookup.keySet()) {
-                Player player = Bukkit.getPlayer(uuid);
-                if (player != null) {
-                    sendPlayersHome(player, ingameOnly);
-                }
+        for (UUID uuid : teamLookup.keySet()) {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player != null) {
+                sendPlayersHome(player, ingameOnly);
             }
         }
     }
@@ -900,12 +894,8 @@ public class Scorecard extends BeaconzPluginDependent {
                     UUID uuid = UUID.fromString(uuidText);
                     memberList.add(uuid);
                     OfflinePlayer player = getBeaconzPlugin().getServer().getOfflinePlayer(uuid);
-                    if (player != null) {
-                        team.addEntry(player.getName());
-                        teamLookup.put(uuid, team);
-                    } else {
-                        getLogger().severe("Error loading team member " + team.getName() + " " + uuid + " - skipping");
-                    }
+                    team.addEntry(player.getName());
+                    teamLookup.put(uuid, team);
                 } catch (Exception e) {
                     getLogger().severe("Error loading team member " + team.getName() + " " + uuidText + " - skipping");
                 }
@@ -923,7 +913,9 @@ public class Scorecard extends BeaconzPluginDependent {
         // Backup the teams file just in case
         if (teamsFile.exists()) {
             File backup = new File(getBeaconzPlugin().getDataFolder(),"teams.old");
-            teamsFile.renameTo(backup);
+            if (!teamsFile.renameTo(backup)) {
+                getLogger().severe("Failed to create backup of teams.yml file for game " + gameName);
+            }
         }
         for (Team team: scoreboard.getTeams()) {
             // Save the team members
@@ -1165,7 +1157,7 @@ public class Scorecard extends BeaconzPluginDependent {
      * @see #getStringLocation(Location)
      */
     static public Location getLocationString(final String s) {
-        if (s == null || s.trim().equals("")) {
+        if (s == null || s.trim().isEmpty()) {
             return null;
         }
         final String[] parts = s.split(":");
@@ -1431,17 +1423,11 @@ public class Scorecard extends BeaconzPluginDependent {
         // Backup the teams file just in case
         if (teamsFile.exists()) {
             File backup = new File(getBeaconzPlugin().getDataFolder(),"teams.old");
-            teamsFile.renameTo(backup);
+            if (!teamsFile.renameTo(backup)) {
+                getLogger().severe("Failed to create backup of teams.yml file when deleting team members for game " + gameName);
+            }
         }
         teamsYml.set(gameName, null);
-        // Remove from hashmap
-        /*
-        for (Team team : teamMembers.keySet()) {
-            for (UUID name : teamMembers.get(team)) {
-                team.removeEntry(name);
-            }
-            teamMembers.put(team, new ArrayList<>());
-        }*/
         // Clear all the players from the teamLookup.
         teamLookup.clear();
 

@@ -411,7 +411,9 @@ public class Game extends BeaconzPluginDependent {
         // Create backup of games file before deletion
         if (gamesFile.exists()) {
             File backup = new File(getBeaconzPlugin().getDataFolder(),"games.old");
-            gamesFile.renameTo(backup);
+            if (!gamesFile.renameTo(backup)) {
+                getLogger().severe("Failed to create backup of games.yml before deleting game " + gameName);
+            }
         }
 
         // Remove this game's configuration from the YAML file

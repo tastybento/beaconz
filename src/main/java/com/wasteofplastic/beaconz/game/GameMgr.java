@@ -143,7 +143,9 @@ public class GameMgr extends BeaconzPluginDependent {
         // Backup the games file just in case of corruption
         if (gamesFile.exists()) {
             File backup = new File(getBeaconzPlugin().getDataFolder(),"games.old");
-            gamesFile.renameTo(backup);
+            if (!gamesFile.renameTo(backup)) {
+                getLogger().severe("Failed to create backup of games.yml before saving.");
+            }
         }
 
         // Save the lobby region and spawn point
@@ -366,7 +368,7 @@ public class GameMgr extends BeaconzPluginDependent {
 
             // Validate game creation preconditions and create the game
             boolean nametaken = (getGames().get(gameName) != null);
-            if (region == null || nametaken || gameName == null) {
+            if (nametaken) {
                 getLogger().warning("Could not create new game.");
                 result.complete(false);
             } else {

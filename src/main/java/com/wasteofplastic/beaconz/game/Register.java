@@ -215,7 +215,9 @@ public class Register extends BeaconzPluginDependent {
         // Backup the existing beacons file to prevent data loss
         if (beaconzFile.exists()) {
             File backup = new File(getBeaconzPlugin().getDataFolder(),"beaconz.old");
-            beaconzFile.renameTo(backup);
+            if (!beaconzFile.renameTo(backup)) {
+                getLogger().severe("Could not create backup of beaconz.yml file!");
+            }
         }
 
         // Iterate through all beacons and serialize their data

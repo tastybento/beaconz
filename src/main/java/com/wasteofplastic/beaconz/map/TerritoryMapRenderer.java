@@ -82,9 +82,6 @@ public class TerritoryMapRenderer extends MapRenderer {
     @Override
     public void render(@NotNull MapView map, @NotNull MapCanvas canvas, @NotNull Player player) {
         // Safety checks - ensure map and world are valid
-        if (map == null) {
-            return;
-        }
         if (map.getWorld() == null) {
             return;
         }
@@ -357,32 +354,30 @@ public class TerritoryMapRenderer extends MapRenderer {
             if (z < 0 || z > 127) continue; // Beacon off map
 
             // Only show cursors on discovered areas of the map
-            if (canvas.getBasePixelColor(x, z) != null) {
-                // Convert from pixel coordinates (0-127) to cursor coordinates (-128 to 127)
-                x = x * 2 - 128;
-                z = z * 2 - 128;
+            canvas.getBasePixelColor(x, z);// Convert from pixel coordinates (0-127) to cursor coordinates (-128 to 127)
+            x = x * 2 - 128;
+            z = z * 2 - 128;
 
-                // Determine cursor color based on team ownership
-                int color = 16; // Default to unclaimed (index 16 = red X)
-                if (team != null) {
-                    Scorecard sc = beaconz.getGameMgr().getSC(point);
-                    if (sc != null) {
-                        Material material = sc.getBlockID(team);
-                        if (material != null) {
-                            // Map team material to color index (0-15)
-                            color = getTeamColorIndex(material);
-                        }
+            // Determine cursor color based on team ownership
+            int color = 16; // Default to unclaimed (index 16 = red X)
+            if (team != null) {
+                Scorecard sc = beaconz.getGameMgr().getSC(point);
+                if (sc != null) {
+                    Material material = sc.getBlockID(team);
+                    if (material != null) {
+                        // Map team material to color index (0-15)
+                        color = getTeamColorIndex(material);
                     }
                 }
-
-                // Get the cursor type and direction for this team color
-                TeamCursor teamCursor = TEAM_CURSORS[color];
-
-                // Add the cursor to the map
-                MapCursor cursor = cursors.addCursor(x, z, (byte)0);
-                cursor.setDirection(teamCursor.direction);
-                cursor.setType(teamCursor.type);
             }
+
+            // Get the cursor type and direction for this team color
+            TeamCursor teamCursor = TEAM_CURSORS[color];
+
+            // Add the cursor to the map
+            MapCursor cursor = cursors.addCursor(x, z, (byte)0);
+            cursor.setDirection(teamCursor.direction);
+            cursor.setType(teamCursor.type);
         }
     }
 
@@ -458,11 +453,9 @@ public class TerritoryMapRenderer extends MapRenderer {
                     if (pixelCache[x][z] != null) {
                         // Only draw on discovered areas of the map
                         java.awt.Color baseColor = canvas.getBasePixelColor(x, z);
-                        if (baseColor != null) {
-                            // Convert palette index to Color and set the pixel
-                            // Note: MapPalette methods are deprecated but still functional
-                            canvas.setPixelColor(x, z, MapPalette.getColor(pixelCache[x][z]));
-                        }
+                        // Convert palette index to Color and set the pixel
+                        // Note: MapPalette methods are deprecated but still functional
+                        canvas.setPixelColor(x, z, MapPalette.getColor(pixelCache[x][z]));
                     }
                 }
             }

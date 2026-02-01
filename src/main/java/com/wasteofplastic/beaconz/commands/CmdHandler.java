@@ -40,6 +40,7 @@ import com.wasteofplastic.beaconz.game.Game;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import org.jetbrains.annotations.NotNull;
 
 public class CmdHandler extends BeaconzPluginDependent implements CommandExecutor, TabCompleter {
 
@@ -48,7 +49,7 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
     }
 
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String[] args) {
 
         if (!(sender instanceof Player player)) {
             sender.sendMessage(Lang.errorOnlyPlayers);
@@ -58,6 +59,9 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
             sender.sendMessage(Lang.errorYouDoNotHavePermission.color(NamedTextColor.RED));
             return true;
         }
+        // Declare game variable at method scope to share across switch branches
+        Game game;
+
         switch (args.length) {
         // Just the beaconz command
         case 0:
@@ -81,7 +85,7 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
                 sender.sendMessage(Component.text("/" + label + " sb ").append( Lang.helpScoreboard));
                 break;
             case "score":
-                Game game = getGameMgr().getGame(player.getLocation());
+                game = getGameMgr().getGame(player.getLocation());
                 if (game == null || game.getScorecard() == null || game.getScorecard().getTeam(player) == null) {
                     sender.sendMessage(Lang.errorYouMustBeInAGame.color(NamedTextColor.GREEN));
                 } else {
@@ -138,37 +142,31 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
         return true;
     }
 
-    private boolean onJoin(CommandSender sender, Player player, String[] args) {
+    private void onJoin(CommandSender sender, Player player, String[] args) {
      // beaconz join command (undocumented) so admins can make players join any game
         if (player.isOp()) {
             Component gamename = Component.text(args[1]);
             Game game = getGameMgr().getGame(gamename);
             if (game == null) {
                 sender.sendMessage(Lang.errorNoSuchGame.append(Component.text(" '")).append(gamename).append(Component.text("'")).color(NamedTextColor.RED));
-                return false;
             } else {
                 game.join(player);
-                return true;
-            }                   
-        }    
-        return false;
+            }
+        }
     }
 
-    private boolean onLeave(CommandSender sender, Player player, String[] args) {
+    private void onLeave(CommandSender sender, Player player, String[] args) {
         if (player.hasPermission("beaconz.player.leave")) {
             Component gamename = Component.text(args[1]);
             Game game = getGameMgr().getGame(gamename);
             if (game == null) {
                 sender.sendMessage(Lang.errorNoSuchGame.append(Component.text(" '")).append(gamename).append(Component.text("'")).color(NamedTextColor.RED));
-                return false;
             } else {
                 game.leave(player);
-                return true;
             }
         } else {
             player.sendMessage(Lang.errorYouDoNotHavePermission.color(NamedTextColor.RED));
         }
-        return false;
     }
 
     /**
@@ -204,8 +202,8 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
     }
 
     @Override
-    public List<String> onTabComplete(CommandSender sender, Command command,
-            String alias, String[] args) {
+    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command,
+                                      @NotNull String alias, String[] args) {
         if (!(sender instanceof Player p)) {
             return new ArrayList<>();
         }

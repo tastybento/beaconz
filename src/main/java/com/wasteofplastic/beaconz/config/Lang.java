@@ -234,7 +234,10 @@ public class Lang extends BeaconzPluginDependent {
     public void loadLocale(String localeName) {
         File localeDir = new File(getBeaconzPlugin().getDataFolder() + File.separator + "locale");
         if (!localeDir.exists()) {
-            localeDir.mkdirs();
+            if (!localeDir.mkdirs()) {
+                getBeaconzPlugin().getLogger().severe("Could not create locale directory!");
+                return;
+            }
         }
         File localeFile = new File(localeDir.getPath(), localeName + ".yml");
         if (localeFile.exists()) {

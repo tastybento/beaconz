@@ -212,7 +212,7 @@ public class BeaconSurroundListener extends BeaconzPluginDependent implements Li
             // Step 7: Optional tool durability damage
             // Punish failed break attempts by damaging the player's tool
             ItemStack item = event.getPlayer().getInventory().getItemInMainHand();
-            if (item != null && !item.getType().equals(Material.AIR)) {
+            if (!item.getType().equals(Material.AIR)) {
                 short maxDurability = item.getType().getMaxDurability();
                 if (DEBUG)
                     getLogger().info("DEBUG: max durability = " + maxDurability);

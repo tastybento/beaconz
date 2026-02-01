@@ -22,7 +22,9 @@
 
 package com.wasteofplastic.beaconz.listeners;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.Random;
 
@@ -188,11 +190,9 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
                     event.setCancelled(true);
                 }
             }
-        } else {
+        }
             // Player is attempting to damage a different part of the beacon structure
             // (pyramid blocks, etc.) - this is handled by onBeaconBreak
-        }
-
     }
 
     /**
@@ -741,6 +741,14 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
 
         // Configure the map's metadata
         if (newMap.getItemMeta() instanceof MapMeta meta) {
+            // Set the display name to "Beacon Map" (from Lang)
+            meta.displayName(Component.text(Lang.beaconMapBeaconMap));
+
+            // Add lore showing the beacon origin coordinates
+            List<Component> lore = new ArrayList<>();
+            lore.add(Component.text("Origin: " + beacon.getX() + ", " + beacon.getZ())
+                    .color(NamedTextColor.GRAY));
+            meta.lore(lore);
 
             // Connect the ItemStack to our custom MapView
             // This ensures the map displays our custom renderers

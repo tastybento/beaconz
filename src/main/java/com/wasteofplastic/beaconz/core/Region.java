@@ -969,32 +969,30 @@ public class Region extends BeaconzPluginDependent {
             return location;
         }
         // Limit radius search
-        if (radius > 20) radius = 20;        
-        if (safeloc == null && location != null) {
-            // look for a safe spot at location and within radius
-            Block bl = location.getBlock();
-            List<Pair> used = new ArrayList<>();
+        if (radius > 20) radius = 20;
+        // look for a safe spot at location and within radius
+        Block bl = location.getBlock();
+        List<Pair> used = new ArrayList<>();
 
-            // sweep in a concentric cube pattern to check for a safe spot
-            Location checkloc;
-            outerloop:
-                for (int rad = 0; rad < radius; rad++) {
-                    for (int z = -rad; z <= rad; z++) {
-                        for (int x = -rad; x <= rad; x++) {
-                            Pair coords =new Pair(x,z);
-                            if (!used.contains(coords)) {
-                                used.add(new Pair(x,z));
-                                checkloc = getBeaconzWorld().getHighestBlockAt(bl.getRelative(x, 0, z).getLocation()).getLocation().subtract(0, 1, 0);
-                                if (isLocationSafe(checkloc)) {
-                                    safeloc = checkloc.add(0.5, 0.0, 0.5);
-                                    break outerloop;
-                                }
+        // sweep in a concentric cube pattern to check for a safe spot
+        Location checkloc;
+        outerloop:
+            for (int rad = 0; rad < radius; rad++) {
+                for (int z = -rad; z <= rad; z++) {
+                    for (int x = -rad; x <= rad; x++) {
+                        Pair coords =new Pair(x,z);
+                        if (!used.contains(coords)) {
+                            used.add(new Pair(x,z));
+                            checkloc = getBeaconzWorld().getHighestBlockAt(bl.getRelative(x, 0, z).getLocation()).getLocation().subtract(0, 1, 0);
+                            if (isLocationSafe(checkloc)) {
+                                safeloc = checkloc.add(0.5, 0.0, 0.5);
+                                break outerloop;
                             }
                         }
                     }
                 }
-        }
-        if (safeloc == null && location != null) {
+            }
+        if (safeloc == null) {
             Bukkit.getConsoleSender().sendMessage(Component.text("Could not find a safe spot. Region at " + displayCoords() + ". Using default.").color(NamedTextColor.YELLOW));
             safeloc = new Location(getBeaconzWorld(), location.getX(), getBeaconzWorld().getHighestBlockYAt(location), location.getZ());
             safeloc.getBlock().getRelative(BlockFace.DOWN).setType(Material.BEDROCK);

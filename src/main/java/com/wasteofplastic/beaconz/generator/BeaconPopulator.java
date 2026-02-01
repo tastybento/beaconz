@@ -38,6 +38,7 @@ import org.bukkit.generator.BlockPopulator;
 import com.wasteofplastic.beaconz.Beaconz;
 import com.wasteofplastic.beaconz.config.Settings;
 import com.wasteofplastic.beaconz.core.Region;
+import org.jetbrains.annotations.NotNull;
 
 
 /**
@@ -65,7 +66,7 @@ public class BeaconPopulator extends BlockPopulator {
     }
 
     @Override
-    public void populate(World world, Random unused, Chunk source) {
+    public void populate(@NotNull World world, @NotNull Random unused, @NotNull Chunk source) {
         boolean cornerBeacon;
         Integer cornerX = null;
         Integer cornerZ = null;

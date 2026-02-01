@@ -71,7 +71,7 @@ public class ChatListener extends BeaconzPluginDependent implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onChat(final AsyncPlayerChatEvent event) {
         // Team chat
-        if (getBeaconzWorld() == null || event.getPlayer() == null) {
+        if (getBeaconzWorld() == null) {
             return;
         }
         if (Settings.teamChat && event.getPlayer().getWorld().equals(getBeaconzWorld())) {

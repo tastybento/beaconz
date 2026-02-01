@@ -127,9 +127,6 @@ public class BeaconProjectileDefenseListener extends BeaconzPluginDependent impl
     public void onExplosion(final EntityExplodeEvent e) {
         // Identify which entity is exploding
         Entity expl = e.getEntity();
-        if (expl == null) {
-            return; // No entity associated with explosion (e.g., bed explosion)
-        }
 
         // Quick world check - only process events in the Beaconz world
         if (!e.getEntity().getWorld().equals(getBeaconzWorld())) {
@@ -179,7 +176,7 @@ public class BeaconProjectileDefenseListener extends BeaconzPluginDependent impl
         Entity damager = event.getDamager();
 
         // Check if the damage is from one of our tracked defensive projectiles
-        if (damager != null && (damager instanceof Projectile) && projectiles.containsKey(damager.getUniqueId())) {
+        if (damager instanceof Projectile && projectiles.containsKey(damager.getUniqueId())) {
             // Retrieve which team fired this projectile
             Team team = projectiles.get(damager.getUniqueId());
 

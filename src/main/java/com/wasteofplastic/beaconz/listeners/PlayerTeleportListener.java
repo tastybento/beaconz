@@ -351,14 +351,10 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
             // ===== TELEPORTING INTO THE LOBBY =====
             if (toLobby) {
                 // Ignore teleporting within the lobby
-                if (fromLobby) {
-                    // No action needed
-                } else {
-                    // Entering lobby - call enter handler
-                    directTeleportPlayers.remove(player.getUniqueId());
-                    getGameMgr().getLobby().enterLobby(player);
+                // Entering lobby - call enter handler
+                directTeleportPlayers.remove(player.getUniqueId());
+                getGameMgr().getLobby().enterLobby(player);
 
-                }
             }   
         }
     }
@@ -404,7 +400,7 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
         // Schedule the delayed teleport check
         getServer().getScheduler().runTaskLater(getBeaconzPlugin(), () -> {
             // Verify player is still valid and in the teleporting set
-            if (player != null && !player.isDead() && teleportingPlayers.containsKey(player.getUniqueId())) {
+            if (!player.isDead() && teleportingPlayers.containsKey(player.getUniqueId())) {
                 // Check if player's position is still the same
                 if (player.getLocation().toVector().equals(teleportingPlayers.get(player.getUniqueId()))) {
                     // Player stood still - proceed with teleport
