@@ -598,20 +598,25 @@ public class Scorecard extends BeaconzPluginDependent {
             return;
         }
 
-        // STEP 1: Find the old scoreboard entry
-        String oldScoreboardEntry = sbEntry(team, scoreType);
+        // Remove the old scoreboard entry
+        scoreboard.resetScores(sbEntry(team, scoreType));
 
-        // STEP 2: Remove the old scoreboard entry
-        scoreboard.resetScores(oldScoreboardEntry);
+        // Create new entry with colored component and score value
+        Component scoreComponent = getScoreComponent(team, scoreType);
 
-        // STEP 3: Create new scoreboard entry with updated score
-        String newScoreboardEntry = getScoreString(team, scoreType);
-        /** Score entry used for updating scoreboard lines */
-        Score scoreentry = scoreobjective.getScore(newScoreboardEntry);
-        int value = this.getScore(team, scoreType);
-        scoreentry.setScore(value); 
-        String formattedValue = FORMATTER.format(value);
-        scoreentry.numberFormat(NumberFormat.fixed(Component.text(formattedValue)));
+        // Use a unique identifier as the entry name (team + score type)
+        // This is needed because scoreboard entries must have unique string names
+        String entryName = PlainTextComponentSerializer.plainText().serialize(team.displayName()) + " " + scoreType.getName();
+
+        Score newEntry = scoreobjective.getScore(entryName);
+        int scoreValue = getScore(team, scoreType);
+        newEntry.setScore(scoreValue);
+
+        // Set the custom name with colors preserved
+        newEntry.customName(scoreComponent);
+
+        // Set the number format for the score value display
+        newEntry.numberFormat(NumberFormat.fixed(Component.text(FORMATTER.format(scoreValue))));
     }
 
     /**
@@ -641,14 +646,20 @@ public class Scorecard extends BeaconzPluginDependent {
     }
 
     /**
-     * Gets the score string to show
+     * Gets the score Component to show with team color preserved.
+     * Returns a colored Component containing the team display name and score type.
+     *
+     * @param team the team whose score is being displayed
+     * @param scoretype the type of score (BEACONS, LINKS, TRIANGLES, AREA)
+     * @return Component with team color and score type name
      */
-    private String getScoreString(Team team, GameScoreGoal scoretype) {
+    private Component getScoreComponent(Team team, GameScoreGoal scoretype) {
         TextColor teamcolor = teamChatColor(team);
-        Component fixed = team.displayName().color(teamcolor).append(Component.text(" "+ scoretype.getName()));
-        String scoreString = PlainTextComponentSerializer.plainText().serialize(fixed);
-        scoreString = scoreString.substring(0, Math.min(Scorecard.MAXSCORELENGTH, scoreString.length()));
-        return scoreString;
+        getLogger().info("DEBUG: Team color for " + PlainTextComponentSerializer.plainText().serialize(team.displayName()) + " is " + teamcolor.asHexString());
+
+        // Create colored component: "[Team Name] ScoreType"
+        // The color is preserved in the Component object
+        return team.displayName().color(teamcolor).append(Component.text(" " + scoretype.getName()));
     }
 
     /**
