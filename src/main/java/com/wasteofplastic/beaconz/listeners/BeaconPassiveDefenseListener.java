@@ -208,7 +208,6 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
 
         // Check for locking block
         Material lockingBlock = getLockingBlockMaterial();
-            getLogger().info("DEBUG " + lockingBlock + " " + adjacentBeacon.isPresent());
         if (block.getType() == lockingBlock && adjacentBeacon.isPresent()) {
             handleLockingBlock(player, block, adjacentBeacon.get(), team.get());
         }
@@ -272,18 +271,78 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
     /**
      * Finds a beacon adjacent to the given block by checking all four cardinal directions.
      *
-     * @param block the block to check around
-     * @return the adjacent beacon
+     * <p>This method searches in the following order: NORTH, SOUTH, EAST, WEST.
+     * Returns the first beacon found in any of these directions.
+     *
+     * <p><b>Use Cases:</b>
+     * <ul>
+     *   <li>Range extension block placement (emerald blocks)</li>
+     *   <li>Locking block placement</li>
+     *   <li>Defense block validation</li>
+     * </ul>
+     *
+     * <p><b>Search Pattern:</b>
+     * <pre>
+     *       N
+     *       |
+     *   W - B - E
+     *       |
+     *       S
+     * </pre>
+     * Where B is the block being checked, and N/S/E/W are the adjacent positions searched.
+     *
+     * @param block the block to check around (typically a placed or broken block)
+     * @return Optional containing the adjacent beacon if found, or empty if no beacon is adjacent
      */
-    private Optional<BeaconObj> findAdjacentBeacon(Block block) {
-        for (BlockFace face : new BlockFace[]{BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST}) {
-            Block adjacent = block.getRelative(face);
-            BeaconObj beacon = getRegister().getBeaconAt(new Point2D.Double(adjacent.getX(), adjacent.getZ()));
+    Optional<BeaconObj> findAdjacentBeacon(Block block) {
+        if (block == null) {
+            return Optional.empty();
+        }
+
+        // Define cardinal directions to check
+        BlockFace[] cardinalDirections = {
+            BlockFace.NORTH,
+            BlockFace.SOUTH,
+            BlockFace.EAST,
+            BlockFace.WEST
+        };
+
+        // Check each cardinal direction for a beacon
+        for (BlockFace direction : cardinalDirections) {
+            Block adjacentBlock = block.getRelative(direction);
+            BeaconObj beacon = getBeaconAtLocation(adjacentBlock);
+
             if (beacon != null) {
+                if (DEBUG) {
+                    getLogger().info("DEBUG: Found adjacent beacon at " + direction +
+                                   " - Beacon: " + beacon.getName());
+                }
                 return Optional.of(beacon);
             }
         }
+
+        if (DEBUG) {
+            getLogger().info("DEBUG: No adjacent beacon found for block at " +
+                           block.getX() + ", " + block.getY() + ", " + block.getZ());
+        }
+
         return Optional.empty();
+    }
+
+    /**
+     * Gets a beacon at the specified block location.
+     *
+     * <p>This is a helper method that encapsulates the beacon lookup logic,
+     * making it easier to test and maintain. Package-private for testing.
+     *
+     * @param block the block whose location to check
+     * @return the beacon at this location, or null if none exists
+     */
+    BeaconObj getBeaconAtLocation(Block block) {
+        if (block == null) {
+            return null;
+        }
+        return getRegister().getBeaconAt(new Point2D.Double(block.getX(), block.getZ()));
     }
 
     /**
@@ -352,7 +411,6 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
      * @param team the player's team
      */
     private void handleLockingBlock(Player player, Block block, BeaconObj beacon, Team team) {
-        getLogger().info("handle locking block");
         // Only process if team owns the beacon
         if (beacon.getOwnership() == null || !beacon.getOwnership().equals(team)) {
             return;

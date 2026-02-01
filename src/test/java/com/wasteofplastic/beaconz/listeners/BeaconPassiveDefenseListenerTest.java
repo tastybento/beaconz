@@ -3,6 +3,7 @@ package com.wasteofplastic.beaconz.listeners;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -454,7 +455,8 @@ class BeaconPassiveDefenseListenerTest extends CommonTestBase {
 
         assertTrue(event.isCancelled());
         verify(player).sendMessage(argThat((Component component) ->
-            component.equals(Lang.errorYouNeedToBeLevel.replaceText("[value]", Component.text("5")))
+            component.equals(Lang.errorYouNeedToBeLevel.replaceText(builder ->
+                builder.matchLiteral("[value]").replacement(Component.text("5"))))
         ));
     }
 
@@ -827,28 +829,152 @@ class BeaconPassiveDefenseListenerTest extends CommonTestBase {
         verify(blockFlowEvent, never()).setCancelled(true);
     }
 
-    /**
-     * OBSERVATIONS & IMPROVEMENTS:
-     *
-     * 1. Complex adjacency logic: onBlockPlace checks all 4 directions for adjacent beacons.
-     *    Consider extracting to a helper method for testability and readability.
-     *
-     * 2. Settings dependency: Tests heavily rely on Settings static fields. Consider making
-     *    Settings injectable or using a configuration object pattern.
-     *
-     * 3. Emerald locking logic: The locking block check has complex coordinate math that's
-     *    hard to test and verify. Consider refactoring for clarity.
-     *
-     * 4. Top-down removal: The logic that ensures blocks are removed from highest to lowest
-     *    involves iteration and comparison. Could benefit from extracting to testable method.
-     *
-     * 5. Sound effects: Some tests would trigger Sound.BLOCK_GLASS_BREAK which requires Paper
-     *    registry. These branches are documented but not fully tested.
-     *
-     * 6. Defense block cleanup: onDefenseDamage removes AIR blocks from defense map during
-     *    iteration - this cleanup logic could be in a separate maintenance method.
-     *
-     * 7. Missing test coverage: Link block removal with Settings.removeLongestLink enabled
-     *    is not fully tested due to complexity of mocking beacon links.
-     */
+    // ==================== Adjacency Logic Tests ====================
+
+    /** Test findAdjacentBeacon finds beacon to the NORTH. */
+    @Test
+    void testFindAdjacentBeaconNorth() {
+        Block northBlock = org.mockito.Mockito.mock(Block.class);
+        when(block.getRelative(BlockFace.NORTH)).thenReturn(northBlock);
+        when(northBlock.getX()).thenReturn(100);
+        when(northBlock.getZ()).thenReturn(199);
+        
+        when(register.getBeaconAt(new Point2D.Double(100, 199))).thenReturn(beacon);
+
+        var result = listener.findAdjacentBeacon(block);
+
+        assertTrue(result.isPresent());
+        assertEquals(beacon, result.get());
+    }
+
+    /** Test findAdjacentBeacon finds beacon to the SOUTH. */
+    @Test
+    void testFindAdjacentBeaconSouth() {
+        Block southBlock = org.mockito.Mockito.mock(Block.class);
+        when(block.getRelative(BlockFace.NORTH)).thenReturn(org.mockito.Mockito.mock(Block.class));
+        when(block.getRelative(BlockFace.SOUTH)).thenReturn(southBlock);
+        when(southBlock.getX()).thenReturn(100);
+        when(southBlock.getZ()).thenReturn(201);
+
+        when(register.getBeaconAt(new Point2D.Double(100, 201))).thenReturn(beacon);
+
+        var result = listener.findAdjacentBeacon(block);
+
+        assertTrue(result.isPresent());
+        assertEquals(beacon, result.get());
+    }
+
+    /** Test findAdjacentBeacon finds beacon to the EAST. */
+    @Test
+    void testFindAdjacentBeaconEast() {
+        Block eastBlock = org.mockito.Mockito.mock(Block.class);
+        when(block.getRelative(BlockFace.NORTH)).thenReturn(org.mockito.Mockito.mock(Block.class));
+        when(block.getRelative(BlockFace.SOUTH)).thenReturn(org.mockito.Mockito.mock(Block.class));
+        when(block.getRelative(BlockFace.EAST)).thenReturn(eastBlock);
+        when(eastBlock.getX()).thenReturn(101);
+        when(eastBlock.getZ()).thenReturn(200);
+
+        when(register.getBeaconAt(new Point2D.Double(101, 200))).thenReturn(beacon);
+
+        var result = listener.findAdjacentBeacon(block);
+
+        assertTrue(result.isPresent());
+        assertEquals(beacon, result.get());
+    }
+
+    /** Test findAdjacentBeacon finds beacon to the WEST. */
+    @Test
+    void testFindAdjacentBeaconWest() {
+        Block westBlock = org.mockito.Mockito.mock(Block.class);
+        when(block.getRelative(BlockFace.NORTH)).thenReturn(org.mockito.Mockito.mock(Block.class));
+        when(block.getRelative(BlockFace.SOUTH)).thenReturn(org.mockito.Mockito.mock(Block.class));
+        when(block.getRelative(BlockFace.EAST)).thenReturn(org.mockito.Mockito.mock(Block.class));
+        when(block.getRelative(BlockFace.WEST)).thenReturn(westBlock);
+        when(westBlock.getX()).thenReturn(99);
+        when(westBlock.getZ()).thenReturn(200);
+
+        when(register.getBeaconAt(new Point2D.Double(99, 200))).thenReturn(beacon);
+
+        var result = listener.findAdjacentBeacon(block);
+
+        assertTrue(result.isPresent());
+        assertEquals(beacon, result.get());
+    }
+
+    /** Test findAdjacentBeacon returns empty when no adjacent beacons. */
+    @Test
+    void testFindAdjacentBeaconNoneFound() {
+        when(block.getRelative(any(BlockFace.class))).thenReturn(org.mockito.Mockito.mock(Block.class));
+        when(register.getBeaconAt(any(Point2D.class))).thenReturn(null);
+
+        var result = listener.findAdjacentBeacon(block);
+
+        assertFalse(result.isPresent());
+    }
+
+    /** Test findAdjacentBeacon handles null block gracefully. */
+    @Test
+    void testFindAdjacentBeaconNullBlock() {
+        var result = listener.findAdjacentBeacon(null);
+
+        assertFalse(result.isPresent());
+    }
+
+    /** Test findAdjacentBeacon returns first beacon found (NORTH priority). */
+    @Test
+    void testFindAdjacentBeaconPriority() {
+        Block northBlock = org.mockito.Mockito.mock(Block.class);
+        Block southBlock = org.mockito.Mockito.mock(Block.class);
+
+        when(block.getRelative(BlockFace.NORTH)).thenReturn(northBlock);
+        when(block.getRelative(BlockFace.SOUTH)).thenReturn(southBlock);
+
+        when(northBlock.getX()).thenReturn(100);
+        when(northBlock.getZ()).thenReturn(199);
+        when(southBlock.getX()).thenReturn(100);
+        when(southBlock.getZ()).thenReturn(201);
+
+        // Both have beacons - NORTH should be returned first
+        when(register.getBeaconAt(new Point2D.Double(100, 199))).thenReturn(beacon);
+        when(register.getBeaconAt(new Point2D.Double(100, 201))).thenReturn(mock(com.wasteofplastic.beaconz.core.BeaconObj.class));
+
+        var result = listener.findAdjacentBeacon(block);
+
+        // Should return the NORTH beacon (first in search order)
+        assertTrue(result.isPresent());
+        assertEquals(beacon, result.get());
+    }
+
+    /** Test getBeaconAtLocation returns beacon when found. */
+    @Test
+    void testGetBeaconAtLocationFound() {
+        when(block.getX()).thenReturn(100);
+        when(block.getZ()).thenReturn(200);
+        when(register.getBeaconAt(new Point2D.Double(100, 200))).thenReturn(beacon);
+
+        var result = listener.getBeaconAtLocation(block);
+
+        assertNotNull(result);
+        assertEquals(beacon, result);
+    }
+
+    /** Test getBeaconAtLocation returns null when no beacon. */
+    @Test
+    void testGetBeaconAtLocationNotFound() {
+        when(block.getX()).thenReturn(100);
+        when(block.getZ()).thenReturn(200);
+        when(register.getBeaconAt(any(Point2D.class))).thenReturn(null);
+
+        var result = listener.getBeaconAtLocation(block);
+
+        assertNull(result);
+    }
+
+    /** Test getBeaconAtLocation handles null block gracefully. */
+    @Test
+    void testGetBeaconAtLocationNullBlock() {
+        var result = listener.getBeaconAtLocation(null);
+
+        assertNull(result);
+    }
 }
