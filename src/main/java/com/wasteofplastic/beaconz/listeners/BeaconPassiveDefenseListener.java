@@ -204,11 +204,11 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
         // Check for range extension block (emerald)
         if (block.getType() == Material.EMERALD_BLOCK && adjacentBeacon.isPresent()) {
             handleRangeExtension(player, block, adjacentBeacon.get(), team.get(), event);
-            return;
         }
 
         // Check for locking block
         Material lockingBlock = getLockingBlockMaterial();
+            getLogger().info("DEBUG " + lockingBlock + " " + adjacentBeacon.isPresent());
         if (block.getType() == lockingBlock && adjacentBeacon.isPresent()) {
             handleLockingBlock(player, block, adjacentBeacon.get(), team.get());
         }
@@ -352,6 +352,7 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
      * @param team the player's team
      */
     private void handleLockingBlock(Player player, Block block, BeaconObj beacon, Team team) {
+        getLogger().info("handle locking block");
         // Only process if team owns the beacon
         if (beacon.getOwnership() == null || !beacon.getOwnership().equals(team)) {
             return;
@@ -514,8 +515,10 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
 
         // Check if this is a defense block
         Block block = event.getBlock();
-        BeaconObj beacon = getRegister().getBeacon(block);
-
+        Optional<BeaconObj> opBeacon = this.findAdjacentBeacon(block);
+        if (opBeacon.isEmpty()) return;
+        BeaconObj beacon = opBeacon.get();
+        
         if (isDefenseBlock(block, beacon)) {
             return;
         }
@@ -547,6 +550,10 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
      * @return true if this is a defense block, false otherwise
      */
     private boolean isDefenseBlock(Block block, BeaconObj beacon) {
+        if (DEBUG) {
+            getLogger().info("DEBUG: isDefenseBlock block = " + block);
+            getLogger().info("DEBUG: beacon  = " + beacon);
+        }
         if (beacon == null || beacon.getOwnership() == null) {
             if (DEBUG) {
                 getLogger().info("DEBUG: This is not a beacon");
@@ -618,11 +625,17 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
      */
     private boolean handleEnemyTeamDefenseInteraction(Player player, BeaconObj beacon, DefenseBlock defenseBlock,
                                                       org.bukkit.event.Cancellable event, boolean checkLock) {
+        if (DEBUG) {
+            getLogger().info("DEBUG handleEnemyTeamDefenseInteraction checkLock = " + checkLock);
+        }
         // Check if beacon is locked (only for breaking, not damage)
         if (checkLock && beacon.isLocked()) {
             player.sendMessage(Lang.beaconLocked);
             event.setCancelled(true);
             return false;
+        }
+        if (DEBUG) {
+            getLogger().info("DEBUG hbeacon not locked = " + checkLock);
         }
 
         // Get highest level - for break use beacon method, for damage cleanup AIR blocks first
