@@ -6,6 +6,7 @@ package com.wasteofplastic.beaconz.game;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -49,6 +50,7 @@ import com.wasteofplastic.beaconz.config.Settings;
 import com.wasteofplastic.beaconz.core.BeaconObj;
 import com.wasteofplastic.beaconz.core.Region;
 
+import io.papermc.paper.scoreboard.numbers.NumberFormat;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
@@ -155,6 +157,8 @@ import net.kyori.adventure.title.Title;
 public class Scorecard extends BeaconzPluginDependent {
     /** Maximum length for score strings displayed on scoreboard (for formatting) */
     private static final Integer MAXSCORELENGTH = 20;
+    
+    private static final DecimalFormat FORMATTER = new DecimalFormat("#,###");
 
     /** Whether the game is currently running (false when paused) */
     private boolean gameON;
@@ -292,8 +296,6 @@ public class Scorecard extends BeaconzPluginDependent {
      *
      * <p><b>Scoreboard Setup:</b>
      * <ul>
-     *   <li>Line 15: Game goal (e.g., "Get 10 beacons!")</li>
-     *   <li>Lines 1-14: Team scores (auto-allocated per team/score type)</li>
      *   <li>Title: "Beaconz [GameMode]! 00d 00:00:00" (includes timer)</li>
      * </ul>
      *
@@ -326,8 +328,6 @@ public class Scorecard extends BeaconzPluginDependent {
         scoreboard = manager.getNewScoreboard();
         scoreobjective = scoreboard.registerNewObjective("score", Criteria.DUMMY, Lang.titleBeaconz);
         scoreobjective.setDisplaySlot(DisplaySlot.SIDEBAR);
-        /** Current sidebar line number for adding scoreboard entries */
-        Integer sidebarline = 15;
 
         // Set up the scoreboard with the goal
         scoreobjective.displayName(Lang.titleBeaconz.append(Component.text(" " + game.getGamemode().getName() + "! 00d 00:00:00").color(NamedTextColor.GREEN)));
@@ -340,7 +340,7 @@ public class Scorecard extends BeaconzPluginDependent {
             goalstr = PlainTextComponentSerializer.plainText().serialize(Lang.scoreGetValueGoal.color(NamedTextColor.GREEN)).replace("[value]", value).replace("[goal]", game.getGamegoal().getName());
         }
         scoreline = scoreobjective.getScore(goalstr);
-        scoreline.setScore(sidebarline);
+        scoreline.setScore(-1);
 
         // Start the game
         gameON = true;
@@ -608,7 +608,10 @@ public class Scorecard extends BeaconzPluginDependent {
         String newScoreboardEntry = getScoreString(team, scoreType);
         /** Score entry used for updating scoreboard lines */
         Score scoreentry = scoreobjective.getScore(newScoreboardEntry);
-        scoreentry.setScore(this.getScore(team, scoreType)); 
+        int value = this.getScore(team, scoreType);
+        scoreentry.setScore(value); 
+        String formattedValue = FORMATTER.format(value);
+        scoreentry.numberFormat(NumberFormat.fixed(Component.text(formattedValue)));
     }
 
     /**
