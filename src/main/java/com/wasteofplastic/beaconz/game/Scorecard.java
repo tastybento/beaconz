@@ -24,7 +24,6 @@ import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.Sound;
 import org.bukkit.World;
-import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
@@ -58,6 +57,7 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.kyori.adventure.title.Title;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Manages all scoring, team, and game state aspects for a Beaconz game instance.
@@ -140,7 +140,7 @@ import net.kyori.adventure.title.Title;
  * // Create scorecard for a game
  * Scorecard scorecard = new Scorecard(plugin, game);
  *
- * // Add player to smallest team
+ * // Add player to the smallest team
  * scorecard.addTeamPlayer(player);
  *
  * // Update scores when beacon captured
@@ -157,9 +157,7 @@ import net.kyori.adventure.title.Title;
  * @see GameScoreGoal
  */
 public class Scorecard extends BeaconzPluginDependent {
-    /** Maximum length for score strings displayed on scoreboard (for formatting) */
-    private static final Integer MAXSCORELENGTH = 20;
-    
+
     private static final DecimalFormat FORMATTER = new DecimalFormat("#,###");
 
     /** Whether the game is currently running (false when paused) */
@@ -176,9 +174,6 @@ public class Scorecard extends BeaconzPluginDependent {
 
     /** The actual scoreboard displayed to players */
     private Scoreboard scoreboard;
-
-    /** Score line used for displaying individual score entries */
-    private Score scoreLine;
 
     /** The scoreboard objective shown in the sidebar */
     private Objective scoreObjective;
@@ -332,21 +327,18 @@ public class Scorecard extends BeaconzPluginDependent {
         scoreObjective = scoreboard.registerNewObjective("score", Criteria.DUMMY, Lang.titleBeaconz);
         scoreObjective.setDisplaySlot(DisplaySlot.SIDEBAR);
 
-        // Set up the scoreboard with the goal in the title
-        // Build the goal component using helper method
+        // Set up the scoreboard title with game mode and timer
+        Component title = Lang.titleBeaconz
+            .append(Component.text(" " + game.getGamemode().getName() + "! 00d 00:00:00"));
+        scoreObjective.displayName(title);
+
+        // Add the goal as a score entry at Integer MAX_VALUE (top of scoreboard)
+        // Use NumberFormat.blank() to hide the score number
         Component goalComponent = buildGoalComponent();
-
-        // Create multi-line title: Game mode on first line, goal on second line
-        Component titleWithGoal = Lang.titleBeaconz
-            .append(Component.text(" " + game.getGamemode().getName() + "! 00d 00:00:00"))
-            .append(Component.newline())
-            .append(goalComponent)
-            ;
-
-        scoreObjective.displayName(titleWithGoal);
-
-        // No longer need the fake -1 score entry for the goal
-        goalString = ""; // Keep for compatibility, but no longer displayed
+        goalString = PlainTextComponentSerializer.plainText().serialize(goalComponent);
+        Score goalScore = scoreObjective.getScore(goalString);
+        goalScore.setScore(Integer.MAX_VALUE);
+        goalScore.numberFormat(NumberFormat.blank()); // Hide the score number
 
         // Start the game
         gameOn = true;
@@ -460,7 +452,7 @@ public class Scorecard extends BeaconzPluginDependent {
         if (csect != null) {
             for (String teamName: csect.getValues(false).keySet()) {
                 Material teamBlock = Material.getMaterial(csect.getString(teamName + ".glasscolor"));
-                //IMPORTANT: The a team's display name must ALWAYS be the team's name, PRECEEDED BY the ChatColor
+                //IMPORTANT: The team's display name must ALWAYS be the team's name, PRECEEDED BY the ChatColor
                 String teamDisplayName = ChatColor.translateAlternateColorCodes('&', csect.getString(teamName + ".displayname", teamName));
                 if (teamName.length() > 16) {
                     teamName = teamName.substring(0, 16);
@@ -511,7 +503,6 @@ public class Scorecard extends BeaconzPluginDependent {
     public void refreshScores(Team team) {
         if (team != null) {
             int defaultvalue = 0;
-            if (score.get(team) == null) defaultvalue = 0;   // if team doesn't have score, create it and set to 0
             for (GameScoreGoal st :  game.getScoretypes()) {
                 refreshScores(team, st, defaultvalue);
             }
@@ -651,8 +642,8 @@ public class Scorecard extends BeaconzPluginDependent {
     /**
      * Adds a team to the scoreboard and returns the team that was made
      *
-     * @param teamName
-     * @param teamBlock
+     * @param teamName - must be unique
+     * @param teamBlock - the block material for the team
      * @param save      - if true, saves game to file after adding team
      */
     private void addTeam(String teamName, String teamDisplayName, Material teamBlock, Boolean save) {
@@ -752,8 +743,8 @@ public class Scorecard extends BeaconzPluginDependent {
 
     /**
      * Sends a player to their team spawn point
-     * @param player
-     * @param ingameOnly
+     * @param player player
+     * @param ingameOnly if true, only teleports if player is in the game region
      */
     public void sendPlayersHome(Player player, boolean ingameOnly) {
         Team team = getTeam(player);
@@ -788,7 +779,7 @@ public class Scorecard extends BeaconzPluginDependent {
     /**
      * Returns a player's team (even if the player is offline)
      * If the player does not have a team, he is NO LONGER put in one - use assignTeam(player) for that
-     * @param player
+     * @param player - player
      * @return Team or null if none
      */
     public Team getTeam(Player player) {
@@ -799,7 +790,7 @@ public class Scorecard extends BeaconzPluginDependent {
      * Puts a player in a team if he isn't already in one
      * Returns the player's team
      *
-     * @param player
+     * @param player - player
      */
     public void assignTeam(Player player) {
         Team team = teamLookup.get(player.getUniqueId());
@@ -856,7 +847,7 @@ public class Scorecard extends BeaconzPluginDependent {
 
     /**
      * Returns the type of block for this team, e.g., blue glass
-     * @param team
+     * @param team - team
      * @return block type or null if it does not exist
      */
     public Material getBlockID(Team team) {
@@ -864,21 +855,7 @@ public class Scorecard extends BeaconzPluginDependent {
     }
 
     /**
-     * Get the team defined by this block
-     * @param b - block
-     * @return Team, or null if it doesn't exist
-     */
-    public Team getTeamFromBlock(Block b) {
-        for (Entry<Team, Material> md: teamBlocks.entrySet()) {
-            if (md.getValue() == b.getType()) {
-                return md.getKey();
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Provide a user readable comma delimited list of the team names for use in commands
+     * Provide a user readable comma-delimited list of the team names for use in commands
      * @return team list
      */
     public String getTeamListString() {
@@ -905,9 +882,6 @@ public class Scorecard extends BeaconzPluginDependent {
      */
     public HashMap<Team, List<UUID>> getTeamMembers() {
         return teamMembers;
-    }
-    public HashMap<UUID, Team> getTeamLookup() {
-        return teamLookup;
     }
 
     /**
@@ -982,13 +956,6 @@ public class Scorecard extends BeaconzPluginDependent {
     }
 
     /**
-     * Return the scores
-     */
-    public HashMap<Team, HashMap<GameScoreGoal,Integer>> getScore() {
-        return score;
-    }
-
-    /**
      * Toggle showtimer
      */
     public void toggleTimer() {
@@ -996,29 +963,10 @@ public class Scorecard extends BeaconzPluginDependent {
     }
 
     /**
-     * Return the game's start time
-     */
-    public Long getStartTime() {
-        return startTimeMillis;
-    }
-
-    /**
      * Return the current countdown timer
      */
     public int getCountdownTimer() {
         return countdownTimer;
-    }
-
-    /**
-     * Return the timer for display
-     */
-    public String getDisplayTime(String type) {
-        // type is either "short" or "long"
-        if (type.equals("short")) {
-            return displaytime;
-        } else {
-            return displaytime + " (" + timerType.name() + ")";
-        }
     }
 
     /**
@@ -1108,25 +1056,7 @@ public class Scorecard extends BeaconzPluginDependent {
         // Failing that, create a default spawn point
         if (teamSP == null) {
             teamSP = region.getSpawnPoint();
-            BlockFace blockFace = BlockFace.NORTH;
-            // We allow up to 8 teams
-            int direction = 0;
-            for (Team t : scoreboard.getTeams()) {
-                if (t.equals(team)) {
-                    blockFace = switch (direction) {
-                    case 0 -> BlockFace.NORTH;
-                    case 1 -> BlockFace.SOUTH;
-                    case 2 -> BlockFace.EAST;
-                    case 3 -> BlockFace.WEST;
-                    case 4 -> BlockFace.NORTH_EAST;
-                    case 5 -> BlockFace.NORTH_WEST;
-                    case 6 -> BlockFace.SOUTH_EAST;
-                    case 7 -> BlockFace.SOUTH_WEST;
-                    default -> blockFace;
-                    };
-                }
-                direction++;
-            }
+            BlockFace blockFace = getBlockFace(team);
             teamSP = teamSP.getBlock().getRelative(blockFace, game.getRegion().getRadius() / 4).getLocation();
             teamSP = region.findSafeSpot(teamSP, 20);
         }
@@ -1137,9 +1067,32 @@ public class Scorecard extends BeaconzPluginDependent {
         return teamSP;
     }
 
+    private @NotNull BlockFace getBlockFace(Team team) {
+        BlockFace blockFace = BlockFace.NORTH;
+        // We allow up to 8 teams
+        int direction = 0;
+        for (Team t : scoreboard.getTeams()) {
+            if (t.equals(team)) {
+                blockFace = switch (direction) {
+                case 0 -> BlockFace.NORTH;
+                case 1 -> BlockFace.SOUTH;
+                case 2 -> BlockFace.EAST;
+                case 3 -> BlockFace.WEST;
+                case 4 -> BlockFace.NORTH_EAST;
+                case 5 -> BlockFace.NORTH_WEST;
+                case 6 -> BlockFace.SOUTH_EAST;
+                case 7 -> BlockFace.SOUTH_WEST;
+                default -> blockFace;
+                };
+            }
+            direction++;
+        }
+        return blockFace;
+    }
+
     /**
      * Player in team or not
-     * @param player
+     * @param player - player
      * @return true if in team, false if not
      */
     public boolean inTeam(Player player) {
@@ -1155,7 +1108,7 @@ public class Scorecard extends BeaconzPluginDependent {
     }
 
     /**
-     * @param Team
+     * @param Team - the team
      * @return Location of the team's spawn point or null if team is unknown or there is no spawn point
      */
     public Location getTeamSpawnPoint(Team Team) {
@@ -1329,12 +1282,11 @@ public class Scorecard extends BeaconzPluginDependent {
      * @return the TextColor for this team, or WHITE as default
      */
     public TextColor teamChatColor(Team team) {
-        // IMPORTANT: The a team's display name is ALWAYS the team's name in uppercase, PRECEEDED BY the ChatColor
+        // IMPORTANT: The team's display name is ALWAYS the team's name in uppercase, PRECEEDED BY the ChatColor
         String tn = team.getName().toUpperCase();
         return switch (tn) {
         case "RED" -> NamedTextColor.RED;
         case "BLUE" -> NamedTextColor.BLUE;
-        case "WHITE" -> NamedTextColor.WHITE; 
         case "ORANGE" -> TextColor.color(255, 165, 0); 
         case "MAGENTA" -> TextColor.color(255, 0, 255); 
         case "LIGHTBLUE" -> NamedTextColor.AQUA; 
@@ -1348,7 +1300,7 @@ public class Scorecard extends BeaconzPluginDependent {
         case "BROWN" -> TextColor.color(150, 75, 0);
         case "GREEN" -> NamedTextColor.DARK_GREEN; 
         case "BLACK" -> NamedTextColor.BLACK; 
-        default -> NamedTextColor.WHITE;
+        default -> NamedTextColor.WHITE; // White as default
         };
     }
 
@@ -1364,7 +1316,8 @@ public class Scorecard extends BeaconzPluginDependent {
         game.setOver(true);
         // Change the objective line in the scoreboard
         scoreboard.resetScores(goalString);
-        scoreLine = scoreObjective.getScore(Lang.scoreGameOver);
+        /* Score line used for displaying individual score entries */
+        Score scoreLine = scoreObjective.getScore(Lang.scoreGameOver);
         scoreLine.setScore(0);
         // Wait a second to let all other messages display first
         getBeaconzPlugin().getServer().getScheduler().runTaskLater(getBeaconzPlugin(), () -> {
@@ -1444,21 +1397,15 @@ public class Scorecard extends BeaconzPluginDependent {
                     long d = (seconds / (60 * 60 * 24)) %100;
                     displaytime = String.format("%02dd %02d:%02d:%02d", d,h,m,s);
 
-                    // Build the display name with timer and goal on separate lines
+                    // Build the display name with timer
                     Component displayNameWithTimer = Lang.titleBeaconz
                         .append(Component.text(" " + game.getGamemode().getName()))
-                        .append(Component.text("! " + displaytime))
-                        .append(Component.newline())
-                        .append(buildGoalComponent())
-                        ;
+                        .append(Component.text("! " + displaytime));
                     scoreObjective.displayName(displayNameWithTimer);
                 } else {
-                    // Display without timer but with goal on second line
+                    // Display without timer
                     Component displayNameNoTimer = Lang.titleBeaconz
-                        .append(Component.text(" " + game.getGamemode().getName()))
-                        .append(Component.newline())
-                        .append(buildGoalComponent())
-                        ;
+                        .append(Component.text(" " + game.getGamemode().getName()));
                     scoreObjective.displayName(displayNameNoTimer);
                 }
             }
