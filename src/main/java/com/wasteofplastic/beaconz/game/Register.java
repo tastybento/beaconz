@@ -64,7 +64,8 @@ import com.wasteofplastic.beaconz.util.LinkResult;
 import com.wasteofplastic.beaconz.util.TriangleScorer;
 
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
 /**
@@ -1066,13 +1067,16 @@ public class Register extends BeaconzPluginDependent {
                 // Tell folks what's going on
                 if (oldOwner != null) {
                     if (linkLossCount == 1 && !quiet) {
-                        getMessages().tellTeam(oldOwner, Lang.linkLostLink.color(NamedTextColor.RED));
-                        getMessages().tellOtherTeams(oldOwner,Lang.linkTeamLostLink.replaceText(builder -> builder.matchLiteral("[team]").replacement(oldOwner.displayName())).color(NamedTextColor.GREEN));
+                        getMessages().tellTeam(oldOwner, Lang.linkLostLink);
+                        getMessages().tellOtherTeams(oldOwner, MiniMessage.miniMessage().deserialize(Lang.linkTeamLostLink,
+                                Placeholder.component("team", oldOwner.displayName())));
                     } else if (linkLossCount > 1) {
                         String count = String.valueOf(linkLossCount);
-                        getMessages().tellTeam(oldOwner, Lang.linkLostLinks.replaceText(builder -> builder.matchLiteral("[number]").replacement(Component.text(count))).color(NamedTextColor.RED));
-                        getMessages().tellOtherTeams(oldOwner, Lang.linkTeamLostLinks.replaceText(builder -> builder.matchLiteral("[team]")
-                                .replacement(oldOwner.displayName())).replaceText(builder -> builder.matchLiteral("[number]").replacement(Component.text(count))).color(NamedTextColor.GREEN));
+                        getMessages().tellTeam(oldOwner, MiniMessage.miniMessage().deserialize(Lang.linkLostLinks,
+                                Placeholder.component("number", Component.text(count))));
+                        getMessages().tellOtherTeams(oldOwner, MiniMessage.miniMessage().deserialize(Lang.linkTeamLostLinks,
+                                Placeholder.component("team", oldOwner.displayName()),
+                                Placeholder.component("number", Component.text(count))));
                     }
                 }
             }
@@ -1087,9 +1091,9 @@ public class Register extends BeaconzPluginDependent {
             if (triangle.hasVertex(beacon.getPoint())) {
                 // Tell folks what's going on
                 if (!quiet && triangle.getOwner() != null) {
-                    getMessages().tellTeam(triangle.getOwner(), Lang.triangleYourTeamLostATriangle.color(NamedTextColor.RED));
-                    getMessages().tellOtherTeams(triangle.getOwner(), Lang.triangleTeamLostATriangle.replaceText(builder -> builder.matchLiteral(
-                            "[team]").replacement(triangle.getOwner().displayName())).color(NamedTextColor.GREEN));
+                    getMessages().tellTeam(triangle.getOwner(), Lang.triangleYourTeamLostATriangle);
+                    getMessages().tellOtherTeams(triangle.getOwner(), MiniMessage.miniMessage().deserialize(Lang.triangleTeamLostATriangle,
+                            Placeholder.component("team", triangle.getOwner().displayName())));
                 }
                 // Find any players in the triangle being removed
                 for (Player player: getServer().getOnlinePlayers()) {

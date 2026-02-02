@@ -42,7 +42,6 @@ import com.wasteofplastic.beaconz.game.Game;
 import com.wasteofplastic.beaconz.game.Scorecard;
 
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 
 /**
  * Handles offline messaging to players and teams
@@ -241,7 +240,7 @@ public class Messages extends BeaconzPluginDependent {
                         Player member = Bukkit.getPlayer(uuid);
                         if (player == null || !player.getUniqueId().equals(uuid)) {
                             if (member != null) {
-                                member.sendMessage(Component.text("[" + game.getName() + "] ").append(message).color(NamedTextColor.GOLD));
+                                member.sendMessage(Component.text("[" + game.getName() + "] ").append(message));
                             } else {
                                 setMessage(uuid, ChatColor.GOLD + "[" + game.getName() + "] " + message);
                             }

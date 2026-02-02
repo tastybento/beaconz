@@ -34,6 +34,8 @@ import com.wasteofplastic.beaconz.config.Settings;
 import com.wasteofplastic.beaconz.core.Region;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 
 class PlayerTeleportListenerTest extends CommonTestBase {
 
@@ -64,8 +66,8 @@ class PlayerTeleportListenerTest extends CommonTestBase {
 
         // Initialize Lang strings needed for teleport listener
         Lang.titleBeaconzNews = Component.text("Beaconz News");
-        Lang.errorNotInGame = Component.text("You are not in the game '[game]'! Going to the lobby...");
-        Lang.teleportDoNotMove = Component.text("Do not move, teleporting in [number] seconds!");
+        Lang.errorNotInGame = "You are not in the game '[game]'! Going to the lobby...";
+        Lang.teleportDoNotMove = "Do not move, teleporting in <number> seconds!";
         Lang.teleportYouMoved = Component.text("You moved! Cancelling teleport!");
 
         // Initialize Settings
@@ -295,7 +297,7 @@ class PlayerTeleportListenerTest extends CommonTestBase {
         ptl.onTeleport(event);
 
         // OP players teleport immediately
-        verify(player, never()).sendMessage(Lang.teleportDoNotMove.replaceText("[number]", Component.text(String.valueOf(Settings.teleportDelay))));
+        verify(player, never()).sendMessage(MiniMessage.miniMessage().deserialize(Lang.teleportDoNotMove, Placeholder.component("number", Component.text(String.valueOf(Settings.teleportDelay)))));
     }
 
     /**

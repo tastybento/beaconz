@@ -48,7 +48,8 @@ import com.wasteofplastic.beaconz.config.Settings;
 import com.wasteofplastic.beaconz.game.Game;
 
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
 /**
@@ -155,7 +156,7 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
                 // Deliver messages after a delay to ensure world is fully loaded
                 getServer().getScheduler().runTaskLater(getBeaconzPlugin(), () -> {
                     // Show header
-                    player.sendMessage(Lang.titleBeaconzNews.color(NamedTextColor.AQUA));
+                    player.sendMessage(Lang.titleBeaconzNews);
                     // Show each message with a number prefix
                     int i = 1;
                     for (String message : messages) {
@@ -340,9 +341,9 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
 
                     } else {
                         // Player is not authorized for this game - redirect to lobby
-                        player.sendMessage(Lang.errorNotInGame
-                                .replaceText(builder -> builder.matchLiteral("[game]").replacement(toGame.getName()))
-                                .color(NamedTextColor.RED));
+                        player.sendMessage(MiniMessage.miniMessage().deserialize(Lang.errorNotInGame,
+                                Placeholder.component("game", toGame.getName()))
+                                );
                         event.setTo(getGameMgr().getLobby().getSpawnPoint());
                     }
                 }
@@ -389,9 +390,8 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
             delay = 0L;
         } else {
             // Notify player they must stand still
-            player.sendMessage(Lang.teleportDoNotMove
-                    .replaceText(builder -> builder.matchLiteral("[number]").replacement(Component.text(String.valueOf(Settings.teleportDelay))))
-                    .color(NamedTextColor.RED));
+            player.sendMessage(MiniMessage.miniMessage().deserialize(Lang.teleportDoNotMove, 
+                    Placeholder.component("number", Component.text(String.valueOf(Settings.teleportDelay)))));
         }
 
         // Record player's starting position for movement detection
@@ -409,7 +409,7 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
 
                 } else {
                     // Player moved - cancel the teleport
-                    player.sendMessage(Lang.teleportYouMoved.color(NamedTextColor.RED));
+                    player.sendMessage(Lang.teleportYouMoved);
                 }
             }
             // Clean up tracking data

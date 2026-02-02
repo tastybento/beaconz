@@ -204,7 +204,7 @@ class AdminCmdHandlerTest {
         Lang.errorUnknownCommand= Component.text("Unknown command");
         Lang.errorYouHaveToBeStandingOnABeacon= Component.text("You must be standing on a beacon");
         Lang.errorNotInRegister= Component.text("Not in register: ");
-        Lang.errorAlreadyExists= Component.text("Game already exists: [name]");
+        Lang.errorAlreadyExists= "Game already exists: [name]";
         Lang.errorNoGames= Component.text("No games found");
         Lang.errorError= Component.text("Error: ");
 
@@ -218,7 +218,7 @@ class AdminCmdHandlerTest {
         Lang.helpAdminForceEnd= Component.text("- force end a game");
         Lang.helpAdminList= Component.text("- list beacons");
         Lang.helpAdminListParms= Component.text("- list game parameters");
-        Lang.helpAdminNewGame= Component.text("- create new game. Use /[label] newgame help for details");
+        Lang.helpAdminNewGame= "- create new game. Use /[label] newgame help for details";
         Lang.helpAdminReload= Component.text("- reload configuration");
         Lang.helpAdminSetTeamSpawn= Component.text("- set team spawn");
         Lang.helpAdminSetLobbySpawn= Component.text("- set lobby spawn");
@@ -228,25 +228,25 @@ class AdminCmdHandlerTest {
         Lang.helpAdminDistribution= Component.text("- set beacon distribution");
 
         // Action messages
-        Lang.actionsYouAreInTeam= Component.text("You are in [team]!");
-        Lang.actionsSwitchedToTeam= Component.text("Switched to [team]");
-        Lang.actionsDistributionSettingTo= Component.text("Distribution set to [value]");
+        Lang.actionsYouAreInTeam= "You are in <team>!";
+        Lang.actionsSwitchedToTeam= "Switched to <team>";
+        Lang.actionsDistributionSettingTo= "Distribution set to [value]";
 
         // Beacon messages
-        Lang.beaconClaimingBeaconAt= Component.text("Claiming beacon at [location]");
-        Lang.beaconClaimedForTeam= Component.text("Beacon claimed for [team]");
+        Lang.beaconClaimingBeaconAt= "Claiming beacon at [location]";
+        Lang.beaconClaimedForTeam= "Beacon claimed for <team>";
 
         // Admin messages
         Lang.adminGamesDefined= Component.text("Games defined:");
         Lang.adminGamesTheLobby= Component.text("The Lobby");
         Lang.adminGamesNoOthers= Component.text("No other games");
-        Lang.adminKickAllPlayers= Component.text("Kicked all players from [name]");
-        Lang.adminKickPlayer= Component.text("Kicked [player] from [name]");
-        Lang.adminDeletingGame= Component.text("Deleting game [name]...");
-        Lang.adminDeletedGame= Component.text("Game [name] deleted");
-        Lang.adminDeleteGameConfirm= Component.text("Enter again to confirm within 10s.");
-        Lang.adminForceEnd= Component.text("Game [name] force ended");
-        Lang.adminListBeaconsInGame= Component.text("Beacons in [name]:");
+        Lang.adminKickAllPlayers= "Kicked all players from [name]";
+        Lang.adminKickPlayer= "Kicked <player> from [name]";
+        Lang.adminDeletingGame= "Deleting game [name]...";
+        Lang.adminDeletedGame= "Game [name] deleted";
+        Lang.adminDeleteGameConfirm= "Enter again to confirm within 10s.";
+        Lang.adminForceEnd= "Game [name] force ended";
+        Lang.adminListBeaconsInGame= "Beacons in [name]:";
         Lang.adminNewGameBuilding= Component.text("Building new game...");
         Lang.adminReload= Component.text("Configuration reloaded");
         Lang.adminParmsMode= Component.text("Mode");
@@ -256,7 +256,7 @@ class AdminCmdHandlerTest {
         Lang.adminParmsScoreTypes= Component.text("Score Types");
         Lang.adminParmsUnlimited= Component.text("Unlimited");
         Lang.adminParmsArgumentsPairs= Component.text("Arguments must be in parameter:value pairs");
-        Lang.adminParmsDoesNotExist= Component.text("Parameter does not exist: [name]");
+        Lang.adminParmsDoesNotExist= "Parameter does not exist: [name]";
 
         // General messages
         Lang.generalSuccess= Component.text("Success");

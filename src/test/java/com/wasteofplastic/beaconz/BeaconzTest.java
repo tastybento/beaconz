@@ -81,10 +81,10 @@ class BeaconzTest {
         Lang.errorYouMustBeInAGame = Component.text("You must be in a game!");
         Lang.errorYouMustBeInATeam = Component.text("You must be in a team!");
         Lang.errorNotEnoughExperience = Component.text("Not enough experience!");
-        Lang.errorTooFar = Component.text("Too far! Max: [max]");
+        Lang.errorTooFar = "Too far! Max: [max]";
         Lang.errorCanOnlyPlaceBlocks = Component.text("Can only place blocks");
-        Lang.errorCanOnlyPlaceBlocksUpTo = Component.text("Can only place blocks up to [value]");
-        Lang.errorYouNeedToBeLevel = Component.text("You need to be level [value]");
+        Lang.errorCanOnlyPlaceBlocksUpTo = "Can only place blocks up to [value]";
+        Lang.errorYouNeedToBeLevel = "You need to be level [value]";
         Lang.errorYouCannotRemoveOtherPlayersBlocks = Component.text("You cannot remove other players blocks!");
         Lang.beaconYouCannotDestroyYourOwnBeacon = Component.text("You cannot destroy your own beacon!");
         Lang.errorClearAroundBeacon = Component.text("Clear around beacon!");
@@ -423,7 +423,7 @@ class BeaconzTest {
         @Test
         @DisplayName("runCommands() should execute commands for player")
         void testRunCommands() {
-            List<String> commands = Arrays.asList("say Hello [player]");
+            List<String> commands = Arrays.asList("say Hello <player>");
 
             // Should not throw exception
             plugin.runCommands(player, commands);
@@ -437,9 +437,9 @@ class BeaconzTest {
         }
 
         @Test
-        @DisplayName("runCommands() should replace [player] placeholder")
+        @DisplayName("runCommands() should replace <player> placeholder")
         void testRunCommandsPlaceholder() {
-            List<String> commands = Arrays.asList("say Hello [player]");
+            List<String> commands = Arrays.asList("say Hello <player>");
 
             // Should execute without error
             plugin.runCommands(player, commands);

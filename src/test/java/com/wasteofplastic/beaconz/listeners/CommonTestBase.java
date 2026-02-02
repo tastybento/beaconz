@@ -140,44 +140,44 @@ public abstract class CommonTestBase {
         Lang.errorYouMustBeInAGame = Component.text("errorYouMustBeInAGame");
         Lang.errorYouMustBeInATeam = Component.text("errorYouMustBeInATeam");
         Lang.errorCanOnlyPlaceBlocks = Component.text("errorCanOnlyPlaceBlocks");
-        Lang.errorCanOnlyPlaceBlocksUpTo = Component.text("errorCanOnlyPlaceBlocksUpTo [value]");
-        Lang.errorYouNeedToBeLevel = Component.text("errorYouNeedToBeLevel [value]");
-        Lang.errorTooFar = Component.text("errorTooFar [max]");
+        Lang.errorCanOnlyPlaceBlocksUpTo = "errorCanOnlyPlaceBlocksUpTo <value>";
+        Lang.errorYouNeedToBeLevel = "errorYouNeedToBeLevel <value>";
+        Lang.errorTooFar = "errorTooFar <max>";
         Lang.errorNotEnoughExperience = Component.text("errorNotEnoughExperience");
         Lang.errorYouCannotRemoveOtherPlayersBlocks = Component.text("errorYouCannotRemoveOtherPlayersBlocks");
 
         // Beacon capture/destroy messages
         Lang.beaconYouCannotDestroyYourOwnBeacon = Component.text("beaconYouCannotDestroyYourOwnBeacon");
-        Lang.beaconTeamDestroyed = Component.text("beaconTeamDestroyed [team1] [team2]");
-        Lang.beaconPlayerDestroyed = Component.text("beaconPlayerDestroyed [player] [team]");
-        Lang.beaconYouDestroyed = Component.text("beaconYouDestroyed [team]");
+        Lang.beaconTeamDestroyed = "beaconTeamDestroyed <team1> <team2>";
+        Lang.beaconPlayerDestroyed = "beaconPlayerDestroyed <player> <team>";
+        Lang.beaconYouDestroyed = "beaconYouDestroyed <team>";
         Lang.beaconYouMustCapturedBeacon = Component.text("beaconYouMustCapturedBeacon");
 
         // Beacon linking messages
-        Lang.beaconOriginNotOwned = Component.text("beaconOriginNotOwned [team]");
-        Lang.beaconYouNeedThisMuchExp = Component.text("beaconYouNeedThisMuchExp [number]");
-        Lang.beaconYouHaveThisMuchExp = Component.text("beaconYouHaveThisMuchExp [number]");
+        Lang.beaconOriginNotOwned = "beaconOriginNotOwned <team>";
+        Lang.beaconYouNeedThisMuchExp = "beaconYouNeedThisMuchExp <number>";
+        Lang.beaconYouHaveThisMuchExp = "beaconYouHaveThisMuchExp <number>";
         Lang.beaconTheMapDisintegrates = Component.text("beaconTheMapDisintegrates");
 
         // Defense-related messages
         Lang.beaconYouCanOnlyExtend = Component.text("beaconYouCanOnlyExtend");
         Lang.beaconCannotBeExtended = Component.text("beaconCannotBeExtended");
         Lang.beaconExtended = Component.text("beaconExtended");
-        Lang.beaconLockedJustNow = Component.text("beaconLockedJustNow [lockingBlock]");
-        Lang.beaconLockedAlready = Component.text("beaconLockedAlready [lockingBlock]");
-        Lang.beaconLockedWithNMoreBlocks = Component.text("beaconLockedWithNMoreBlocks [number]");
-        Lang.beaconLinkBlockPlaced = Component.text("beaconLinkBlockPlaced [range]");
+        Lang.beaconLockedJustNow = "beaconLockedJustNow <lockingBlock>";
+        Lang.beaconLockedAlready = "beaconLockedAlready <lockingBlock>";
+        Lang.beaconLockedWithNMoreBlocks = "beaconLockedWithNMoreBlocks <number>";
+        Lang.beaconLinkBlockPlaced = "beaconLinkBlockPlaced <range>";
         Lang.beaconDefensePlaced = Component.text("beaconDefensePlaced");
-        Lang.beaconLinkBlockBroken = Component.text("beaconLinkBlockBroken [range]");
+        Lang.beaconLinkBlockBroken = "beaconLinkBlockBroken <range>";
         Lang.beaconLinkLost = Component.text("beaconLinkLost");
         Lang.beaconDefenseRemoveTopDown = Component.text("beaconDefenseRemoveTopDown");
         Lang.beaconLocked = Component.text("beaconLocked");
         Lang.beaconAmplifierBlocksCannotBeRecovered = Component.text("beaconAmplifierBlocksCannotBeRecovered");
         Lang.generalLevel = Component.text("Level");
-        Lang.triangleEntering = Component.text("[team] triangleEntering");
-        Lang.triangleLeaving = Component.text("[team] triangleLeaving");
-        Lang.triangleDroppingToLevel = Component.text("[team] triangleDroppingToLevel");
-        
+        Lang.triangleEntering = "<team> triangleEntering";
+        Lang.triangleLeaving = "<team> triangleLeaving";
+        Lang.triangleDroppingToLevel = "<team> triangleDroppingToLevel";
+
         // Lobby
         Lang.adminUseSurvival = Component.text("adminUseSurvival");
         Lang.adminSignKeyword = Component.text("adminkeyword");
@@ -225,8 +225,8 @@ public abstract class CommonTestBase {
         AttributeInstanceMock health = new AttributeInstanceMock(Attribute.MAX_HEALTH, 20D);
         when(player.getAttribute(Attribute.MAX_HEALTH)).thenReturn(health);
 
-        when(team.getDisplayName()).thenReturn("teamA");
-        when(otherTeam.getDisplayName()).thenReturn("teamB");
+        when(team.displayName()).thenReturn(Component.text("teamA"));
+        when(otherTeam.displayName()).thenReturn(Component.text("teamB"));
 
         when(mgr.getPlayerTeam(player)).thenReturn(team);
         when(game.getScorecard()).thenReturn(scorecard);

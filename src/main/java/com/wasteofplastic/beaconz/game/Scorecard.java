@@ -54,6 +54,8 @@ import io.papermc.paper.scoreboard.numbers.NumberFormat;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.kyori.adventure.title.Title;
 
@@ -339,7 +341,7 @@ public class Scorecard extends BeaconzPluginDependent {
             .append(Component.text(" " + game.getGamemode().getName() + "! 00d 00:00:00"))
             .append(Component.newline())
             .append(goalComponent)
-            .color(NamedTextColor.GREEN);
+            ;
 
         scoreObjective.displayName(titleWithGoal);
 
@@ -383,24 +385,21 @@ public class Scorecard extends BeaconzPluginDependent {
      *
      * <p>Creates a formatted component showing either:
      * <ul>
-     *   <li>"Get the most [goal]" for unlimited goals (value = 0)</li>
-     *   <li>"Get [value] [goal]" for specific goal values</li>
+     *   <li>"Get the most <goal>" for unlimited goals (value = 0)</li>
+     *   <li>"Get [value] <goal>" for specific goal values</li>
      * </ul>
      *
      * @return Component with the formatted goal text
      */
     private Component buildGoalComponent() {
         if (game.getGamegoalvalue() == 0) {
-            return Lang.scoreGetTheMostGoal
-                .replaceText(builder -> builder.matchLiteral("[goal]")
-                    .replacement(Component.text(game.getGamegoal().getName())));
+            return MiniMessage.miniMessage().deserialize(Lang.scoreGetTheMostGoal,
+                Placeholder.component("goal", Component.text(game.getGamegoal().getName())));
         } else {
             String value = String.format(Locale.US, "%,d", game.getGamegoalvalue());
-            return Lang.scoreGetValueGoal
-                .replaceText(builder -> builder.matchLiteral("[value]")
-                    .replacement(Component.text(value)))
-                .replaceText(builder -> builder.matchLiteral("[goal]")
-                    .replacement(Component.text(game.getGamegoal().getName())));
+            return MiniMessage.miniMessage().deserialize(Lang.scoreGetValueGoal,
+                    Placeholder.component("value", Component.text(value)),
+                    Placeholder.component("goal", Component.text(game.getGamegoal().getName())));
         }
     }
 
@@ -1371,10 +1370,11 @@ public class Scorecard extends BeaconzPluginDependent {
         getBeaconzPlugin().getServer().getScheduler().runTaskLater(getBeaconzPlugin(), () -> {
             // Announce winner to all players
             Team winner = frontRunner(game.getGamegoal());
-            Component titleline = Component.text(Lang.scoreGameOver);
+            Component titleline = MiniMessage.miniMessage().deserialize(Lang.scoreGameOver);
             Component subtitleline = Lang.scoreNoWinners;
             if (winner != null) {
-                titleline = Lang.scoreTeamWins.replaceText(builder -> builder.matchLiteral("[team]").replacement(winner.displayName()));
+                titleline = MiniMessage.miniMessage().deserialize(Lang.scoreTeamWins,
+                        Placeholder.component("team", winner.displayName()));
                 subtitleline = Lang.scoreCongratulations;
             }
             for (Team team : scoreboard.getTeams()) {
@@ -1450,7 +1450,7 @@ public class Scorecard extends BeaconzPluginDependent {
                         .append(Component.text("! " + displaytime))
                         .append(Component.newline())
                         .append(buildGoalComponent())
-                        .color(NamedTextColor.GREEN);
+                        ;
                     scoreObjective.displayName(displayNameWithTimer);
                 } else {
                     // Display without timer but with goal on second line
@@ -1458,7 +1458,7 @@ public class Scorecard extends BeaconzPluginDependent {
                         .append(Component.text(" " + game.getGamemode().getName()))
                         .append(Component.newline())
                         .append(buildGoalComponent())
-                        .color(NamedTextColor.GREEN);
+                        ;
                     scoreObjective.displayName(displayNameNoTimer);
                 }
             }

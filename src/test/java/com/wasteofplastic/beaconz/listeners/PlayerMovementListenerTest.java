@@ -353,7 +353,7 @@ class PlayerMovementListenerTest extends CommonTestBase {
 
         // Verify old effects are removed and dropping message sent
         verify(player).removePotionEffect(PotionEffectType.REGENERATION);
-        // The message uses Lang.triangleDroppingToLevel.replaceText("[team]", teamDisplayName).replaceText("[level]", level)
+        // The message uses Lang.triangleDroppingToLevel.replaceText("<team>", teamDisplayName).replaceText("[level]", level)
         verify(player).sendMessage(any(Component.class));
     }
 
@@ -376,7 +376,7 @@ class PlayerMovementListenerTest extends CommonTestBase {
 
         pml.applyTriangleEffects(player, fromTriangles, toTriangles);
 
-        // The message uses Lang.triangleLeaving.replaceText("[team]", teamDisplayName)
+        // The message uses Lang.triangleLeaving.replaceText("<team>", teamDisplayName)
         verify(player).sendMessage(any(Component.class));
         assertFalse(pml.getTriangleEffects().containsKey(uuid));
     }

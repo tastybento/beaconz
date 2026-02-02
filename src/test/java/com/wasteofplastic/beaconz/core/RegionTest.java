@@ -25,6 +25,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockbukkit.mockbukkit.MockBukkit;
+import org.mockbukkit.mockbukkit.ServerMock;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -34,9 +36,6 @@ import com.wasteofplastic.beaconz.game.Game;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-
-import org.mockbukkit.mockbukkit.MockBukkit;
-import org.mockbukkit.mockbukkit.ServerMock;
 
 /**
  * Comprehensive test suite for {@link Region} class.
@@ -82,8 +81,8 @@ class RegionTest {
         Lang.titleLobbyInfo = Component.text("Lobby Info");
         Lang.actionsHitSign = Component.text("Hit sign to join");
         Lang.startYoureAMember = "<aqua>You're a member of team <name>";
-        Lang.startObjective = Component.text("Objective");
-        Lang.startMostObjective = Component.text("Get the most");
+        Lang.startObjective = "Objective";
+        Lang.startMostObjective = "Get the most";
 
         // Initialize TextColor fields
         Lang.titleWelcomeColor = NamedTextColor.GOLD;

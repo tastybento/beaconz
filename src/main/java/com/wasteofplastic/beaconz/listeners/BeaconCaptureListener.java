@@ -61,6 +61,8 @@ import com.wasteofplastic.beaconz.map.TerritoryMapRenderer;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 
 /**
  * Listener class that handles all beacon capture, destruction, and mining mechanics.
@@ -186,7 +188,7 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
                 // Beacons must be cleared before capture unless already owned by the player's team
                 if (beacon.isNotClear() && (beacon.getOwnership() == null || !beacon.getOwnership().equals(team))) {
                     // Beacon has blocks above it - must be cleared first
-                    player.sendMessage(Lang.errorClearAroundBeacon.color(NamedTextColor.GOLD));
+                    player.sendMessage(Lang.errorClearAroundBeacon);
                     event.setCancelled(true);
                 }
             }
@@ -269,7 +271,7 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
         }
         if (game == null && !player.isOp()) {
             event.setCancelled(true);
-            player.sendMessage(Lang.errorYouCannotDoThat.color(NamedTextColor.RED));
+            player.sendMessage(Lang.errorYouCannotDoThat);
             return;
         }
 
@@ -360,7 +362,7 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
     private void captureBeacon(BlockBreakEvent event, Player player, Game game, Team team, Block block, BeaconObj beacon) {
         // Verify the beacon area is clear before allowing capture
         if (beacon.isNotClear()) {
-            player.sendMessage(Lang.errorClearAroundBeacon.color(NamedTextColor.RED));
+            player.sendMessage(Lang.errorClearAroundBeacon);
             event.setCancelled(true);
             return;
         }
@@ -385,7 +387,7 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
         getRegister().setBeaconOwner(beacon, team);
 
         // Notify the player of successful capture
-        player.sendMessage(Lang.beaconYouCapturedABeacon.color(NamedTextColor.GREEN));
+        player.sendMessage(Lang.beaconYouCapturedABeacon);
 
         // Give the player a custom map centered on this beacon
         giveBeaconMap(player, beacon);
@@ -424,14 +426,14 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
 
             // Prevent teams from destroying their own beacons
             if (team != null && team.equals(beaconTeam)) {
-                player.sendMessage(Lang.beaconYouCannotDestroyYourOwnBeacon.color(NamedTextColor.RED));
+                player.sendMessage(Lang.beaconYouCannotDestroyYourOwnBeacon);
                 event.setCancelled(true);
                 return;
             }
 
             // Verify the beacon area is clear before allowing destruction
             if (beacon.isNotClear()) {
-                player.sendMessage(Lang.errorClearAroundBeacon.color(NamedTextColor.GREEN));
+                player.sendMessage(Lang.errorClearAroundBeacon);
                 event.setCancelled(true);
                 return;
             }
@@ -440,21 +442,19 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
 
             // Notify all other teams about the destruction (taunt message)
             if (team != null) {
-                getMessages().tellOtherTeams(team, Lang.beaconTeamDestroyed
-                        .replaceText(builder -> builder.matchLiteral("[team1]").replacement(team.displayName()))
-                        .replaceText(builder -> builder.matchLiteral("[team2]").replacement(beaconTeam.displayName()))
-                        .color(NamedTextColor.RED));
+                getMessages().tellOtherTeams(team, MiniMessage.miniMessage().deserialize(Lang.beaconTeamDestroyed,
+                        Placeholder.component("team1", team.displayName()),
+                Placeholder.component("team2", beaconTeam.displayName())));
             }
 
             // Notify the destroyer's team
-            getMessages().tellTeam(player, Lang.beaconPlayerDestroyed
-                    .replaceText(builder -> builder.matchLiteral("[player]").replacement(player.displayName()))
-                    .replaceText(builder -> builder.matchLiteral("[team]").replacement(beaconTeam.displayName())));
+            getMessages().tellTeam(player, MiniMessage.miniMessage().deserialize(Lang.beaconPlayerDestroyed,
+                    Placeholder.component("player", player.displayName()),
+            Placeholder.component("team", beaconTeam.displayName())));
 
             // Notify the player who destroyed it
-            player.sendMessage(Lang.beaconYouDestroyed
-                    .replaceText(builder -> builder.matchLiteral("[team]").replacement(beaconTeam.displayName()))
-                    .color(NamedTextColor.GREEN));
+            player.sendMessage(MiniMessage.miniMessage().deserialize(Lang.beaconYouDestroyed,
+                    Placeholder.component("team", beaconTeam.displayName())));
 
             // Play dramatic destruction sound
             player.getWorld().playSound(player.getLocation(), Sound.BLOCK_CHORUS_FLOWER_DEATH, 1F, 1F);
@@ -532,7 +532,7 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
         // Verify the player has enough experience points to mine
         // testForExp returns true if player LACKS sufficient experience
         if (BeaconLinkListener.testForExp(player, Settings.beaconMineExpRequired)) {
-            player.sendMessage(Lang.errorNotEnoughExperience.color(NamedTextColor.RED));
+            player.sendMessage(Lang.errorNotEnoughExperience);
             player.getWorld().playSound(player.getLocation(), Sound.BLOCK_ANVIL_BREAK, 1F, 1F);
             return;
         }
@@ -577,15 +577,14 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
                     // Beacon is now exhausted - set cooldown timer
                     beacon.resetHackTimer();
 
-                    player.sendMessage(Lang.generalSuccess.color(NamedTextColor.GREEN)
+                    player.sendMessage(Lang.generalSuccess
                             .append(Component.text(" "))
-                            .append(Lang.beaconIsExhausted
-                                    .replaceText(builder -> builder.matchLiteral("[minutes]")
-                                            .replacement(Component.text(String.valueOf(Settings.mineCoolDown/60000))))));
+                            .append(MiniMessage.miniMessage().deserialize(Lang.beaconIsExhausted,
+                                    Placeholder.component("minutes", Component.text(String.valueOf(Settings.mineCoolDown/60000))))));
                     player.getWorld().playSound(player.getLocation(), Sound.BLOCK_CHEST_CLOSE, 1F, 1F);
                 } else {
                     // No exhaustion - player can mine again
-                    player.sendMessage(Lang.generalSuccess.color(NamedTextColor.GREEN));
+                    player.sendMessage(Lang.generalSuccess);
                     player.getWorld().playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 1F, 1F);
                 }
             }
@@ -593,7 +592,7 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
             BeaconLinkListener.removeExp(player, Settings.beaconMineExpRequired);
         } else {
             // Reward lookup failed (shouldn't happen with proper config)
-            player.sendMessage(Lang.generalFailure.color(NamedTextColor.RED));
+            player.sendMessage(Lang.generalFailure);
         }
     }
 
@@ -621,13 +620,12 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
                 beacon.resetHackTimer();
 
                 player.sendMessage(Lang.generalSuccess
-                        .append(Lang.beaconIsExhausted
-                                .replaceText(builder -> builder.matchLiteral("[minutes]")
-                                        .replacement(Component.text(String.valueOf(Settings.mineCoolDown/60000))))));
+                        .append(MiniMessage.miniMessage().deserialize(Lang.beaconIsExhausted,
+                                Placeholder.component("minutes", Component.text(String.valueOf(Settings.mineCoolDown/60000))))));
                 player.getWorld().playSound(player.getLocation(), Sound.BLOCK_CHEST_CLOSE, 1F, 1F);
             } else {
                 // No exhaustion - player can mine again
-                player.sendMessage(Lang.generalSuccess.color(NamedTextColor.GREEN));
+                player.sendMessage(Lang.generalSuccess);
                 player.getWorld().playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 1F, 1F);
             }
             // Deduct the experience cost for mining
@@ -636,7 +634,7 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
             // Reward lookup failed - spawn hostile endermite as punishment
             player.getWorld().spawnEntity(player.getLocation(), EntityType.ENDERMITE);
             player.getWorld().playSound(player.getLocation(), Sound.ENTITY_ENDERMITE_AMBIENT, 1F, 1F);
-            player.sendMessage(Lang.generalFailure.append(Component.text(" Watch out!")).color(NamedTextColor.RED));
+            player.sendMessage(Lang.generalFailure.append(Component.text(" Watch out!")));
         }
     }
 
@@ -767,7 +765,7 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
 
             if (!leftOvers.isEmpty()) {
                 // Inventory is full - notify player and drop the map
-                player.sendMessage(Lang.errorInventoryFull.color(NamedTextColor.RED));
+                player.sendMessage(Lang.errorInventoryFull);
 
                 for (ItemStack item: leftOvers.values()) {
                     // Drop each leftover item at the player's location

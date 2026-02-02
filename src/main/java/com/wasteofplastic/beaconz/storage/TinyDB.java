@@ -10,8 +10,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Stream;
 
-import com.wasteofplastic.beaconz.Beaconz;
 import org.bukkit.scheduler.BukkitRunnable;
+
+import com.wasteofplastic.beaconz.Beaconz;
 
 /**
  * Player name to UUID database.

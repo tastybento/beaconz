@@ -95,7 +95,7 @@ class BeaconProtectionListenerTest extends CommonTestBase {
         Lang.errorYouCannotDoThat = Component.text("errorYouCannotDoThat");
         Lang.errorYouCannotBuildThere = Component.text("errorYouCannotBuildThere");
         Lang.beaconCannotPlaceLiquids = Component.text("beaconCannotPlaceLiquids");
-        Lang.triangleThisBelongsTo = Component.text("triangleThisBelongsTo [team]");
+        Lang.triangleThisBelongsTo = "triangleThisBelongsTo <team>";
     }
 
     @org.junit.jupiter.api.AfterEach

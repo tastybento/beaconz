@@ -48,6 +48,7 @@ import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.jetbrains.annotations.NotNull;
 
 import com.wasteofplastic.beaconz.commands.AdminCmdHandler;
 import com.wasteofplastic.beaconz.commands.CmdHandler;
@@ -78,7 +79,6 @@ import com.wasteofplastic.beaconz.storage.BeaconzStore;
 import com.wasteofplastic.beaconz.storage.Messages;
 import com.wasteofplastic.beaconz.storage.TinyDB;
 import com.wasteofplastic.beaconz.util.ItemRewardParser;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Main plugin class for the Beaconz strategic team-based game.
@@ -1101,7 +1101,7 @@ public class Beaconz extends JavaPlugin {
         for (String cmd : commands) {
             if (cmd.startsWith("[SELF]")) {
                 getLogger().info("Running command '" + cmd + "' as " + player.getName());
-                cmd = cmd.substring(6).replace("[player]", player.getName()).trim();
+                cmd = cmd.substring(6).replace("<player>", player.getName()).trim();
                 try {
                     player.performCommand(cmd);
                 } catch (Exception e) {
@@ -1114,7 +1114,7 @@ public class Beaconz extends JavaPlugin {
             }
             // Substitute in any references to player
             try {
-                if (!getServer().dispatchCommand(plugin.getServer().getConsoleSender(), cmd.replace("[player]", player.getName()))) {
+                if (!getServer().dispatchCommand(plugin.getServer().getConsoleSender(), cmd.replace("<player>", player.getName()))) {
                     getLogger().severe("Problem executing challenge reward commands - skipping!");
                     getLogger().severe("Command was : " + cmd);
                 }

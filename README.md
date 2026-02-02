@@ -290,8 +290,8 @@ When creating a new game with `/badmin newgame`, you can specify these optional 
 |---------|-------------|
 | `/badmin claim <team>` | Assign beacon you're standing on to a team |
 | `/badmin claim unowned` | Mark beacon you're standing on as unowned |
-| `/badmin list all [team]` | List all beacons, optionally filtered by team |
-| `/badmin list <gamename> [team]` | List beacons in a game, optionally by team |
+| `/badmin list all <team>` | List all beacons, optionally filtered by team |
+| `/badmin list <gamename> <team>` | List beacons in a game, optionally by team |
 | `/badmin distribution <0.0-1.0>` | Set beacon spawn probability |
 
 **Examples:**

@@ -32,8 +32,6 @@ import java.util.Locale;
 import java.util.Random;
 import java.util.Set;
 
-import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -67,7 +65,8 @@ import com.wasteofplastic.beaconz.storage.BeaconzStore;
 import com.wasteofplastic.beaconz.util.Pair;
 
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.kyori.adventure.title.Title;
 
@@ -202,7 +201,7 @@ public class Region extends BeaconzPluginDependent {
     public void delete(final CommandSender sender) {
         // Don't allow lobby deletion
         if (getGameMgr() != null && this == getGameMgr().getLobby()) {
-            sender.sendMessage(Component.text("Cannot delete the lobby region!").color(NamedTextColor.RED));
+            sender.sendMessage(Component.text("Cannot delete the lobby region!"));
             return;
         }
 
@@ -793,8 +792,8 @@ public class Region extends BeaconzPluginDependent {
     public void enterLobby(final Player player) {
 
         // Welcome player in chat
-        player.sendMessage(Lang.titleWelcome.color(NamedTextColor.GREEN));
-        player.sendMessage(Lang.titleSubTitle.color(NamedTextColor.AQUA));
+        player.sendMessage(Lang.titleWelcome);
+        player.sendMessage(Lang.titleSubTitle);
 
         // Welcome player on screen
         player.showTitle(title);
@@ -820,7 +819,7 @@ public class Region extends BeaconzPluginDependent {
 
                     // Use modern API with Criteria and Component displayName
                     sbobj = sb.registerNewObjective("text", Criteria.DUMMY,
-                            Component.text(lobbyInfo[0]).color(NamedTextColor.GREEN));
+                            Component.text(lobbyInfo[0]));
                     sbobj.setDisplaySlot(DisplaySlot.SIDEBAR);
                     for (int line = 1; line < lobbyInfo.length; line++) {
                         scoreline = sbobj.getScore(lobbyInfo[line]);
@@ -872,8 +871,8 @@ public class Region extends BeaconzPluginDependent {
      *   <li>Sends welcome message and displays the player's team</li>
      *   <li>Displays game objective based on goal type:
      *     <ul>
-     *       <li>If goal has a numeric target (goalvalue &gt; 0): Shows "Reach X [goal]"</li>
-     *       <li>If goal is unlimited (goalvalue = 0): Shows "Most [goal]"</li>
+     *       <li>If goal has a numeric target (goalvalue &gt; 0): Shows "Reach X <goal>"</li>
+     *       <li>If goal is unlimited (goalvalue = 0): Shows "Most <goal>"</li>
      *     </ul>
      *   </li>
      * </ol>
@@ -899,21 +898,16 @@ public class Region extends BeaconzPluginDependent {
         }
 
         // Welcome player in chat
-        player.sendMessage(Lang.titleWelcome.color(NamedTextColor.GREEN));
+        player.sendMessage(Lang.titleWelcome);
         player.sendMessage(MiniMessage.miniMessage().deserialize(Lang.startYoureAMember,
                 Placeholder.component("name",teamname)));
         if (game.getGamegoalvalue() > 0) {
-            player.sendMessage(Lang.startObjective
-                    .replaceText(builder -> builder.matchLiteral("[value]")
-                            .replacement(Component.text(String.format(Locale.US, "%,d", game.getGamegoalvalue()))))
-                    .replaceText(builder -> builder.matchLiteral("[goal]")
-                            .replacement(Component.text(game.getGamegoal().getName())))
-                    .color(NamedTextColor.AQUA));
+            player.sendMessage(MiniMessage.miniMessage().deserialize(Lang.startObjective,
+                    Placeholder.component("value", Component.text(String.format(Locale.US, "%,d", game.getGamegoalvalue()))),
+                    Placeholder.component("goal", Component.text(game.getGamegoal().getName()))));
         } else {
-            player.sendMessage(Lang.startMostObjective
-                    .replaceText(builder -> builder.matchLiteral("[goal]")
-                            .replacement(Component.text(game.getGamegoal().getName())))
-                    .color(NamedTextColor.AQUA));
+            player.sendMessage(MiniMessage.miniMessage().deserialize(Lang.startMostObjective,
+                    Placeholder.component("goal", Component.text(game.getGamegoal().getName()))));
         }
     }
 
@@ -994,7 +988,7 @@ public class Region extends BeaconzPluginDependent {
                 }
             }
         if (safeloc == null) {
-            Bukkit.getConsoleSender().sendMessage(Component.text("Could not find a safe spot. Region at " + displayCoords() + ". Using default.").color(NamedTextColor.YELLOW));
+            Bukkit.getConsoleSender().sendMessage(Component.text("Could not find a safe spot. Region at " + displayCoords() + ". Using default."));
             safeloc = new Location(getBeaconzWorld(), location.getX(), getBeaconzWorld().getHighestBlockYAt(location), location.getZ());
             safeloc.getBlock().getRelative(BlockFace.DOWN).setType(Material.BEDROCK);
         }

@@ -8,6 +8,8 @@ import java.util.function.Supplier;
 import org.apache.commons.lang.math.NumberUtils;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
 /**
@@ -343,7 +345,8 @@ public class Params {
                     }
                     break;
                 default:
-                    errormsg = errormsg.append(Lang.adminParmsDoesNotExist.replaceText(builder -> builder.matchLiteral("[name]").replacement(Component.text(parm))));
+                    errormsg = errormsg.append(MiniMessage.miniMessage().deserialize(Lang.adminParmsDoesNotExist,
+                            Placeholder.component("name", Component.text(parm))));
                     break;
                 }
             }
