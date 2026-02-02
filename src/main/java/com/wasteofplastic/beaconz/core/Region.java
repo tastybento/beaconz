@@ -32,6 +32,8 @@ import java.util.Locale;
 import java.util.Random;
 import java.util.Set;
 
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -898,9 +900,8 @@ public class Region extends BeaconzPluginDependent {
 
         // Welcome player in chat
         player.sendMessage(Lang.titleWelcome.color(NamedTextColor.GREEN));
-        player.sendMessage(Lang.startYoureAMember
-                .replaceText(builder -> builder.matchLiteral("[name]").replacement(teamname))
-                .color(NamedTextColor.AQUA));
+        player.sendMessage(MiniMessage.miniMessage().deserialize(Lang.startYoureAMember,
+                Placeholder.component("name",teamname)));
         if (game.getGamegoalvalue() > 0) {
             player.sendMessage(Lang.startObjective
                     .replaceText(builder -> builder.matchLiteral("[value]")

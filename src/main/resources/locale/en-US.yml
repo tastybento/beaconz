@@ -251,7 +251,7 @@ score:
 start: 
   MostObjective: "Your faction's objective is to capture the most [goal]!"
   Objective: "Your faction's objective is to capture [value] [goal]!"
-  YoureAMember: "You're a member of [name] faction!"
+  YoureAMember: "<aqua>You're a member of <name> faction!"
   YourePlaying: "You're playing game [name] in [mode] mode!"
 teleport:
   DoNotMove: "Do not move, teleporting in [number] seconds!"

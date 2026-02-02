@@ -81,7 +81,7 @@ class RegionTest {
         Lang.titleSubTitle = Component.text("Capture beacons and control territory");
         Lang.titleLobbyInfo = Component.text("Lobby Info");
         Lang.actionsHitSign = Component.text("Hit sign to join");
-        Lang.startYoureAMember = Component.text("You're a member of team");
+        Lang.startYoureAMember = "<aqua>You're a member of team <name>";
         Lang.startObjective = Component.text("Objective");
         Lang.startMostObjective = Component.text("Get the most");
 

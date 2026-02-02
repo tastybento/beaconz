@@ -161,7 +161,7 @@ public class Scorecard extends BeaconzPluginDependent {
     private static final DecimalFormat FORMATTER = new DecimalFormat("#,###");
 
     /** Whether the game is currently running (false when paused) */
-    private boolean gameON;
+    private boolean gameOn;
 
     /** The game instance this scorecard manages */
     private final Game game;
@@ -176,34 +176,35 @@ public class Scorecard extends BeaconzPluginDependent {
     private Scoreboard scoreboard;
 
     /** Score line used for displaying individual score entries */
-    private Score scoreline;
+    private Score scoreLine;
 
     /** The scoreboard objective shown in the sidebar */
-    private Objective scoreobjective;
+    private Objective scoreObjective;
 
     /** Countdown timer in seconds (decrements each interval) */
     private int countdownTimer;
 
     /** How often (in seconds) the timer updates */
-    private int timerinterval;
+    private int timerInterval;
 
     /** Whether to show the timer on scoreboard display */
-    private Boolean showtimer;
+    private Boolean showTimer;
 
     /** Type of timer: "countdown" or "openended" */
-    private String timertype;
+    private enum TimerType { COUNTDOWN, OPENENDED }
+    private TimerType timerType;
 
     /** Formatted time string for display (e.g., "00d 00:00:00") */
     private String displaytime;
 
     /** Formatted goal description string shown on scoreboard */
-    private String goalstr;
+    private String goalString;
 
     /** Game start time in milliseconds (for elapsed time calculation) */
-    private Long starttimemilis;
+    private Long startTimeMillis;
 
     /** Bukkit task ID for the running timer task (for cancellation) */
-    private BukkitTask timertaskid;
+    private BukkitTask timerTaskId;
 
     /** Maps teams to their spawn point locations */
     private final HashMap<Team, Location> teamSpawnPoint = new HashMap<>();
@@ -312,38 +313,41 @@ public class Scorecard extends BeaconzPluginDependent {
      * @param newGame true for new game initialization, false for reload
      */
     public void initialize(Boolean newGame) {
-        timerinterval = 5;
-        showtimer = Settings.showTimer;
-        starttimemilis = game.getStartTime();
+        timerInterval = 5;
+        showTimer = Settings.showTimer;
+        startTimeMillis = game.getStartTime();
         countdownTimer = game.getCountdownTimer();
-        timertype = countdownTimer == 0 ? "openended" : "countdown";
+        timerType = countdownTimer == 0 ? TimerType.OPENENDED : TimerType.COUNTDOWN;
         // Define the scoreboard
         try {
             scoreboard.clearSlot(DisplaySlot.SIDEBAR);
         } catch (Exception ignored){ }
         try {
-            scoreobjective.unregister();
+            scoreObjective.unregister();
         } catch (Exception ignored){ }
 
         scoreboard = manager.getNewScoreboard();
-        scoreobjective = scoreboard.registerNewObjective("score", Criteria.DUMMY, Lang.titleBeaconz);
-        scoreobjective.setDisplaySlot(DisplaySlot.SIDEBAR);
+        scoreObjective = scoreboard.registerNewObjective("score", Criteria.DUMMY, Lang.titleBeaconz);
+        scoreObjective.setDisplaySlot(DisplaySlot.SIDEBAR);
 
-        // Set up the scoreboard with the goal
-        scoreobjective.displayName(Lang.titleBeaconz.append(Component.text(" " + game.getGamemode().getName() + "! 00d 00:00:00").color(NamedTextColor.GREEN)));
+        // Set up the scoreboard with the goal in the title
+        // Build the goal component using helper method
+        Component goalComponent = buildGoalComponent();
 
-        goalstr = "";
-        if (game.getGamegoalvalue() == 0) {
-            goalstr = PlainTextComponentSerializer.plainText().serialize(Lang.scoreGetTheMostGoal.color(NamedTextColor.GREEN)).replace("[goal]", game.getGamegoal().getName());
-        } else {
-            String value = String.format(Locale.US, "%,d", game.getGamegoalvalue());
-            goalstr = PlainTextComponentSerializer.plainText().serialize(Lang.scoreGetValueGoal.color(NamedTextColor.GREEN)).replace("[value]", value).replace("[goal]", game.getGamegoal().getName());
-        }
-        scoreline = scoreobjective.getScore(goalstr);
-        scoreline.setScore(-1);
+        // Create multi-line title: Game mode on first line, goal on second line
+        Component titleWithGoal = Lang.titleBeaconz
+            .append(Component.text(" " + game.getGamemode().getName() + "! 00d 00:00:00"))
+            .append(Component.newline())
+            .append(goalComponent)
+            .color(NamedTextColor.GREEN);
+
+        scoreObjective.displayName(titleWithGoal);
+
+        // No longer need the fake -1 score entry for the goal
+        goalString = ""; // Keep for compatibility, but no longer displayed
 
         // Start the game
-        gameON = true;
+        gameOn = true;
 
         // Reset the score
         score.clear();
@@ -371,7 +375,33 @@ public class Scorecard extends BeaconzPluginDependent {
      * <p>The game can be resumed with {@link #resume()}.
      */
     public void pause() {
-        gameON = false;
+        gameOn = false;
+    }
+
+    /**
+     * Builds the goal component for the scoreboard display.
+     *
+     * <p>Creates a formatted component showing either:
+     * <ul>
+     *   <li>"Get the most [goal]" for unlimited goals (value = 0)</li>
+     *   <li>"Get [value] [goal]" for specific goal values</li>
+     * </ul>
+     *
+     * @return Component with the formatted goal text
+     */
+    private Component buildGoalComponent() {
+        if (game.getGamegoalvalue() == 0) {
+            return Lang.scoreGetTheMostGoal
+                .replaceText(builder -> builder.matchLiteral("[goal]")
+                    .replacement(Component.text(game.getGamegoal().getName())));
+        } else {
+            String value = String.format(Locale.US, "%,d", game.getGamegoalvalue());
+            return Lang.scoreGetValueGoal
+                .replaceText(builder -> builder.matchLiteral("[value]")
+                    .replacement(Component.text(value)))
+                .replaceText(builder -> builder.matchLiteral("[goal]")
+                    .replacement(Component.text(game.getGamegoal().getName())));
+        }
     }
 
     /**
@@ -387,7 +417,7 @@ public class Scorecard extends BeaconzPluginDependent {
      * <p>Note: The timer never actually stops, only score processing pauses.
      */
     public void resume() {
-        gameON = true;
+        gameOn = true;
     }
 
     /**
@@ -518,7 +548,7 @@ public class Scorecard extends BeaconzPluginDependent {
      * @param value default value if score doesn't exist (typically 0)
      */
     public void refreshScores(Team team, GameScoreGoal scoretype, int value) {
-        if (gameON) {
+        if (gameOn) {
             switch (scoretype) {
             case GameScoreGoal.AREA: {
                 value = getRegister().getTeamArea(team);
@@ -594,7 +624,7 @@ public class Scorecard extends BeaconzPluginDependent {
      */
     private void refreshSBdisplay(Team team, GameScoreGoal scoreType) {
         // Only update if game is running and this score type is tracked for this game
-        if (!gameON || !game.getScoretypes().contains(scoreType)) {
+        if (!gameOn || !game.getScoretypes().contains(scoreType)) {
             return;
         }
 
@@ -608,7 +638,7 @@ public class Scorecard extends BeaconzPluginDependent {
         // This is needed because scoreboard entries must have unique string names
         String entryName = PlainTextComponentSerializer.plainText().serialize(team.displayName()) + " " + scoreType.getName();
 
-        Score newEntry = scoreobjective.getScore(entryName);
+        Score newEntry = scoreObjective.getScore(entryName);
         int scoreValue = getScore(team, scoreType);
         newEntry.setScore(scoreValue);
 
@@ -655,8 +685,6 @@ public class Scorecard extends BeaconzPluginDependent {
      */
     private Component getScoreComponent(Team team, GameScoreGoal scoretype) {
         TextColor teamcolor = teamChatColor(team);
-        getLogger().info("DEBUG: Team color for " + PlainTextComponentSerializer.plainText().serialize(team.displayName()) + " is " + teamcolor.asHexString());
-
         // Create colored component: "[Team Name] ScoreType"
         // The color is preserved in the Component object
         return team.displayName().color(teamcolor).append(Component.text(" " + scoretype.getName()));
@@ -965,14 +993,14 @@ public class Scorecard extends BeaconzPluginDependent {
      * Toggle showtimer
      */
     public void toggleTimer() {
-        showtimer = ! showtimer;
+        showTimer = !showTimer;
     }
 
     /**
      * Return the game's start time
      */
     public Long getStartTime() {
-        return starttimemilis;
+        return startTimeMillis;
     }
 
     /**
@@ -990,7 +1018,7 @@ public class Scorecard extends BeaconzPluginDependent {
         if (type.equals("short")) {
             return displaytime;
         } else {
-            return displaytime + " (" + timertype + ")";
+            return displaytime + " (" + timerType.name() + ")";
         }
     }
 
@@ -1014,7 +1042,7 @@ public class Scorecard extends BeaconzPluginDependent {
      * @param value - the value to set
      */
     public void putScore(Team team, GameScoreGoal scoretype, int value) {
-        if (gameON && team != null && scoretype != null) {
+        if (gameOn && team != null && scoretype != null) {
             HashMap<GameScoreGoal,Integer> stypes = score.get(team);
             if (stypes == null) stypes = new HashMap<>();
             stypes.put(scoretype, value);
@@ -1330,15 +1358,15 @@ public class Scorecard extends BeaconzPluginDependent {
      */
     public void endGame() {
         // Stop timer
-        if (timertaskid != null) timertaskid.cancel();
+        if (timerTaskId != null) timerTaskId.cancel();
         // Stop keeping score
-        gameON = false;
+        gameOn = false;
         // Set game over to true
         game.setOver(true);
         // Change the objective line in the scoreboard
-        scoreboard.resetScores(goalstr);
-        scoreline = scoreobjective.getScore(Lang.scoreGameOver);
-        scoreline.setScore(0);
+        scoreboard.resetScores(goalString);
+        scoreLine = scoreObjective.getScore(Lang.scoreGameOver);
+        scoreLine.setScore(0);
         // Wait a second to let all other messages display first
         getBeaconzPlugin().getServer().getScheduler().runTaskLater(getBeaconzPlugin(), () -> {
             // Announce winner to all players
@@ -1388,44 +1416,53 @@ public class Scorecard extends BeaconzPluginDependent {
      *
      */
     public void runtimer () {
-        if (timertaskid != null) timertaskid.cancel();
-        timertaskid = getBeaconzPlugin().getServer().getScheduler().runTaskTimerAsynchronously(getBeaconzPlugin(), () -> {
+        if (timerTaskId != null) timerTaskId.cancel();
+        timerTaskId = getBeaconzPlugin().getServer().getScheduler().runTaskTimerAsynchronously(getBeaconzPlugin(), () -> {
 
-            if (gameON) {
+            if (gameOn) {
                 long seconds;
-                int t = timerinterval;
+                int t = timerInterval;
 
-                if (timertype.equals("openended")) {
-                    seconds = (System.currentTimeMillis() - starttimemilis) / 1000;
+                if (timerType == TimerType.OPENENDED) {
+                    seconds = (System.currentTimeMillis() - startTimeMillis) / 1000;
                     seconds = ((seconds+t-1)/t)*t;
                 } else {
                     countdownTimer = countdownTimer - t;
                     if (countdownTimer < 1) {
                         // Beacon timer ran out
                         countdownTimer = 0;
-                        timertaskid.cancel();
+                        timerTaskId.cancel();
                         endGame();
                     }
                     seconds = countdownTimer;
                 }
+                if (showTimer) {
+                    // display the timer
+                    long s = seconds % 60;
+                    long m = (seconds / 60) % 60;
+                    long h = (seconds / (60 * 60)) % 24;
+                    long d = (seconds / (60 * 60 * 24)) %100;
+                    displaytime = String.format("%02dd %02d:%02d:%02d", d,h,m,s);
 
-                // display the timer
-                long s = seconds % 60;
-                long m = (seconds / 60) % 60;
-                long h = (seconds / (60 * 60)) % 24;
-                long d = (seconds / (60 * 60 * 24)) %100;
-                displaytime = String.format("%02dd %02d:%02d:%02d", d,h,m,s);
-
-                if (showtimer) {
-                    String objName = scoreobjective.getDisplayName();
-                    if (!objName.contains(":")) objName = objName + "! 00d 00:00:00";
-                    objName = objName.substring(0, objName.length() - displaytime.length()) + displaytime;
-                    scoreobjective.setDisplayName(objName);
+                    // Build the display name with timer and goal on separate lines
+                    Component displayNameWithTimer = Lang.titleBeaconz
+                        .append(Component.text(" " + game.getGamemode().getName()))
+                        .append(Component.text("! " + displaytime))
+                        .append(Component.newline())
+                        .append(buildGoalComponent())
+                        .color(NamedTextColor.GREEN);
+                    scoreObjective.displayName(displayNameWithTimer);
                 } else {
-                    scoreobjective.setDisplayName(ChatColor.GREEN + "Beaconz " + game.getGamemode());
+                    // Display without timer but with goal on second line
+                    Component displayNameNoTimer = Lang.titleBeaconz
+                        .append(Component.text(" " + game.getGamemode().getName()))
+                        .append(Component.newline())
+                        .append(buildGoalComponent())
+                        .color(NamedTextColor.GREEN);
+                    scoreObjective.displayName(displayNameNoTimer);
                 }
             }
-        }, 20, timerinterval* 20L);
+        }, 20, timerInterval * 20L);
     }
 
     /**

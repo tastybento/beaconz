@@ -189,7 +189,7 @@ public class Lang extends BeaconzPluginDependent {
     public static Component scoreTeamWins;
     public static Component startMostObjective;
     public static Component startObjective;
-    public static Component startYoureAMember;
+    public static String startYoureAMember;
     public static Component startYourePlaying;
     public static Component teleportDoNotMove;
     public static Component teleportYouMoved;
@@ -439,7 +439,7 @@ public class Lang extends BeaconzPluginDependent {
         scoreTeamWins = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("score.TeamWins", "[team] FACTION WINS!!!"));
         startMostObjective = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("start.MostObjective", "Your faction's objective is to capture the most [goal]!"));
         startObjective = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("start.Objective", "Your faction's objective is to capture [value] [goal]!"));
-        startYoureAMember = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("start.YoureAMember", "You're a member of [name] faction!"));
+        startYoureAMember = locale.getString("start.YoureAMember", "<aqua>You're a member of <name> faction!");
         startYourePlaying = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("start.YourePlaying", "You're playing game [name] in [mode] mode!"));
         teleportDoNotMove = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("teleport.DoNotMove", "Do not move, teleporting in [number] seconds!"));
         teleportYouMoved = LegacyComponentSerializer.legacyAmpersand().deserialize(locale.getString("teleport.YouMoved", "You moved! Cancelling teleport!"));

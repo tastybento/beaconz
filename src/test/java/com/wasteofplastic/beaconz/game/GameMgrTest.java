@@ -114,7 +114,7 @@ class GameMgrTest {
         Lang.actionsHitSign = Component.text("Hit sign to join!");
         Lang.titleWelcome = Component.text("Welcome");
         Lang.titleSubTitle = Component.text("Enjoy your game!");
-        Lang.startYoureAMember = Component.text("You're a member of team [name]");
+        Lang.startYoureAMember = "<aqua>You're a member of team <name>";
         Lang.startObjective = Component.text("Objective: [value] [goal]");
         Lang.startMostObjective = Component.text("Get the most [goal]");
         Lang.adminRegenComplete = Component.text("Regeneration complete");
