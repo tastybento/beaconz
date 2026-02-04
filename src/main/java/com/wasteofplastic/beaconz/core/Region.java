@@ -406,6 +406,7 @@ public class Region extends BeaconzPluginDependent {
 
     /**
      * Creates corner beacons at the four corners of the region.
+     * THIS IS CURRENTLY NOT CALLED ANYWHERE.
      * <p>
      * This method places beacons at each corner of the region to establish boundaries
      * and allow for theoretical complete coverage of the map area. Corner beacons are

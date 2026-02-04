@@ -889,7 +889,6 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
         // Define colors for help messages (GREEN for command, YELLOW for syntax, AQUA for description)
         NamedTextColor green = NamedTextColor.GREEN;
         NamedTextColor yellow = NamedTextColor.YELLOW;
-        NamedTextColor aqua = NamedTextColor.AQUA;
 
         // Display help header
         sender.sendMessage(Lang.helpLine);

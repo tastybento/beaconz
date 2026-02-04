@@ -483,6 +483,9 @@ public class Lang extends BeaconzPluginDependent {
 
 
     private TextColor getTextColor(@Nullable String colorString) {
+        if (colorString == null || colorString.isEmpty()) {
+            return NamedTextColor.GOLD;
+        }
         // Try to parse it directly into a TextColor
         // fromHexString handles "#RRGGBB"
         // NamedTextColor.NAMES.value() handles names like "gold", "red", etc.
