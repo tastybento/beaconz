@@ -23,7 +23,6 @@
 package com.wasteofplastic.beaconz.commands;
 
 import java.awt.geom.Point2D;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -49,7 +48,6 @@ import org.jetbrains.annotations.NotNull;
 import com.wasteofplastic.beaconz.Beaconz;
 import com.wasteofplastic.beaconz.BeaconzPluginDependent;
 import com.wasteofplastic.beaconz.config.Lang;
-import com.wasteofplastic.beaconz.config.Params;
 import com.wasteofplastic.beaconz.config.Settings;
 import com.wasteofplastic.beaconz.core.BeaconObj;
 import com.wasteofplastic.beaconz.game.Game;
@@ -99,6 +97,7 @@ import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 public class AdminCmdHandler extends BeaconzPluginDependent implements CommandExecutor, TabCompleter {
 
     private final Set<UUID> deleteConfirm = new HashSet<>();
+    private final NewGameCommand newGameCommand;
 
     /**
      * Constructs a new AdminCmdHandler.
@@ -107,6 +106,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
      */
     public AdminCmdHandler(Beaconz beaconzPlugin) {
         super(beaconzPlugin);
+        this.newGameCommand = new NewGameCommand(beaconzPlugin);
     }
 
     /**
@@ -150,7 +150,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
             case "delete" -> onDelete(sender, label, args);
             case "force_end" -> onForceEnd(sender, label, args);
             case "list" -> onList(sender, label, args);
-            case "newgame" -> onNewGame(sender, label, args);
+            case "newgame" -> newGameCommand.execute(sender, label, args);
             case "reload" -> onReload(sender);
             case "listparms" -> onListParms(sender, label, args);
             case "setspawn" -> onSetSpawn(sender, label, args);
@@ -505,91 +505,6 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
             listBeacons(sender, args[1]);
             return true;
         }
-    }
-
-    /**
-     * Handles the newgame command to create a new game with optional parameters.
-     *
-     * <p>Creates a new game with optional custom parameters. Parameters override
-     * the default game settings. Supports gamemode, size, teams, goal, goalvalue,
-     * countdown, scoretypes, and distribution parameters.
-     *
-     * <p><b>Usage:</b> /admin newgame &lt;gamename&gt; [&lt;parm:value&gt; ...]
-     * <p><b>Example:</b> /admin newgame MyGame gamemode:strategy teams:4 goal:links
-     *
-     * @param sender the command sender
-     * @param label the command label
-     * @param args arguments: [1] = game name, [2+] = optional parameters
-     * @return true if the game was created successfully, false otherwise
-     */
-    private boolean onNewGame(CommandSender sender, String label, String[] args) {
-        // NEWGAME COMMAND: Create a new game with optional custom parameters
-        // Parameters can override defaults: gamemode, size, teams, goal, goalvalue, countdown, scoretypes, distribution
-        if (args.length < 2) {
-            sender.sendMessage(Component.text("/" + label + " newgame <gamename> [<parm1:value> <parm2:value>...] - parameters are optional"));
-            sender.sendMessage(Component.text("/" + label + " do /" + label + " newgame help for a list of the possible parameters"));
-            return false;
-        } else {
-            if (args[1].equalsIgnoreCase("help")) {
-                // Display detailed help for all game parameters
-                sender.sendMessage(Component.text("/" + label + " newgame <gamename> [<parm1:value> <parm2:value>...]"));
-                sender.sendMessage(Component.text("The optional parameters and their values are:"));
-
-                // Document each parameter with examples
-                sender.sendMessage(Component.text("gamemode -  ")
-                        .append(Component.text(" values can be either 'minigame' or 'strategy' - e.g gamemode:strategy")));
-                sender.sendMessage(Component.text("size -  ")
-                        .append(Component.text(" length for the side of the game region - e.g. size:500")));
-                sender.sendMessage(Component.text("teams -  ")
-                        .append(Component.text(" the number of teams in the game - e.g. teams:2")));
-                sender.sendMessage(Component.text("goal -  ")
-                        .append(Component.text("  one of 'area', 'beacons', 'links', 'triangles' - e.g. goal:links")));
-                sender.sendMessage(Component.text("goalvalue -  ")
-                        .append(Component.text("  the number objective for the goal - e.g goalvalue:100")));
-                sender.sendMessage(Component.text("countdown -  ")
-                        .append(Component.text("  the game's timer, in seconds. 0 means the timer runs up, open-ended; any other value meands the timer runs a countdown from that time. - e.g. countdown:600")));
-                sender.sendMessage(Component.text("scoretypes -  ")
-                        .append(Component.text("  the scores to be displayed on the sidebar. Can be any combination of goal names separated by '-' e.g scoretypes:area-triangles-beacons-links")));
-                sender.sendMessage(Component.text("distribution -  ")
-                        .append(Component.text("  overrides the system's default beacon distribution - specify a number between 0.01 and 0.99 for the probability of any one chunk containing a beacon.")));
-                return true;
-            } else {
-                // Parse and create game with parameters
-                String [] parmargs = new String [args.length-2];
-                System.arraycopy(args, 2, parmargs, 0, parmargs.length);
-                Game game = getGameMgr().getGame(args[1]);
-
-                // Check if game name already exists
-                if (game != null) {
-                    sender.sendMessage(MiniMessage.miniMessage().deserialize(Lang.errorAlreadyExists,
-                            Placeholder.component("name", game.getName())));
-                    return false;
-                } else {
-                    // Check and validate parameters if provided
-                    if (parmargs.length > 0) {
-                        try {
-                        Params params = new Params(parmargs);
-                        sender.sendMessage(Lang.adminNewGameBuilding);
-                        getGameMgr().newGame(args[1]);           // create the new game
-                        getGameMgr().setGameDefaultParms(params);
-                        sender.sendMessage(Lang.generalSuccess);
-                        return true;
-                        } catch (IOException e) {
-                            sender.sendMessage(Lang.errorError.append(Component.text(e.getMessage())));
-                            getGameMgr().setGameDefaultParms();      // restore the default parameters (just in case)
-                            return false;
-                        }
-                     } else {
-                        // Create game with default parameters
-                        sender.sendMessage(Lang.adminNewGameBuilding);
-                        getGameMgr().newGame(args[1]);
-                        sender.sendMessage(Lang.generalSuccess);
-                        return true;
-                    }
-                }
-            }
-        }
-
     }
 
     /**
@@ -1146,7 +1061,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
             }
 
             if (args[0].equalsIgnoreCase("newgame")) {
-                options.add("help");
+                options.addAll(newGameCommand.tabComplete(args));
             }
             // Options with "all"
             if (args[0].equalsIgnoreCase("list") || args[0].equalsIgnoreCase("teams") || args[0].equalsIgnoreCase("timertoggle")) {
@@ -1178,20 +1093,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
             }
             // For arguments 3+, provide parameter templates for newgame command
             if (args[0].equalsIgnoreCase("newgame")) {
-                // Provide template suggestions for game creation parameters
-                options.add("gamemode:strategy");
-                options.add("gamemode:minigame");
-                options.add("teams:");
-                options.add("goal:area");
-                options.add("goal:beacons");
-                options.add("goal:links");
-                options.add("goal:triangles");
-                options.add("goalvalue:");
-                options.add("countdown:");
-                options.add("scoretypes:area");
-                options.add("scoretypes:beacons");
-                options.add("scoretypes:links");
-                options.add("scoretypes:triangles");
+                options.addAll(newGameCommand.tabComplete(args));
             }
         }
         // Filter options to match what the player has typed so far
