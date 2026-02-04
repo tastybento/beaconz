@@ -206,7 +206,10 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                         // Found an alternative team - switch to it
                         game.getScorecard().addTeamPlayer(newTeam, player);
                         sender.sendMessage(MiniMessage.miniMessage().deserialize(Lang.actionsSwitchedToTeam,
-                                Placeholder.component("team", newTeam.displayName())));
+                                Placeholder.component("team", newTeam.displayName()),
+                                Placeholder.component("name", player.displayName())
+                                )
+                        );
 
                         // Clear all potion effects when switching teams
                         for (PotionEffect effect : player.getActivePotionEffects())
@@ -242,12 +245,13 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
                         game.getScorecard().addTeamPlayer(newTeam, player);
 
                         // Notify both admin and player
-                        // TODO Change this to include player name placeholder
-                        sender.sendMessage(Component.text(player.getName() + ": ").append(
-                                MiniMessage.miniMessage().deserialize(Lang.actionsSwitchedToTeam,
-                                Placeholder.component("team", team.displayName()))));
+                        sender.sendMessage(MiniMessage.miniMessage().deserialize(Lang.actionsSwitchedToTeam,
+                                Placeholder.component("team", team.displayName()),
+                                        Placeholder.component("name", player.displayName()))
+                        );
                         player.sendMessage(MiniMessage.miniMessage().deserialize(Lang.actionsSwitchedToTeam,
-                                Placeholder.component("team", newTeam.displayName())));
+                                Placeholder.component("team", newTeam.displayName()),
+                                Placeholder.component("name", player.displayName())));
 
                         // Remove any potion effects
                         for (PotionEffect effect : player.getActivePotionEffects())

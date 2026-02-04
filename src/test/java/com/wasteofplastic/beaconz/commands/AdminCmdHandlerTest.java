@@ -229,7 +229,7 @@ class AdminCmdHandlerTest {
 
         // Action messages
         Lang.actionsYouAreInTeam= "You are in <team>!";
-        Lang.actionsSwitchedToTeam= "Switched to <team>";
+        Lang.actionsSwitchedToTeam= "<player> switched to <team>";
         Lang.actionsDistributionSettingTo= "Distribution set to [value]";
 
         // Beacon messages

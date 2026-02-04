@@ -78,7 +78,7 @@ class RegionTest {
         // Initialize Component fields used by Region
         Lang.titleWelcome = Component.text("Welcome to Beaconz!");
         Lang.titleSubTitle = Component.text("Capture beacons and control territory");
-        Lang.titleLobbyInfo = Component.text("Lobby Info");
+        Lang.titleLobbyInfo = "Lobby Info";
         Lang.actionsHitSign = Component.text("Hit sign to join");
         Lang.startYoureAMember = "<aqua>You're a member of team <name>";
         Lang.startObjective = "Objective";

@@ -197,7 +197,7 @@ public class Lang extends BeaconzPluginDependent {
     public static Component titleBeaconzNews;
     public static Component titleCmdLocation;
     public static String titleCmdYourePlaying;
-    public static Component titleLobbyInfo;
+    public static String titleLobbyInfo;
     public static Component titleSubTitle;
     public static TextColor titleSubTitleColor;
     public static Component titleWelcome;
@@ -270,7 +270,7 @@ public class Lang extends BeaconzPluginDependent {
         //welcome = MiniMessage.miniMessage().deserialize(locale.getString("welcome", "Welcome to Beaconz!"));
         actionsDistributionSettingTo =  locale.getString("actions.DistributionSettingTo", "<green>Setting beacon distribution to <yellow><value></yellow></green>");
         actionsHitSign = MiniMessage.miniMessage().deserialize(locale.getString("actions.HitSign", "<aqua>Hit sign to start game!</aqua>"));
-        actionsSwitchedToTeam = locale.getString("actions.SwitchedToTeam", "<green>Switched to <yellow><team></yellow>!</green>");
+        actionsSwitchedToTeam = locale.getString("actions.SwitchedToTeam", "<green><player> switched to <yellow><team></yellow>!</green>");
         actionsYouAreInTeam = locale.getString("actions.youAreInTeam", "<aqua>You are in <yellow><team></yellow>!</aqua>");
         adminDeletedGame = locale.getString("admin.DeletedGame", "<green>Deleted <yellow><name></yellow>.</green>");
         adminDeletingGame = locale.getString("admin.DeletingGame", "<gold>Deleting game <yellow><name></yellow>...</gold>");
@@ -447,7 +447,7 @@ public class Lang extends BeaconzPluginDependent {
         titleBeaconzNews = MiniMessage.miniMessage().deserialize(locale.getString("title.BeaconzNews", "<gold><bold>Beaconz News</bold></gold>"));
         titleCmdLocation = MiniMessage.miniMessage().deserialize(locale.getString("title.CmdLocation", "<aqua>You're in the Beaconz Lobby at</aqua>"));
         titleCmdYourePlaying = locale.getString("title.CmdYourePlaying", "<aqua>You're playing Beaconz game <yellow><game></yellow></aqua>");
-        titleLobbyInfo = MiniMessage.miniMessage().deserialize(locale.getString("title.LobbyInfo", "<gold>Welcome to Beaconz!</gold>|<aqua>You are in the lobby area.</aqua>|<green>Hit a sign to start a game!</green>|<gray>Beaconz is a faction game where</gray>|<gray>you try to find, claim and link</gray>|<gray>naturally occuring beaconz in</gray>|<gray>the world. You can mine beaconz</gray>|<gray>for goodies and defend them</gray>|<gray>with blocks and traps.</gray>"));
+        titleLobbyInfo = locale.getString("title.LobbyInfo", "<gold>Welcome to Beaconz!</gold>|<aqua>You are in the lobby area.</aqua>|<green>Hit a sign to start a game!</green>|<gray>Beaconz is a faction game where</gray>|<gray>you try to find, claim and link</gray>|<gray>naturally occuring beaconz in</gray>|<gray>the world. You can mine beaconz</gray>|<gray>for goodies and defend them</gray>|<gray>with blocks and traps.</gray>");
         titleSubTitle = MiniMessage.miniMessage().deserialize(locale.getString("title.SubTitle", "<italic>Capture, link & defend beaconz!</italic>"));
         titleSubTitleColor = getTextColor(locale.getString("title.SubTitleColor", "gold"));
         titleWelcome = MiniMessage.miniMessage().deserialize(locale.getString("title.Welcome",  "<gold><bold>Welcome to Beaconz!</bold></gold>"));

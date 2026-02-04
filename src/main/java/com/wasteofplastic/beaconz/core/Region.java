@@ -32,6 +32,7 @@ import java.util.Locale;
 import java.util.Random;
 import java.util.Set;
 
+import io.papermc.paper.scoreboard.numbers.NumberFormat;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -67,6 +68,7 @@ import com.wasteofplastic.beaconz.util.Pair;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.kyori.adventure.title.Title;
 
@@ -804,32 +806,43 @@ public class Region extends BeaconzPluginDependent {
             getServer().getScheduler().runTaskLater(plugin, () -> {
                 // This runs after a few seconds, so make sure that player is still in the lobby
                 if (getGameMgr().isPlayerInLobby(player)) {
-                    Scoreboard sb = plugin.getServer().getScoreboardManager().getNewScoreboard();
-                    Objective sbobj;
-                    Score scoreline;
-                    player.setScoreboard(sb);
-
-                    try {
-                        sb.clearSlot(DisplaySlot.SIDEBAR);
-                    } catch (Exception ignored){ }
-
-                    // Properly serialize Component to plain text before splitting
-                    String lobbyInfoText = PlainTextComponentSerializer.plainText().serialize(Lang.titleLobbyInfo);
-                    String[] lobbyInfo = lobbyInfoText.split("\\|");
-
-                    // Use modern API with Criteria and Component displayName
-                    sbobj = sb.registerNewObjective("text", Criteria.DUMMY,
-                            Component.text(lobbyInfo[0]));
-                    sbobj.setDisplaySlot(DisplaySlot.SIDEBAR);
-                    for (int line = 1; line < lobbyInfo.length; line++) {
-                        scoreline = sbobj.getScore(lobbyInfo[line]);
-                        scoreline.setScore(16-line);
-                    }
-                    player.setScoreboard(sb);
-
+                    showScoreboardInfo(player);
                 }
             }, 60L);
         }
+    }
+
+    private void showScoreboardInfo(Player player) {
+        Scoreboard sb = plugin.getServer().getScoreboardManager().getNewScoreboard();
+        Objective sbobj;
+        Score scoreline;
+        player.setScoreboard(sb);
+
+        try {
+            sb.clearSlot(DisplaySlot.SIDEBAR);
+        } catch (Exception ignored){ }
+
+        // Properly serialize Component to plain text before splitting
+        String[] lobbyInfo = Lang.titleLobbyInfo.split("\\|");
+        if (lobbyInfo.length < 1) {
+            return;
+        }
+        // Use modern API with Criteria and Component displayName
+        sbobj = sb.registerNewObjective("text", Criteria.DUMMY,
+                MiniMessage.miniMessage().deserialize(lobbyInfo[0]));
+        sbobj.setDisplaySlot(DisplaySlot.SIDEBAR);
+        if (lobbyInfo.length < 2) {
+            return;
+        }
+        for (int line = 1; line < lobbyInfo.length; line++) {
+            Component lineText = MiniMessage.miniMessage().deserialize(lobbyInfo[line]);
+            // Convert Component to legacy string with § color codes to preserve colors in scoreboard
+            String legacyText = LegacyComponentSerializer.legacySection().serialize(lineText);
+            scoreline = sbobj.getScore(legacyText);
+            scoreline.setScore(16-line);
+            scoreline.numberFormat(NumberFormat.blank()); // Hide the score number
+        }
+        player.setScoreboard(sb);
     }
 
     /**
