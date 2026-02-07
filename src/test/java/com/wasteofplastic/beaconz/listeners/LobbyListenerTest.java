@@ -217,6 +217,7 @@ class LobbyListenerTest extends CommonTestBase {
         SignSide side = mock(SignSide.class);
         when(sign.getSide(Side.FRONT)).thenReturn(side);
         when(side.line(0)).thenReturn(Lang.adminSignKeyword);
+        when(side.lines()).thenReturn(List.of(Lang.adminSignKeyword, Component.text(""), Component.text(""), Component.text("")));
         when(block.getState()).thenReturn(sign);
         
         PlayerInteractEvent event = new PlayerInteractEvent(player, Action.LEFT_CLICK_BLOCK, null, block, BlockFace.UP);
@@ -250,6 +251,7 @@ class LobbyListenerTest extends CommonTestBase {
         when(side.line(1)).thenReturn(Component.text("gameName"));
         when(side.line(2)).thenReturn(Component.text(""));
         when(side.line(3)).thenReturn(Component.text(""));
+        when(side.lines()).thenReturn(List.of(Lang.adminSignKeyword, Component.text("gameName"), Component.text(""), Component.text("")));
         when(block.getState()).thenReturn(sign);
         
         // Mock getGame to return game for line 1, null for others
@@ -299,6 +301,7 @@ class LobbyListenerTest extends CommonTestBase {
         when(side.line(1)).thenReturn(Component.text("gameName"));
         when(side.line(2)).thenReturn(Component.text(""));
         when(side.line(3)).thenReturn(Component.text(""));
+        when(side.lines()).thenReturn(List.of(Lang.adminSignKeyword, Component.text("gameName"), Component.text(""), Component.text("")));
         when(block.getState()).thenReturn(sign);
         
         // Mock getGame to return game for line 1, null for others

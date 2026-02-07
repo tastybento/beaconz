@@ -184,6 +184,7 @@ public abstract class CommonTestBase {
         Lang.errorNotReady = Component.text("errorNotReady");
         Lang.errorNoSuchGame = Component.text("errorNoSuchGame");
         Lang.adminGameSignPlaced = Component.text("adminGameSignPlaced");
+        Lang.scoreGameOver = "scoreGameOver";
     }
 
     /**
