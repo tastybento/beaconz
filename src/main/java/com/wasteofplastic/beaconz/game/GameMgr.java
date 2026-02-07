@@ -353,6 +353,7 @@ public class GameMgr extends BeaconzPluginDependent {
         // Get the location for creating the new region
         Point2D ctr = nextRegionLocation();
         double radius = rup16(defaultParameters.getSize() / 2.0);
+        getLogger().info("DEBUG: radius is " + radius);
         if (ctr == null) {
             getLogger().warning("Could not find a location to create the next region.");
             result.complete(false);

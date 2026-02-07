@@ -237,6 +237,15 @@ public class Params {
      */
     public Params(String[] args) throws IOException {
         Component errormsg = Component.empty();
+        // Set default values before validation, so they can be used as fallbacks during validation
+        this.gamemode = null;
+        this.size = null;
+        this.teams = null;
+        this.goal = null;
+        this.goalvalue = null;
+        this.countdown = null;
+        this.scoretypes = null;
+        this.distribution = null;
 
         // Check that *ALL* arguments are valid parms
         for (String arg : args) {

@@ -39,7 +39,7 @@ admin:
   Restart: "<green>Restarted game <yellow><name></yellow></green>"
   Resume: "<green>Game <yellow><name></yellow> is back ON!!</green>"
   SetSpawnNeedToBeInGame: "<red>You need to be in the region of an active game</red>"
-  SignKeyword: "<dark_purple>[beaconz]</dark_purple>"
+  SignKeyword: "[beaconz]"
   UseSurvival: "<gold>Use Survival mode to break signs in lobby.</gold>"
 beacon:
   AmplifierBlocksCannotBeRecovered: "<gold>Link amplifier blocks cannot be recovered!</gold>"
@@ -63,7 +63,7 @@ beacon:
   LockedAlready: "<gold>This beacon is already locked. Don't waste <yellow><lockingBlock></yellow>'s!</gold>"
   LockedJustNow: "<green>This beacon is now locked. Break an <yellow><lockingBlock></yellow> to unlock it!</green>"
   LockedWithNMoreBlocks: "<aqua><yellow><number></yellow> additional locking block(s) on this level will lock the beacon.</aqua>"
-  MapBeaconMap: "<gold>Beacon Map</gold>"
+  MapBeaconMap: "Beacon Map"
   MapUnknownBeacon: "<gray>Unknown beacon</gray>"
   MaxLinks: "<gold>This beacon already has <yellow><number></yellow> outbound links!</gold>"
   NameCreateATriangle: "<green><yellow><name></yellow> created a triangle!</green>"

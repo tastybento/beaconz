@@ -25,16 +25,20 @@ package com.wasteofplastic.beaconz.commands;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 
 import com.wasteofplastic.beaconz.Beaconz;
 import com.wasteofplastic.beaconz.BeaconzPluginDependent;
 import com.wasteofplastic.beaconz.config.Lang;
 import com.wasteofplastic.beaconz.config.Params;
+import com.wasteofplastic.beaconz.config.Params.GameScoreGoal;
 import com.wasteofplastic.beaconz.game.Game;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 
@@ -65,6 +69,8 @@ import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
  */
 public class NewGameCommand extends BeaconzPluginDependent {
 
+    private final NewGameGUI gui;
+
     /**
      * Creates a new NewGameCommand handler.
      *
@@ -72,13 +78,19 @@ public class NewGameCommand extends BeaconzPluginDependent {
      */
     public NewGameCommand(Beaconz plugin) {
         super(plugin);
+        this.gui = new NewGameGUI(plugin);
+        this.gui.setCommandHandler(this);
+
+        // Register chat listener for game name input
+        NewGameChatListener chatListener = new NewGameChatListener(plugin, gui, this);
+        plugin.getServer().getPluginManager().registerEvents(chatListener, plugin);
     }
 
     /**
      * Executes the newgame command to create a new game with optional parameters.
      *
-     * <p>Creates a new game with optional custom parameters. Parameters override
-     * the default game settings.
+     * <p>If no arguments are provided and sender is a player, opens the GUI.
+     * Otherwise creates a new game with optional custom parameters.
      *
      * @param sender the command sender
      * @param label the command label used
@@ -86,9 +98,15 @@ public class NewGameCommand extends BeaconzPluginDependent {
      * @return true if the game was created successfully, false otherwise
      */
     public boolean execute(CommandSender sender, String label, String[] args) {
+        // If no game name provided and sender is a player, open GUI
         if (args.length < 2) {
-            showUsage(sender, label);
-            return false;
+            if (sender instanceof Player player) {
+                gui.openGUI(player);
+                return true;
+            } else {
+                showUsage(sender, label);
+                return false;
+            }
         }
 
         if (args[1].equalsIgnoreCase("help")) {
@@ -181,8 +199,8 @@ public class NewGameCommand extends BeaconzPluginDependent {
         try {
             Params params = new Params(parmargs);
             sender.sendMessage(Lang.adminNewGameBuilding);
-            getGameMgr().newGame(gameName);
             getGameMgr().setGameDefaultParms(params);
+            getGameMgr().newGame(gameName);
             sender.sendMessage(Lang.generalSuccess);
             return true;
         } catch (IOException e) {
@@ -204,6 +222,75 @@ public class NewGameCommand extends BeaconzPluginDependent {
         getGameMgr().newGame(gameName);
         sender.sendMessage(Lang.generalSuccess);
         return true;
+    }
+
+    /**
+     * Creates a new game from GUI settings.
+     *
+     * @param player the player creating the game
+     * @param settings the GUI settings
+     * @return true if successful, false otherwise
+     */
+    public boolean createGameFromGUI(Player player, NewGameGUI.GameSettings settings) {
+        // Prompt for game name
+        player.sendMessage(Component.text("Enter the game name in chat:").color(NamedTextColor.GOLD));
+
+        // Build parameter string from settings
+        List<String> params = new ArrayList<>();
+
+        // Game mode
+        params.add("gamemode:" + settings.getGameMode().name().toLowerCase());
+
+        // Teams
+        params.add("teams:" + settings.getTeams());
+
+        // Size
+        params.add("size:" + settings.size);
+
+        // Goal
+        params.add("goal:" + settings.getGoal().name().toLowerCase());
+
+        // Score types
+        if (!settings.getScoreTypes().isEmpty()) {
+            String scoreTypes = settings.getScoreTypes().stream()
+                .map(st -> st.name().toLowerCase())
+                .collect(Collectors.joining("-"));
+            params.add("scoretypes:" + scoreTypes);
+        }
+
+        // Timer
+        if (settings.isTimed()) {
+            params.add("countdown:" + settings.getTimerSeconds());
+        } else {
+            params.add("countdown:0");
+        }
+
+        // For now, we'll need to get the game name from chat
+        // Store the settings temporarily and wait for chat input
+        gui.setPendingGameCreation(player, settings, params.toArray(new String[0]));
+
+        return true;
+    }
+
+    /**
+     * Completes game creation with a name (called after player enters name in chat).
+     *
+     * @param player the player
+     * @param gameName the game name
+     * @param paramArgs the parameter arguments
+     * @return true if successful
+     */
+    public boolean completeGameCreation(Player player, String gameName, String[] paramArgs) {
+        Game game = getGameMgr().getGame(gameName);
+
+        // Check if game name already exists
+        if (game != null) {
+            player.sendMessage(MiniMessage.miniMessage().deserialize(Lang.errorAlreadyExists,
+                    Placeholder.component("name", game.getName())));
+            return false;
+        }
+
+        return createGameWithParameters(player, gameName, paramArgs);
     }
 
     /**

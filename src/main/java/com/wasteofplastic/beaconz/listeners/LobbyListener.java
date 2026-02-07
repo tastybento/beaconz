@@ -169,10 +169,13 @@ public class LobbyListener extends BeaconzPluginDependent implements Listener {
             Sign sign = (Sign) event.getClickedBlock().getState();
             @NotNull SignSide side = sign.getSide(Side.FRONT);
 
+            getLogger().info("DEBUG: Player " + event.getPlayer().getName() + " clicked a sign with the keyword: " + side.line(0));
+            getLogger().info("DEBUG: expected keyword: " + Lang.adminSignKeyword);
+            getLogger().info("DEBUG: same? " + (side.line(0) != null && side.line(0).equals(Lang.adminSignKeyword)));
+            // Check if sign has anything on it
             // Check if line 0 contains the configured sign keyword
-            if (side.line(0).equals(Lang.adminSignKeyword)) {
-                // Check lines 1-3 for game names
-                for (int i = 1; i < 4; i++) {
+            if (side.lines().size() > 0 && side.line(0) != null && side.line(0).equals(Lang.adminSignKeyword)) {// Check lines 1-3 for game names
+                for (int i = 1; i < side.lines().size(); i++) {
                     Component gamename = side.line(i);
 
                     // Check if a game with this name exists

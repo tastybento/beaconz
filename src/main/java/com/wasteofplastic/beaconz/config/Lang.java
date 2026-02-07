@@ -301,7 +301,7 @@ public class Lang extends BeaconzPluginDependent {
         adminRestart = locale.getString("admin.Restart", "<green>Restarted game <yellow><name></yellow></green>");
         adminResume = locale.getString("admin.Resume", "<green>Game <yellow><name></yellow> is back ON!!</green>");
         adminSetSpawnNeedToBeInGame = MiniMessage.miniMessage().deserialize(locale.getString("admin.SetSpawnNeedToBeInGame", "<red>You need to be in the region of an active game</red>"));
-        adminSignKeyword = MiniMessage.miniMessage().deserialize(locale.getString("admin.SignKeyword", "<dark_purple>[beaconz]</dark_purple>"));
+        adminSignKeyword = MiniMessage.miniMessage().deserialize(locale.getString("admin.SignKeyword", "[beaconz]"));
         adminUseSurvival = MiniMessage.miniMessage().deserialize(locale.getString("admin.UseSurvival", "<gold>Use Survival mode to break signs in lobby.</gold>"));
         beaconAmplifierBlocksCannotBeRecovered = MiniMessage.miniMessage().deserialize(locale.getString("beacon.AmplifierBlocksCannotBeRecovered", "<gold>Link amplifier blocks cannot be recovered!</gold>"));
         beaconBreakToOwn = MiniMessage.miniMessage().deserialize(locale.getString("beacon.BreakToOwn", "<aqua>Break the obsidian to own the beacon!</aqua>"));
@@ -323,7 +323,7 @@ public class Lang extends BeaconzPluginDependent {
         beaconLockedAlready = locale.getString("beacon.LockedAlready", "<gold>This beacon is already locked. Don't waste <yellow><lockingBlock></yellow>'s!</gold>");
         beaconLockedJustNow = locale.getString("beacon.LockedJustNow", "<green>This beacon is now locked. Break an <yellow><lockingBlock></yellow> to unlock it!</green>");
         beaconLockedWithNMoreBlocks = locale.getString("beacon.LockedWithNMoreBlocks", "<aqua><yellow><number></yellow> additional locking block(s) on this level will lock the beacon.</aqua>");
-        beaconMapBeaconMap = locale.getString("beacon.MapBeaconMap", "<gold>Beacon Map</gold>");
+        beaconMapBeaconMap = locale.getString("beacon.MapBeaconMap", "Beacon Map"); // Not colored because it's used as the map name in the item lore
         beaconMapUnknownBeacon = locale.getString("beacon.MapUnknownBeacon", "<gray>Unknown beacon</gray>");
         beaconMaxLinks = locale.getString("beacon.MaxLinks", "<gold>This beacon already has <yellow><number></yellow> outbound links!</gold>");
         beaconNameCreateATriangle = locale.getString("beacon.NameCreateATriangle", "<green><yellow><name></yellow> created a triangle!</green>");
