@@ -26,9 +26,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 import org.bukkit.Location;
@@ -95,12 +93,6 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
     private final HashMap<UUID, Collection<PotionEffect>> triangleEffects = new HashMap<>();
 
     /**
-     * Set of player UUIDs who are currently near region barriers.
-     * Used to show barrier particles and prevent spam.
-     */
-    private final Set<UUID> barrierPlayers = new HashSet<>();
-
-    /**
      * Constructs a new PlayerMovementListener.
      *
      * @param plugin the Beaconz plugin instance
@@ -158,7 +150,9 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
         if (event.getEntity().getWorld().equals(getBeaconzWorld())) {
             if (getGameMgr().getGame(event.getEntity().getLocation()) == null) {
                 event.setCancelled(true);
-                event.getPlayer().sendMessage(Lang.errorYouCannotDoThat);
+                if (event.getPlayer() != null) {
+                    event.getPlayer().sendMessage(Lang.errorYouCannotDoThat);
+                }
             }
         }
     }
@@ -225,32 +219,45 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
             return;
         }
 
-        // Check if a player is driving the vehicle
-        Entity passenger = event.getVehicle().getPassenger();
-        if (passenger instanceof Player player) {
-            Location from = event.getFrom();
-            Location to = event.getTo();
+        // Process all passengers in the vehicle
+        List<Entity> passengers = event.getVehicle().getPassengers();
+        if (passengers.isEmpty()) {
+            return;
+        }
 
-            // Apply slowness effects to non-living vehicles (boats, minecarts)
-            // Living vehicles (horses, etc.) inherit effects automatically
-            if ((!(event.getVehicle() instanceof LivingEntity))) {
-                for (PotionEffect effect : getTriangleEffects(player.getUniqueId())) {
-                    if (effect.getType().equals(PotionEffectType.SLOWNESS)) {
-                        // Calculate slowdown based on effect amplifier
-                        double delay = effect.getAmplifier();
-                        event.getVehicle().setVelocity(event.getVehicle().getVelocity().divide(new Vector(delay,delay,delay)));
-                        break;
-                    }
+        // Find the first player passenger to use as the primary driver
+        Player primaryPlayer = null;
+        for (Entity passenger : passengers) {
+            if (passenger instanceof Player p) {
+                primaryPlayer = p;
+                break;
+            }
+        }
+
+        if (primaryPlayer == null) {
+            return;
+        }
+
+        Location from = event.getFrom();
+        Location to = event.getTo();
+
+        // Apply slowness effects to non-living vehicles (boats, minecarts)
+        // Living vehicles (horses, etc.) inherit effects automatically
+        if (!(event.getVehicle() instanceof LivingEntity)) {
+            for (PotionEffect effect : getTriangleEffects(primaryPlayer.getUniqueId())) {
+                if (effect.getType().equals(PotionEffectType.SLOWNESS)) {
+                    // Calculate slowdown based on effect amplifier
+                    double delay = effect.getAmplifier();
+                    event.getVehicle().setVelocity(event.getVehicle().getVelocity().divide(new Vector(delay, delay, delay)));
+                    break;
                 }
             }
+        }
 
-            // Check if there are any other passengers in the vehicle
-            // (e.g., multiple players in a boat)
-            for (Player pl : getBeaconzWorld().getPlayers()) {
-                if (!pl.equals(player) && pl.isInsideVehicle() && pl.getVehicle().getEntityId() == event.getVehicle().getEntityId()) {
-                    // Process movement checks for each passenger
-                    checkMove(pl, event.getVehicle().getWorld(), from, to);
-                }
+        // Process movement checks for all player passengers
+        for (Entity passenger : passengers) {
+            if (passenger instanceof Player p && !p.equals(primaryPlayer)) {
+                checkMove(p, event.getVehicle().getWorld(), from, to);
             }
         }
     }
@@ -328,7 +335,6 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
             // Larger movements might be legitimate teleports
             if (from.distanceSquared(to) < 6.25) {
                 Vector direction = player.getLocation().getDirection();
-                barrierPlayers.add(player.getUniqueId());
                 // Return true to cancel the event (player stays in place)
                 // Note: We don't teleport the player - just block the movement
                 player.sendMessage(Lang.errorRegionLimit);

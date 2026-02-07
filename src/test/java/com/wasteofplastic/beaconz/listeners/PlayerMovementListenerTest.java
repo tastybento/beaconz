@@ -172,7 +172,8 @@ class PlayerMovementListenerTest extends CommonTestBase {
         Vector initialVelocity = new Vector(1.0, 0, 1.0);
         when(boat.getVelocity()).thenReturn(initialVelocity.clone());
         
-        when(boat.getPassenger()).thenReturn(player);
+        // Use getPassengers() which returns a List<Entity>
+        when(boat.getPassengers()).thenReturn(List.of(player));
         UUID uuid = UUID.randomUUID();
         when(player.getUniqueId()).thenReturn(uuid);
 
@@ -198,23 +199,21 @@ class PlayerMovementListenerTest extends CommonTestBase {
         
         Horse horse = mock(Horse.class); // LivingEntity, so velocity reduction is skipped
         when(horse.getWorld()).thenReturn(world);
-        when(horse.getPassenger()).thenReturn(player);
-        when(horse.getEntityId()).thenReturn(999);
 
-        // Setup a second player in the same world
+        // Setup a second player in the same vehicle
         Player secondPlayer = mock(Player.class);
-        when(secondPlayer.isInsideVehicle()).thenReturn(true);
-        when(secondPlayer.getVehicle()).thenReturn(horse);
-        when(world.getPlayers()).thenReturn(List.of(player, secondPlayer));
+
+        // Use getPassengers() which returns a List<Entity> with both players
+        when(horse.getPassengers()).thenReturn(List.of(player, secondPlayer));
 
         VehicleMoveEvent event = new VehicleMoveEvent(horse, location, location);
         
         // This test requires pml.checkMove to be verifiable (either mocked or a spy)
         pml.onVehicleMove(event);
 
-        // Verify the logic checked the second player
-        // Note: You may need to verify internal calls to checkMove if pml is a spy
-        verify(secondPlayer).isInsideVehicle();
+        // The new implementation iterates through passengers and calls checkMove
+        // for non-primary players. Verify getPassengers was called.
+        verify(horse).getPassengers();
     }
 
     /**
@@ -230,7 +229,7 @@ class PlayerMovementListenerTest extends CommonTestBase {
         pml.onVehicleMove(event);
 
         // Verify no further interaction with the vehicle's passengers occurred
-        verify(vehicle, never()).getPassenger();
+        verify(vehicle, never()).getPassengers();
     }
 
     /**

@@ -550,10 +550,10 @@ public class GameMgr extends BeaconzPluginDependent {
         int increment = 50; // Sample every 50th block (approx 1/10 of chunks)
 
         // Calculate area boundaries
-        int minx = (int) (rup16(ctr.getX() - radius)/1);
-        int minz = (int) (rup16(ctr.getY() - radius)/1);
-        int maxx = (int) (rup16(ctr.getX() + radius)/1);
-        int maxz = (int) (rup16(ctr.getY() + radius)/1);
+        int minx = (int) (rup16(ctr.getX() - radius));
+        int minz = (int) (rup16(ctr.getY() - radius));
+        int maxx = (int) (rup16(ctr.getX() + radius));
+        int maxz = (int) (rup16(ctr.getY() + radius));
 
         // Sample the area and count ocean biomes
         outerloop:

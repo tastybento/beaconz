@@ -75,6 +75,7 @@ import com.wasteofplastic.beaconz.game.Game;
 
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Listener class that handles protection mechanisms for beacons in the game.
@@ -260,10 +261,10 @@ public class BeaconProtectionListener extends BeaconzPluginDependent implements 
                             () -> notified.remove(player.getUniqueId()), 1200L);
                 }
             }
-        } else {
+        }
             // Player is attempting to break a different part of the beacon structure
             // (pyramid blocks, etc.) - this is handled by other event handlers
-        }
+
 
     }
 
@@ -805,20 +806,7 @@ public class BeaconProtectionListener extends BeaconzPluginDependent implements 
         }
 
         // Determine the physical location of the inventory being accessed
-        InventoryHolder invHolder = event.getInventory().getHolder();
-        Location invLoc = null;
-
-        // Different inventory types store their location differently
-        if (invHolder instanceof Horse) {
-            // Horse inventories use the horse's location
-            invLoc = ((Horse) invHolder).getLocation();
-        } else if (invHolder instanceof Minecart) {
-            // Minecart inventories use the minecart's location
-            invLoc = ((Minecart) invHolder).getLocation();
-        } else {
-            // Block-based inventories (chests, etc.) have a direct location
-            invLoc = event.getInventory().getLocation();
-        }
+        Location invLoc = getLocation(event);
 
         // Some inventories don't have a location (virtual inventories)
         if (invLoc == null) {
@@ -856,6 +844,24 @@ public class BeaconProtectionListener extends BeaconzPluginDependent implements 
                 }
             }*/
         }
+    }
+
+    private static @Nullable Location getLocation(InventoryOpenEvent event) {
+        InventoryHolder invHolder = event.getInventory().getHolder();
+        Location invLoc;
+
+        // Different inventory types store their location differently
+        if (invHolder instanceof Horse) {
+            // Horse inventories use the horse's location
+            invLoc = ((Horse) invHolder).getLocation();
+        } else if (invHolder instanceof Minecart) {
+            // Minecart inventories use the minecart's location
+            invLoc = ((Minecart) invHolder).getLocation();
+        } else {
+            // Block-based inventories (chests, etc.) have a direct location
+            invLoc = event.getInventory().getLocation();
+        }
+        return invLoc;
     }
 
     /**

@@ -1225,8 +1225,8 @@ public class Register extends BeaconzPluginDependent {
 
     /**
      * Returns the beacon at x,z or null if there is none
-     * @param x
-     * @param z
+     * @param x - the X coordinate of the beacon (world and Y are ignored)
+     * @param z - the Z coordinate of the beacon (world and Y are ignored)
      * @return beacon object
      */
     public BeaconObj getBeaconAt(int x, int z) {
