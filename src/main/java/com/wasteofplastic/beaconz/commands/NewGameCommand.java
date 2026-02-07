@@ -34,7 +34,6 @@ import com.wasteofplastic.beaconz.Beaconz;
 import com.wasteofplastic.beaconz.BeaconzPluginDependent;
 import com.wasteofplastic.beaconz.config.Lang;
 import com.wasteofplastic.beaconz.config.Params;
-import com.wasteofplastic.beaconz.config.Params.GameScoreGoal;
 import com.wasteofplastic.beaconz.game.Game;
 
 import net.kyori.adventure.text.Component;

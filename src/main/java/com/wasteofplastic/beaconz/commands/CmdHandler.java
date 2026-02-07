@@ -244,8 +244,8 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
      * Returns all of the items that begin with the given start,
      * ignoring case.  Intended for tabcompletion.
      *
-     * @param list
-     * @param start
+     * @param list - list of items to check for matches
+     * @param start - the start of the item to match, case insensitive
      * @return List of items that start with the letters
      */
     public static List<String> tabLimit(final List<String> list, final String start) {

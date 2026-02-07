@@ -665,7 +665,7 @@ public class Register extends BeaconzPluginDependent {
 
     /**
      * Get the number of links a team has
-     * @param team
+     * @param team - the team to check
      * @return number of links
      */
     public int getTeamLinks(Team team) {
@@ -901,7 +901,7 @@ public class Register extends BeaconzPluginDependent {
 
     /**
      * Checks if a block is part of a natural beacon
-     * @param b
+     * @param b - the block to check
      * @return true if it is part of a beacon, false if not
      */
     public boolean isBeacon(Block b) {
@@ -910,8 +910,8 @@ public class Register extends BeaconzPluginDependent {
 
     /**
      * Checks if a beacon is within the range around point
-     * @param point
-     * @param range
+     * @param point - the point to check around
+     * @param range - the range to check for beacons
      * @return true if beacon is there, false if not
      */
     public boolean isNearBeacon(Point2D point, int range) {
@@ -927,8 +927,8 @@ public class Register extends BeaconzPluginDependent {
 
     /**
      * Get a list of all nearby beacons within range
-     * @param location
-     * @param range
+     * @param location - the location to check around
+     * @param range - the range to check for beacons
      * @return list of nearby beacons
      */
     public List<BeaconObj> getNearbyBeacons(Location location, int range) {
@@ -946,7 +946,7 @@ public class Register extends BeaconzPluginDependent {
 
     /**
      * Returns beacons by index
-     * @param index
+     * @param index - the index to check
      * @return beacon at index
      */
     public BeaconObj getBeacon(int index) {
@@ -958,7 +958,7 @@ public class Register extends BeaconzPluginDependent {
 
     /**
      * Gets the beacon connected to block.
-     * @param block
+     * @param block - the block to check
      * @return BeaconObj or null if none
      */
     public BeaconObj getBeacon(Block block) {
@@ -1028,7 +1028,7 @@ public class Register extends BeaconzPluginDependent {
 
     /**
      * Removes this beacon from team ownership and makes it unowned
-     * @param beacon
+     * @param beacon - the beacon to remove ownership from
      */
     public void removeBeaconOwnership(BeaconObj beacon) {
         removeBeaconOwnership(beacon, false);
@@ -1036,7 +1036,7 @@ public class Register extends BeaconzPluginDependent {
 
     /**
      * Removes this beacon from team ownership and makes it unowned
-     * @param beacon
+     * @param beacon - the beacon to remove ownership from
      * @param quiet - if true, then no messages are sent to the team
      */
     public void removeBeaconOwnership(BeaconObj beacon, Boolean quiet) {
@@ -1121,8 +1121,8 @@ public class Register extends BeaconzPluginDependent {
 
     /**
      * Registers a beacon at location
-     * @param team
-     * @param location
+     * @param team - the team that owns this beacon, or null for unowned
+     * @param location - the location of the beacon (block coordinates will be used)
      */
     public void addBeacon(Team team, Location location) {
         addBeacon(team, location.getBlockX(), location.getBlockY(), location.getBlockZ());
@@ -1236,8 +1236,8 @@ public class Register extends BeaconzPluginDependent {
 
     /**
      * Sets the beacon ownership, team = null means it is unowned.
-     * @param beacon
-     * @param team
+     * @param beacon - the beacon to change ownership of
+     * @param team - the team that owns this beacon, or null for unowned
      */
     public void setBeaconOwner(BeaconObj beacon, Team team) {
         Team oldowner = beacon.getOwnership();
@@ -1252,7 +1252,7 @@ public class Register extends BeaconzPluginDependent {
 
     /**
      * Gets all enemy links not of team
-     * @param team
+     * @param team - the team to check against
      * @return set of links
      */
     public Set<Line2D> getEnemyLinks(Team team) {
@@ -1269,8 +1269,8 @@ public class Register extends BeaconzPluginDependent {
 
     /**
      * Adds a block to the defense block register. Blocks around a beacon are automatically added.
-     * @param location
-     * @param beacon
+     * @param location - the location of the block (block coordinates will be used, world and Y are ignored)
+     * @param beacon - the beacon this block is associated with
      */
     public void addBeaconDefenseBlock(Location location, BeaconObj beacon) {
         addBeaconBaseBlock(location.getBlockX(), location.getBlockZ(), beacon);
@@ -1278,9 +1278,9 @@ public class Register extends BeaconzPluginDependent {
 
     /**
      * Adds a block to the defense block register. Blocks around a beacon are automatically added.
-     * @param x
-     * @param z
-     * @param beacon
+     * @param x - the X coordinate of the block (world and Y are ignored)
+     * @param z - the Z coordinate of the block (world and Y are ignored)
+     * @param beacon - the beacon this block is associated with
      */
     public void addBeaconBaseBlock(int x, int z, BeaconObj beacon) {
         Point2D point = new Point2D.Double(x,z);
@@ -1295,7 +1295,7 @@ public class Register extends BeaconzPluginDependent {
 
     /**
      * Get the beacon associated with this defensive block
-     * @param point
+     * @param point - the location of the block (world and Y are ignored)
      * @return beacon or null if it doesn't exist
      */
     public BeaconObj getBeaconAt(Point2D point) {
@@ -1317,7 +1317,7 @@ public class Register extends BeaconzPluginDependent {
 
     /**
      * Gets all the plinth blocks at this beacon
-     * @param beacon
+     * @param beacon - the beacon to check
      * @return Set of points
      */
     public Set<Point2D> getDefensesAtBeacon(BeaconObj beacon) {
@@ -1326,8 +1326,8 @@ public class Register extends BeaconzPluginDependent {
 
     /**
      * Check if this block is above an owned beacon or above a defense
-     * @param loc
-     * @return
+     * @param loc - the location to check (world is ignored)
+     * @return true if it is above a beacon or defense, false if not
      */
     public boolean isAboveBeacon(Location loc) {
         Point2D point = new Point2D.Double(loc.getBlockX(),loc.getBlockZ());
@@ -1380,7 +1380,9 @@ public class Register extends BeaconzPluginDependent {
                     // Check the next set of links
                     for (BeaconObj thirdPoint : secondPoint.getLinks()) {
                         // Run through the 3rd point's links and see if they include the 1st point
-                        if (!thirdPoint.equals(firstPoint)) {
+                        // Skip if thirdPoint is the same as the starting beacon (beacon1) - can't form triangle
+                        if (!thirdPoint.equals(firstPoint.getBeacon1())) {
+                            // Check if thirdPoint connects back to beacon2, completing the triangle
                             if (thirdPoint.equals(firstPoint.getBeacon2())) {
                                 // We have a winner
                                 try {

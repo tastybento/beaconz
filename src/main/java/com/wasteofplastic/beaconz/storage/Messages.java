@@ -57,7 +57,7 @@ public class Messages extends BeaconzPluginDependent {
 
 
     /**
-     * @param plugin
+     * @param plugin - the plugin instance
      */
     public Messages(Beaconz plugin) {
         super(plugin);
@@ -66,8 +66,8 @@ public class Messages extends BeaconzPluginDependent {
     /**
      * Returns what messages are waiting for the player or null if none
      *
-     * @param playerUUID
-     * @return
+     * @param playerUUID - the player's UUID
+     * @return List of messages or null if none
      */
     public List<String> getMessages(UUID playerUUID) {
         return messages.get(playerUUID);
@@ -76,7 +76,7 @@ public class Messages extends BeaconzPluginDependent {
     /**
      * Clears any messages for player
      *
-     * @param playerUUID
+     * @param playerUUID - the player's UUID
      */
     public void clearMessages(UUID playerUUID) {
         messages.remove(playerUUID);
@@ -128,7 +128,7 @@ public class Messages extends BeaconzPluginDependent {
     /**
      * Provides the messages for the player
      *
-     * @param playerUUID
+     * @param playerUUID - the player's UUID
      * @return List of messages
      */
     public List<String> get(UUID playerUUID) {
@@ -138,8 +138,8 @@ public class Messages extends BeaconzPluginDependent {
     /**
      * Stores a message for player
      *
-     * @param playerUUID
-     * @param playerMessages
+     * @param playerUUID - the player's UUID
+     * @param playerMessages - the messages to store
      */
     @Deprecated
     public void put(UUID playerUUID, List<String> playerMessages) {
@@ -182,8 +182,8 @@ public class Messages extends BeaconzPluginDependent {
 
     /**
      * Tells a message to all members of team, regardless of whether they are online or offline
-     * @param team
-     * @param message
+     * @param team - team to send message to
+     * @param message - message to send
      */
     @Deprecated
     public void tellTeam(Team team, String message) {
@@ -255,8 +255,8 @@ public class Messages extends BeaconzPluginDependent {
 
     /**
      * Broadcast a message to all teams other than this one
-     * @param team
-     * @param message
+     * @param team - team to exclude
+     * @param message - message to send
      */
     public void tellOtherTeams(Team team, String message) {
         for (Team otherTeam : team.getScoreboard().getTeams()) {

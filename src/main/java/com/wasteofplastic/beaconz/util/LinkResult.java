@@ -42,9 +42,9 @@ public class LinkResult {
     private Line2D link;
 
     /**
-     * @param fieldsMade
-     * @param success
-     * @param fieldsFailedToMake
+     * @param fieldsMade - the number of fields made
+     * @param success - whether the linking was successful or not
+     * @param fieldsFailedToMake - the number of fields that could have been made but hit a snag, e.g., overlaping enemy line/triangle
      */
     public LinkResult(int fieldsMade, boolean success,
             int fieldsFailedToMake) {
@@ -55,10 +55,10 @@ public class LinkResult {
     }
 
     /**
-     * @param fieldsMade
-     * @param success
-     * @param fieldsFailedToMake
-     * @param link
+     * @param fieldsMade - the number of fields made
+     * @param success - whether the linking was successful or not
+     * @param fieldsFailedToMake - the number of fields that could have been made but hit a snag, e.g., overlaping enemy line/triangle
+     * @param link - the link itself
      */
     public LinkResult(int fieldsMade, boolean success,
             int fieldsFailedToMake, Line2D link) {

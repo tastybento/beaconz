@@ -106,8 +106,8 @@ public abstract class BeaconzPluginDependent {
 
     /**
      * Gets the highest block in the world at x,z starting at the max height block can be
-     * @param x
-     * @param z
+     * @param x - x coordinate
+     * @param z - z coordinate
      * @return height of first non-air block
      */
     public final int getHighestBlockYAt(int x, int z) {
@@ -123,8 +123,8 @@ public abstract class BeaconzPluginDependent {
 
     /**
      * Runs commands for a player or on a player
-     * @param player
-     * @param commands
+     * @param player - player to run commands for
+     * @param commands - list of commands to run, with placeholders replaced
      */
     public void runCommands(Player player, List<String> commands) {
         this.beaconzPlugin.runCommands(player, commands);
@@ -132,8 +132,8 @@ public abstract class BeaconzPluginDependent {
 
     /**
      * Gives player item rewards
-     * @param player
-     * @param itemRewards
+     * @param player - player to give rewards to
+     * @param itemRewards - list of item rewards to give, with placeholders replaced
      * @return a list of what was given to the player
      */
     public List<ItemStack> giveItems(Player player, List<String> itemRewards) {

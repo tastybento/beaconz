@@ -22,9 +22,9 @@ public class TriangleScorer {
 
     /**
      * Returns score for team
-     * @param triangleFields
-     * @param team
-     * @return
+     * @param triangleFields - the set of all triangle fields in the game
+     * @param team - the team to calculate the score for
+     * @return the score for the team, i.e., the area covered by the team's triangles, accounting for overlaps and islands
      */
     public static double getScore(Set<TriangleField> triangleFields, Team team) {
         // Get the team's triangles
@@ -40,8 +40,8 @@ public class TriangleScorer {
 
     /**
      * Returns area for a set of overlapping or non-overlapping triangles
-     * @param teamTriangles
-     * @return
+     * @param teamTriangles - the set of triangles to calculate the area for
+     * @return the area covered by the set of triangles, accounting for overlaps and islands
      */
     public static double getTriangleSetArea(Set<TriangleField> teamTriangles) {
         double area = 0;
@@ -105,7 +105,7 @@ public class TriangleScorer {
 
     /**
      * Function to calculate the area of a polygon, according to the algorithm
-     * defined at http://local.wasp.uwa.edu.au/~pbourke/geometry/polyarea/
+     * defined at <a href="http://local.wasp.uwa.edu.au/~pbourke/geometry/polyarea/">...</a>
      *
      * @param polyPoints
      *            array of points in the polygon
