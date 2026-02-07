@@ -102,14 +102,19 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
                 }
                 break;
             case "sb":
-                if (player.getScoreboard().getEntries().isEmpty()) {
-                    game = getGameMgr().getGame(player.getLocation());
-                    if (game != null) {
-                        player.setScoreboard(game.getScorecard().getScoreboard());
-                    } else {
+                // Toggle scoreboard visibility
+                game = getGameMgr().getGame(player.getLocation());
+                if (game != null && game.getScorecard() != null) {
+                    // Check if player currently has the game scoreboard
+                    if (player.getScoreboard().equals(game.getScorecard().getScoreboard())) {
+                        // Hide scoreboard by giving them a blank one
                         player.setScoreboard(getServer().getScoreboardManager().getNewScoreboard());
+                    } else {
+                        // Show the game scoreboard
+                        player.setScoreboard(game.getScorecard().getScoreboard());
                     }
                 } else {
+                    // Not in a game, just toggle to blank
                     player.setScoreboard(getServer().getScoreboardManager().getNewScoreboard());
                 }
                 break;
