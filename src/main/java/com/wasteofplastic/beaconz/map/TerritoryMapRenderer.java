@@ -427,12 +427,17 @@ public class TerritoryMapRenderer extends MapRenderer {
      */
     private Map<Point2D, CachedBeacon> makeBeaconCache() {
         // Get all current beacons from the register
+        // Create a copy to avoid ConcurrentModificationException when the beacon register
+        // is modified by another thread during iteration
         HashMap<Point2D, BeaconObj> current = beaconz.getRegister().getBeaconRegister();
         Map<Point2D, CachedBeacon> result = new HashMap<>(current.size());
 
         // Create a lightweight cache entry for each beacon
-        for (Map.Entry<Point2D, BeaconObj> entry : current.entrySet()) {
-            result.put(entry.getKey(), new CachedBeacon(entry.getValue()));
+        // Synchronized to prevent concurrent modification during iteration
+        synchronized (current) {
+            for (Map.Entry<Point2D, BeaconObj> entry : current.entrySet()) {
+                result.put(entry.getKey(), new CachedBeacon(entry.getValue()));
+            }
         }
         return result;
     }

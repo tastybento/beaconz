@@ -1173,6 +1173,7 @@ public class Register extends BeaconzPluginDependent {
      * @return the newly created BeaconObj instance
      */
     public BeaconObj addBeacon(Team owner, int x, int y, int z) {
+        getLogger().info("DEBUG: Adding beacon at " + x + "," + y + "," + z + " for team " + (owner != null ? owner.getName() : "unowned"));
         // Create the beacon object
         BeaconObj beacon = new BeaconObj(getBeaconzPlugin(), x, y, z, owner);
 
@@ -1715,6 +1716,7 @@ public class Register extends BeaconzPluginDependent {
      * @return beacon or null if it doesn't exist
      */
     public BeaconObj getBeaconAt(Point2D point) {
+        getLogger().info("DEBUG: getBeaconAt " + point);
         return baseBlocks.get(point);
     }
 
