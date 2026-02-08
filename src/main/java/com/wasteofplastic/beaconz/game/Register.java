@@ -24,6 +24,11 @@ import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.io.File;
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -48,6 +53,8 @@ import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.scoreboard.Team;
+
+import com.zaxxer.hikari.HikariDataSource;
 
 import com.wasteofplastic.beaconz.Beaconz;
 import com.wasteofplastic.beaconz.BeaconzPluginDependent;
@@ -121,13 +128,67 @@ public class Register extends BeaconzPluginDependent {
 
     private static final boolean DEBUG = false;
 
+    // SQL table definitions
+    private static final String CREATE_BEACONS_TABLE =
+        "CREATE TABLE IF NOT EXISTS beacons (" +
+        "x INTEGER NOT NULL, " +
+        "y INTEGER NOT NULL, " +
+        "z INTEGER NOT NULL, " +
+        "game_name TEXT NOT NULL, " +
+        "owner_team TEXT, " +
+        "map_id INTEGER, " +
+        "PRIMARY KEY (x, z)" +
+        ")";
+
+    private static final String CREATE_BEACON_LINKS_TABLE =
+        "CREATE TABLE IF NOT EXISTS beacon_links (" +
+        "game_name TEXT NOT NULL, " +
+        "x1 INTEGER NOT NULL, " +
+        "z1 INTEGER NOT NULL, " +
+        "x2 INTEGER NOT NULL, " +
+        "z2 INTEGER NOT NULL, " +
+        "timestamp INTEGER NOT NULL, " +
+        "PRIMARY KEY (game_name, x1, z1, x2, z2)" +
+        ")";
+
+    private static final String CREATE_BASE_BLOCKS_TABLE =
+        "CREATE TABLE IF NOT EXISTS beacon_base_blocks (" +
+        "beacon_x INTEGER NOT NULL, " +
+        "beacon_z INTEGER NOT NULL, " +
+        "block_x INTEGER NOT NULL, " +
+        "block_z INTEGER NOT NULL, " +
+        "PRIMARY KEY (beacon_x, beacon_z, block_x, block_z)" +
+        ")";
+
+    private static final String CREATE_DEFENSE_BLOCKS_TABLE =
+        "CREATE TABLE IF NOT EXISTS beacon_defense_blocks (" +
+        "beacon_x INTEGER NOT NULL, " +
+        "beacon_z INTEGER NOT NULL, " +
+        "block_x INTEGER NOT NULL, " +
+        "block_y INTEGER NOT NULL, " +
+        "block_z INTEGER NOT NULL, " +
+        "level INTEGER NOT NULL, " +
+        "placer_uuid TEXT, " +
+        "PRIMARY KEY (beacon_x, beacon_z, block_x, block_y, block_z)" +
+        ")";
+
+    private static final String CREATE_BEACON_MAPS_TABLE =
+        "CREATE TABLE IF NOT EXISTS beacon_maps (" +
+        "map_id INTEGER PRIMARY KEY, " +
+        "beacon_x INTEGER NOT NULL, " +
+        "beacon_z INTEGER NOT NULL, " +
+        "origin_x INTEGER, " +
+        "origin_z INTEGER" +
+        ")";
+
     /**
-     * Constructs a new Register instance.
+     * Constructs a new Register instance and initializes database tables.
      *
      * @param beaconzPlugin the main Beaconz plugin instance
      */
     public Register(Beaconz beaconzPlugin) {
         super(Objects.requireNonNull(beaconzPlugin));
+        initializeDatabaseTables();
     }
 
     /** Maps Minecraft map item IDs to their associated beacon objects for territory display */
@@ -169,43 +230,207 @@ public class Register extends BeaconzPluginDependent {
     private final HashMap<BeaconObj, Set<Point2D>> baseBlocksInverse = new HashMap<>();
 
     /**
-     * Persists all game data to the beaconz.yml file.
+     * Initializes all database tables required for storing beacon data.
+     * Called during Register construction to ensure tables exist.
+     */
+    private void initializeDatabaseTables() {
+        HikariDataSource dataSource = getBeaconzPlugin().getDataSource();
+        if (dataSource == null) {
+            getLogger().severe("Database not initialized! Register will use legacy YAML storage.");
+            return;
+        }
+
+        try (Connection conn = dataSource.getConnection();
+             Statement stmt = conn.createStatement()) {
+
+            // Create tables
+            stmt.execute(CREATE_BEACONS_TABLE);
+            stmt.execute(CREATE_BEACON_LINKS_TABLE);
+            stmt.execute(CREATE_BASE_BLOCKS_TABLE);
+            stmt.execute(CREATE_DEFENSE_BLOCKS_TABLE);
+            stmt.execute(CREATE_BEACON_MAPS_TABLE);
+
+            // Create indexes for performance
+            // Index on beacon coordinates for fast spatial lookups
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_beacons_coords ON beacons(x, z)");
+
+            // Index on game_name for filtering beacons by game
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_beacons_game ON beacons(game_name)");
+
+            // Index on owner_team for finding all beacons owned by a team
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_beacons_owner ON beacons(owner_team)");
+
+            // Index on beacon_links for fast link queries
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_links_game ON beacon_links(game_name)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_links_beacon1 ON beacon_links(x1, z1)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_links_beacon2 ON beacon_links(x2, z2)");
+
+            // Index on base blocks for fast beacon lookup
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_base_blocks_beacon ON beacon_base_blocks(beacon_x, beacon_z)");
+
+            // Index on defense blocks for fast beacon lookup
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_defense_blocks_beacon ON beacon_defense_blocks(beacon_x, beacon_z)");
+
+            // Index on maps for fast beacon lookup
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_maps_beacon ON beacon_maps(beacon_x, beacon_z)");
+
+            getLogger().info("Database tables and indexes initialized for Register");
+
+        } catch (SQLException e) {
+            getLogger().severe("Failed to initialize database tables: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Persists all game data to the SQLite database.
      * <p>
-     * This method serializes the entire game state including:
-     * <ul>
-     *   <li>All beacon locations and ownership</li>
-     *   <li>Beacon links (connections between beacons)</li>
-     *   <li>Base blocks (emerald blocks around beacons)</li>
-     *   <li>Defensive blocks with levels and placer UUIDs</li>
-     *   <li>Map item IDs associated with beacons</li>
-     * </ul>
+     * This method saves all beacons, links, base blocks, defense blocks, and maps
+     * to the database. It uses batch inserts for efficiency.
      * <p>
-     * The method:
-     * <ol>
-     *   <li>Creates a backup of the existing file (beaconz.old)</li>
-     *   <li>Iterates through all beacons in the registry</li>
-     *   <li>Saves each beacon's data to the YAML configuration</li>
-     *   <li>Avoids duplicate link storage (links are bidirectional)</li>
-     *   <li>Writes the complete configuration to disk</li>
-     * </ol>
-     * <p>
-     * <b>File Structure:</b>
-     * <pre>
-     * beacon:
-     *   0:
-     *     game: "GameName"
-     *     location: "x:y:z:ownerTeamName"
-     *     links: ["destX:destZ:timestamp", ...]
-     *     baseblocks: ["x:z", ...]
-     *     defensiveblocks:
-     *       location_string: level
-     *     maps: [mapId1, mapId2, ...]
-     * </pre>
-     * <p>
-     * Links are only stored once (from beacon1 to beacon2) to reduce file size.
-     * The reverse link is automatically created when loading.
+     * Also creates a legacy YAML backup for compatibility.
      */
     public void saveRegister() {
+        HikariDataSource dataSource = getBeaconzPlugin().getDataSource();
+        if (dataSource == null) {
+            getLogger().warning("Database not available, falling back to YAML storage");
+            saveRegisterYAML();
+            return;
+        }
+
+        try (Connection conn = dataSource.getConnection()) {
+            conn.setAutoCommit(false);
+
+            try {
+                // Clear existing data
+                try (Statement stmt = conn.createStatement()) {
+                    stmt.execute("DELETE FROM beacons");
+                    stmt.execute("DELETE FROM beacon_links");
+                    stmt.execute("DELETE FROM beacon_base_blocks");
+                    stmt.execute("DELETE FROM beacon_defense_blocks");
+                    stmt.execute("DELETE FROM beacon_maps");
+                }
+
+                // Save beacons
+                String insertBeacon = "INSERT INTO beacons (x, y, z, game_name, owner_team, map_id) VALUES (?, ?, ?, ?, ?, ?)";
+                try (PreparedStatement stmt = conn.prepareStatement(insertBeacon)) {
+                    for (BeaconObj beacon : beaconRegister.values()) {
+                        Game game = getGameMgr().getGame(beacon.getPoint());
+                        String gameName = game == null ? "None" : PlainTextComponentSerializer.plainText().serialize(game.getName());
+                        String owner = beacon.getOwnership() == null ? null : beacon.getOwnership().getName();
+
+                        stmt.setInt(1, beacon.getX());
+                        stmt.setInt(2, beacon.getY());
+                        stmt.setInt(3, beacon.getZ());
+                        stmt.setString(4, gameName);
+                        stmt.setString(5, owner);
+                        stmt.setObject(6, beacon.getId());
+                        stmt.addBatch();
+                    }
+                    stmt.executeBatch();
+                }
+
+                // Save beacon links
+                Set<BeaconLink> storedLinks = new HashSet<>();
+                String insertLink = "INSERT INTO beacon_links (game_name, x1, z1, x2, z2, timestamp) VALUES (?, ?, ?, ?, ?, ?)";
+                try (PreparedStatement stmt = conn.prepareStatement(insertLink)) {
+                    for (Entry<Game, List<BeaconLink>> entry : beaconLinks.entrySet()) {
+                        String gameName = PlainTextComponentSerializer.plainText().serialize(entry.getKey().getName());
+                        for (BeaconLink link : entry.getValue()) {
+                            if (!storedLinks.contains(link)) {
+                                stmt.setString(1, gameName);
+                                stmt.setInt(2, link.getBeacon1().getX());
+                                stmt.setInt(3, link.getBeacon1().getZ());
+                                stmt.setInt(4, link.getBeacon2().getX());
+                                stmt.setInt(5, link.getBeacon2().getZ());
+                                stmt.setLong(6, link.getTimeStamp());
+                                stmt.addBatch();
+                                storedLinks.add(link);
+                            }
+                        }
+                    }
+                    stmt.executeBatch();
+                }
+
+                // Save base blocks
+                String insertBaseBlock = "INSERT INTO beacon_base_blocks (beacon_x, beacon_z, block_x, block_z) VALUES (?, ?, ?, ?)";
+                try (PreparedStatement stmt = conn.prepareStatement(insertBaseBlock)) {
+                    for (Entry<BeaconObj, Set<Point2D>> entry : baseBlocksInverse.entrySet()) {
+                        BeaconObj beacon = entry.getKey();
+                        for (Point2D point : entry.getValue()) {
+                            stmt.setInt(1, beacon.getX());
+                            stmt.setInt(2, beacon.getZ());
+                            stmt.setInt(3, (int) point.getX());
+                            stmt.setInt(4, (int) point.getY());
+                            stmt.addBatch();
+                        }
+                    }
+                    stmt.executeBatch();
+                }
+
+                // Save defense blocks
+                String insertDefenseBlock = "INSERT INTO beacon_defense_blocks (beacon_x, beacon_z, block_x, block_y, block_z, level, placer_uuid) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                try (PreparedStatement stmt = conn.prepareStatement(insertDefenseBlock)) {
+                    for (BeaconObj beacon : beaconRegister.values()) {
+                        for (DefenseBlock defensiveBlock : beacon.getDefenseBlocks().values()) {
+                            Location loc = defensiveBlock.getBlock().getLocation();
+                            stmt.setInt(1, beacon.getX());
+                            stmt.setInt(2, beacon.getZ());
+                            stmt.setInt(3, loc.getBlockX());
+                            stmt.setInt(4, loc.getBlockY());
+                            stmt.setInt(5, loc.getBlockZ());
+                            stmt.setInt(6, defensiveBlock.getLevel());
+                            stmt.setString(7, defensiveBlock.getPlacer() == null ? null : defensiveBlock.getPlacer().toString());
+                            stmt.addBatch();
+                        }
+                    }
+                    stmt.executeBatch();
+                }
+
+                // Save beacon maps
+                String insertMap = "INSERT INTO beacon_maps (map_id, beacon_x, beacon_z, origin_x, origin_z) VALUES (?, ?, ?, ?, ?)";
+                try (PreparedStatement stmt = conn.prepareStatement(insertMap)) {
+                    for (Entry<Integer, BeaconObj> entry : beaconMaps.entrySet()) {
+                        Integer mapId = entry.getKey();
+                        BeaconObj beacon = entry.getValue();
+                        Point2D origin = mapOrigins.get(mapId);
+
+                        if (Bukkit.getMap(mapId) != null) {
+                            stmt.setInt(1, mapId);
+                            stmt.setInt(2, beacon.getX());
+                            stmt.setInt(3, beacon.getZ());
+                            stmt.setObject(4, origin == null ? null : (int) origin.getX());
+                            stmt.setObject(5, origin == null ? null : (int) origin.getY());
+                            stmt.addBatch();
+                        }
+                    }
+                    stmt.executeBatch();
+                }
+
+                conn.commit();
+                getLogger().info("Successfully saved " + beaconRegister.size() + " beacons to database");
+
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(true);
+            }
+
+        } catch (SQLException e) {
+            getLogger().severe("Failed to save register to database: " + e.getMessage());
+            e.printStackTrace();
+            // Fallback to YAML
+            saveRegisterYAML();
+        }
+    }
+
+    /**
+     * Legacy YAML-based save method, kept for backwards compatibility and migration.
+     * @deprecated Use database storage via saveRegister()
+     */
+    @Deprecated
+    private void saveRegisterYAML() {
         // Save the beacons
         File beaconzFile = new File(getBeaconzPlugin().getDataFolder(),"beaconz.yml");
 
@@ -305,7 +530,9 @@ public class Register extends BeaconzPluginDependent {
     }
 
     /**
-     * Loads all game data from the beaconz.yml file and reconstructs the game state.
+     * Loads all game data from the SQLite database and reconstructs the game state.
+     * <p>
+     * If the database is empty but a beaconz.yml file exists, it will migrate the data.
      * <p>
      * This method deserializes persisted data and rebuilds all game structures:
      * <ul>
@@ -316,27 +543,216 @@ public class Register extends BeaconzPluginDependent {
      *   <li>Beacon links (connections between same-team beacons)</li>
      *   <li>Triangle fields (automatically generated from links)</li>
      * </ul>
-     * <p>
-     * <b>Loading Process:</b>
-     * <ol>
-     *   <li>Clear existing data structures</li>
-     *   <li>Load and parse beaconz.yml file</li>
-     *   <li>Create beacon objects for each entry</li>
-     *   <li>Load base blocks and defensive blocks</li>
-     *   <li>Initialize map renderers for territory maps</li>
-     *   <li>Reconstruct links between beacons (stored as strings)</li>
-     *   <li>Sort links by timestamp (creation order)</li>
-     *   <li>Add links in chronological order</li>
-     *   <li>Auto-generate triangle fields from valid link combinations</li>
-     *   <li>Recalculate scores for all games</li>
-     * </ol>
-     * <p>
-     * Links are stored unidirectionally in the file but created bidirectionally in memory.
-     * Triangle fields are not saved explicitly - they're regenerated from beacon links.
-     * <p>
-     * Beacons for deleted games are skipped during loading to prevent orphaned data.
      */
     public void loadRegister() {
+        clear();
+
+        HikariDataSource dataSource = getBeaconzPlugin().getDataSource();
+        if (dataSource == null) {
+            getLogger().warning("Database not available, falling back to YAML storage");
+            loadRegisterYAML();
+            return;
+        }
+
+        try (Connection conn = dataSource.getConnection()) {
+            // Check if we need to migrate from YAML
+            boolean needsMigration = false;
+            try (Statement stmt = conn.createStatement();
+                 ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM beacons")) {
+                if (rs.next() && rs.getInt(1) == 0) {
+                    File yamlFile = new File(getBeaconzPlugin().getDataFolder(), "beaconz.yml");
+                    if (yamlFile.exists()) {
+                        needsMigration = true;
+                    }
+                }
+            }
+
+            if (needsMigration) {
+                getLogger().info("Migrating from YAML to database...");
+                loadRegisterYAML();
+                saveRegister(); // Save to database
+                getLogger().info("Migration complete");
+                return;
+            }
+
+            // === PHASE 1: Load all beacons ===
+            beaconLinks.clear();
+            HashMap<Point2D, BeaconObj> loadedBeacons = new HashMap<>();
+
+            String selectBeacons = "SELECT x, y, z, game_name, owner_team, map_id FROM beacons";
+            try (Statement stmt = conn.createStatement();
+                 ResultSet rs = stmt.executeQuery(selectBeacons)) {
+
+                while (rs.next()) {
+                    int x = rs.getInt("x");
+                    int y = rs.getInt("y");
+                    int z = rs.getInt("z");
+                    String gameName = rs.getString("game_name");
+                    String ownerTeam = rs.getString("owner_team");
+
+                    // Verify the game still exists
+                    Game game = getGameMgr().getGame(x, z);
+                    if (game != null) {
+                        // Resolve team ownership
+                        Team team = null;
+                        if (ownerTeam != null) {
+                            team = game.getScorecard().getTeam(ownerTeam);
+                        }
+
+                        // Create the beacon and add to registry
+                        BeaconObj beacon = addBeacon(team, x, y, z);
+                        loadedBeacons.put(beacon.getPoint(), beacon);
+
+                        // Set map ID if present
+                        Integer mapId = (Integer) rs.getObject("map_id");
+                        if (mapId != null) {
+                            beacon.setId(mapId);
+                        }
+
+                        // Initialize link list for this game
+                        beaconLinks.computeIfAbsent(game, k -> new ArrayList<>());
+                    }
+                }
+            }
+
+            // === PHASE 2: Load base blocks ===
+            String selectBaseBlocks = "SELECT beacon_x, beacon_z, block_x, block_z FROM beacon_base_blocks";
+            try (Statement stmt = conn.createStatement();
+                 ResultSet rs = stmt.executeQuery(selectBaseBlocks)) {
+
+                while (rs.next()) {
+                    int beaconX = rs.getInt("beacon_x");
+                    int beaconZ = rs.getInt("beacon_z");
+                    int blockX = rs.getInt("block_x");
+                    int blockZ = rs.getInt("block_z");
+
+                    BeaconObj beacon = loadedBeacons.get(new Point2D.Double(beaconX, beaconZ));
+                    if (beacon != null) {
+                        addBeaconBaseBlock(blockX, blockZ, beacon);
+                    }
+                }
+            }
+
+            // === PHASE 3: Load defense blocks ===
+            String selectDefenseBlocks = "SELECT beacon_x, beacon_z, block_x, block_y, block_z, level, placer_uuid FROM beacon_defense_blocks";
+            try (Statement stmt = conn.createStatement();
+                 ResultSet rs = stmt.executeQuery(selectDefenseBlocks)) {
+
+                while (rs.next()) {
+                    int beaconX = rs.getInt("beacon_x");
+                    int beaconZ = rs.getInt("beacon_z");
+                    int blockX = rs.getInt("block_x");
+                    int blockY = rs.getInt("block_y");
+                    int blockZ = rs.getInt("block_z");
+                    int level = rs.getInt("level");
+                    String placerUuid = rs.getString("placer_uuid");
+
+                    BeaconObj beacon = loadedBeacons.get(new Point2D.Double(beaconX, beaconZ));
+                    if (beacon != null) {
+                        Location loc = new Location(getBeaconzWorld(), blockX, blockY, blockZ);
+                        beacon.addDefenseBlock(loc.getBlock(), level, placerUuid);
+                    }
+                }
+            }
+
+            // === PHASE 4: Load maps ===
+            String selectMaps = "SELECT map_id, beacon_x, beacon_z, origin_x, origin_z FROM beacon_maps";
+            try (Statement stmt = conn.createStatement();
+                 ResultSet rs = stmt.executeQuery(selectMaps)) {
+
+                while (rs.next()) {
+                    int mapId = rs.getInt("map_id");
+                    int beaconX = rs.getInt("beacon_x");
+                    int beaconZ = rs.getInt("beacon_z");
+                    Integer originX = (Integer) rs.getObject("origin_x");
+                    Integer originZ = (Integer) rs.getObject("origin_z");
+
+                    BeaconObj beacon = loadedBeacons.get(new Point2D.Double(beaconX, beaconZ));
+                    if (beacon != null) {
+                        beaconMaps.put(mapId, beacon);
+
+                        if (originX != null && originZ != null) {
+                            mapOrigins.put(mapId, new Point2D.Double(originX, originZ));
+                        }
+
+                        MapView map = Bukkit.getMap(mapId);
+                        if (map != null) {
+                            // Remove old renderers and add fresh ones
+                            for (MapRenderer renderer : map.getRenderers()) {
+                                if (renderer instanceof TerritoryMapRenderer || renderer instanceof BeaconMap) {
+                                    map.removeRenderer(renderer);
+                                }
+                            }
+                            map.addRenderer(new TerritoryMapRenderer(getBeaconzPlugin()));
+
+                            if (originX != null && originZ != null) {
+                                map.addRenderer(new BeaconMap(getBeaconzPlugin(), originX, originZ));
+                            } else {
+                                map.addRenderer(new BeaconMap(getBeaconzPlugin()));
+                            }
+                        }
+                    }
+                }
+            }
+
+            // === PHASE 5: Load beacon links ===
+            String selectLinks = "SELECT game_name, x1, z1, x2, z2, timestamp FROM beacon_links";
+            try (Statement stmt = conn.createStatement();
+                 ResultSet rs = stmt.executeQuery(selectLinks)) {
+
+                while (rs.next()) {
+                    int x1 = rs.getInt("x1");
+                    int z1 = rs.getInt("z1");
+                    int x2 = rs.getInt("x2");
+                    int z2 = rs.getInt("z2");
+                    long timestamp = rs.getLong("timestamp");
+
+                    BeaconObj beacon1 = loadedBeacons.get(new Point2D.Double(x1, z1));
+                    BeaconObj beacon2 = loadedBeacons.get(new Point2D.Double(x2, z2));
+
+                    if (beacon1 != null && beacon2 != null) {
+                        BeaconLink link = new BeaconLink(beacon1, beacon2, timestamp);
+                        Game game = getGameMgr().getGame(beacon1.getPoint());
+                        if (game != null) {
+                            List<BeaconLink> links = beaconLinks.get(game);
+                            if (links != null && !links.contains(link)) {
+                                links.add(link);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // === PHASE 6: Create triangle fields from links ===
+            for (Entry<Game, List<BeaconLink>> entry : beaconLinks.entrySet()) {
+                Collections.sort(entry.getValue());
+                for (BeaconLink link : entry.getValue()) {
+                    link.getBeacon1().addLink(link.getBeacon2());
+                    link.getBeacon2().addLink(link.getBeacon1());
+                }
+            }
+
+            // Recalculate scores for all games
+            for (Game game : beaconLinks.keySet()) {
+                recalculateScore(game);
+            }
+
+            getLogger().info("Loaded " + loadedBeacons.size() + " beacons from database");
+
+        } catch (SQLException e) {
+            getLogger().severe("Failed to load register from database: " + e.getMessage());
+            e.printStackTrace();
+            // Fallback to YAML
+            loadRegisterYAML();
+        }
+    }
+
+    /**
+     * Legacy YAML-based load method, kept for backwards compatibility and migration.
+     * @deprecated Use database storage via loadRegister()
+     */
+    @Deprecated
+    private void loadRegisterYAML() {
         // Clear existing data to start fresh
         clear();
 
@@ -1399,5 +1815,241 @@ public class Register extends BeaconzPluginDependent {
                 }
             }
         }
+    }
+
+    /**
+     * Verifies the integrity of the database by checking for:
+     * - Orphaned base blocks (beacon doesn't exist)
+     * - Orphaned defense blocks (beacon doesn't exist)
+     * - Orphaned links (one or both beacons don't exist)
+     * - Orphaned maps (beacon doesn't exist)
+     * - Bidirectional link consistency
+     *
+     * @return true if database is valid, false if issues were found
+     */
+    public boolean verifyDatabaseIntegrity() {
+        HikariDataSource dataSource = getBeaconzPlugin().getDataSource();
+        if (dataSource == null) {
+            getLogger().warning("Database not available for integrity check");
+            return false;
+        }
+
+        boolean isValid = true;
+        int issueCount = 0;
+
+        try (Connection conn = dataSource.getConnection()) {
+
+            // Check for orphaned base blocks
+            String checkOrphanedBaseBlocks =
+                "SELECT COUNT(*) FROM beacon_base_blocks bb " +
+                "WHERE NOT EXISTS (" +
+                "  SELECT 1 FROM beacons b " +
+                "  WHERE b.x = bb.beacon_x AND b.z = bb.beacon_z" +
+                ")";
+
+            try (Statement stmt = conn.createStatement();
+                 ResultSet rs = stmt.executeQuery(checkOrphanedBaseBlocks)) {
+                if (rs.next() && rs.getInt(1) > 0) {
+                    int count = rs.getInt(1);
+                    getLogger().warning("Found " + count + " orphaned base block(s)");
+                    issueCount += count;
+                    isValid = false;
+                }
+            }
+
+            // Check for orphaned defense blocks
+            String checkOrphanedDefenseBlocks =
+                "SELECT COUNT(*) FROM beacon_defense_blocks db " +
+                "WHERE NOT EXISTS (" +
+                "  SELECT 1 FROM beacons b " +
+                "  WHERE b.x = db.beacon_x AND b.z = db.beacon_z" +
+                ")";
+
+            try (Statement stmt = conn.createStatement();
+                 ResultSet rs = stmt.executeQuery(checkOrphanedDefenseBlocks)) {
+                if (rs.next() && rs.getInt(1) > 0) {
+                    int count = rs.getInt(1);
+                    getLogger().warning("Found " + count + " orphaned defense block(s)");
+                    issueCount += count;
+                    isValid = false;
+                }
+            }
+
+            // Check for orphaned links (beacon1 missing)
+            String checkOrphanedLinks1 =
+                "SELECT COUNT(*) FROM beacon_links l " +
+                "WHERE NOT EXISTS (" +
+                "  SELECT 1 FROM beacons b " +
+                "  WHERE b.x = l.x1 AND b.z = l.z1" +
+                ")";
+
+            try (Statement stmt = conn.createStatement();
+                 ResultSet rs = stmt.executeQuery(checkOrphanedLinks1)) {
+                if (rs.next() && rs.getInt(1) > 0) {
+                    int count = rs.getInt(1);
+                    getLogger().warning("Found " + count + " link(s) with missing beacon1");
+                    issueCount += count;
+                    isValid = false;
+                }
+            }
+
+            // Check for orphaned links (beacon2 missing)
+            String checkOrphanedLinks2 =
+                "SELECT COUNT(*) FROM beacon_links l " +
+                "WHERE NOT EXISTS (" +
+                "  SELECT 1 FROM beacons b " +
+                "  WHERE b.x = l.x2 AND b.z = l.z2" +
+                ")";
+
+            try (Statement stmt = conn.createStatement();
+                 ResultSet rs = stmt.executeQuery(checkOrphanedLinks2)) {
+                if (rs.next() && rs.getInt(1) > 0) {
+                    int count = rs.getInt(1);
+                    getLogger().warning("Found " + count + " link(s) with missing beacon2");
+                    issueCount += count;
+                    isValid = false;
+                }
+            }
+
+            // Check for orphaned maps
+            String checkOrphanedMaps =
+                "SELECT COUNT(*) FROM beacon_maps m " +
+                "WHERE NOT EXISTS (" +
+                "  SELECT 1 FROM beacons b " +
+                "  WHERE b.x = m.beacon_x AND b.z = m.beacon_z" +
+                ")";
+
+            try (Statement stmt = conn.createStatement();
+                 ResultSet rs = stmt.executeQuery(checkOrphanedMaps)) {
+                if (rs.next() && rs.getInt(1) > 0) {
+                    int count = rs.getInt(1);
+                    getLogger().warning("Found " + count + " orphaned map(s)");
+                    issueCount += count;
+                    isValid = false;
+                }
+            }
+
+            if (isValid) {
+                getLogger().info("Database integrity check passed - no issues found");
+            } else {
+                getLogger().warning("Database integrity check found " + issueCount + " issue(s)");
+            }
+
+        } catch (SQLException e) {
+            getLogger().severe("Failed to verify database integrity: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+
+        return isValid;
+    }
+
+    /**
+     * Repairs the database by removing orphaned records.
+     * This should be called after verifyDatabaseIntegrity() finds issues.
+     *
+     * @return number of records deleted
+     */
+    public int repairDatabase() {
+        HikariDataSource dataSource = getBeaconzPlugin().getDataSource();
+        if (dataSource == null) {
+            getLogger().warning("Database not available for repair");
+            return 0;
+        }
+
+        int deletedCount = 0;
+
+        try (Connection conn = dataSource.getConnection()) {
+            conn.setAutoCommit(false);
+
+            try {
+                // Delete orphaned base blocks
+                String deleteOrphanedBaseBlocks =
+                    "DELETE FROM beacon_base_blocks " +
+                    "WHERE NOT EXISTS (" +
+                    "  SELECT 1 FROM beacons b " +
+                    "  WHERE b.x = beacon_x AND b.z = beacon_z" +
+                    ")";
+
+                try (Statement stmt = conn.createStatement()) {
+                    int count = stmt.executeUpdate(deleteOrphanedBaseBlocks);
+                    if (count > 0) {
+                        getLogger().info("Deleted " + count + " orphaned base block(s)");
+                        deletedCount += count;
+                    }
+                }
+
+                // Delete orphaned defense blocks
+                String deleteOrphanedDefenseBlocks =
+                    "DELETE FROM beacon_defense_blocks " +
+                    "WHERE NOT EXISTS (" +
+                    "  SELECT 1 FROM beacons b " +
+                    "  WHERE b.x = beacon_x AND b.z = beacon_z" +
+                    ")";
+
+                try (Statement stmt = conn.createStatement()) {
+                    int count = stmt.executeUpdate(deleteOrphanedDefenseBlocks);
+                    if (count > 0) {
+                        getLogger().info("Deleted " + count + " orphaned defense block(s)");
+                        deletedCount += count;
+                    }
+                }
+
+                // Delete orphaned links
+                String deleteOrphanedLinks =
+                    "DELETE FROM beacon_links " +
+                    "WHERE NOT EXISTS (" +
+                    "  SELECT 1 FROM beacons b " +
+                    "  WHERE b.x = x1 AND b.z = z1" +
+                    ") OR NOT EXISTS (" +
+                    "  SELECT 1 FROM beacons b " +
+                    "  WHERE b.x = x2 AND b.z = z2" +
+                    ")";
+
+                try (Statement stmt = conn.createStatement()) {
+                    int count = stmt.executeUpdate(deleteOrphanedLinks);
+                    if (count > 0) {
+                        getLogger().info("Deleted " + count + " orphaned link(s)");
+                        deletedCount += count;
+                    }
+                }
+
+                // Delete orphaned maps
+                String deleteOrphanedMaps =
+                    "DELETE FROM beacon_maps " +
+                    "WHERE NOT EXISTS (" +
+                    "  SELECT 1 FROM beacons b " +
+                    "  WHERE b.x = beacon_x AND b.z = beacon_z" +
+                    ")";
+
+                try (Statement stmt = conn.createStatement()) {
+                    int count = stmt.executeUpdate(deleteOrphanedMaps);
+                    if (count > 0) {
+                        getLogger().info("Deleted " + count + " orphaned map(s)");
+                        deletedCount += count;
+                    }
+                }
+
+                conn.commit();
+
+                if (deletedCount > 0) {
+                    getLogger().info("Database repair completed - deleted " + deletedCount + " orphaned record(s)");
+                } else {
+                    getLogger().info("Database repair completed - no orphaned records found");
+                }
+
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(true);
+            }
+
+        } catch (SQLException e) {
+            getLogger().severe("Failed to repair database: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return deletedCount;
     }
 }
