@@ -419,7 +419,6 @@ public class Register extends BeaconzPluginDependent {
 
         } catch (SQLException e) {
             getLogger().severe("Failed to save register to database: " + e.getMessage());
-            e.printStackTrace();
             // Fallback to YAML
             saveRegisterYAML();
         }
@@ -1362,18 +1361,6 @@ public class Register extends BeaconzPluginDependent {
     }
 
     /**
-     * Returns beacons by index
-     * @param index - the index to check
-     * @return beacon at index
-     */
-    public BeaconObj getBeacon(int index) {
-        if (index >= 0 && index < beaconMaps.size()) {
-            return beaconMaps.get(index);
-        }
-        return null;
-    }
-
-    /**
      * Gets the beacon connected to block.
      * @param block - the block to check
      * @return BeaconObj or null if none
@@ -1939,7 +1926,6 @@ public class Register extends BeaconzPluginDependent {
 
         } catch (SQLException e) {
             getLogger().severe("Failed to verify database integrity: " + e.getMessage());
-            e.printStackTrace();
             return false;
         }
 

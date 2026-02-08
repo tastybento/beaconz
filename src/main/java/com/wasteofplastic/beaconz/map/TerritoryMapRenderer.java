@@ -353,8 +353,14 @@ public class TerritoryMapRenderer extends MapRenderer {
             int z = coordConverter.blockZToPixelZ((int) point.getY());
             if (z < 0 || z > 127) continue; // Beacon off map
 
-            // Only show cursors on discovered areas of the map
-            canvas.getBasePixelColor(x, z);// Convert from pixel coordinates (0-127) to cursor coordinates (-128 to 127)
+            // Only show cursors on discovered areas of the map (non-black areas)
+            java.awt.Color baseColor = canvas.getBasePixelColor(x, z);
+            // Skip undiscovered areas (black pixels indicate unexplored map regions)
+            if (baseColor.getRed() == 0 && baseColor.getGreen() == 0 && baseColor.getBlue() == 0) {
+                continue; // This area hasn't been discovered yet, don't show the cursor
+            }
+
+            // Convert from pixel coordinates (0-127) to cursor coordinates (-128 to 127)
             x = x * 2 - 128;
             z = z * 2 - 128;
 
@@ -456,11 +462,14 @@ public class TerritoryMapRenderer extends MapRenderer {
             if (pixelCache[x] != null) {
                 for (int z = 0; z < 128; z++) {
                     if (pixelCache[x][z] != null) {
-                        // Only draw on discovered areas of the map
+                        // Only draw on discovered areas of the map (non-black areas)
                         java.awt.Color baseColor = canvas.getBasePixelColor(x, z);
-                        // Convert palette index to Color and set the pixel
-                        // Note: MapPalette methods are deprecated but still functional
-                        canvas.setPixelColor(x, z, MapPalette.getColor(pixelCache[x][z]));
+                        // Skip undiscovered areas (black pixels indicate unexplored map regions)
+                        if (baseColor.getRed() != 0 || baseColor.getGreen() != 0 || baseColor.getBlue() != 0) {
+                            // Convert palette index to Color and set the pixel
+                            // Note: MapPalette methods are deprecated but still functional
+                            canvas.setPixelColor(x, z, MapPalette.getColor(pixelCache[x][z]));
+                        }
                     }
                 }
             }
