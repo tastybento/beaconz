@@ -155,11 +155,38 @@ public class GameMgr extends BeaconzPluginDependent {
 
             stmt.execute(createTable);
 
+            // Create team_members table
+            String createTeamMembers = "CREATE TABLE IF NOT EXISTS team_members (" +
+                "game_name TEXT NOT NULL, " +
+                "team_name TEXT NOT NULL, " +
+                "player_uuid TEXT NOT NULL, " +
+                "PRIMARY KEY (game_name, team_name, player_uuid)" +
+                ")";
+
+            stmt.execute(createTeamMembers);
+
+            // Create team_spawns table
+            String createTeamSpawns = "CREATE TABLE IF NOT EXISTS team_spawns (" +
+                "game_name TEXT NOT NULL, " +
+                "team_name TEXT NOT NULL, " +
+                "world TEXT NOT NULL, " +
+                "x REAL NOT NULL, " +
+                "y REAL NOT NULL, " +
+                "z REAL NOT NULL, " +
+                "yaw REAL NOT NULL, " +
+                "pitch REAL NOT NULL, " +
+                "PRIMARY KEY (game_name, team_name)" +
+                ")";
+
+            stmt.execute(createTeamSpawns);
+
             // Create indexes for performance
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_games_gamemode ON games(gamemode)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_games_region ON games(region_x1, region_z1, region_x2, region_z2)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_team_members_game ON team_members(game_name)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_team_spawns_game ON team_spawns(game_name)");
 
-            getLogger().info("Database table initialized for games");
+            getLogger().info("Database tables initialized for games and teams");
 
         } catch (SQLException e) {
             getLogger().severe("Failed to initialize games database table: " + e.getMessage());
