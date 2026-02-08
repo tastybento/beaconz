@@ -333,10 +333,8 @@ public class Beaconz extends JavaPlugin {
             register.removeMapRenderers();
         }
 
-        // Save all player inventories to disk
-        if (beaconzStore != null) {
-            beaconzStore.saveInventories();
-        }
+        // Player inventories are automatically persisted to database
+        // No need to manually save - database commits on each operation
 
         // Save all game states (teams, scores, configurations)
         getGameMgr().saveAllGames();
