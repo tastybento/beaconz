@@ -29,6 +29,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import org.apache.commons.lang.math.NumberUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -147,6 +149,9 @@ public class Beaconz extends JavaPlugin {
     /** Teleport listener for managing safe teleportation */
     private PlayerTeleportListener teleportListener;
 
+    /** HikariCP data source for player name database (if using SQL storage) */
+    private HikariDataSource dataSource;
+
     /**
      * Called when the plugin is loaded (before worlds are loaded).
      * <p>
@@ -211,6 +216,9 @@ public class Beaconz extends JavaPlugin {
         getCommand("badmin").setExecutor(new AdminCmdHandler(this));
 
         // INITIALIZATION PHASE 2: Services
+
+        // Initialize the database connection pool
+        setupDatabase();
 
         // Initialize bStats metrics tracking
         try {
@@ -332,6 +340,14 @@ public class Beaconz extends JavaPlugin {
 
         // Save all game states (teams, scores, configurations)
         getGameMgr().saveAllGames();
+
+        // Save player name database
+        if (nameStore != null) {
+            nameStore.saveDB();
+        }
+
+        // Close database
+        this.closeDataSource();
     }
 
 
@@ -995,6 +1011,14 @@ public class Beaconz extends JavaPlugin {
         return nameStore;
     }
 
+    /**
+     * Gets the HikariCP data source for database operations.
+     * @return the data source, or null if not initialized
+     */
+    public HikariDataSource getDataSource() {
+        return dataSource;
+    }
+
 
     /**
      * Cleans a ":"-delimited string of any extraneous elements
@@ -1207,4 +1231,39 @@ public class Beaconz extends JavaPlugin {
         }
         return chunkGenerator;
     }
+
+    public void setupDatabase() {
+        HikariConfig config = new HikariConfig();
+        String type = getConfig().getString("database.type", "sqlite");
+        String host = getConfig().getString("database.host", "localhost");
+        int port = getConfig().getInt("database.port", 3306);
+        String database = getConfig().getString("database.database", "beaconz");
+        String username = getConfig().getString("database.username", "root");
+        String password = getConfig().getString("database.password", "");
+
+        if (type.equalsIgnoreCase("mysql")) {
+            config.setJdbcUrl("jdbc:mysql://" + host + ":" + port + "/" + database);
+            config.setUsername(username);
+            config.setPassword(password);
+        } else {
+            // SQLite setup
+            String fileName = getDataFolder().getPath() + "/storage.db";
+            config.setJdbcUrl("jdbc:sqlite:" + fileName);
+        }
+
+        // Performance tweaks for Java 21
+        config.setMaximumPoolSize(10);
+        config.setConnectionTimeout(5000);
+
+        this.dataSource = new HikariDataSource(config);
+    }
+
+     /**
+     * Closes the database connection pool when the plugin is disabled to prevent resource leaks.
+     */
+    private void closeDataSource() {
+        if (this.dataSource != null) {
+            this.dataSource.close();
+        }
+     }
 }
