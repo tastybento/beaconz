@@ -25,6 +25,9 @@ import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.io.File;
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Random;
@@ -48,6 +51,7 @@ import com.wasteofplastic.beaconz.config.Params.GameScoreGoal;
 import com.wasteofplastic.beaconz.config.Settings;
 import com.wasteofplastic.beaconz.core.Region;
 import com.wasteofplastic.beaconz.generator.BeaconzChunkGen;
+import com.zaxxer.hikari.HikariDataSource;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
@@ -107,11 +111,60 @@ public class GameMgr extends BeaconzPluginDependent {
         regions = new LinkedHashMap<>();
         games = new LinkedHashMap<>();
         setGameDefaultParms();
+        initializeDatabase();
         loadAllGames();
         if (lobby == null) {
             createLobby();
         }
         defaultParameters = new Params();
+    }
+
+    /**
+     * Initializes the games database table.
+     * Creates the games table if it doesn't exist, with all necessary columns and indexes.
+     */
+    private void initializeDatabase() {
+        HikariDataSource dataSource = plugin.getDataSource();
+        if (dataSource == null) {
+            getLogger().severe("Database not initialized! GameMgr will use legacy YAML storage.");
+            return;
+        }
+
+        try (Connection conn = dataSource.getConnection();
+             Statement stmt = conn.createStatement()) {
+
+            // Create games table
+            String createTable = "CREATE TABLE IF NOT EXISTS games (" +
+                "game_name TEXT PRIMARY KEY, " +
+                "region_x1 REAL NOT NULL, " +
+                "region_z1 REAL NOT NULL, " +
+                "region_x2 REAL NOT NULL, " +
+                "region_z2 REAL NOT NULL, " +
+                "gamemode TEXT NOT NULL, " +
+                "game_distance INTEGER NOT NULL, " +
+                "nbr_teams INTEGER NOT NULL, " +
+                "game_goal TEXT NOT NULL, " +
+                "goal_value INTEGER NOT NULL, " +
+                "start_time INTEGER NOT NULL, " +
+                "creation_time INTEGER NOT NULL, " +
+                "countdown_timer INTEGER NOT NULL, " +
+                "score_types TEXT NOT NULL, " +
+                "game_over INTEGER NOT NULL, " +
+                "game_distribution REAL NOT NULL" +
+                ")";
+
+            stmt.execute(createTable);
+
+            // Create indexes for performance
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_games_gamemode ON games(gamemode)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_games_region ON games(region_x1, region_z1, region_x2, region_z2)");
+
+            getLogger().info("Database table initialized for games");
+
+        } catch (SQLException e) {
+            getLogger().severe("Failed to initialize games database table: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -1028,5 +1081,4 @@ public class GameMgr extends BeaconzPluginDependent {
         }
     }
 }
-
 

@@ -23,8 +23,9 @@
 package com.wasteofplastic.beaconz.game;
 
 import java.awt.geom.Point2D;
-import java.io.File;
-import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 
@@ -32,7 +33,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.MapMeta;
@@ -48,6 +48,7 @@ import com.wasteofplastic.beaconz.config.Settings;
 import com.wasteofplastic.beaconz.core.BeaconObj;
 import com.wasteofplastic.beaconz.core.Region;
 import com.wasteofplastic.beaconz.listeners.BeaconLinkListener;
+import com.zaxxer.hikari.HikariDataSource;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -304,65 +305,86 @@ public class Game extends BeaconzPluginDependent {
     }
 
     /**
-     * Persists the game configuration and state to games.yml.
+     * Persists the game configuration and state to the SQLite database.
      * <p>
      * This method saves:
      * <ul>
-     *   <li>Region boundaries (as coordinate string)</li>
+     *   <li>Region boundaries (as separate coordinate columns)</li>
      *   <li>Game mode (minigame/persistent)</li>
      *   <li>Game parameters (distance, teams, goals, timers)</li>
      *   <li>Game state (start time, creation time, isOver flag)</li>
-     *   <li>Score configuration (score types)</li>
+     *   <li>Score configuration (score types as comma-separated string)</li>
      *   <li>Team membership (via scorecard)</li>
      * </ul>
      * <p>
-     * <b>File Structure:</b>
-     * <pre>
-     * game:
-     *   GameName:
-     *     region: "x1:z1:x2:z2"
-     *     gamemode: "minigame"
-     *     gamedistance: 100
-     *     nbrteams: 4
-     *     gamegoal: "area"
-     *     goalvalue: 10000
-     *     starttime: 1234567890000
-     *     creationtime: 1234567890000
-     *     countdowntimer: 3600
-     *     scoretypes: "area,beacons"
-     *     gameOver: false
-     *     gamedistribution: 0.5
-     * </pre>
+     * Uses UPSERT (INSERT OR REPLACE) to handle both new games and updates.
+     * All operations are wrapped in a transaction for data integrity.
      * <p>
-     * <b>Note:</b> Game loading is handled by GameMgr, not by this class.
-     * <br><b>Thread Safety:</b> This method is NOT thread-safe. File I/O should be
-     * called from the main server thread.
+     * <b>Note:</b> Team membership is saved separately via scorecard.saveTeamMembers()
+     * <br><b>Thread Safety:</b> This method is NOT thread-safe. Should be called from main thread.
      */
     public void save() {
-        File gamesFile = new File(getBeaconzPlugin().getDataFolder(),"games.yml");
-        YamlConfiguration gamesYml = YamlConfiguration.loadConfiguration(gamesFile);
+        HikariDataSource dataSource = getBeaconzPlugin().getDataSource();
+        if (dataSource == null) {
+            getLogger().severe("Database not initialized! Cannot save game: " + gameName);
+            return;
+        }
 
-        // Save all game configuration under "game.{gameName}" path
-        String plainText = PlainTextComponentSerializer.plainText().serialize(gameName);
-        String path = "game." + plainText;
-        gamesYml.set(path + ".region", ptsToStrCoord(region.corners()));
-        gamesYml.set(path + ".gamemode", params.getGamemode().name());
-        gamesYml.set(path + ".gamedistance", params.getSize());
-        gamesYml.set(path + ".nbrteams", params.getTeams());
-        gamesYml.set(path + ".gamegoal", params.getGoal().name());
-        gamesYml.set(path + ".goalvalue", params.getGoalvalue());
-        gamesYml.set(path + ".starttime", startTime);
-        gamesYml.set(path + ".creationtime", this.gameCreateTime);
-        gamesYml.set(path + ".countdowntimer", scorecard.getCountdownTimer());
-        gamesYml.set(path + ".scoretypes", params.getScoretypes().stream().map(GameScoreGoal::name).toList());
-        gamesYml.set(path + ".gameOver", isOver);
-        gamesYml.set(path + ".gamedistribution", params.getDistribution());
+        try (Connection conn = dataSource.getConnection()) {
+            conn.setAutoCommit(false);
 
-        // Write the YAML configuration to disk
-        try {
-            gamesYml.save(gamesFile);
-        } catch (IOException e) {
-            getLogger().severe("Failed to save games.yml file for game " + gameName + ": " + e.getMessage());
+            try {
+                // Convert score types list to comma-separated string
+                String scoreTypesStr = params.getScoretypes().stream()
+                    .map(GameScoreGoal::name)
+                    .reduce((a, b) -> a + "," + b)
+                    .orElse("");
+
+                // Get region corners
+                Point2D[] corners = region.corners();
+                String plainGameName = PlainTextComponentSerializer.plainText().serialize(gameName);
+
+                // UPSERT game data (INSERT OR REPLACE for SQLite)
+                String sql = "INSERT OR REPLACE INTO games " +
+                    "(game_name, region_x1, region_z1, region_x2, region_z2, gamemode, " +
+                    "game_distance, nbr_teams, game_goal, goal_value, start_time, " +
+                    "creation_time, countdown_timer, score_types, game_over, game_distribution) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+                try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                    stmt.setString(1, plainGameName);
+                    stmt.setDouble(2, corners[0].getX());
+                    stmt.setDouble(3, corners[0].getY());
+                    stmt.setDouble(4, corners[1].getX());
+                    stmt.setDouble(5, corners[1].getY());
+                    stmt.setString(6, params.getGamemode().name());
+                    stmt.setInt(7, params.getSize());
+                    stmt.setInt(8, params.getTeams());
+                    stmt.setString(9, params.getGoal().name());
+                    stmt.setInt(10, params.getGoalvalue());
+                    stmt.setLong(11, startTime);
+                    stmt.setLong(12, gameCreateTime);
+                    stmt.setInt(13, scorecard.getCountdownTimer());
+                    stmt.setString(14, scoreTypesStr);
+                    stmt.setInt(15, isOver ? 1 : 0);
+                    stmt.setDouble(16, params.getDistribution());
+
+                    stmt.executeUpdate();
+                }
+
+                conn.commit();
+                getLogger().info("Game '" + plainGameName + "' saved to database");
+
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(true);
+            }
+
+        } catch (SQLException e) {
+            getLogger().severe("Failed to save game " + gameName + " to database: " + e.getMessage());
+            e.printStackTrace();
         }
 
         // Save team membership data separately
@@ -370,16 +392,14 @@ public class Game extends BeaconzPluginDependent {
     }
 
     /**
-     * Permanently deletes this game instance.
+     * Permanently deletes this game instance from the database.
      * <p>
      * This method performs a complete cleanup:
      * <ol>
      *   <li>Ends the game if still active (via {@link #forceEnd()})</li>
      *   <li>Deletes all team data and membership</li>
      *   <li>Teleports all players in the game to lobby (inventory not saved)</li>
-     *   <li>Creates backup of games.yml as games.old</li>
-     *   <li>Removes this game's configuration from games.yml</li>
-     *   <li>Saves the updated configuration file</li>
+     *   <li>Removes this game's data from the database</li>
      * </ol>
      * <p>
      * <b>Warning:</b> This operation is irreversible. All game data is permanently lost.
@@ -391,8 +411,6 @@ public class Game extends BeaconzPluginDependent {
      *   <li>Player inventories are NOT saved during deletion</li>
      *   <li>Team memberships are permanently removed</li>
      * </ul>
-     * <p>
-     * <b>Backup:</b> Always creates games.old backup before modifying games.yml
      */
     public void delete() {
         
@@ -405,27 +423,31 @@ public class Game extends BeaconzPluginDependent {
         // Teleport any players in the game to the lobby, do not save inventory
         region.sendAllPlayersToLobby(false);
         
-        // Prepare files for game configuration removal
-        File gamesFile = new File(getBeaconzPlugin().getDataFolder(),"games.yml");
-        YamlConfiguration gamesYml = YamlConfiguration.loadConfiguration(gamesFile);
-
-        // Create backup of games file before deletion
-        if (gamesFile.exists()) {
-            File backup = new File(getBeaconzPlugin().getDataFolder(),"games.old");
-            if (!gamesFile.renameTo(backup)) {
-                getLogger().severe("Failed to create backup of games.yml before deleting game " + gameName);
-            }
+        // Delete from database
+        HikariDataSource dataSource = getBeaconzPlugin().getDataSource();
+        if (dataSource == null) {
+            getLogger().severe("Database not initialized! Cannot delete game: " + gameName);
+            return;
         }
 
-        // Remove this game's configuration from the YAML file
-        String path = "game." + gameName;
-        gamesYml.set(path, null);
+        try (Connection conn = dataSource.getConnection()) {
+            String plainGameName = PlainTextComponentSerializer.plainText().serialize(gameName);
+            String sql = "DELETE FROM games WHERE game_name = ?";
 
-        // Write the updated configuration to disk
-        try {
-            gamesYml.save(gamesFile);
-        } catch (IOException e) {
-            getLogger().severe("Failed to save games.yml file when deleting game " + gameName + ": " + e.getMessage());
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, plainGameName);
+                int deleted = stmt.executeUpdate();
+
+                if (deleted > 0) {
+                    getLogger().info("Game '" + plainGameName + "' deleted from database");
+                } else {
+                    getLogger().warning("Game '" + plainGameName + "' not found in database");
+                }
+            }
+
+        } catch (SQLException e) {
+            getLogger().severe("Failed to delete game " + gameName + " from database: " + e.getMessage());
+            e.printStackTrace();
         }
 
     }
@@ -849,20 +871,6 @@ public class Game extends BeaconzPluginDependent {
 
     // ========== Utility Methods ==========
 
-    /**
-     * Converts a Point2D array of 2 corner points into a coordinate string.
-     * <p>
-     * The format is "x1:z1:x2:z2" where the points represent opposite corners
-     * of a rectangular region. The order of points is preserved.
-     * <p>
-     * <b>Example:</b> [(100, 200), (300, 400)] → "100:200:300:400"
-     *
-     * @param c array of exactly 2 Point2D objects representing region corners
-     * @return coordinate string in format "x1:z1:x2:z2"
-     */
-    private String ptsToStrCoord(Point2D [] c) {
-        return c[0].getX() + ":" + c[0].getY() + ":" + c[1].getX() + ":" + c[1].getY();
-    }
 
     /**
      * Converts a Bukkit Location to a simple string representation.
