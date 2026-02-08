@@ -4,8 +4,10 @@
 
 package com.wasteofplastic.beaconz.game;
 
-import java.io.File;
-import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,8 +28,6 @@ import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.InvalidConfigurationException;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
@@ -48,6 +48,7 @@ import com.wasteofplastic.beaconz.config.Params.GameScoreGoal;
 import com.wasteofplastic.beaconz.config.Settings;
 import com.wasteofplastic.beaconz.core.BeaconObj;
 import com.wasteofplastic.beaconz.core.Region;
+import com.zaxxer.hikari.HikariDataSource;
 
 import io.papermc.paper.scoreboard.numbers.NumberFormat;
 import net.kyori.adventure.text.Component;
@@ -885,66 +886,186 @@ public class Scorecard extends BeaconzPluginDependent {
     }
 
     /**
-     * Loads all the team members in UUID format
-     * The teams were added to the scoreboard by addTeamsFromFile()
+     * Loads all team members and spawn points from the SQLite database.
+     * <p>
+     * This method:
+     * <ul>
+     *   <li>Queries team_members table for all players in each team</li>
+     *   <li>Adds players to Bukkit team entries</li>
+     *   <li>Populates teamMembers and teamLookup maps</li>
+     *   <li>Loads team spawn locations from team_spawns table</li>
+     * </ul>
+     * <p>
+     * The teams must already exist in the scoreboard (created by addTeams()).
+     * If the database has no data, this method returns silently.
      */
     public void loadTeamMembers() {
-        File teamFile = new File(getBeaconzPlugin().getDataFolder(),"teams.yml");
-        if (!teamFile.exists()) {
-            saveTeamMembers();
+        HikariDataSource dataSource = getBeaconzPlugin().getDataSource();
+        if (dataSource == null) {
+            getLogger().warning("Database not initialized! Cannot load team members for game " + gameName);
+            return;
         }
-        YamlConfiguration teamsYml = new YamlConfiguration();
-        try {
-            teamsYml.load(teamFile);
-        } catch (IOException e) {
-            getLogger().severe("Failed to load teams.yml file for game " + gameName + ": " + e.getMessage());
-        } catch (InvalidConfigurationException e) {
-            getLogger().severe("Invalid YAML configuration in teams.yml for game " + gameName + ": " + e.getMessage());
-        }
-        for (Team team: scoreboard.getTeams()) {
-            List<String> members = teamsYml.getStringList(gameName + "." + team.getName() + ".members");
-            List<UUID> memberList = new ArrayList<>();
-            for (String uuidText : members) {
-                try {
-                    UUID uuid = UUID.fromString(uuidText);
-                    memberList.add(uuid);
-                    OfflinePlayer player = getBeaconzPlugin().getServer().getOfflinePlayer(uuid);
-                    team.addEntry(player.getName());
-                    teamLookup.put(uuid, team);
-                } catch (Exception e) {
-                    getLogger().severe("Error loading team member " + team.getName() + " " + uuidText + " - skipping");
+
+        try (Connection conn = dataSource.getConnection()) {
+
+            // Load team members
+            String selectMembers = "SELECT team_name, player_uuid FROM team_members WHERE game_name = ?";
+            try (PreparedStatement stmt = conn.prepareStatement(selectMembers)) {
+                stmt.setString(1, gameName);
+
+                try (ResultSet rs = stmt.executeQuery()) {
+                    while (rs.next()) {
+                        String teamName = rs.getString("team_name");
+                        String uuidText = rs.getString("player_uuid");
+
+                        Team team = scoreboard.getTeam(teamName);
+                        if (team != null) {
+                            try {
+                                UUID uuid = UUID.fromString(uuidText);
+                                OfflinePlayer player = getBeaconzPlugin().getServer().getOfflinePlayer(uuid);
+                                team.addEntry(player.getName());
+                                teamLookup.put(uuid, team);
+
+                                // Add to teamMembers map
+                                List<UUID> memberList = teamMembers.computeIfAbsent(team, k -> new ArrayList<>());
+                                memberList.add(uuid);
+
+                            } catch (IllegalArgumentException e) {
+                                getLogger().severe("Error loading team member " + teamName + " " + uuidText + " - invalid UUID, skipping");
+                            }
+                        } else {
+                            getLogger().warning("Team " + teamName + " not found in scoreboard for game " + gameName);
+                        }
+                    }
                 }
             }
-            teamMembers.put(team, memberList);
+
+            // Load team spawn points
+            String selectSpawns = "SELECT team_name, world, x, y, z, yaw, pitch FROM team_spawns WHERE game_name = ?";
+            try (PreparedStatement stmt = conn.prepareStatement(selectSpawns)) {
+                stmt.setString(1, gameName);
+
+                try (ResultSet rs = stmt.executeQuery()) {
+                    while (rs.next()) {
+                        String teamName = rs.getString("team_name");
+                        String worldName = rs.getString("world");
+                        double x = rs.getDouble("x");
+                        double y = rs.getDouble("y");
+                        double z = rs.getDouble("z");
+                        float yaw = rs.getFloat("yaw");
+                        float pitch = rs.getFloat("pitch");
+
+                        Team team = scoreboard.getTeam(teamName);
+                        World world = Bukkit.getWorld(worldName);
+
+                        if (team != null && world != null) {
+                            Location spawn = new Location(world, x, y, z, yaw, pitch);
+                            teamSpawnPoint.put(team, spawn);
+                        } else {
+                            if (team == null) {
+                                getLogger().warning("Team " + teamName + " not found when loading spawn for game " + gameName);
+                            }
+                            if (world == null) {
+                                getLogger().warning("World " + worldName + " not found when loading spawn for game " + gameName);
+                            }
+                        }
+                    }
+                }
+            }
+
+            getLogger().fine("Team members and spawns loaded from database for game " + gameName);
+
+        } catch (SQLException e) {
+            getLogger().severe("Failed to load team members from database for game " + gameName + ": " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
     /**
-     * Saves the teams to the config file
+     * Saves team members and spawn points to the SQLite database.
+     * <p>
+     * This method persists:
+     * <ul>
+     *   <li>Team membership (game_name, team_name, player_uuid)</li>
+     *   <li>Team spawn locations (coordinates, world, yaw, pitch)</li>
+     * </ul>
+     * <p>
+     * Uses transactions for data integrity. Deletes existing data for this game
+     * before inserting updated data to ensure consistency.
      */
     public void saveTeamMembers() {
-        File teamsFile = new File(getBeaconzPlugin().getDataFolder(),"teams.yml");
-        YamlConfiguration teamsYml = YamlConfiguration.loadConfiguration(teamsFile);
-        // Backup the teams file just in case
-        if (teamsFile.exists()) {
-            File backup = new File(getBeaconzPlugin().getDataFolder(),"teams.old");
-            if (!teamsFile.renameTo(backup)) {
-                getLogger().severe("Failed to create backup of teams.yml file for game " + gameName);
-            }
+        HikariDataSource dataSource = getBeaconzPlugin().getDataSource();
+        if (dataSource == null) {
+            getLogger().severe("Database not initialized! Cannot save team members for game " + gameName);
+            return;
         }
-        for (Team team: scoreboard.getTeams()) {
-            // Save the team members
-            if (teamMembers.containsKey(team)) {
-                List<String> members = teamMembers.get(team).stream().map(UUID::toString).toList();
-                teamsYml.set(gameName + "." + team.getName() + ".members", members);
+
+        try (Connection conn = dataSource.getConnection()) {
+            conn.setAutoCommit(false);
+
+            try {
+                // Delete existing team data for this game
+                try (PreparedStatement stmt = conn.prepareStatement(
+                        "DELETE FROM team_members WHERE game_name = ?")) {
+                    stmt.setString(1, gameName);
+                    stmt.executeUpdate();
+                }
+
+                try (PreparedStatement stmt = conn.prepareStatement(
+                        "DELETE FROM team_spawns WHERE game_name = ?")) {
+                    stmt.setString(1, gameName);
+                    stmt.executeUpdate();
+                }
+
+                // Insert team members
+                String insertMember = "INSERT INTO team_members (game_name, team_name, player_uuid) VALUES (?, ?, ?)";
+                try (PreparedStatement stmt = conn.prepareStatement(insertMember)) {
+                    for (Team team : scoreboard.getTeams()) {
+                        if (teamMembers.containsKey(team)) {
+                            for (UUID uuid : teamMembers.get(team)) {
+                                stmt.setString(1, gameName);
+                                stmt.setString(2, team.getName());
+                                stmt.setString(3, uuid.toString());
+                                stmt.addBatch();
+                            }
+                        }
+                    }
+                    stmt.executeBatch();
+                }
+
+                // Insert team spawn points
+                String insertSpawn = "INSERT INTO team_spawns (game_name, team_name, world, x, y, z, yaw, pitch) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                try (PreparedStatement stmt = conn.prepareStatement(insertSpawn)) {
+                    for (Team team : scoreboard.getTeams()) {
+                        Location spawn = teamSpawnPoint.get(team);
+                        if (spawn != null) {
+                            stmt.setString(1, gameName);
+                            stmt.setString(2, team.getName());
+                            stmt.setString(3, spawn.getWorld().getName());
+                            stmt.setDouble(4, spawn.getX());
+                            stmt.setDouble(5, spawn.getY());
+                            stmt.setDouble(6, spawn.getZ());
+                            stmt.setFloat(7, spawn.getYaw());
+                            stmt.setFloat(8, spawn.getPitch());
+                            stmt.addBatch();
+                        }
+                    }
+                    stmt.executeBatch();
+                }
+
+                conn.commit();
+                getLogger().fine("Team members and spawns saved to database for game " + gameName);
+
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(true);
             }
-            // Save the team spawn location
-            teamsYml.set(gameName + "." + team.getName() + "." + "spawnpoint", getStringLocation(teamSpawnPoint.get(team)));
-        }
-        try {
-            teamsYml.save(teamsFile);
-        } catch (IOException e) {
-            getLogger().severe("Failed to save teams.yml file for game " + gameName + ": " + e.getMessage());
+
+        } catch (SQLException e) {
+            getLogger().severe("Failed to save team members to database for game " + gameName + ": " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -1035,22 +1156,33 @@ public class Scorecard extends BeaconzPluginDependent {
         Region region = game.getRegion();
         Location teamSP = null;
 
-        // First try to get the team's spawn point from teams.yml
-        File teamFile = new File(getBeaconzPlugin().getDataFolder(),"teams.yml");
-        if (!teamFile.exists()) {
-            saveTeamMembers();
-        }
-        YamlConfiguration teamsYml = new YamlConfiguration();
-        try {
-            teamsYml.load(teamFile);
-        } catch (IOException e) {
-            getLogger().severe("Failed to load teams.yml file for team spawn point in game " + gameName + ": " + e.getMessage());
-        } catch (InvalidConfigurationException e) {
-            getLogger().severe("Invalid YAML configuration in teams.yml for team spawn point in game " + gameName + ": " + e.getMessage());
-        }
-        String location = teamsYml.getString(gameName + "." + team.getName() + ".spawnpoint");
-        if (location != null) {
-            teamSP = getLocationString(location);
+        // First try to get the team's spawn point from the database
+        HikariDataSource dataSource = getBeaconzPlugin().getDataSource();
+        if (dataSource != null) {
+            try (Connection conn = dataSource.getConnection()) {
+                String sql = "SELECT world, x, y, z, yaw, pitch FROM team_spawns WHERE game_name = ? AND team_name = ?";
+                try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                    stmt.setString(1, gameName);
+                    stmt.setString(2, team.getName());
+
+                    try (ResultSet rs = stmt.executeQuery()) {
+                        if (rs.next()) {
+                            String worldName = rs.getString("world");
+                            World world = Bukkit.getWorld(worldName);
+                            if (world != null) {
+                                double x = rs.getDouble("x");
+                                double y = rs.getDouble("y");
+                                double z = rs.getDouble("z");
+                                float yaw = rs.getFloat("yaw");
+                                float pitch = rs.getFloat("pitch");
+                                teamSP = new Location(world, x, y, z, yaw, pitch);
+                            }
+                        }
+                    }
+                }
+            } catch (SQLException e) {
+                getLogger().warning("Failed to load team spawn from database: " + e.getMessage());
+            }
         }
 
         // Failing that, create a default spawn point
@@ -1413,28 +1545,61 @@ public class Scorecard extends BeaconzPluginDependent {
     }
 
     /**
-     * Deletes the team members
+     * Deletes all team members and spawn data for this game from the database.
+     * <p>
+     * This method:
+     * <ul>
+     *   <li>Deletes all team_members records for this game</li>
+     *   <li>Deletes all team_spawns records for this game</li>
+     *   <li>Clears the teamLookup cache</li>
+     * </ul>
+     * <p>
+     * Called when a game is deleted to clean up team data.
      */
     public void deleteTeamMembers() {
-        File teamsFile = new File(getBeaconzPlugin().getDataFolder(),"teams.yml");
-        YamlConfiguration teamsYml = YamlConfiguration.loadConfiguration(teamsFile);
-        // Backup the teams file just in case
-        if (teamsFile.exists()) {
-            File backup = new File(getBeaconzPlugin().getDataFolder(),"teams.old");
-            if (!teamsFile.renameTo(backup)) {
-                getLogger().severe("Failed to create backup of teams.yml file when deleting team members for game " + gameName);
+        HikariDataSource dataSource = getBeaconzPlugin().getDataSource();
+        if (dataSource == null) {
+            getLogger().severe("Database not initialized! Cannot delete team members for game " + gameName);
+            return;
+        }
+
+        try (Connection conn = dataSource.getConnection()) {
+            conn.setAutoCommit(false);
+
+            try {
+                // Delete team members
+                try (PreparedStatement stmt = conn.prepareStatement(
+                        "DELETE FROM team_members WHERE game_name = ?")) {
+                    stmt.setString(1, gameName);
+                    int deleted = stmt.executeUpdate();
+                    getLogger().info("Deleted " + deleted + " team member(s) for game " + gameName);
+                }
+
+                // Delete team spawns
+                try (PreparedStatement stmt = conn.prepareStatement(
+                        "DELETE FROM team_spawns WHERE game_name = ?")) {
+                    stmt.setString(1, gameName);
+                    int deleted = stmt.executeUpdate();
+                    getLogger().info("Deleted " + deleted + " team spawn(s) for game " + gameName);
+                }
+
+                // Clear the teamLookup cache
+                teamLookup.clear();
+
+                conn.commit();
+                getLogger().info("Team data deleted from database for game " + gameName);
+
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(true);
             }
-        }
-        teamsYml.set(gameName, null);
-        // Clear all the players from the teamLookup.
-        teamLookup.clear();
 
-        try {
-            teamsYml.save(teamsFile);
-        } catch (IOException e) {
-            getLogger().severe("Failed to save teams.yml file when deleting team members for game " + gameName + ": " + e.getMessage());
+        } catch (SQLException e) {
+            getLogger().severe("Failed to delete team members from database for game " + gameName + ": " + e.getMessage());
+            e.printStackTrace();
         }
-
     }
 
     /**

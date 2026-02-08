@@ -447,7 +447,6 @@ public class Game extends BeaconzPluginDependent {
 
         } catch (SQLException e) {
             getLogger().severe("Failed to delete game " + gameName + " from database: " + e.getMessage());
-            e.printStackTrace();
         }
 
     }
