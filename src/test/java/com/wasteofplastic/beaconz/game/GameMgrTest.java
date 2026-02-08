@@ -114,13 +114,13 @@ class GameMgrTest {
         Lang.actionsHitSign = Component.text("Hit sign to join!");
         Lang.titleWelcome = Component.text("Welcome");
         Lang.titleSubTitle = Component.text("Enjoy your game!");
-        Lang.startYoureAMember = Component.text("You're a member of team [name]");
-        Lang.startObjective = Component.text("Objective: [value] [goal]");
-        Lang.startMostObjective = Component.text("Get the most [goal]");
+        Lang.startYoureAMember = "<aqua>You're a member of team <name>";
+        Lang.startObjective = "Objective: [value] <goal>";
+        Lang.startMostObjective = "Get the most <goal>";
         Lang.adminRegenComplete = Component.text("Regeneration complete");
-        Lang.adminDeletedGame = Component.text("Deleted game [name]");
-        Lang.scoreGetValueGoal = Component.text("Get [value] [goal]");
-        Lang.scoreGetTheMostGoal = Component.text("Get the most [goal]");
+        Lang.adminDeletedGame = "Deleted game [name]";
+        Lang.scoreGetValueGoal = "Get [value] <goal>";
+        Lang.scoreGetTheMostGoal = "Get the most <goal>";
         Lang.titleBeaconz = Component.text("Beaconz");
     }
 

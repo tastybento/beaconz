@@ -73,7 +73,9 @@ import com.wasteofplastic.beaconz.config.Settings;
 import com.wasteofplastic.beaconz.core.BeaconObj;
 import com.wasteofplastic.beaconz.game.Game;
 
-import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Listener class that handles protection mechanisms for beacons in the game.
@@ -249,7 +251,7 @@ public class BeaconProtectionListener extends BeaconzPluginDependent implements 
                     event.setCancelled(true);
                 } else if (!notified.contains(player.getUniqueId())){
                     // Beacon is clear and capturable - inform the player
-                    player.sendMessage(Lang.beaconBreakToOwn.color(NamedTextColor.GREEN));
+                    player.sendMessage(Lang.beaconBreakToOwn);
 
                     // Add to notified set to prevent message spam
                     notified.add(player.getUniqueId());
@@ -259,10 +261,10 @@ public class BeaconProtectionListener extends BeaconzPluginDependent implements 
                             () -> notified.remove(player.getUniqueId()), 1200L);
                 }
             }
-        } else {
+        }
             // Player is attempting to break a different part of the beacon structure
             // (pyramid blocks, etc.) - this is handled by other event handlers
-        }
+
 
     }
 
@@ -699,9 +701,8 @@ public class BeaconProtectionListener extends BeaconzPluginDependent implements 
 
                     // If the player's team doesn't match the beacon owner, protect the animal
                     if (!beacon.getOwnership().equals(team)) {
-                        player.sendMessage(Lang.triangleThisBelongsTo
-                                .replaceText(builder -> builder.matchLiteral("[team]")
-                                        .replacement(beacon.getOwnership().displayName())));
+                        player.sendMessage(MiniMessage.miniMessage().deserialize(Lang.triangleThisBelongsTo,
+                                Placeholder.component("team", beacon.getOwnership().displayName())));
                         event.setCancelled(true);
                     }
                 }          
@@ -805,20 +806,7 @@ public class BeaconProtectionListener extends BeaconzPluginDependent implements 
         }
 
         // Determine the physical location of the inventory being accessed
-        InventoryHolder invHolder = event.getInventory().getHolder();
-        Location invLoc = null;
-
-        // Different inventory types store their location differently
-        if (invHolder instanceof Horse) {
-            // Horse inventories use the horse's location
-            invLoc = ((Horse) invHolder).getLocation();
-        } else if (invHolder instanceof Minecart) {
-            // Minecart inventories use the minecart's location
-            invLoc = ((Minecart) invHolder).getLocation();
-        } else {
-            // Block-based inventories (chests, etc.) have a direct location
-            invLoc = event.getInventory().getLocation();
-        }
+        Location invLoc = getLocation(event);
 
         // Some inventories don't have a location (virtual inventories)
         if (invLoc == null) {
@@ -838,9 +826,8 @@ public class BeaconProtectionListener extends BeaconzPluginDependent implements 
                 // Verify the player's team matches the beacon owner
                 if (!beacon.getOwnership().equals(team)) {
                     // Player is trying to access an enemy beacon's inventory
-                    player.sendMessage(Lang.triangleThisBelongsTo
-                            .replaceText(builder -> builder.matchLiteral("[team]")
-                                    .replacement(beacon.getOwnership().displayName())));
+                    player.sendMessage(MiniMessage.miniMessage().deserialize(Lang.triangleThisBelongsTo, 
+                            Placeholder.component("team", beacon.getOwnership().displayName())));
                     event.setCancelled(true);
                 }
             }
@@ -851,12 +838,30 @@ public class BeaconProtectionListener extends BeaconzPluginDependent implements 
             /*
             for (TriangleField triangle : getRegister().getTriangle(invLoc.getBlockX(), invLoc.getBlockZ())) {
                 if (!triangle.getOwner().equals(team)) {
-                    player.sendMessage(Lang.triangleThisBelongsTo.replace("[team]", triangle.getOwner().getDisplayName()));
+                    player.sendMessage(Lang.triangleThisBelongsTo.replace("<team>", triangle.getOwner().getDisplayName()));
                     event.setCancelled(true);
                     return;
                 }
             }*/
         }
+    }
+
+    private static @Nullable Location getLocation(InventoryOpenEvent event) {
+        InventoryHolder invHolder = event.getInventory().getHolder();
+        Location invLoc;
+
+        // Different inventory types store their location differently
+        if (invHolder instanceof Horse) {
+            // Horse inventories use the horse's location
+            invLoc = ((Horse) invHolder).getLocation();
+        } else if (invHolder instanceof Minecart) {
+            // Minecart inventories use the minecart's location
+            invLoc = ((Minecart) invHolder).getLocation();
+        } else {
+            // Block-based inventories (chests, etc.) have a direct location
+            invLoc = event.getInventory().getLocation();
+        }
+        return invLoc;
     }
 
     /**

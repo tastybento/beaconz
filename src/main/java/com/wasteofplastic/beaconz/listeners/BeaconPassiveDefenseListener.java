@@ -54,6 +54,8 @@ import com.wasteofplastic.beaconz.core.DefenseBlock;
 import com.wasteofplastic.beaconz.game.Scorecard;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 
 /**
  * Manages passive defense mechanics for beacons including block placement, defense removal,
@@ -421,17 +423,14 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
             int blocksNeeded = beacon.nbrToLock(block.getY());
 
             if (blocksNeeded == 0) {
-                player.sendMessage(Lang.beaconLockedJustNow
-                        .replaceText(builder -> builder.matchLiteral("[lockingBlock]")
-                                .replacement(Component.text(Settings.lockingBlock.toLowerCase()))));
+                player.sendMessage(MiniMessage.miniMessage().deserialize(Lang.beaconLockedJustNow,
+                        Placeholder.component("lockingBlock", Component.text(Settings.lockingBlock.toLowerCase()))));
             } else if (beacon.isLocked()) {
-                player.sendMessage(Lang.beaconLockedAlready
-                        .replaceText(builder -> builder.matchLiteral("[lockingBlock]")
-                                .replacement(Component.text(Settings.lockingBlock.toLowerCase()))));
+                player.sendMessage(MiniMessage.miniMessage().deserialize(Lang.beaconLockedAlready,
+                        Placeholder.component("lockingBlock", Component.text(Settings.lockingBlock.toLowerCase()))));
             } else {
-                player.sendMessage(Lang.beaconLockedWithNMoreBlocks
-                        .replaceText(builder -> builder.matchLiteral("[number]")
-                                .replacement(Component.text(blocksNeeded))));
+                player.sendMessage(MiniMessage.miniMessage().deserialize(Lang.beaconLockedWithNMoreBlocks,
+                        Placeholder.component("number", Component.text(blocksNeeded))));
             }
         }
     }
@@ -487,9 +486,8 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
 
         // Check height restrictions
         if (beacon.getY() + Settings.defenseHeight - 1 < block.getY()) {
-            player.sendMessage(Lang.errorCanOnlyPlaceBlocksUpTo
-                    .replaceText(builder -> builder.matchLiteral("[value]")
-                            .replacement(Component.text(String.valueOf(Settings.defenseHeight)))));
+            player.sendMessage(MiniMessage.miniMessage().deserialize(Lang.errorCanOnlyPlaceBlocksUpTo,
+                    Placeholder.component("value", Component.text(String.valueOf(Settings.defenseHeight)))));
             event.setCancelled(true);
             return;
         }
@@ -503,9 +501,8 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
         }
 
         if (player.getLevel() < levelRequired) {
-            player.sendMessage(Lang.errorYouNeedToBeLevel
-                    .replaceText(builder -> builder.matchLiteral("[value]")
-                            .replacement(Component.text(String.valueOf(levelRequired)))));
+            player.sendMessage(MiniMessage.miniMessage().deserialize(Lang.errorYouNeedToBeLevel,
+                    Placeholder.component("value", Component.text(String.valueOf(levelRequired)))));
             event.setCancelled(true);
             return;
         }
@@ -550,9 +547,8 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
 
         // Check if it's a link block
         if (Settings.linkBlocks.containsKey(block.getType())) {
-            player.sendMessage(Lang.beaconLinkBlockPlaced.replaceText(
-                    builder -> builder.matchLiteral("[range]")
-                            .replacement(Component.text(String.valueOf(Settings.linkBlocks.get(block.getType()))))));
+            player.sendMessage(MiniMessage.miniMessage().deserialize(Lang.beaconLinkBlockPlaced,
+                    Placeholder.component("range", Component.text(String.valueOf(Settings.linkBlocks.get(block.getType()))))));
         }
 
         // Send defense placement message
@@ -691,9 +687,8 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
                 // Need extra levels to remove other players' blocks
                 int requiredLevel = Settings.removaldelta + defenseBlock.getLevel();
                 if (player.getLevel() < requiredLevel) {
-                    player.sendMessage(Lang.errorYouNeedToBeLevel
-                            .replaceText(builder -> builder.matchLiteral("[value]")
-                                    .replacement(Component.text(String.valueOf(requiredLevel)))));
+                    player.sendMessage(MiniMessage.miniMessage().deserialize(Lang.errorYouNeedToBeLevel,
+                            Placeholder.component("value", Component.text(String.valueOf(requiredLevel)))));
                     event.setCancelled(true);
                     return false;
                 }
@@ -733,9 +728,8 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
 
         // Check player has required level
         if (player.getLevel() < highestLevel) {
-            player.sendMessage(Lang.errorYouNeedToBeLevel
-                    .replaceText(builder -> builder.matchLiteral("[value]")
-                            .replacement(Component.text(String.valueOf(highestLevel)))));
+            player.sendMessage(MiniMessage.miniMessage().deserialize(Lang.errorYouNeedToBeLevel,
+                    Placeholder.component("value", Component.text(String.valueOf(highestLevel)))));
             event.setCancelled(true);
             return false;
         }
@@ -805,9 +799,8 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
         }
 
         // Notify player
-        player.sendMessage(Lang.beaconLinkBlockBroken
-                .replaceText(builder -> builder.matchLiteral("[range]")
-                        .replacement(Component.text(String.valueOf(Settings.linkBlocks.get(block.getType()))))));
+        player.sendMessage(MiniMessage.miniMessage().deserialize(Lang.beaconLinkBlockBroken,
+                Placeholder.component("range", Component.text(String.valueOf(Settings.linkBlocks.get(block.getType()))))));
 
         // Destroy the block if configured
         if (Settings.destroyLinkBlocks) {

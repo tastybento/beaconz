@@ -124,16 +124,16 @@ com.wasteofplastic.beaconz/
 - **`BeaconProjectileDefenseListener.java`** – Active projectile launching system
 
 #### **Event Listeners**
-| Listener | Purpose |
-|----------|---------|
-| `BeaconCaptureListener` | Handles beacon claiming/capturing |
-| `BeaconLinkListener` | Manages link creation between beacons |
-| `BeaconProtectionListener` | Protects beacons from griefing |
-| `BeaconSurroundListener` | Enforces beacon placement rules |
-| `PlayerMovementListener` | Region boundaries & movement restrictions |
-| `PlayerDeathListener` | Death handling in game zones |
-| `ChatListener` | Team-based chat filtering |
-| `LobbyListener` | Lobby mechanics & game joining |
+| Listener                   | Purpose                                   |
+|----------------------------|-------------------------------------------|
+| `BeaconCaptureListener`    | Handles beacon claiming/capturing         |
+| `BeaconLinkListener`       | Manages link creation between beacons     |
+| `BeaconProtectionListener` | Protects beacons from griefing            |
+| `BeaconSurroundListener`   | Enforces beacon placement rules           |
+| `PlayerMovementListener`   | Region boundaries & movement restrictions |
+| `PlayerDeathListener`      | Death handling in game zones              |
+| `ChatListener`             | Team-based chat filtering                 |
+| `LobbyListener`            | Lobby mechanics & game joining            |
 
 ### 🎨 Design Patterns Used
 
@@ -210,14 +210,14 @@ See the complete [Commands Reference](#-commands-reference) below for all availa
 
 Players use the `/beaconz` (or `/bz`) command to interact with the game:
 
-| Command | Permission | Description |
-|---------|-----------|-------------|
-| `/beaconz` | `beaconz.player` | Teleport to the lobby spawn point |
-| `/beaconz help` | `beaconz.player` | Display help for all available player commands |
-| `/beaconz score` | `beaconz.player` | View current game scores and your team |
-| `/beaconz sb` | `beaconz.player` | Toggle scoreboard display on/off |
-| `/beaconz leave <game>` | `beaconz.player.leave` | Leave a game and return to lobby |
-| `/beaconz join <game>` | Operator only | Admin bypass to force join any game (undocumented) |
+| Command                 | Permission             | Description                                        |
+|-------------------------|------------------------|----------------------------------------------------|
+| `/beaconz`              | `beaconz.player`       | Teleport to the lobby spawn point                  |
+| `/beaconz help`         | `beaconz.player`       | Display help for all available player commands     |
+| `/beaconz score`        | `beaconz.player`       | View current game scores and your team             |
+| `/beaconz sb`           | `beaconz.player`       | Toggle scoreboard display on/off                   |
+| `/beaconz leave <game>` | `beaconz.player.leave` | Leave a game and return to lobby                   |
+| `/beaconz join <game>`  | Operator only          | Admin bypass to force join any game (undocumented) |
 
 **Examples:**
 ```
@@ -233,14 +233,14 @@ Admins use the `/badmin` (or `/bzadmin`) command to manage games and players:
 
 #### Game Management
 
-| Command | Description |
-|---------|-------------|
+| Command                              | Description                                       |
+|--------------------------------------|---------------------------------------------------|
 | `/badmin newgame <name> [params...]` | Create a new game with optional custom parameters |
-| `/badmin delete <gamename>` | Permanently delete a game (cannot be undone!) |
-| `/badmin games` | List all active games and their regions |
-| `/badmin listparms <gamename>` | Display all parameters for a specific game |
-| `/badmin force_end <gamename>` | Immediately end a game and declare winner |
-| `/badmin reload` | Save state and reload all configuration files |
+| `/badmin delete <gamename>`          | Permanently delete a game (cannot be undone!)     |
+| `/badmin games`                      | List all active games and their regions           |
+| `/badmin listparms <gamename>`       | Display all parameters for a specific game        |
+| `/badmin force_end <gamename>`       | Immediately end a game and declare winner         |
+| `/badmin reload`                     | Save state and reload all configuration files     |
 
 **Game Creation Parameters:**
 
@@ -266,15 +266,15 @@ When creating a new game with `/badmin newgame`, you can specify these optional 
 
 #### Player Management
 
-| Command | Description |
-|---------|-------------|
-| `/badmin join <gamename> <team>` | Force yourself to join a specific team |
-| `/badmin kick <player> <gamename>` | Remove a player from a game (sends to lobby) |
-| `/badmin kick all <gamename>` | Remove all players from a game |
-| `/badmin switch` | Switch yourself to another team in your current game |
-| `/badmin switch <player>` | Switch another player to a different team |
-| `/badmin teams all` | Display rosters for all games |
-| `/badmin teams <gamename>` | Display team rosters for a specific game |
+| Command                            | Description                                          |
+|------------------------------------|------------------------------------------------------|
+| `/badmin join <gamename> <team>`   | Force yourself to join a specific team               |
+| `/badmin kick <player> <gamename>` | Remove a player from a game (sends to lobby)         |
+| `/badmin kick all <gamename>`      | Remove all players from a game                       |
+| `/badmin switch`                   | Switch yourself to another team in your current game |
+| `/badmin switch <player>`          | Switch another player to a different team            |
+| `/badmin teams all`                | Display rosters for all games                        |
+| `/badmin teams <gamename>`         | Display team rosters for a specific game             |
 
 **Examples:**
 ```
@@ -286,13 +286,13 @@ When creating a new game with `/badmin newgame`, you can specify these optional 
 
 #### Beacon Management
 
-| Command | Description |
-|---------|-------------|
-| `/badmin claim <team>` | Assign beacon you're standing on to a team |
-| `/badmin claim unowned` | Mark beacon you're standing on as unowned |
-| `/badmin list all [team]` | List all beacons, optionally filtered by team |
-| `/badmin list <gamename> [team]` | List beacons in a game, optionally by team |
-| `/badmin distribution <0.0-1.0>` | Set beacon spawn probability |
+| Command                          | Description                                   |
+|----------------------------------|-----------------------------------------------|
+| `/badmin claim <team>`           | Assign beacon you're standing on to a team    |
+| `/badmin claim unowned`          | Mark beacon you're standing on as unowned     |
+| `/badmin list all <team>`        | List all beacons, optionally filtered by team |
+| `/badmin list <gamename> <team>` | List beacons in a game, optionally by team    |
+| `/badmin distribution <0.0-1.0>` | Set beacon spawn probability                  |
 
 **Examples:**
 ```
@@ -305,10 +305,10 @@ When creating a new game with `/badmin newgame`, you can specify these optional 
 
 #### World & Spawn Management
 
-| Command | Description |
-|---------|-------------|
-| `/badmin setspawn` | Set lobby spawn point (stand where you want spawn) |
-| `/badmin setspawn <team>` | Set team spawn point for current game |
+| Command                   | Description                                        |
+|---------------------------|----------------------------------------------------|
+| `/badmin setspawn`        | Set lobby spawn point (stand where you want spawn) |
+| `/badmin setspawn <team>` | Set team spawn point for current game              |
 
 **Examples:**
 ```
@@ -322,16 +322,16 @@ When creating a new game with `/badmin newgame`, you can specify these optional 
 
 ### Player Permissions
 
-| Permission | Default | Description |
-|-----------|---------|-------------|
-| `beaconz.player` | true | Basic player access - use `/beaconz` commands |
-| `beaconz.player.leave` | op | Ability to leave games with `/beaconz leave` |
+| Permission             | Default | Description                                   |
+|------------------------|---------|-----------------------------------------------|
+| `beaconz.player`       | true    | Basic player access - use `/beaconz` commands |
+| `beaconz.player.leave` | op      | Ability to leave games with `/beaconz leave`  |
 
 ### Admin Permissions
 
-| Permission | Default | Description |
-|-----------|---------|-------------|
-| `beaconz.admin` | op | Full admin access - use all `/badmin` commands |
+| Permission      | Default | Description                                    |
+|-----------------|---------|------------------------------------------------|
+| `beaconz.admin` | op      | Full admin access - use all `/badmin` commands |
 
 **Notes:**
 - Server operators have all permissions by default

@@ -38,6 +38,7 @@ import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Team;
+import org.jetbrains.annotations.NotNull;
 
 import com.wasteofplastic.beaconz.Beaconz;
 import com.wasteofplastic.beaconz.BeaconzPluginDependent;
@@ -50,7 +51,6 @@ import com.wasteofplastic.beaconz.generator.BeaconzChunkGen;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Manages the lifecycle and spatial organization of Beaconz games and regions.
@@ -353,6 +353,7 @@ public class GameMgr extends BeaconzPluginDependent {
         // Get the location for creating the new region
         Point2D ctr = nextRegionLocation();
         double radius = rup16(defaultParameters.getSize() / 2.0);
+        getLogger().info("DEBUG: radius is " + radius);
         if (ctr == null) {
             getLogger().warning("Could not find a location to create the next region.");
             result.complete(false);
@@ -549,10 +550,10 @@ public class GameMgr extends BeaconzPluginDependent {
         int increment = 50; // Sample every 50th block (approx 1/10 of chunks)
 
         // Calculate area boundaries
-        int minx = (int) (rup16(ctr.getX() - radius)/1);
-        int minz = (int) (rup16(ctr.getY() - radius)/1);
-        int maxx = (int) (rup16(ctr.getX() + radius)/1);
-        int maxz = (int) (rup16(ctr.getY() + radius)/1);
+        int minx = (int) (rup16(ctr.getX() - radius));
+        int minz = (int) (rup16(ctr.getY() - radius));
+        int maxx = (int) (rup16(ctr.getX() + radius));
+        int maxz = (int) (rup16(ctr.getY() + radius));
 
         // Sample the area and count ocean biomes
         outerloop:

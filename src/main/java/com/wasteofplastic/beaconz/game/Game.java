@@ -50,7 +50,8 @@ import com.wasteofplastic.beaconz.core.Region;
 import com.wasteofplastic.beaconz.listeners.BeaconLinkListener;
 
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
 /**
@@ -480,12 +481,11 @@ public class Game extends BeaconzPluginDependent {
 
         // Send appropriate welcome message
         if (newPlayer) {
-            player.sendMessage(Lang.titleWelcomeToGame
-                    .replaceText(builder -> builder.matchLiteral("[name]")
-                            .replacement(gameName.color(NamedTextColor.YELLOW))).color(NamedTextColor.GREEN));
+            player.sendMessage(MiniMessage.miniMessage().deserialize(Lang.titleWelcomeToGame,
+                    Placeholder.component("name", gameName)));
         } else {
-            player.sendMessage(Lang.titleWelcomeBackToGame.replaceText(builder -> builder.matchLiteral("[name]")
-                    .replacement(gameName.color(NamedTextColor.YELLOW))).color(NamedTextColor.GREEN));
+            player.sendMessage(MiniMessage.miniMessage().deserialize(Lang.titleWelcomeBackToGame,
+                    Placeholder.component("name", gameName)));
         }
 
         // Assign player to a team (balanced assignment if new)
@@ -637,11 +637,11 @@ public class Game extends BeaconzPluginDependent {
             }
 
             // Send success message to command sender
-            sender.sendMessage(Lang.generalSuccess.color(NamedTextColor.GREEN));
+            sender.sendMessage(Lang.generalSuccess);
         } else if (sender != null){
             // Player wasn't in this game
-            sender.sendMessage(Lang.errorNotInGame.replaceText(builder -> builder.matchLiteral("[game]")
-                    .replacement(gameName.color(NamedTextColor.RED))));
+            sender.sendMessage(MiniMessage.miniMessage().deserialize(Lang.errorNotInGame,
+                    Placeholder.component("game", gameName)));
         }
 
         // Teleport player to lobby, do not save inventory

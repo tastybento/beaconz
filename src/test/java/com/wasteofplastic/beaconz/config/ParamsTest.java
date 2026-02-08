@@ -58,7 +58,7 @@ class ParamsTest {
 
         // Initialize Lang components used in validation
         Lang.adminParmsArgumentsPairs = Component.text("Arguments must be given in pairs, separated by colons.");
-        Lang.adminParmsDoesNotExist = Component.text("Parameter [name] does not exist.");
+        Lang.adminParmsDoesNotExist = "Parameter [name] does not exist.";
     }
 
     @Nested

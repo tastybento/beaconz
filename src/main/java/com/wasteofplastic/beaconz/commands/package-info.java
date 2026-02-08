@@ -16,7 +16,7 @@
  *   <li><b>help:</b> Show available commands</li>
  *   <li><b>join [game]:</b> Join a game instance</li>
  *   <li><b>leave:</b> Leave current game and return to lobby</li>
- *   <li><b>team [team]:</b> Join a specific team</li>
+ *   <li><b>team <team>:</b> Join a specific team</li>
  *   <li><b>score:</b> Show current game scores</li>
  *   <li><b>lobby:</b> Teleport to lobby</li>
  * </ul>

@@ -30,6 +30,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Team;
+import org.jetbrains.annotations.NotNull;
 
 import com.wasteofplastic.beaconz.Beaconz;
 import com.wasteofplastic.beaconz.BeaconzPluginDependent;
@@ -39,8 +40,9 @@ import com.wasteofplastic.beaconz.game.Game;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
-import org.jetbrains.annotations.NotNull;
 
 public class CmdHandler extends BeaconzPluginDependent implements CommandExecutor, TabCompleter {
 
@@ -56,7 +58,7 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
             return true;
         }
         if (!player.hasPermission("beaconz.player")) {
-            sender.sendMessage(Lang.errorYouDoNotHavePermission.color(NamedTextColor.RED));
+            sender.sendMessage(Lang.errorYouDoNotHavePermission);
             return true;
         }
         // Declare game variable at method scope to share across switch branches
@@ -67,7 +69,7 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
         case 0:
             player.setScoreboard(getServer().getScoreboardManager().getNewScoreboard());
             if (getGameMgr().getLobby() == null) {
-                player.sendMessage(Lang.errorNoLobbyYet.color(NamedTextColor.RED));
+                player.sendMessage(Lang.errorNoLobbyYet);
                 return true;
             }
             getGameMgr().getLobby().tpToRegionSpawn(player, false);
@@ -87,28 +89,32 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
             case "score":
                 game = getGameMgr().getGame(player.getLocation());
                 if (game == null || game.getScorecard() == null || game.getScorecard().getTeam(player) == null) {
-                    sender.sendMessage(Lang.errorYouMustBeInAGame.color(NamedTextColor.GREEN));
+                    sender.sendMessage(Lang.errorYouMustBeInAGame);
                 } else {
-                    sender.sendMessage(Lang.generalGame.append(Component.text(": ")).color(NamedTextColor.GREEN)
-                        .append(game.getName().color(NamedTextColor.YELLOW)));
+                    sender.sendMessage(Lang.generalGame.append(Component.text(": "))
+                        .append(game.getName()));
                     Team team = game.getScorecard().getTeam(player);
                     if (team != null){
-                        sender.sendMessage(Lang.actionsYouAreInTeam
-                                .replaceText(builder -> builder.matchLiteral("[team]").replacement(team.displayName()))
-                                .color(NamedTextColor.GREEN));
+                        sender.sendMessage(MiniMessage.miniMessage().deserialize(Lang.actionsYouAreInTeam,
+                                Placeholder.component("team", team.displayName())));
                     }
                     showGameScores(sender, game);
                 }
                 break;
             case "sb":
-                if (player.getScoreboard().getEntries().isEmpty()) {
-                    game = getGameMgr().getGame(player.getLocation());
-                    if (game != null) {
-                        player.setScoreboard(game.getScorecard().getScoreboard());
-                    } else {
+                // Toggle scoreboard visibility
+                game = getGameMgr().getGame(player.getLocation());
+                if (game != null && game.getScorecard() != null) {
+                    // Check if player currently has the game scoreboard
+                    if (player.getScoreboard().equals(game.getScorecard().getScoreboard())) {
+                        // Hide scoreboard by giving them a blank one
                         player.setScoreboard(getServer().getScoreboardManager().getNewScoreboard());
+                    } else {
+                        // Show the game scoreboard
+                        player.setScoreboard(game.getScorecard().getScoreboard());
                     }
                 } else {
+                    // Not in a game, just toggle to blank
                     player.setScoreboard(getServer().getScoreboardManager().getNewScoreboard());
                 }
                 break;
@@ -116,7 +122,7 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
                 if (player.hasPermission("beaconz.player.leave")) {
                     sender.sendMessage(Component.text("/" + label + " leave <game> " + Lang.helpLeave));
                 } else {
-                    player.sendMessage(Lang.errorYouDoNotHavePermission.color(NamedTextColor.RED));
+                    player.sendMessage(Lang.errorYouDoNotHavePermission);
                 }
                 break;
             default:
@@ -136,7 +142,7 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
             }
             break;
         default:
-            sender.sendMessage(Lang.errorUnknownCommand.color(NamedTextColor.RED));
+            sender.sendMessage(Lang.errorUnknownCommand);
             return false;
         }
         return true;
@@ -148,7 +154,7 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
             Component gamename = Component.text(args[1]);
             Game game = getGameMgr().getGame(gamename);
             if (game == null) {
-                sender.sendMessage(Lang.errorNoSuchGame.append(Component.text(" '")).append(gamename).append(Component.text("'")).color(NamedTextColor.RED));
+                sender.sendMessage(Lang.errorNoSuchGame.append(Component.text(" '")).append(gamename).append(Component.text("'")));
             } else {
                 game.join(player);
             }
@@ -160,12 +166,12 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
             Component gamename = Component.text(args[1]);
             Game game = getGameMgr().getGame(gamename);
             if (game == null) {
-                sender.sendMessage(Lang.errorNoSuchGame.append(Component.text(" '")).append(gamename).append(Component.text("'")).color(NamedTextColor.RED));
+                sender.sendMessage(Lang.errorNoSuchGame.append(Component.text(" '")).append(gamename).append(Component.text("'")));
             } else {
                 game.leave(player);
             }
         } else {
-            player.sendMessage(Lang.errorYouDoNotHavePermission.color(NamedTextColor.RED));
+            player.sendMessage(Lang.errorYouDoNotHavePermission);
         }
     }
 
@@ -186,17 +192,14 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
         };
 
         for (Team team : game.getScorecard().getScoreboard().getTeams()) {
-            sender.sendMessage(Lang.scoreTeam.replaceText(builder ->
-                builder.matchLiteral("[team]").replacement(team.displayName())));
+            sender.sendMessage(MiniMessage.miniMessage().deserialize(Lang.scoreTeam,
+                Placeholder.component("team", team.displayName())));
 
             for (GameScoreGoal scoreType : scoreTypes) {
                 int score = game.getScorecard().getScore(team, scoreType);
-                sender.sendMessage(Lang.scoreGame
-                        .replaceText(builder -> builder.matchLiteral("[score]")
-                                .replacement(Component.text(score)))
-                        .replaceText(builder -> builder.matchLiteral("[unit]")
-                                .replacement(Component.text(scoreType.getName())))
-                        .color(NamedTextColor.AQUA));
+                sender.sendMessage(MiniMessage.miniMessage().deserialize(Lang.scoreGame,
+                        Placeholder.component("score", Component.text(score)),
+                        Placeholder.component("unit", Component.text(scoreType.getName()))));
             }
         }
     }
@@ -241,8 +244,8 @@ public class CmdHandler extends BeaconzPluginDependent implements CommandExecuto
      * Returns all of the items that begin with the given start,
      * ignoring case.  Intended for tabcompletion.
      *
-     * @param list
-     * @param start
+     * @param list - list of items to check for matches
+     * @param start - the start of the item to match, case insensitive
      * @return List of items that start with the letters
      */
     public static List<String> tabLimit(final List<String> list, final String start) {

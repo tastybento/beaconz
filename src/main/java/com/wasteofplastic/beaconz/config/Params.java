@@ -8,6 +8,8 @@ import java.util.function.Supplier;
 import org.apache.commons.lang.math.NumberUtils;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
 /**
@@ -235,6 +237,15 @@ public class Params {
      */
     public Params(String[] args) throws IOException {
         Component errormsg = Component.empty();
+        // Set default values before validation, so they can be used as fallbacks during validation
+        this.gamemode = null;
+        this.size = null;
+        this.teams = null;
+        this.goal = null;
+        this.goalvalue = null;
+        this.countdown = null;
+        this.scoretypes = null;
+        this.distribution = null;
 
         // Check that *ALL* arguments are valid parms
         for (String arg : args) {
@@ -343,7 +354,8 @@ public class Params {
                     }
                     break;
                 default:
-                    errormsg = errormsg.append(Lang.adminParmsDoesNotExist.replaceText(builder -> builder.matchLiteral("[name]").replacement(Component.text(parm))));
+                    errormsg = errormsg.append(MiniMessage.miniMessage().deserialize(Lang.adminParmsDoesNotExist,
+                            Placeholder.component("name", Component.text(parm))));
                     break;
                 }
             }

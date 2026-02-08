@@ -145,7 +145,7 @@
             be only ${build.version}. -->
 
         <!-- By default ${build.number} is -LOCAL. -->
-        <!-- If the BUILD_NUMBER variable is set, then it will be -b[number]. -->
+        <!-- If the BUILD_NUMBER variable is set, then it will be -b<number>. -->
         <!-- If GIT_BRANCH variable is set to origin/master, then it will 
             be the empty string. -->
         <finalName>${project.name}-${revision}${build.number}</finalName>

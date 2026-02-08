@@ -26,9 +26,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 import org.bukkit.Location;
@@ -59,6 +57,8 @@ import com.wasteofplastic.beaconz.core.Region;
 import com.wasteofplastic.beaconz.core.TriangleField;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 
 /**
  * Handles player and vehicle movement within the game world, enforcing territorial boundaries and effects.
@@ -91,12 +91,6 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
      * Used to track and remove effects when players leave fields.
      */
     private final HashMap<UUID, Collection<PotionEffect>> triangleEffects = new HashMap<>();
-
-    /**
-     * Set of player UUIDs who are currently near region barriers.
-     * Used to show barrier particles and prevent spam.
-     */
-    private final Set<UUID> barrierPlayers = new HashSet<>();
 
     /**
      * Constructs a new PlayerMovementListener.
@@ -156,7 +150,9 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
         if (event.getEntity().getWorld().equals(getBeaconzWorld())) {
             if (getGameMgr().getGame(event.getEntity().getLocation()) == null) {
                 event.setCancelled(true);
-                event.getPlayer().sendMessage(Lang.errorYouCannotDoThat);
+                if (event.getPlayer() != null) {
+                    event.getPlayer().sendMessage(Lang.errorYouCannotDoThat);
+                }
             }
         }
     }
@@ -223,32 +219,45 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
             return;
         }
 
-        // Check if a player is driving the vehicle
-        Entity passenger = event.getVehicle().getPassenger();
-        if (passenger instanceof Player player) {
-            Location from = event.getFrom();
-            Location to = event.getTo();
+        // Process all passengers in the vehicle
+        List<Entity> passengers = event.getVehicle().getPassengers();
+        if (passengers.isEmpty()) {
+            return;
+        }
 
-            // Apply slowness effects to non-living vehicles (boats, minecarts)
-            // Living vehicles (horses, etc.) inherit effects automatically
-            if ((!(event.getVehicle() instanceof LivingEntity))) {
-                for (PotionEffect effect : getTriangleEffects(player.getUniqueId())) {
-                    if (effect.getType().equals(PotionEffectType.SLOWNESS)) {
-                        // Calculate slowdown based on effect amplifier
-                        double delay = effect.getAmplifier();
-                        event.getVehicle().setVelocity(event.getVehicle().getVelocity().divide(new Vector(delay,delay,delay)));
-                        break;
-                    }
+        // Find the first player passenger to use as the primary driver
+        Player primaryPlayer = null;
+        for (Entity passenger : passengers) {
+            if (passenger instanceof Player p) {
+                primaryPlayer = p;
+                break;
+            }
+        }
+
+        if (primaryPlayer == null) {
+            return;
+        }
+
+        Location from = event.getFrom();
+        Location to = event.getTo();
+
+        // Apply slowness effects to non-living vehicles (boats, minecarts)
+        // Living vehicles (horses, etc.) inherit effects automatically
+        if (!(event.getVehicle() instanceof LivingEntity)) {
+            for (PotionEffect effect : getTriangleEffects(primaryPlayer.getUniqueId())) {
+                if (effect.getType().equals(PotionEffectType.SLOWNESS)) {
+                    // Calculate slowdown based on effect amplifier
+                    double delay = effect.getAmplifier();
+                    event.getVehicle().setVelocity(event.getVehicle().getVelocity().divide(new Vector(delay, delay, delay)));
+                    break;
                 }
             }
+        }
 
-            // Check if there are any other passengers in the vehicle
-            // (e.g., multiple players in a boat)
-            for (Player pl : getBeaconzWorld().getPlayers()) {
-                if (!pl.equals(player) && pl.isInsideVehicle() && pl.getVehicle().getEntityId() == event.getVehicle().getEntityId()) {
-                    // Process movement checks for each passenger
-                    checkMove(pl, event.getVehicle().getWorld(), from, to);
-                }
+        // Process movement checks for all player passengers
+        for (Entity passenger : passengers) {
+            if (passenger instanceof Player p && !p.equals(primaryPlayer)) {
+                checkMove(p, event.getVehicle().getWorld(), from, to);
             }
         }
     }
@@ -326,7 +335,6 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
             // Larger movements might be legitimate teleports
             if (from.distanceSquared(to) < 6.25) {
                 Vector direction = player.getLocation().getDirection();
-                barrierPlayers.add(player.getUniqueId());
                 // Return true to cancel the event (player stays in place)
                 // Note: We don't teleport the player - just block the movement
                 player.sendMessage(Lang.errorRegionLimit);
@@ -429,8 +437,8 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
         // Player is leaving triangle fields (entering neutral territory)
         if (toTriangles.isEmpty()) {
             // Notify player they're leaving the field
-            player.sendMessage(Lang.triangleLeaving
-                    .replaceText(builder -> builder.matchLiteral("[team]").replacement(fromTriangles.getFirst().getOwner().displayName())));
+            player.sendMessage(MiniMessage.miniMessage().deserialize(Lang.triangleLeaving,
+                    Placeholder.component("team", fromTriangles.getFirst().getOwner().displayName())));
 
             // Remove all triangle field effects that were previously applied
             if (triangleEffects.containsKey(player.getUniqueId())) {
@@ -449,9 +457,9 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
         // Player is entering a field or moving to a more densely stacked area
         if (fromTriangles.size() < toTriangles.size()) {
             // Notify player they're entering or powering up in the field
-            player.sendMessage(Lang.triangleEntering
-                    .replaceText(builder -> builder.matchLiteral("[team]").replacement(toTriangles.getFirst().getOwner().displayName()))
-                    .replaceText(builder -> builder.matchLiteral("[level]").replacement(Component.text(String.valueOf(toTriangles.size())))));
+            player.sendMessage(MiniMessage.miniMessage().deserialize(Lang.triangleEntering,
+                    Placeholder.component("team", toTriangles.getFirst().getOwner().displayName()),
+                    Placeholder.component("level", Component.text(String.valueOf(toTriangles.size())))));
         } else if (toTriangles.size() < fromTriangles.size()) {
             // Player is moving to less densely stacked area (weaker effects)
             // Remove current effects first - weaker effects will be applied below
@@ -465,9 +473,9 @@ public class PlayerMovementListener extends BeaconzPluginDependent implements Li
                 }
             }
             // Notify player of the level drop
-            player.sendMessage(Lang.triangleDroppingToLevel
-                    .replaceText(builder -> builder.matchLiteral("[team]").replacement(toTriangles.getFirst().getOwner().displayName()))
-                    .replaceText(builder -> builder.matchLiteral("[level]").replacement(Component.text(String.valueOf(toTriangles.size())))));
+            player.sendMessage(MiniMessage.miniMessage().deserialize(Lang.triangleDroppingToLevel,
+                    Placeholder.component("team", toTriangles.getFirst().getOwner().displayName()),
+                    Placeholder.component("level", Component.text(String.valueOf(toTriangles.size())))));
         }
 
         // Apply the appropriate effects for the new field(s)

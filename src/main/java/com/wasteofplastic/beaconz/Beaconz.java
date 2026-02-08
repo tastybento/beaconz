@@ -48,6 +48,7 @@ import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.jetbrains.annotations.NotNull;
 
 import com.wasteofplastic.beaconz.commands.AdminCmdHandler;
 import com.wasteofplastic.beaconz.commands.CmdHandler;
@@ -78,7 +79,6 @@ import com.wasteofplastic.beaconz.storage.BeaconzStore;
 import com.wasteofplastic.beaconz.storage.Messages;
 import com.wasteofplastic.beaconz.storage.TinyDB;
 import com.wasteofplastic.beaconz.util.ItemRewardParser;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Main plugin class for the Beaconz strategic team-based game.
@@ -1029,8 +1029,8 @@ public class Beaconz extends JavaPlugin {
 
     /**
      * Gets the highest block in the world at x,z starting at the max height block can be
-     * @param x
-     * @param z
+     * @param x - x coordinate
+     * @param z - z coordinate
      * @return height of first non-air block
      */
     public int getHighestBlockYAt(int x, int z) {
@@ -1047,7 +1047,7 @@ public class Beaconz extends JavaPlugin {
      * Converts a location to a simple string representation
      * If location is null, returns empty string
      *
-     * @param l
+     * @param l - Location to convert
      * @return String of location
      */
     static public String getStringLocation(final Location l) {
@@ -1094,14 +1094,14 @@ public class Beaconz extends JavaPlugin {
 
     /**
      * Runs commands for a player or on a player
-     * @param player
-     * @param commands
+     * @param player - player to run commands for
+     * @param commands - list of commands to run. If command starts with [SELF], it will be run as the player, otherwise it will be run as console
      */
     public void runCommands(Player player, List<String> commands) {
         for (String cmd : commands) {
             if (cmd.startsWith("[SELF]")) {
                 getLogger().info("Running command '" + cmd + "' as " + player.getName());
-                cmd = cmd.substring(6).replace("[player]", player.getName()).trim();
+                cmd = cmd.substring(6).replace("<player>", player.getName()).trim();
                 try {
                     player.performCommand(cmd);
                 } catch (Exception e) {
@@ -1114,7 +1114,7 @@ public class Beaconz extends JavaPlugin {
             }
             // Substitute in any references to player
             try {
-                if (!getServer().dispatchCommand(plugin.getServer().getConsoleSender(), cmd.replace("[player]", player.getName()))) {
+                if (!getServer().dispatchCommand(plugin.getServer().getConsoleSender(), cmd.replace("<player>", player.getName()))) {
                     getLogger().severe("Problem executing challenge reward commands - skipping!");
                     getLogger().severe("Command was : " + cmd);
                 }

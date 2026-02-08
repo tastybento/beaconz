@@ -137,10 +137,10 @@ class CmdHandlerTest {
         Lang.helpScore = Component.text("- show the team scores");
         Lang.helpScoreboard = Component.text("- toggles the scoreboard on and off");
         Lang.generalGame = Component.text("Game");
-        Lang.actionsYouAreInTeam = Component.text("You are in [team]!");
+        Lang.actionsYouAreInTeam = "You are in <team>!";
         Lang.scoreScores = Component.text("Scores:");
-        Lang.scoreGame = Component.text("[score] [unit]");
-        Lang.scoreTeam = Component.text("[team]");
+        Lang.scoreGame = "[score] [unit]";
+        Lang.scoreTeam = "<team>";
     }
 
     /**

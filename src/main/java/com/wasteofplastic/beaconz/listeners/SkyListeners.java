@@ -51,7 +51,7 @@ public class SkyListeners extends BeaconzPluginDependent implements Listener {
 
     private final static int BLOCK_HEIGHT = 255;
     /**
-     * @param plugin
+     * @param plugin - the plugin instance
      */
     public SkyListeners(Beaconz plugin) {
         super(plugin);
@@ -59,7 +59,7 @@ public class SkyListeners extends BeaconzPluginDependent implements Listener {
 
     /**
      * Protects damage to blocks
-     * @param event
+     * @param event - the event
      */
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onBlockDamage(BlockDamageEvent event) {
@@ -76,7 +76,7 @@ public class SkyListeners extends BeaconzPluginDependent implements Listener {
 
     /**
      * Protects the sky blocks from explosion damage of any kind
-     * @param event
+     * @param event - the event
      */
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onExplode(EntityExplodeEvent event) {
@@ -89,7 +89,7 @@ public class SkyListeners extends BeaconzPluginDependent implements Listener {
 
     /**
      * Prevents trees from growing into this space
-     * @param event
+     * @param event - the event
      */
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onBlockSpread(BlockSpreadEvent event) {
@@ -104,7 +104,7 @@ public class SkyListeners extends BeaconzPluginDependent implements Listener {
 
     /**
      * Prevents blocks from being piston pushed into this height
-     * @param event
+     * @param event - the event
      */
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onPistonPush(BlockPistonExtendEvent event) {
@@ -125,7 +125,7 @@ public class SkyListeners extends BeaconzPluginDependent implements Listener {
 
     /**
      * Prevents the tipping of liquids at this height
-     * @param event
+     * @param event - the event
      */
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onBucketEmpty(final PlayerBucketEmptyEvent event) {
@@ -141,7 +141,7 @@ public class SkyListeners extends BeaconzPluginDependent implements Listener {
 
     /**
      * Prevents placing of blocks at this height
-     * @param event
+     * @param event - the event
      */
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onBlockPlace(BlockPlaceEvent event) {
@@ -159,7 +159,7 @@ public class SkyListeners extends BeaconzPluginDependent implements Listener {
 
     /**
      * Prevents breakage of blocks at this height
-     * @param event
+     * @param event - the event
      */
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled=true)
     public void onBeaconBreak(BlockBreakEvent event) {

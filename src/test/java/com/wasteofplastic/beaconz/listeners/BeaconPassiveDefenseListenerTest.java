@@ -45,6 +45,8 @@ import com.wasteofplastic.beaconz.core.DefenseBlock;
 import com.wasteofplastic.beaconz.core.Region;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 
 /**
  * Comprehensive tests for BeaconPassiveDefenseListener covering defense placement, breaking, and protection mechanics.
@@ -89,16 +91,16 @@ class BeaconPassiveDefenseListenerTest extends CommonTestBase {
         Lang.beaconCannotBeExtended = Component.text("beaconCannotBeExtended");
         Lang.errorClearAboveBeacon = Component.text("errorClearAboveBeacon");
         Lang.beaconExtended = Component.text("beaconExtended");
-        Lang.beaconLockedJustNow = Component.text("beaconLockedJustNow [lockingBlock]");
-        Lang.beaconLockedAlready = Component.text("beaconLockedAlready [lockingBlock]");
-        Lang.beaconLockedWithNMoreBlocks = Component.text("beaconLockedWithNMoreBlocks [number]");
+        Lang.beaconLockedJustNow = "beaconLockedJustNow <lockingBlock>";
+        Lang.beaconLockedAlready = "beaconLockedAlready <lockingBlock>";
+        Lang.beaconLockedWithNMoreBlocks = "beaconLockedWithNMoreBlocks <number>";
         Lang.errorCanOnlyPlaceBlocks = Component.text("errorCanOnlyPlaceBlocks");
-        Lang.errorCanOnlyPlaceBlocksUpTo = Component.text("errorCanOnlyPlaceBlocksUpTo [value]");
-        Lang.errorYouNeedToBeLevel = Component.text("errorYouNeedToBeLevel [value]");
+        Lang.errorCanOnlyPlaceBlocksUpTo = "errorCanOnlyPlaceBlocksUpTo <value>";
+        Lang.errorYouNeedToBeLevel = "errorYouNeedToBeLevel <value>";
         Lang.generalLevel = Component.text("Level");
-        Lang.beaconLinkBlockPlaced = Component.text("beaconLinkBlockPlaced [range]");
+        Lang.beaconLinkBlockPlaced = "beaconLinkBlockPlaced <range>";
         Lang.beaconDefensePlaced = Component.text("beaconDefensePlaced");
-        Lang.beaconLinkBlockBroken = Component.text("beaconLinkBlockBroken [range]");
+        Lang.beaconLinkBlockBroken = "beaconLinkBlockBroken <range>";
         Lang.beaconLinkLost = Component.text("beaconLinkLost");
         Lang.beaconDefenseRemoveTopDown = Component.text("beaconDefenseRemoveTopDown");
         Lang.errorYouCannotRemoveOtherPlayersBlocks = Component.text("errorYouCannotRemoveOtherPlayersBlocks");
@@ -455,8 +457,8 @@ class BeaconPassiveDefenseListenerTest extends CommonTestBase {
 
         assertTrue(event.isCancelled());
         verify(player).sendMessage(argThat((Component component) ->
-            component.equals(Lang.errorYouNeedToBeLevel.replaceText(builder ->
-                builder.matchLiteral("[value]").replacement(Component.text("5"))))
+            component.equals(MiniMessage.miniMessage().deserialize(Lang.errorYouNeedToBeLevel,
+                Placeholder.component("value", Component.text("5"))))
         ));
     }
 
@@ -648,7 +650,8 @@ class BeaconPassiveDefenseListenerTest extends CommonTestBase {
 
         assertTrue(event.isCancelled());
         verify(player).sendMessage(argThat((Component component) ->
-            component.equals(Lang.errorYouNeedToBeLevel.replaceText(builder -> builder.matchLiteral("[value]").replacement(Component.text("10"))))
+            component.equals(MiniMessage.miniMessage().deserialize(Lang.errorYouNeedToBeLevel,
+                Placeholder.component("value", Component.text("10"))))
         ));
     }
 

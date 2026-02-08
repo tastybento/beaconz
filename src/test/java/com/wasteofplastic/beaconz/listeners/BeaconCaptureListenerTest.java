@@ -22,7 +22,6 @@ import org.junit.jupiter.api.Test;
 import com.wasteofplastic.beaconz.config.Lang;
 
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 
 /**
  * Exercises BeaconCaptureListener behaviors for beacon damage/break events with mocked plugin context.
@@ -281,7 +280,7 @@ class BeaconCaptureListenerTest extends CommonTestBase {
 
         assertTrue(e.isCancelled());
         verify(player).sendMessage(argThat((Component component) ->
-            component.equals(Lang.errorClearAroundBeacon.color(NamedTextColor.RED))
+            component.equals(Lang.errorClearAroundBeacon)
         ));
     }
 
@@ -298,7 +297,7 @@ class BeaconCaptureListenerTest extends CommonTestBase {
 
         assertTrue(e.isCancelled());
         verify(player).sendMessage(argThat((Component component) ->
-            component.equals(Lang.beaconYouCannotDestroyYourOwnBeacon.color(NamedTextColor.RED))
+            component.equals(Lang.beaconYouCannotDestroyYourOwnBeacon)
         ));
         verify(register, never()).removeBeaconOwnership(beacon);
     }
@@ -320,7 +319,7 @@ class BeaconCaptureListenerTest extends CommonTestBase {
 
         assertTrue(e.isCancelled());
         verify(player).sendMessage(argThat((Component component) ->
-            component.equals(Lang.errorClearAroundBeacon.color(NamedTextColor.GREEN))
+            component.equals(Lang.errorClearAroundBeacon)
         ));
         verify(register, never()).removeBeaconOwnership(beacon);
         verify(block, never()).setType(Material.OBSIDIAN);

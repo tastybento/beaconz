@@ -139,11 +139,11 @@ class GameTest {
      */
     private void setupLangStrings() {
         Lang.titleBeaconz = Component.text("Title Beaconz");
-        Lang.titleWelcomeToGame = Component.text("Welcome to game [name]");
-        Lang.titleWelcomeBackToGame = Component.text("Welcome back to game [name]");
+        Lang.titleWelcomeToGame = "Welcome to game [name]";
+        Lang.titleWelcomeBackToGame = "Welcome back to game [name]";
         Lang.generalSuccess = Component.text("Success!");
-        Lang.errorNotInGame = Component.text("You are not in game [game]");
-        Lang.scoreGetValueGoal = Component.text("getvalue goal");
+        Lang.errorNotInGame = "You are not in game [game]";
+        Lang.scoreGetValueGoal = "getvalue goal";
         Lang.scoreGameOver = "Game Over"; // Still a String in Lang class
         Lang.scoreGameModeMiniGame = "Minigame";
         Lang.scoreGoalArea = "Area";

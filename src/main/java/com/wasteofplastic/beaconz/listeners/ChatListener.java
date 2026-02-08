@@ -134,7 +134,7 @@ public class ChatListener extends BeaconzPluginDependent implements Listener {
 
     /**
      * Toggles team chat spy. Spy must also have the spy permission to see chats
-     * @param playerUUID
+     * @param playerUUID - UUID of player toggling spy
      * @return true if toggled on, false if toggled off
      */
     public boolean toggleSpy(UUID playerUUID) {
