@@ -235,7 +235,7 @@ public class Register extends BeaconzPluginDependent {
      */
     private void initializeDatabaseTables() {
         HikariDataSource dataSource = getBeaconzPlugin().getDataSource();
-        if (dataSource == null) {
+        if (dataSource == null || dataSource.isClosed()) {
             getLogger().severe("Database not initialized! Register will use legacy YAML storage.");
             return;
         }
@@ -292,7 +292,7 @@ public class Register extends BeaconzPluginDependent {
      */
     public void saveRegister() {
         HikariDataSource dataSource = getBeaconzPlugin().getDataSource();
-        if (dataSource == null) {
+        if (dataSource == null || dataSource.isClosed()) {
             getLogger().warning("Database not available, falling back to YAML storage");
             saveRegisterYAML();
             return;
@@ -425,6 +425,29 @@ public class Register extends BeaconzPluginDependent {
     }
 
     /**
+     * Saves the register to the database asynchronously to avoid blocking the main thread.
+     * This is useful when beacons are created during chunk generation or other time-sensitive operations.
+     * The save happens on a separate thread to prevent lag.
+     * <p>
+     * If the server or scheduler is not available (e.g., during tests), falls back to synchronous save.
+     */
+    public void saveRegisterAsync() {
+        try {
+            // Run the save operation asynchronously to avoid blocking chunk generation
+            if (getBeaconzPlugin() != null && getBeaconzPlugin().getServer() != null) {
+                getBeaconzPlugin().getServer().getScheduler().runTaskAsynchronously(getBeaconzPlugin(), this::saveRegister);
+            } else {
+                // Fallback to synchronous save if scheduler not available (e.g., in tests)
+                saveRegister();
+            }
+        } catch (Exception e) {
+            // If async fails, fall back to synchronous save
+            getLogger().warning("Async save failed, falling back to synchronous: " + e.getMessage());
+            saveRegister();
+        }
+    }
+
+    /**
      * Legacy YAML-based save method, kept for backwards compatibility and migration.
      * @deprecated Use database storage via saveRegister()
      */
@@ -547,7 +570,7 @@ public class Register extends BeaconzPluginDependent {
         clear();
 
         HikariDataSource dataSource = getBeaconzPlugin().getDataSource();
-        if (dataSource == null) {
+        if (dataSource == null || dataSource.isClosed()) {
             getLogger().warning("Database not available, falling back to YAML storage");
             loadRegisterYAML();
             return;
@@ -579,39 +602,58 @@ public class Register extends BeaconzPluginDependent {
             HashMap<Point2D, BeaconObj> loadedBeacons = new HashMap<>();
 
             String selectBeacons = "SELECT x, y, z, game_name, owner_team, map_id FROM beacons";
+            int beaconCountInDB = 0;
+            int beaconsLoaded = 0;
+            int beaconsSkippedNoGame = 0;
+
             try (Statement stmt = conn.createStatement();
                  ResultSet rs = stmt.executeQuery(selectBeacons)) {
 
                 while (rs.next()) {
+                    beaconCountInDB++;
                     int x = rs.getInt("x");
                     int y = rs.getInt("y");
                     int z = rs.getInt("z");
                     String gameName = rs.getString("game_name");
-                    String ownerTeam = rs.getString("owner_team");
+                    String ownerTeamName = rs.getString("owner_team");
 
-                    // Verify the game still exists
-                    Game game = getGameMgr().getGame(x, z);
-                    if (game != null) {
-                        // Resolve team ownership
-                        Team team = null;
-                        if (ownerTeam != null) {
-                            team = game.getScorecard().getTeam(ownerTeam);
+                    // Load beacon WITHOUT requiring game to exist yet
+                    // Game/region initialization happens AFTER register load, so we can't look up the game yet
+                    // We'll resolve team ownership later (beacons default to unowned if team doesn't exist)
+                    BeaconObj beacon = addBeacon(null, x, y, z); // Start with no owner
+                    loadedBeacons.put(beacon.getPoint(), beacon);
+                    beaconsLoaded++;
+
+                    // Set map ID if present
+                    Integer mapId = (Integer) rs.getObject("map_id");
+                    if (mapId != null) {
+                        beacon.setId(mapId);
+                    }
+
+                    // Try to resolve team ownership if game is available
+                    // This will succeed on subsequent loads after game initialization
+                    if (ownerTeamName != null) {
+                        Game game = getGameMgr().getGame(x, z);
+                        if (game != null) {
+                            Team team = game.getScorecard().getTeam(ownerTeamName);
+                            if (team != null) {
+                                beacon.setOwnership(team);
+                                // Initialize link list for this game
+                                beaconLinks.computeIfAbsent(game, k -> new ArrayList<>());
+                            }
+                        } else {
+                            // Game not initialized yet - beacon loaded as unowned
+                            // This is normal during first load, team will be set when beacon is captured
+                            beaconsSkippedNoGame++;
                         }
-
-                        // Create the beacon and add to registry
-                        BeaconObj beacon = addBeacon(team, x, y, z);
-                        loadedBeacons.put(beacon.getPoint(), beacon);
-
-                        // Set map ID if present
-                        Integer mapId = (Integer) rs.getObject("map_id");
-                        if (mapId != null) {
-                            beacon.setId(mapId);
-                        }
-
-                        // Initialize link list for this game
-                        beaconLinks.computeIfAbsent(game, k -> new ArrayList<>());
                     }
                 }
+            }
+
+            getLogger().info("Database contained " + beaconCountInDB + " beacons");
+            getLogger().info("Successfully loaded " + beaconsLoaded + " beacons");
+            if (beaconsSkippedNoGame > 0) {
+                getLogger().info(beaconsSkippedNoGame + " beacons loaded without team ownership (game not initialized yet)");
             }
 
             // === PHASE 2: Load base blocks ===
@@ -2039,5 +2081,13 @@ public class Register extends BeaconzPluginDependent {
         }
 
         return deletedCount;
+    }
+
+    /**
+     * Gets the total number of beacons currently registered.
+     * @return the number of beacons
+     */
+    public int getBeaconCount() {
+        return beaconRegister.size();
     }
 }

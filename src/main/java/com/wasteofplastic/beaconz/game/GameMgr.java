@@ -125,7 +125,7 @@ public class GameMgr extends BeaconzPluginDependent {
      */
     private void initializeDatabase() {
         HikariDataSource dataSource = plugin.getDataSource();
-        if (dataSource == null) {
+        if (dataSource == null || dataSource.isClosed()) {
             getLogger().severe("Database not initialized! GameMgr will use legacy YAML storage.");
             return;
         }

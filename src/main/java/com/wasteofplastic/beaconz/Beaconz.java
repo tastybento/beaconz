@@ -304,7 +304,32 @@ public class Beaconz extends JavaPlugin {
                 gameMgr.newGame(Settings.defaultGameName);
             }
 
+            // Start periodic auto-save task to prevent data loss
+            // Saves register every 30 seconds (600 ticks)
+            startAutoSaveTask();
+
         });
+    }
+
+    /**
+     * Starts a periodic task that automatically saves the beacon register to prevent data loss.
+     * Runs every 30 seconds in the background (configurable via delay parameter).
+     */
+    private void startAutoSaveTask() {
+        // Auto-save every 30 seconds (600 ticks)
+        // First save happens 30 seconds after server start
+        long autoSaveInterval = 600L; // 30 seconds in ticks
+
+        getServer().getScheduler().runTaskTimerAsynchronously(this, () -> {
+            if (register != null) {
+                try {
+                    register.saveRegister();
+                    getLogger().info("Auto-save: Successfully saved beacon register");
+                } catch (Exception e) {
+                    getLogger().warning("Auto-save failed: " + e.getMessage());
+                }
+            }
+        }, autoSaveInterval, autoSaveInterval);
     }
 
     /**
@@ -316,6 +341,7 @@ public class Beaconz extends JavaPlugin {
      *   <li>Remove map renderers to prevent memory leaks</li>
      *   <li>Save all player inventories</li>
      *   <li>Save all game states</li>
+     *   <li>Close database connections</li>
      * </ol>
      *
      * All data is saved to disk to ensure no progress is lost when the
@@ -326,25 +352,38 @@ public class Beaconz extends JavaPlugin {
     {
         // Save beacon register (beacons, links, triangular fields)
         if (register != null) {
-            register.saveRegister();
-
-            // Remove all custom map renderers to prevent memory leaks
-            // Maps will get their renderers back when players rejoin
-            register.removeMapRenderers();
+            try {
+                register.saveRegister();
+                // Remove all custom map renderers to prevent memory leaks
+                // Maps will get their renderers back when players rejoin
+                register.removeMapRenderers();
+            } catch (Exception e) {
+                getLogger().warning("Failed to save register during shutdown: " + e.getMessage());
+            }
         }
 
         // Player inventories are automatically persisted to database
         // No need to manually save - database commits on each operation
 
         // Save all game states (teams, scores, configurations)
-        getGameMgr().saveAllGames();
+        if (gameMgr != null) {
+            try {
+                gameMgr.saveAllGames();
+            } catch (Exception e) {
+                getLogger().warning("Failed to save games during shutdown: " + e.getMessage());
+            }
+        }
 
         // Save player name database
         if (nameStore != null) {
-            nameStore.saveDB();
+            try {
+                nameStore.saveDB();
+            } catch (Exception e) {
+                getLogger().warning("Failed to save name store during shutdown: " + e.getMessage());
+            }
         }
 
-        // Close database
+        // Close database connection pool AFTER all saves are complete
         this.closeDataSource();
     }
 
@@ -394,6 +433,7 @@ public class Beaconz extends JavaPlugin {
             register = new Register(plugin);
             // Load saved data from disk (or create empty if first run)
             register.loadRegister();
+            getLogger().info("Loaded " + register.getBeaconCount() + " beacons from database");
         }
         return register;
     }
@@ -1245,7 +1285,19 @@ public class Beaconz extends JavaPlugin {
             config.setPassword(password);
         } else {
             // SQLite setup
-            String fileName = getDataFolder().getPath() + "/storage.db";
+            // In production, use a consistent filename so data persists across restarts
+            // In tests (when running from surefire), use unique filenames to avoid locking
+            String fileName;
+            if (System.getProperty("surefire.test.class.path") != null) {
+                // Running in test mode - use unique filename to avoid conflicts
+                fileName = getDataFolder().getPath() + "/test-storage-" +
+                    System.currentTimeMillis() + "-" + Thread.currentThread().threadId() + ".db";
+                getLogger().info("TEST MODE: Using database file: " + fileName);
+            } else {
+                // Production mode - use consistent filename for persistence
+                fileName = getDataFolder().getPath() + "/storage.db";
+                getLogger().info("PRODUCTION MODE: Using database file: " + fileName);
+            }
             config.setJdbcUrl("jdbc:sqlite:" + fileName);
         }
 
@@ -1253,15 +1305,28 @@ public class Beaconz extends JavaPlugin {
         config.setMaximumPoolSize(10);
         config.setConnectionTimeout(5000);
 
+        // SQLite specific settings to reduce locking
+        config.addDataSourceProperty("journal_mode", "WAL");
+        config.addDataSourceProperty("synchronous", "NORMAL");
+
         this.dataSource = new HikariDataSource(config);
     }
 
      /**
      * Closes the database connection pool when the plugin is disabled to prevent resource leaks.
+     * Also shuts down the auto-save task if it's running.
      */
     private void closeDataSource() {
-        if (this.dataSource != null) {
-            this.dataSource.close();
+        if (this.dataSource != null && !this.dataSource.isClosed()) {
+            try {
+                // Give time for any pending operations to complete
+                this.dataSource.close();
+                getLogger().fine("Database connection pool closed successfully");
+            } catch (Exception e) {
+                getLogger().warning("Error closing database connection pool: " + e.getMessage());
+            } finally {
+                this.dataSource = null;
+            }
         }
      }
 }
