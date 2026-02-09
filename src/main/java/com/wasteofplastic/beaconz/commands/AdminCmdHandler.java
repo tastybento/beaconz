@@ -920,7 +920,8 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
         for (BeaconObj b : getRegister().getBeaconRegister().values()) {
             // Find the game this beacon is in
             Game game = getGameMgr().getGame(b.getLocation());
-            String gameName = PlainTextComponentSerializer.plainText().serialize(game.getName());
+            String gameName = game != null ? PlainTextComponentSerializer.plainText().serialize(game.getName()) : "Unknown";
+
             // Check if this beacon matches the game filter
             if (name.equalsIgnoreCase("all") || gameName.equalsIgnoreCase(name)) {
                 noGame = false;
