@@ -23,8 +23,6 @@ package com.wasteofplastic.beaconz.game;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
-import java.io.File;
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -36,9 +34,6 @@ import java.util.concurrent.CompletableFuture;
 import org.bukkit.Location;
 import org.bukkit.block.Biome;
 import org.bukkit.command.CommandSender;
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.InvalidConfigurationException;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Team;
 import org.jetbrains.annotations.NotNull;
@@ -46,8 +41,6 @@ import org.jetbrains.annotations.NotNull;
 import com.wasteofplastic.beaconz.Beaconz;
 import com.wasteofplastic.beaconz.BeaconzPluginDependent;
 import com.wasteofplastic.beaconz.config.Params;
-import com.wasteofplastic.beaconz.config.Params.GameMode;
-import com.wasteofplastic.beaconz.config.Params.GameScoreGoal;
 import com.wasteofplastic.beaconz.config.Settings;
 import com.wasteofplastic.beaconz.core.Region;
 import com.wasteofplastic.beaconz.generator.BeaconzChunkGen;
@@ -190,7 +183,6 @@ public class GameMgr extends BeaconzPluginDependent {
 
         } catch (SQLException e) {
             getLogger().severe("Failed to initialize games database table: " + e.getMessage());
-            e.printStackTrace();
         }
     }
 
@@ -208,63 +200,20 @@ public class GameMgr extends BeaconzPluginDependent {
     }
 
     /**
-     * Persists all games and the lobby to disk.
-     *
-     * <p>Creates a backup of the existing games.yml file before saving.
-     * The lobby region and spawn point are saved separately from game regions.
-     * Each active game delegates to its own save method for detailed persistence.</p>
+     * Persists all games to the database.
+     * Each active game delegates to its own save method for detailed persistence.
      *
      * @see Game#save()
      */
     public void saveAllGames() {
-        File gamesFile = new File(getBeaconzPlugin().getDataFolder(),"games.yml");
-        YamlConfiguration gamesYml = YamlConfiguration.loadConfiguration(gamesFile);
-
-        // Backup the games file just in case of corruption
-        if (gamesFile.exists()) {
-            File backup = new File(getBeaconzPlugin().getDataFolder(),"games.old");
-            if (!gamesFile.renameTo(backup)) {
-                getLogger().severe("Failed to create backup of games.yml before saving.");
-            }
-        }
-
-        // Save the lobby region and spawn point
-        if (lobby != null) {
-            gamesYml.set("lobby.region", ptsToStrCoord(lobby.corners()));
-            gamesYml.set("lobby.spawn", Beaconz.getStringLocation(lobby.getSpawnPoint()));
-        }
-
-        // Write lobby data to file
-        try {
-            gamesYml.save(gamesFile);
-        } catch (IOException e) {
-            getLogger().severe("Failed to save lobby data to games.yml: " + e.getMessage());
-        }
-
-        // Delegate to each game to save its own data
+        // Delegate to each game to save its own data to database
         for (Game game: games.values()) {
             game.save();
         }
     }
 
     /**
-     * Converts a pair of Point2D coordinates into a colon-separated string.
-     *
-     * <p>Format: "x1:z1:x2:z2" where (x1,z1) and (x2,z2) are the region corners.</p>
-     *
-     * @param c array of two Point2D objects representing region corners
-     * @return formatted string representation of coordinates
-     */
-    private String ptsToStrCoord(Point2D [] c) {
-        // Note: Point2D.y is used for Minecraft's Z-axis coordinate
-        return c[0].getX() + ":" + c[0].getY() + ":" + c[1].getX() + ":" + c[1].getY();
-    }
-
-    /**
-     * Saves a specific game by name to disk.
-     *
-     * <p><b>Note:</b> Currently has a bug - uses string literal "name" instead of
-     * the parameter value.</p>
+     * Saves a specific game by name to the database.
      *
      * @param name the name of the game to save
      */
@@ -277,7 +226,7 @@ public class GameMgr extends BeaconzPluginDependent {
     }
 
     /**
-     * Clears current game state and reloads all games from disk.
+     * Clears current game state and reloads all games from the database.
      */
     public void loadAllGames() {
         regions.clear();
@@ -286,70 +235,14 @@ public class GameMgr extends BeaconzPluginDependent {
     }
 
     /**
-     * Loads game data from the games.yml file.
+     * Loads game data from the database.
+     * Currently, games are loaded individually as needed.
+     * The lobby is created via createLobby() if it doesn't exist.
      */
     public void loadGames() {
-        File gamesFile = new File(getBeaconzPlugin().getDataFolder(),"games.yml");
-        if (gamesFile.exists()) {
-            YamlConfiguration gamesYml = new YamlConfiguration();
-            try {
-                gamesYml.load(gamesFile);
-            } catch (IOException e) {
-                getLogger().severe("Failed to load games.yml file: " + e.getMessage());
-            } catch (InvalidConfigurationException e) {
-                getLogger().severe("Invalid YAML configuration in games.yml: " + e.getMessage());
-            }
-
-            ConfigurationSection csec = gamesYml.getConfigurationSection("lobby");
-            // Load the lobby 
-            if (csec != null) {
-                // Reconstruct lobby region from saved coordinates
-                Point2D [] corners = strCoordToPts(csec.getString("region"));
-                lobby = new Region(plugin, corners);
-                String spawn = csec.getString("spawn", "");
-                if (!spawn.isEmpty()) {
-                    lobby.setSpawnPoint(Beaconz.getLocationString(spawn));
-                }
-                regions.put(corners, lobby);
-            }
-            // Load game configurations
-            csec = gamesYml.getConfigurationSection("game");
-            if (csec != null) {
-                for (String gname : csec.getKeys(false)) {
-                    Component gameName = Component.text(gname);
-                    // Extract all game parameters from YAML
-                    Point2D [] corners = strCoordToPts(csec.getString(gname + ".region"));
-                    Region region = new Region(plugin, corners);
-                    GameMode gameMode   = GameMode.valueOf(csec.getString(gname + ".gamemode"));
-                    int size   = csec.getInt(gname + ".gamedistance");
-                    int teams  = csec.getInt(gname + ".nbrteams");
-                    GameScoreGoal goal   = GameScoreGoal.valueOf(csec.getString(gname + ".gamegoal"));
-                    int goalValue  = csec.getInt(gname + ".goalvalue");
-                    Long startTime  = csec.getLong(gname + ".starttime");
-                    Long createTime  = csec.getLong(gname + ".createtime");
-                    int countdown  = csec.getInt(gname + ".countdowntimer");
-                    List<GameScoreGoal> scoreTypes  = csec.getStringList(gname + ".scoretypes").stream().map(GameScoreGoal::valueOf).toList();
-                    boolean isOver = csec.getBoolean(gname + ".gameOver");
-                    double distribution = csec.getDouble(gname + ".gamedistribution");
-
-                    Game game = games.get(gameName);
-                    Params params = new Params(gameMode, size, teams, goal, goalValue, countdown, scoreTypes, distribution);
-                    if (game != null) {
-                        // Updating an active game - refresh its parameters and reload
-                        game.setGameParms(params, startTime, createTime);
-                        game.setOver(isOver);
-                        region.setGame(game);
-                        game.reload();
-                    } else {
-                        // Loading a saved game that isn't currently active
-                        regions.put(corners, region);
-                        game = new Game(plugin, region, gameName, params);
-                        game.setOver(isOver);
-                        games.put(gameName, game);
-                    }
-                }
-            }
-        }
+        // Games are now loaded from the database individually as they're created/accessed
+        // The lobby is created via createLobby() during initialization if it doesn't exist
+        // No YAML file loading needed anymore
     }
 
 
@@ -1021,28 +914,6 @@ public class GameMgr extends BeaconzPluginDependent {
         return new Point2D[]{new Point2D.Double(x1,z1), new Point2D.Double(x2,z2)};
     }
 
-    /**
-     * Parses a coordinate string into normalized corner points.
-     *
-     * <p>Converts "x1:z1:x2:z2" into a Point2D array where the first point has
-     * the smaller x-coordinate and the second has the larger x-coordinate. This
-     * normalization ensures consistent region representation regardless of input order.</p>
-     *
-     * @param c coordinate string in format "x1:z1:x2:z2"
-     * @return normalized array where corners[0].x <= corners[1].x
-     */
-    private Point2D [] strCoordToPts(String c) {
-        double x1 = Double.parseDouble(c.split(":")[0]);
-        double z1 = Double.parseDouble(c.split(":")[1]);
-        double x2 = Double.parseDouble(c.split(":")[2]);
-        double z2 = Double.parseDouble(c.split(":")[3]);
-        // Normalize so first point has smaller x-coordinate
-        double a1 = Math.min(x1, x2);
-        double b1 = x1 < x2 ? z1 : z2;
-        double a2 = Math.max(x1, x2);
-        double b2 = x1 < x2 ? z2 : z1;
-        return new Point2D [] {new Point2D.Double(a1,b1), new Point2D.Double(a2,b2)};
-    }
 
     /**
      * Completely removes a game and its region from the world.

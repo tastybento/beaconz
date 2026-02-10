@@ -971,7 +971,7 @@ public class Region extends BeaconzPluginDependent {
             return location;
         }
         // Check for the highest block at this location
-        int y = location.getWorld().getHighestBlockYAt(location);
+        int y = location.getWorld().getHighestBlockYAt(location) + 1;
         location.setY(y);
         if (isLocationSafe(location)) {
             // We are done
