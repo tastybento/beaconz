@@ -22,233 +22,153 @@
 package com.wasteofplastic.beaconz.commands;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
-import org.bukkit.scoreboard.Team;
 import org.jetbrains.annotations.NotNull;
 
 import com.wasteofplastic.beaconz.Beaconz;
 import com.wasteofplastic.beaconz.BeaconzPluginDependent;
+import com.wasteofplastic.beaconz.commands.subcommands.HelpCommand;
+import com.wasteofplastic.beaconz.commands.subcommands.JoinCommand;
+import com.wasteofplastic.beaconz.commands.subcommands.LeaveCommand;
+import com.wasteofplastic.beaconz.commands.subcommands.ScoreCommand;
+import com.wasteofplastic.beaconz.commands.subcommands.ScoreboardCommand;
 import com.wasteofplastic.beaconz.config.Lang;
-import com.wasteofplastic.beaconz.config.Params.GameScoreGoal;
-import com.wasteofplastic.beaconz.game.Game;
+import org.jspecify.annotations.NonNull;
 
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
-import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
-
+/**
+ * Main command handler for /beaconz commands.
+ * Delegates to SubCommand implementations for each subcommand.
+ */
 public class CmdHandler extends BeaconzPluginDependent implements CommandExecutor, TabCompleter {
+
+    private final Map<String, SubCommand> subCommands = new HashMap<>();
 
     public CmdHandler(Beaconz beaconzPlugin) {
         super(beaconzPlugin);
+        registerSubCommands();
+    }
+
+    /**
+     * Register all subcommands.
+     */
+    private void registerSubCommands() {
+        registerSubCommand(new HelpCommand(getBeaconzPlugin()));
+        registerSubCommand(new ScoreCommand(getBeaconzPlugin()));
+        registerSubCommand(new ScoreboardCommand(getBeaconzPlugin()));
+        registerSubCommand(new LeaveCommand(getBeaconzPlugin()));
+        registerSubCommand(new JoinCommand(getBeaconzPlugin()));
+    }
+
+    /**
+     * Register a subcommand.
+     */
+    private void registerSubCommand(SubCommand subCommand) {
+        subCommands.put(subCommand.getName().toLowerCase(), subCommand);
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String[] args) {
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String @NonNull [] args) {
 
         if (!(sender instanceof Player player)) {
             sender.sendMessage(Lang.errorOnlyPlayers);
             return true;
         }
+
         if (!player.hasPermission("beaconz.player")) {
             sender.sendMessage(Lang.errorYouDoNotHavePermission);
             return true;
         }
-        // Declare game variable at method scope to share across switch branches
-        Game game;
 
-        switch (args.length) {
-        // Just the beaconz command
-        case 0:
+        // No arguments - teleport to lobby
+        if (args.length == 0) {
             player.setScoreboard(getServer().getScoreboardManager().getNewScoreboard());
             if (getGameMgr().getLobby() == null) {
                 player.sendMessage(Lang.errorNoLobbyYet);
                 return true;
             }
             getGameMgr().getLobby().tpToRegionSpawn(player, false);
-            break;
+            return true;
+        }
 
-            // One argument after the beaconz command
-        case 1:
-            switch (args[0].toLowerCase()) {
-            case "help":
-                sender.sendMessage(Component.text("/" + label + " help ").append(Lang.helpHelp));
-                if (player.hasPermission("beaconz.player.leave")) {
-                    sender.sendMessage(Component.text("/" + label + " leave <game> ").append(Lang.helpLeave));
-                }
-                sender.sendMessage(Component.text("/" + label + " score " ).append(Lang.helpScore));
-                sender.sendMessage(Component.text("/" + label + " sb ").append( Lang.helpScoreboard));
-                break;
-            case "score":
-                game = getGameMgr().getGame(player.getLocation());
-                if (game == null || game.getScorecard() == null || game.getScorecard().getTeam(player) == null) {
-                    sender.sendMessage(Lang.errorYouMustBeInAGame);
-                } else {
-                    sender.sendMessage(Lang.generalGame.append(Component.text(": "))
-                        .append(game.getName()));
-                    Team team = game.getScorecard().getTeam(player);
-                    if (team != null){
-                        sender.sendMessage(MiniMessage.miniMessage().deserialize(Lang.actionsYouAreInTeam,
-                                Placeholder.component("team", team.displayName())));
-                    }
-                    showGameScores(sender, game);
-                }
-                break;
-            case "sb":
-                // Toggle scoreboard visibility
-                game = getGameMgr().getGame(player.getLocation());
-                if (game != null && game.getScorecard() != null) {
-                    // Check if player currently has the game scoreboard
-                    if (player.getScoreboard().equals(game.getScorecard().getScoreboard())) {
-                        // Hide scoreboard by giving them a blank one
-                        player.setScoreboard(getServer().getScoreboardManager().getNewScoreboard());
-                    } else {
-                        // Show the game scoreboard
-                        player.setScoreboard(game.getScorecard().getScoreboard());
-                    }
-                } else {
-                    // Not in a game, just toggle to blank
-                    player.setScoreboard(getServer().getScoreboardManager().getNewScoreboard());
-                }
-                break;
-            case "leave":
-                if (player.hasPermission("beaconz.player.leave")) {
-                    sender.sendMessage(Component.text("/" + label + " leave <game> " + Lang.helpLeave));
-                } else {
-                    player.sendMessage(Lang.errorYouDoNotHavePermission);
-                }
-                break;
-            default:
-                break;
-            }
-            break;
-        case 2:           
-            switch (args[0].toLowerCase()) {
-            case "join":
-                onJoin(sender, player, args);
-                break;
-            case "leave":
-                onLeave(sender, player, args);
-                break;
-            default:
-                break;
-            }
-            break;
-        default:
+        // Get the subcommand
+        String subCommandName = args[0].toLowerCase();
+        SubCommand subCommand = subCommands.get(subCommandName);
+
+        if (subCommand == null) {
             sender.sendMessage(Lang.errorUnknownCommand);
-            return false;
+            return true; // Command was handled (error message sent)
         }
-        return true;
-    }
 
-    private void onJoin(CommandSender sender, Player player, String[] args) {
-     // beaconz join command (undocumented) so admins can make players join any game
-        if (player.isOp()) {
-            Component gamename = Component.text(args[1]);
-            Game game = getGameMgr().getGame(gamename);
-            if (game == null) {
-                sender.sendMessage(Lang.errorNoSuchGame.append(Component.text(" '")).append(gamename).append(Component.text("'")));
-            } else {
-                game.join(player);
-            }
-        }
-    }
-
-    private void onLeave(CommandSender sender, Player player, String[] args) {
-        if (player.hasPermission("beaconz.player.leave")) {
-            Component gamename = Component.text(args[1]);
-            Game game = getGameMgr().getGame(gamename);
-            if (game == null) {
-                sender.sendMessage(Lang.errorNoSuchGame.append(Component.text(" '")).append(gamename).append(Component.text("'")));
-            } else {
-                game.leave(player);
-            }
-        } else {
+        // Check permission if required
+        if (subCommand.getPermission() != null && !player.hasPermission(subCommand.getPermission())) {
             player.sendMessage(Lang.errorYouDoNotHavePermission);
+            return true;
         }
-    }
 
-    /**
-     * Displays the scores for a game
-     */
-    public void showGameScores(CommandSender sender, Game game) {
-        // Refresh scores
-        game.getScorecard().refreshScores();
-        sender.sendMessage(Lang.scoreScores.color(NamedTextColor.AQUA));
+        // Execute the subcommand (args without the subcommand name)
+        String[] subArgs = new String[args.length - 1];
+        System.arraycopy(args, 1, subArgs, 0, args.length - 1);
 
-        // Score types to display in order
-        GameScoreGoal[] scoreTypes = {
-            GameScoreGoal.BEACONS,
-            GameScoreGoal.LINKS,
-            GameScoreGoal.TRIANGLES,
-            GameScoreGoal.AREA
-        };
-
-        for (Team team : game.getScorecard().getScoreboard().getTeams()) {
-            sender.sendMessage(MiniMessage.miniMessage().deserialize(Lang.scoreTeam,
-                Placeholder.component("team", team.displayName())));
-
-            for (GameScoreGoal scoreType : scoreTypes) {
-                int score = game.getScorecard().getScore(team, scoreType);
-                sender.sendMessage(MiniMessage.miniMessage().deserialize(Lang.scoreGame,
-                        Placeholder.component("score", Component.text(score)),
-                        Placeholder.component("unit", Component.text(scoreType.getName()))));
-            }
-        }
+        return subCommand.execute(sender, player, subArgs);
     }
 
     @Override
     public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command,
-                                      @NotNull String alias, String[] args) {
-        if (!(sender instanceof Player p)) {
+                                      @NotNull String alias, String @NonNull [] args) {
+        if (!(sender instanceof Player player)) {
             return new ArrayList<>();
         }
+
         final List<String> options = new ArrayList<>();
         String lastArg = (args.length != 0 ? args[args.length - 1] : "");
 
-        switch (args.length) {
-        case 0:
-        case 1:
-            options.add("help");
-            if (p.hasPermission("beaconz.player.leave")) {
-                options.add("leave");
-            }
-            options.add("score");
-            options.add("scoreboard");
-            break;
-        case 2:
-            if (p.hasPermission("beaconz.player.leave") && args[0].equalsIgnoreCase("leave")) {
-                // List all the games this player is in
-                List<String> inGames = new ArrayList<>();
-                for (Game game : getGameMgr().getGames().values()) {
-                    if (game.getScorecard().inTeam(p)) {
-                        String plainText = PlainTextComponentSerializer.plainText().serialize(game.getName());
-                        inGames.add(plainText);
-                    }
+        // First argument - list available subcommands
+        if (args.length <= 1) {
+            for (SubCommand subCommand : subCommands.values()) {
+                // Only show commands the player has permission for
+                if (subCommand.getPermission() == null || player.hasPermission(subCommand.getPermission())) {
+                    options.add(subCommand.getName());
                 }
-                options.addAll(inGames);
             }
-            break;
+            return tabLimit(options, lastArg);
         }
-        return tabLimit(options, lastArg);
+
+        // Delegate to subcommand for further tab completion
+        String subCommandName = args[0].toLowerCase();
+        SubCommand subCommand = subCommands.get(subCommandName);
+
+        if (subCommand != null) {
+            // Check permission
+            if (subCommand.getPermission() == null || player.hasPermission(subCommand.getPermission())) {
+                // Get subcommand args (without the subcommand name)
+                String[] subArgs = new String[args.length - 1];
+                System.arraycopy(args, 1, subArgs, 0, args.length - 1);
+
+                List<String> suggestions = subCommand.onTabComplete(sender, player, subArgs);
+                return tabLimit(suggestions, lastArg);
+            }
+        }
+
+        return new ArrayList<>();
     }
 
     /**
      * Returns all of the items that begin with the given start,
-     * ignoring case.  Intended for tabcompletion.
+     * ignoring case. Intended for tab completion.
      *
      * @param list - list of items to check for matches
      * @param start - the start of the item to match, case insensitive
      * @return List of items that start with the letters
      */
-    public static List<String> tabLimit(final List<String> list, final String start) {
+    static List<String> tabLimit(final List<String> list, final String start) {
         final List<String> returned = new ArrayList<>();
         for (String s : list) {
             if (s.toLowerCase().startsWith(start.toLowerCase())) {

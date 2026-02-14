@@ -598,7 +598,7 @@ class CmdHandlerTest {
 
     /**
      * Test executing a command with too many arguments.
-     * Should return error for unknown command.
+     * Should return true (handled with error message for unknown command).
      */
     @Test
     void testOnCommand_TooManyArguments() {
@@ -609,8 +609,8 @@ class CmdHandlerTest {
         // Execute command with 3+ arguments
         boolean result = handler.onCommand(player, command, "beaconz", new String[]{"arg1", "arg2", "arg3"});
 
-        // Verify command returned false (unknown command)
-        assertFalse(result, "Command should return false for too many arguments");
+        // Verify command was handled (unknown command error shown)
+        assertTrue(result, "Command should be handled with error message");
     }
 
     /**
@@ -630,72 +630,12 @@ class CmdHandlerTest {
         assertTrue(result, "Command should be handled");
     }
 
-    // ==================== Show Game Scores Tests ====================
-
-    /**
-     * Test the showGameScores method displays all team scores.
-     * Should show beacons, links, triangles, and area for each team.
-     */
-    @Test
-    void testShowGameScores() {
-        // Create a mock sender
-        CommandSender sender = mock(CommandSender.class);
-
-        // Mock game and scorecard
-        when(game.getScorecard()).thenReturn(scorecard);
-        when(scorecard.getScoreboard()).thenReturn(scoreboard);
-        when(scoreboard.getTeams()).thenReturn(Set.of(team1, team2));
-
-        // Mock scores for different metrics
-        when(scorecard.getScore(team1, GameScoreGoal.BEACONS)).thenReturn(5);
-        when(scorecard.getScore(team1, GameScoreGoal.LINKS)).thenReturn(8);
-        when(scorecard.getScore(team1, GameScoreGoal.TRIANGLES)).thenReturn(3);
-        when(scorecard.getScore(team1, GameScoreGoal.AREA)).thenReturn(500);
-
-        when(scorecard.getScore(team2, GameScoreGoal.BEACONS)).thenReturn(3);
-        when(scorecard.getScore(team2, GameScoreGoal.LINKS)).thenReturn(4);
-        when(scorecard.getScore(team2, GameScoreGoal.TRIANGLES)).thenReturn(1);
-        when(scorecard.getScore(team2, GameScoreGoal.AREA)).thenReturn(200);
-
-        // Call showGameScores
-        handler.showGameScores(sender, game);
-
-        // Verify refreshScores was called
-        verify(scorecard).refreshScores();
-
-        // Verify sender received messages (at least the header + 8 score lines for 2 teams)
-        verify(sender, atLeast(9)).sendMessage(any(Component.class));
-    }
-
-    /**
-     * Test showGameScores with empty team list.
-     * Should only show the header message.
-     */
-    @Test
-    void testShowGameScores_NoTeams() {
-        // Create a mock sender
-        CommandSender sender = mock(CommandSender.class);
-
-        // Mock game with no teams
-        when(game.getScorecard()).thenReturn(scorecard);
-        when(scorecard.getScoreboard()).thenReturn(scoreboard);
-        when(scoreboard.getTeams()).thenReturn(Set.of());
-
-        // Call showGameScores
-        handler.showGameScores(sender, game);
-
-        // Verify refreshScores was called
-        verify(scorecard).refreshScores();
-
-        // Verify only header message was sent
-        verify(sender, times(1)).sendMessage(any(Component.class));
-    }
 
     // ==================== Tab Completion Tests ====================
 
     /**
      * Test tab completion for the base command.
-     * Should show help, score, scoreboard, and optionally leave.
+     * Should show help, score, sb, and optionally leave.
      */
     @Test
     void testOnTabComplete_NoArgs() {
@@ -710,7 +650,7 @@ class CmdHandlerTest {
         assertNotNull(completions, "Completions should not be null");
         assertTrue(completions.contains("help"), "Should contain help");
         assertTrue(completions.contains("score"), "Should contain score");
-        assertTrue(completions.contains("scoreboard"), "Should contain scoreboard");
+        assertTrue(completions.contains("sb"), "Should contain sb");
     }
 
     /**
@@ -800,11 +740,11 @@ class CmdHandlerTest {
         // Get tab completions with partial input "sc"
         List<String> completions = handler.onTabComplete(player, command, "beaconz", new String[]{"sc"});
 
-        // Verify filtered results
+        // Verify filtered results (only 'score' starts with 'sc')
         assertNotNull(completions, "Completions should not be null");
         assertTrue(completions.contains("score"), "Should contain score");
-        assertTrue(completions.contains("scoreboard"), "Should contain scoreboard");
         assertFalse(completions.contains("help"), "Should not contain help");
+        assertFalse(completions.contains("sb"), "Should not contain sb (doesn't start with 'sc')");
     }
 
     // ==================== Tab Limit Utility Tests ====================
