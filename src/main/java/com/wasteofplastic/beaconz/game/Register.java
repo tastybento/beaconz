@@ -278,7 +278,6 @@ public class Register extends BeaconzPluginDependent {
 
         } catch (SQLException e) {
             getLogger().severe("Failed to initialize database tables: " + e.getMessage());
-            e.printStackTrace();
         }
     }
 
@@ -783,7 +782,6 @@ public class Register extends BeaconzPluginDependent {
 
         } catch (SQLException e) {
             getLogger().severe("Failed to load register from database: " + e.getMessage());
-            e.printStackTrace();
             // Fallback to YAML
             loadRegisterYAML();
         }
@@ -2077,7 +2075,6 @@ public class Register extends BeaconzPluginDependent {
 
         } catch (SQLException e) {
             getLogger().severe("Failed to repair database: " + e.getMessage());
-            e.printStackTrace();
         }
 
         return deletedCount;

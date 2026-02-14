@@ -210,10 +210,17 @@ public class Beaconz extends JavaPlugin {
         loadConfig();
 
         // Register player commands
-        getCommand("beaconz").setExecutor(new CmdHandler(this));
-
+        if (getCommand("beaconz") == null) {
+            getLogger().severe("Failed to register command 'beaconz' - plugin will not function!");
+        } else {
+            getCommand("beaconz").setExecutor(new CmdHandler(this));
+        }
         // Register admin commands
-        getCommand("badmin").setExecutor(new AdminCmdHandler(this));
+        if (getCommand("badmin") == null) {
+            getLogger().severe("Failed to register command 'badmin' - admin commands will not work!");
+        } else {
+            getCommand("badmin").setExecutor(new AdminCmdHandler(this));
+        }
 
         // INITIALIZATION PHASE 2: Services
 
@@ -530,7 +537,7 @@ public class Beaconz extends JavaPlugin {
         Settings.linkLimit = getConfig().getInt("links.linklimit", 500);
         // Link blocks enable links to reach further for less experience
         Settings.linkBlocks = new HashMap<>();
-        if (getConfig().contains("links.linkblocks")) {
+        if (getConfig().isConfigurationSection("links.linkblocks")) {
             for (String material: getConfig().getConfigurationSection("links.linkblocks").getKeys(false)) {
                 try {
                     Material mat = Material.getMaterial(material.toUpperCase());
@@ -610,7 +617,7 @@ public class Beaconz extends JavaPlugin {
         // The end result is a list of what levels are required for a player to have to build or attack at that
         // height above a beacon.
         // This is a list where the index is the height (minus 1), and the value is the level required.
-        if (getConfig().contains("defense.defenselevel")) {
+        if (getConfig().isConfigurationSection("defense.defenselevel")) {
             Settings.defenseLevels = new ArrayList<>();
             // Zero the index
             for (int i = 0; i < Settings.defenseHeight; i++) {
@@ -638,7 +645,7 @@ public class Beaconz extends JavaPlugin {
                 }
             }
         }
-        if (getConfig().contains("defense.attacklevel")) {
+        if (getConfig().isConfigurationSection("defense.attacklevel")) {
             Settings.attackLevels = new ArrayList<>();
             // Zero the index
             for (int i = 0; i < Settings.defenseHeight; i++) {
@@ -681,68 +688,72 @@ public class Beaconz extends JavaPlugin {
         Settings.seedAdjustment = getConfig().getLong("world.seedadjustment", System.currentTimeMillis());
         Settings.mineCoolDown = getConfig().getInt("mining.minecooldown", 1) * 60000L; // Minutes in millis
         ConfigurationSection enemyFieldSection = getConfig().getConfigurationSection("triangles.enemyfieldeffects");
-        // Step through the numbers
-        Settings.enemyFieldEffects = new HashMap<>();
-        for (Entry<String, Object> part : enemyFieldSection.getValues(false).entrySet()) {
-            if (NumberUtils.isNumber(part.getKey())) {
-                // It is a number, now get the string list
-                List<PotionEffect> effects = new ArrayList<>();
-                List<String> effectsList = getConfig().getStringList("triangles.enemyfieldeffects." + part.getKey());
-                for (String effectString : effectsList) {
-                    String[] split = effectString.split(":");
-                    if (split.length == 1 || split.length > 2) {
-                        PotionEffectType type = PotionEffectType.getByName(split[0]);
-                        if (type != null) {
-                            effects.add(new PotionEffect(type, Integer.MAX_VALUE, 1));
-                        }
-                    }
-                    if (split.length == 2) {
-                        PotionEffectType type = PotionEffectType.getByName(split[0]);
-                        if (type != null) {
-                            if (NumberUtils.isNumber(split[1])) {
-                                // Adding enemy effect
-                                effects.add(new PotionEffect(type, Integer.MAX_VALUE, NumberUtils.toInt(split[1])));
-                            } else {
+        if (enemyFieldSection != null) {
+            // Step through the numbers
+            Settings.enemyFieldEffects = new HashMap<>();
+            for (Entry<String, Object> part : enemyFieldSection.getValues(false).entrySet()) {
+                if (NumberUtils.isNumber(part.getKey())) {
+                    // It is a number, now get the string list
+                    List<PotionEffect> effects = new ArrayList<>();
+                    List<String> effectsList = getConfig().getStringList("triangles.enemyfieldeffects." + part.getKey());
+                    for (String effectString : effectsList) {
+                        String[] split = effectString.split(":");
+                        if (split.length == 1 || split.length > 2) {
+                            PotionEffectType type = PotionEffectType.getByName(split[0]);
+                            if (type != null) {
                                 effects.add(new PotionEffect(type, Integer.MAX_VALUE, 1));
                             }
                         }
+                        if (split.length == 2) {
+                            PotionEffectType type = PotionEffectType.getByName(split[0]);
+                            if (type != null) {
+                                if (NumberUtils.isNumber(split[1])) {
+                                    // Adding enemy effect
+                                    effects.add(new PotionEffect(type, Integer.MAX_VALUE, NumberUtils.toInt(split[1])));
+                                } else {
+                                    effects.add(new PotionEffect(type, Integer.MAX_VALUE, 1));
+                                }
+                            }
+
+                        }
 
                     }
-
+                    Settings.enemyFieldEffects.put(NumberUtils.toInt(part.getKey()), effects);
                 }
-                Settings.enemyFieldEffects.put(NumberUtils.toInt(part.getKey()), effects);
             }
         }
         Settings.friendlyFieldEffects = new HashMap<>();
         ConfigurationSection friendlyFieldSection = getConfig().getConfigurationSection("triangles.friendlyfieldeffects");
-        // Step through the numbers
-        for (Entry<String, Object> part : friendlyFieldSection.getValues(false).entrySet()) {
-            if (NumberUtils.isNumber(part.getKey())) {
-                // It is a number, now get the string list
-                List<PotionEffect> effects = new ArrayList<>();
-                List<String> effectsList = getConfig().getStringList("triangles.friendlyfieldeffects." + part.getKey());
-                for (String effectString : effectsList) {
-                    String[] split = effectString.split(":");
-                    if (split.length == 1 || split.length > 2) {
-                        PotionEffectType type = PotionEffectType.getByName(split[0]);
-                        if (type != null) {
-                            effects.add(new PotionEffect(type, Integer.MAX_VALUE, 1));
-                        }
-                    }
-                    if (split.length == 2) {
-                        PotionEffectType type = PotionEffectType.getByName(split[0]);
-                        if (type != null) {
-                            if (NumberUtils.isNumber(split[1])) {
-                                effects.add(new PotionEffect(type, Integer.MAX_VALUE, NumberUtils.toInt(split[1])));
-                            } else {
+        if (friendlyFieldSection != null) {
+            // Step through the numbers
+            for (Entry<String, Object> part : friendlyFieldSection.getValues(false).entrySet()) {
+                if (NumberUtils.isNumber(part.getKey())) {
+                    // It is a number, now get the string list
+                    List<PotionEffect> effects = new ArrayList<>();
+                    List<String> effectsList = getConfig().getStringList("triangles.friendlyfieldeffects." + part.getKey());
+                    for (String effectString : effectsList) {
+                        String[] split = effectString.split(":");
+                        if (split.length == 1 || split.length > 2) {
+                            PotionEffectType type = PotionEffectType.getByName(split[0]);
+                            if (type != null) {
                                 effects.add(new PotionEffect(type, Integer.MAX_VALUE, 1));
                             }
                         }
+                        if (split.length == 2) {
+                            PotionEffectType type = PotionEffectType.getByName(split[0]);
+                            if (type != null) {
+                                if (NumberUtils.isNumber(split[1])) {
+                                    effects.add(new PotionEffect(type, Integer.MAX_VALUE, NumberUtils.toInt(split[1])));
+                                } else {
+                                    effects.add(new PotionEffect(type, Integer.MAX_VALUE, 1));
+                                }
+                            }
+
+                        }
 
                     }
-
+                    Settings.friendlyFieldEffects.put(NumberUtils.toInt(part.getKey()), effects);
                 }
-                Settings.friendlyFieldEffects.put(NumberUtils.toInt(part.getKey()), effects);
             }
         }
         Settings.minePenalty = getConfig().getStringList("mining.minepenalty");

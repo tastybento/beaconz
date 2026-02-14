@@ -57,6 +57,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import org.jspecify.annotations.NonNull;
 
 /**
  * Handles all administrative commands for the Beaconz plugin.
@@ -126,7 +127,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
      * @return true if the command was handled, false otherwise
      */
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String[] args) {
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String @NonNull [] args) {
         // Permission check: Only OPs or players with admin permission can use these commands
         if (sender instanceof Player player) {
             if (!player.isOp() && !player.hasPermission("beaconz.admin")) {
@@ -996,7 +997,7 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
      * @return list of matching completion suggestions, filtered by the last argument
      */
     @Override
-    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, String[] args) {
+    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, String @NonNull [] args) {
         final List<String> options = new ArrayList<>();
         Player player;
 
