@@ -803,76 +803,76 @@ public class AdminCmdHandler extends BeaconzPluginDependent implements CommandEx
     private boolean showHelp(CommandSender sender, String label) {
         // Define colors for help messages (GREEN for command, YELLOW for syntax, AQUA for description)
         NamedTextColor green = NamedTextColor.GREEN;
-        NamedTextColor yellow = NamedTextColor.YELLOW;
+        NamedTextColor blue = NamedTextColor.BLUE;
 
         // Display help header
         sender.sendMessage(Lang.helpLine);
-        sender.sendMessage(Lang.helpAdminTitle.color(yellow));
+        sender.sendMessage(Lang.helpAdminTitle.color(blue));
         sender.sendMessage(Lang.helpLine);
 
         // Player-only commands (require physical presence in game world)
         if (sender instanceof Player) {
             sender.sendMessage(Component.text("/" + label).color(green)
-                    .append(Component.text(" claim [unowned | <team>]").color(yellow))
+                    .append(Component.text(" claim [unowned | <team>]").color(blue))
                     .append(Lang.helpAdminClaim));
         }
 
         // Console-compatible commands
         sender.sendMessage(Component.text("/" + label).color(green)
-                .append(Component.text(" delete <gamename>").color(yellow))
+                .append(Component.text(" delete <gamename>").color(blue))
                 .append(Lang.helpAdminDelete));
 
         if (sender instanceof Player) {
             sender.sendMessage(Component.text("/" + label).color(green)
-                    .append(Component.text(" join <gamename> <team>").color(yellow))
+                    .append(Component.text(" join <gamename> <team>").color(blue))
                     .append(Lang.helpAdminJoin));
         }
 
         sender.sendMessage(Component.text("/" + label).color(green)
-                .append(Component.text(" games").color(yellow))
+                .append(Component.text(" games").color(blue))
                 .append(Lang.helpAdminGames));
 
         sender.sendMessage(Component.text("/" + label).color(green)
-                .append(Component.text(" force_end <gamename>").color(yellow))
+                .append(Component.text(" force_end <gamename>").color(blue))
                 .append(Lang.helpAdminForceEnd));
 
         sender.sendMessage(Component.text("/" + label).color(green)
-                .append(Component.text(" list [all |<gamename>] <team>").color(yellow))
+                .append(Component.text(" list [all |<gamename>] <team>").color(blue))
                 .append(Lang.helpAdminList));
 
         sender.sendMessage(Component.text("/" + label).color(green)
-                .append(Component.text(" listparms <gamename>").color(yellow))
+                .append(Component.text(" listparms <gamename>").color(blue))
                 .append(Lang.helpAdminListParms));
 
         sender.sendMessage(Component.text("/" + label).color(green)
-                .append(Component.text(" newgame <gamename> [<parm1:value> <parm2:value>...]").color(yellow))
+                .append(Component.text(" newgame <gamename> [<parm1:value> <parm2:value>...]").color(blue))
                 .append(MiniMessage.miniMessage().deserialize(Lang.helpAdminNewGame,
                         Placeholder.component("label", Component.text(label))))
                 );
 
         sender.sendMessage(Component.text("/" + label).color(green)
-                .append(Component.text(" reload").color(yellow))
+                .append(Component.text(" reload").color(blue))
                 .append(Lang.helpAdminReload));
 
         // Spawn-related commands (player-only)
         if (sender instanceof Player) {
             sender.sendMessage(Component.text("/" + label).color(green)
-                    .append(Component.text(" setspawn <team>").color(yellow))
+                    .append(Component.text(" setspawn <team>").color(blue))
                     .append(Lang.helpAdminSetTeamSpawn));
             sender.sendMessage(Component.text("/" + label).color(green)
-                    .append(Component.text(" setspawn ").color(yellow))
+                    .append(Component.text(" setspawn ").color(blue))
                     .append(Lang.helpAdminSetLobbySpawn));
             sender.sendMessage(Component.text("/" + label).color(green)
-                    .append(Component.text(" switch ").color(yellow))
+                    .append(Component.text(" switch ").color(blue))
                     .append(Lang.helpAdminSwitch));
         }
 
         sender.sendMessage(Component.text("/" + label).color(green)
-                .append(Component.text(" switch <online playername> ").color(yellow))
+                .append(Component.text(" switch <online playername> ").color(blue))
                 .append(Lang.helpAdminSwitch));
 
         sender.sendMessage(Component.text("/" + label).color(green)
-                .append(Component.text(" teams [all | <gamename>]").color(yellow))
+                .append(Component.text(" teams [all | <gamename>]").color(blue))
                 .append(Lang.helpAdminTeams));
         return true;
     }
