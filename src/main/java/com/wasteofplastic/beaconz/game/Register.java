@@ -408,7 +408,9 @@ public class Register extends BeaconzPluginDependent {
                 }
 
                 conn.commit();
-                getLogger().info("Successfully saved " + beaconRegister.size() + " beacons to database");
+                if (DEBUG) {
+                    getLogger().info("Successfully saved " + beaconRegister.size() + " beacons to database");
+                }
 
             } catch (SQLException e) {
                 conn.rollback();
@@ -650,7 +652,6 @@ public class Register extends BeaconzPluginDependent {
                 }
             }
 
-            getLogger().info("Database contained " + beaconCountInDB + " beacons");
             getLogger().info("Successfully loaded " + beaconsLoaded + " beacons");
             if (beaconsSkippedNoGame > 0) {
                 getLogger().info(beaconsSkippedNoGame + " beacons loaded without team ownership (game not initialized yet)");
@@ -1214,7 +1215,6 @@ public class Register extends BeaconzPluginDependent {
      * @return the newly created BeaconObj instance
      */
     public BeaconObj addBeacon(Team owner, int x, int y, int z) {
-        getLogger().info("DEBUG: Adding beacon at " + x + "," + y + "," + z + " for team " + (owner != null ? owner.getName() : "unowned"));
         // Create the beacon object
         BeaconObj beacon = new BeaconObj(getBeaconzPlugin(), x, y, z, owner);
 

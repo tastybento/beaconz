@@ -811,6 +811,9 @@ public class Region extends BeaconzPluginDependent {
                 }
             }, 60L);
         }
+
+        // Activate the world border
+        showBarrier(player, 1);
     }
 
     private void showScoreboardInfo(Player player) {
@@ -923,6 +926,9 @@ public class Region extends BeaconzPluginDependent {
             player.sendMessage(MiniMessage.miniMessage().deserialize(Lang.startMostObjective,
                     Placeholder.component("goal", Component.text(game.getGamegoal().getName()))));
         }
+
+        // Set the world border to show the region boundaries
+        showBarrier(player, 1);
     }
 
     /**

@@ -324,7 +324,6 @@ public class Beaconz extends JavaPlugin {
             if (register != null) {
                 try {
                     register.saveRegister();
-                    getLogger().info("Auto-save: Successfully saved beacon register");
                 } catch (Exception e) {
                     getLogger().warning("Auto-save failed: " + e.getMessage());
                 }
