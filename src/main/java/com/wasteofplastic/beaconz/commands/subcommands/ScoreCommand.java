@@ -3,8 +3,13 @@ package com.wasteofplastic.beaconz.commands.subcommands;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scoreboard.Team;
 
 import com.wasteofplastic.beaconz.Beaconz;
@@ -18,11 +23,22 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
 /**
  * Handles the /beaconz score command.
+ * Displays scores in a GUI inventory with icons for each score type.
  */
 public class ScoreCommand extends BeaconzPluginDependent implements SubCommand {
+
+    // Icons for different score types
+    private static final Material ICON_BEACONS = Material.BEACON;
+    private static final Material ICON_LINKS = Material.IRON_BARS; // Represents connections
+    private static final Material ICON_TRIANGLES = Material.PRISMARINE_SHARD;
+    private static final Material ICON_AREA = Material.MAP;
+
+    // Fallback if a team doesn't have a color
+    private static final Material TEAM_ICON_FALLBACK = Material.WHITE_BANNER;
 
     public ScoreCommand(Beaconz plugin) {
         super(plugin);
@@ -36,18 +52,13 @@ public class ScoreCommand extends BeaconzPluginDependent implements SubCommand {
         }
 
         Game game = getGameMgr().getGame(player.getLocation());
-        if (game == null || game.getScorecard() == null || game.getScorecard().getTeam(player) == null) {
+        if (game == null || game.getScorecard() == null) {
             sender.sendMessage(Lang.errorYouMustBeInAGame);
-        } else {
-            sender.sendMessage(Lang.generalGame.append(Component.text(": "))
-                .append(game.getName()));
-            Team team = game.getScorecard().getTeam(player);
-            if (team != null) {
-                sender.sendMessage(MiniMessage.miniMessage().deserialize(Lang.actionsYouAreInTeam,
-                    Placeholder.component("team", team.displayName())));
-            }
-            showGameScores(sender, game);
+            return true;
         }
+
+        // Show the score GUI
+        showScoreGUI(player, game);
         return true;
     }
 
@@ -67,32 +78,210 @@ public class ScoreCommand extends BeaconzPluginDependent implements SubCommand {
     }
 
     /**
-     * Displays the scores for a game
+     * Shows the score GUI to the player.
+     * Layout dynamically scales based on number of teams to ensure all teams are shown.
      */
-    private void showGameScores(CommandSender sender, Game game) {
-        // Refresh scores
+    private void showScoreGUI(Player player, Game game) {
+        getLogger().info("DEBUG: Showing score GUI for player " + player.getName() + " in game " + game.getName());
+        // Refresh scores first
         game.getScorecard().refreshScores();
-        sender.sendMessage(Lang.scoreScores.color(NamedTextColor.AQUA));
 
-        // Score types to display in order
-        GameScoreGoal[] scoreTypes = {
+        List<Team> teams = new ArrayList<>(game.getScorecard().getScoreboard().getTeams());
+        if (teams.isEmpty()) {
+            player.sendMessage(Lang.errorNoTeams);
+            return;
+        }
+
+        // Calculate inventory size and scores to show per team
+        int teamCount = teams.size();
+        InventoryLayout layout = calculateLayout(teamCount);
+
+        // Create inventory
+        Component title = MiniMessage.miniMessage().deserialize(Lang.scoreGuiTitle,
+            Placeholder.component("game", game.getName()));
+        String legacyTitle = LegacyComponentSerializer.legacySection().serialize(title);
+        Inventory inv = Bukkit.createInventory(null, layout.size, legacyTitle);
+
+        // Populate inventory with team scores
+        int slot = 0;
+        for (Team team : teams) {
+            // Add team header item
+            ItemStack teamItem = createTeamHeaderItem(team, game);
+            inv.setItem(slot++, teamItem);
+
+            // Add score items for this team
+            for (int i = 0; i < layout.scoresPerTeam && i < layout.scoreTypes.length; i++) {
+                GameScoreGoal scoreType = layout.scoreTypes[i];
+                int score = game.getScorecard().getScore(team, scoreType);
+                getLogger().info("DEBUG: Adding score " + score + " for score type " + scoreType + " for team " + team.getName());
+                ItemStack scoreItem = createScoreItem(scoreType, score, team);
+                inv.setItem(slot++, scoreItem);
+            }
+        }
+
+        player.openInventory(inv);
+    }
+
+    /**
+     * Calculate the optimal inventory layout based on team count.
+     */
+    private InventoryLayout calculateLayout(int teamCount) {
+        // All available score types in priority order
+        GameScoreGoal[] allScoreTypes = {
             GameScoreGoal.BEACONS,
             GameScoreGoal.LINKS,
             GameScoreGoal.TRIANGLES,
             GameScoreGoal.AREA
         };
 
-        for (Team team : game.getScorecard().getScoreboard().getTeams()) {
-            sender.sendMessage(MiniMessage.miniMessage().deserialize(Lang.scoreTeam,
-                Placeholder.component("team", team.displayName())));
+        // Inventory sizes must be multiples of 9 (up to 54)
+        int slotsPerTeam;
+        int inventorySize;
+        int scoresPerTeam;
 
-            for (GameScoreGoal scoreType : scoreTypes) {
-                int score = game.getScorecard().getScore(team, scoreType);
-                sender.sendMessage(MiniMessage.miniMessage().deserialize(Lang.scoreGame,
-                    Placeholder.component("score", Component.text(score)),
-                    Placeholder.component("unit", Component.text(scoreType.getName()))));
+        if (teamCount <= 2) {
+            // 2 teams: Show all 4 scores per team = 5 slots per team (1 header + 4 scores)
+            slotsPerTeam = 5;
+            scoresPerTeam = 4;
+            inventorySize = 18; // 2 rows
+        } else if (teamCount <= 3) {
+            // 3 teams: Show all 4 scores per team = 5 slots per team
+            slotsPerTeam = 5;
+            scoresPerTeam = 4;
+            inventorySize = 18; // 2 rows
+        } else if (teamCount <= 5) {
+            // 4-5 teams: Show all 4 scores per team = 5 slots per team
+            slotsPerTeam = 5;
+            scoresPerTeam = 4;
+            inventorySize = 27; // 3 rows
+        } else if (teamCount <= 8) {
+            // 6-8 teams: Show 3 scores per team = 4 slots per team
+            slotsPerTeam = 4;
+            scoresPerTeam = 3;
+            inventorySize = 36; // 4 rows
+        } else if (teamCount <= 13) {
+            // 9-13 teams: Show 3 scores per team = 4 slots per team
+            slotsPerTeam = 4;
+            scoresPerTeam = 3;
+            inventorySize = 54; // 6 rows
+        } else {
+            // 14-18 teams: Show 2 scores per team = 3 slots per team
+            slotsPerTeam = 3;
+            scoresPerTeam = 2;
+            inventorySize = 54; // 6 rows
+        }
+
+        return new InventoryLayout(inventorySize, scoresPerTeam, allScoreTypes, slotsPerTeam);
+    }
+
+    /**
+     * Creates the team header item showing team name and color.
+     */
+    private ItemStack createTeamHeaderItem(Team team, Game game) {
+        // Try to get colored banner based on team color
+        Material bannerMaterial = getBannerMaterialForTeam(team);
+        ItemStack item = new ItemStack(bannerMaterial);
+        ItemMeta meta = item.getItemMeta();
+
+        // Set team name as display name
+        Component displayName = MiniMessage.miniMessage().deserialize(Lang.scoreGuiTeamHeader,
+            Placeholder.component("team", team.displayName()));
+        meta.displayName(displayName);
+
+        // Add lore with team info
+        List<Component> lore = new ArrayList<>();
+
+        // Player count
+        int playerCount = game.getScorecard().getScoreboard().getPlayers().stream()
+            .filter(p -> team.equals(game.getScorecard().getScoreboard().getPlayerTeam(p)))
+            .toList().size();
+        lore.add(MiniMessage.miniMessage().deserialize(Lang.scoreGuiTeamPlayers,
+            Placeholder.component("count", Component.text(playerCount))));
+
+        meta.lore(lore);
+        item.setItemMeta(meta);
+
+        return item;
+    }
+
+    /**
+     * Creates a score item for a specific score type.
+     */
+    private ItemStack createScoreItem(GameScoreGoal scoreType, int score, Team team) {
+        Material material = getIconForScoreType(scoreType);
+        ItemStack item = new ItemStack(material);
+        ItemMeta meta = item.getItemMeta();
+
+        // Set display name
+        Component displayName = MiniMessage.miniMessage().deserialize(Lang.scoreGuiScoreName,
+            Placeholder.component("type", Component.text(scoreType.getName())),
+            Placeholder.component("score", Component.text(score)));
+        meta.displayName(displayName);
+
+        // Add lore
+        List<Component> lore = new ArrayList<>();
+        lore.add(MiniMessage.miniMessage().deserialize(Lang.scoreGuiScoreTeam,
+            Placeholder.component("team", team.displayName())));
+        lore.add(Component.text(Lang.scoreGuiScoreValue + score).color(NamedTextColor.YELLOW));
+
+        meta.lore(lore);
+        item.setItemMeta(meta);
+
+        return item;
+    }
+
+    /**
+     * Get the icon material for a score type.
+     */
+    private Material getIconForScoreType(GameScoreGoal scoreType) {
+        return switch (scoreType) {
+            case BEACONS -> ICON_BEACONS;
+            case LINKS -> ICON_LINKS;
+            case TRIANGLES -> ICON_TRIANGLES;
+            case AREA -> ICON_AREA;
+            default -> Material.PAPER;
+        };
+    }
+
+    /**
+     * Get a colored banner material based on team color.
+     */
+    private Material getBannerMaterialForTeam(Team team) {
+        // Try to determine banner color from team color
+        // Some teams may not have colors set yet, which throws IllegalStateException
+        try {
+            if (team.color() == null) {
+                return TEAM_ICON_FALLBACK;
             }
+
+            // Compare with NamedTextColor constants
+            if (team.color().equals(NamedTextColor.WHITE)) return Material.WHITE_BANNER;
+            if (team.color().equals(NamedTextColor.GRAY)) return Material.GRAY_BANNER;
+            if (team.color().equals(NamedTextColor.DARK_GRAY)) return Material.GRAY_BANNER;
+            if (team.color().equals(NamedTextColor.BLACK)) return Material.BLACK_BANNER;
+            if (team.color().equals(NamedTextColor.RED)) return Material.RED_BANNER;
+            if (team.color().equals(NamedTextColor.DARK_RED)) return Material.RED_BANNER;
+            if (team.color().equals(NamedTextColor.GOLD)) return Material.ORANGE_BANNER;
+            if (team.color().equals(NamedTextColor.YELLOW)) return Material.YELLOW_BANNER;
+            if (team.color().equals(NamedTextColor.GREEN)) return Material.GREEN_BANNER;
+            if (team.color().equals(NamedTextColor.DARK_GREEN)) return Material.GREEN_BANNER;
+            if (team.color().equals(NamedTextColor.AQUA)) return Material.CYAN_BANNER;
+            if (team.color().equals(NamedTextColor.DARK_AQUA)) return Material.CYAN_BANNER;
+            if (team.color().equals(NamedTextColor.BLUE)) return Material.BLUE_BANNER;
+            if (team.color().equals(NamedTextColor.DARK_BLUE)) return Material.BLUE_BANNER;
+            if (team.color().equals(NamedTextColor.LIGHT_PURPLE)) return Material.MAGENTA_BANNER;
+            if (team.color().equals(NamedTextColor.DARK_PURPLE)) return Material.PURPLE_BANNER;
+
+            return TEAM_ICON_FALLBACK;
+        } catch (IllegalStateException e) {
+            // Team doesn't have a color set (throws "Team colors must have hex values")
+            return TEAM_ICON_FALLBACK;
         }
     }
-}
 
+    /**
+         * Helper class to store inventory layout calculations.
+         */
+        private record InventoryLayout(int size, int scoresPerTeam, GameScoreGoal[] scoreTypes, int slotsPerTeam) {
+    }
+}

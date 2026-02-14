@@ -20,7 +20,7 @@
  * THE SOFTWARE.
  */
 
-package com.wasteofplastic.beaconz.commands;
+package com.wasteofplastic.beaconz.commands.subcommands;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import com.wasteofplastic.beaconz.Beaconz;
-import com.wasteofplastic.beaconz.commands.NewGameGUI.GameSettings;
+import com.wasteofplastic.beaconz.commands.subcommands.NewGameGUI.GameSettings;
 import com.wasteofplastic.beaconz.config.Params.GameMode;
 import com.wasteofplastic.beaconz.config.Params.GameScoreGoal;
 

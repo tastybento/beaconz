@@ -24,11 +24,15 @@ package com.wasteofplastic.beaconz.game;
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import org.bukkit.Location;
@@ -236,13 +240,91 @@ public class GameMgr extends BeaconzPluginDependent {
 
     /**
      * Loads game data from the database.
-     * Currently, games are loaded individually as needed.
-     * The lobby is created via createLobby() if it doesn't exist.
+     * Loads all games and their scorecards/teams from the database.
      */
     public void loadGames() {
-        // Games are now loaded from the database individually as they're created/accessed
-        // The lobby is created via createLobby() during initialization if it doesn't exist
-        // No YAML file loading needed anymore
+        HikariDataSource dataSource = plugin.getDataSource();
+        if (dataSource == null || dataSource.isClosed()) {
+            getLogger().warning("Database not available, cannot load games");
+            return;
+        }
+
+        try (Connection conn = dataSource.getConnection()) {
+            // Load all games from the database
+            String selectGames = "SELECT * FROM games";
+
+            try (Statement stmt = conn.createStatement();
+                 ResultSet rs = stmt.executeQuery(selectGames)) {
+
+                int gamesLoaded = 0;
+                while (rs.next()) {
+                    try {
+                        // Read game data from database
+                        String gameName = rs.getString("game_name");
+                        double x1 = rs.getDouble("region_x1");
+                        double z1 = rs.getDouble("region_z1");
+                        double x2 = rs.getDouble("region_x2");
+                        double z2 = rs.getDouble("region_z2");
+                        String gamemodeStr = rs.getString("gamemode");
+                        int gameDistance = rs.getInt("game_distance");
+                        int nbrTeams = rs.getInt("nbr_teams");
+                        String gameGoalStr = rs.getString("game_goal");
+                        int goalValue = rs.getInt("goal_value");
+                        long startTime = rs.getLong("start_time");
+                        int countdownTimer = rs.getInt("countdown_timer");
+                        boolean gameOver = rs.getBoolean("game_over");
+                        double gameDistribution = rs.getDouble("game_distribution");
+
+                        // Create region
+                        Point2D[] corners = {
+                            new Point2D.Double(x1, z1),
+                            new Point2D.Double(x2, z2)
+                        };
+                        Region region = new Region(plugin, corners);
+                        regions.put(corners, region);
+
+                        // Parse enums
+                        Params.GameMode gamemode = Params.GameMode.valueOf(gamemodeStr);
+                        Params.GameScoreGoal gameGoal = Params.GameScoreGoal.valueOf(gameGoalStr);
+
+                        // Create params
+                        Params params = new Params();
+                        params.setGamemode(gamemode);
+                        params.setSize(gameDistance);
+                        params.setTeams(nbrTeams);
+                        params.setGoal(gameGoal);
+                        params.setGoalvalue(goalValue);
+                        params.setDistribution(gameDistribution);
+
+                        // Create game
+                        Component gameNameComponent = Component.text(gameName);
+                        Game game = new Game(plugin, region, gameNameComponent, params);
+
+                        // Set additional game state
+                        game.setStartTime(startTime);
+                        game.setCountdownTimer(countdownTimer);
+                        // Note: gameOver state is not preserved across restarts
+
+                        // Add to games map
+                        games.put(gameNameComponent, game);
+
+                        gamesLoaded++;
+                        getLogger().info("Loaded game '" + gameName + "' from database");
+
+                    } catch (Exception e) {
+                        getLogger().severe("Error loading game from database: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                }
+
+                if (gamesLoaded > 0) {
+                    getLogger().info("Loaded " + gamesLoaded + " game(s) from database");
+                }
+            }
+        } catch (SQLException e) {
+            getLogger().severe("Failed to load games from database: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
 

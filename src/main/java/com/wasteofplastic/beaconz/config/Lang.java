@@ -119,6 +119,7 @@ public class Lang extends BeaconzPluginDependent {
     public static Component errorNoGames;
     public static Component errorNoSuchGame;
     public static Component errorNoSuchTeam;
+    public static Component errorNoTeams;
     public static Component errorNotEnoughExperience;
     public static String errorNotInGame;
     public static Component errorNotInRegister;
@@ -187,6 +188,13 @@ public class Lang extends BeaconzPluginDependent {
     public static Component scoreNoWinners;
     public static Component scoreScores;
     public static String scoreTeamWins;
+    // Score GUI entries
+    public static String scoreGuiTitle;
+    public static String scoreGuiTeamHeader;
+    public static String scoreGuiTeamPlayers;
+    public static String scoreGuiScoreName;
+    public static String scoreGuiScoreTeam;
+    public static String scoreGuiScoreValue;
     public static String startMostObjective;
     public static String startObjective;
     public static String startYoureAMember;
@@ -437,6 +445,13 @@ public class Lang extends BeaconzPluginDependent {
         scoreTeam = locale.getString("score.team", "<team>");
         scoreStrategy = locale.getString("score.gamemode.strategy", "Strategy");
         scoreTeamWins = locale.getString("score.TeamWins", "<green><bold><team> FACTION WINS!!!</bold></green>");
+        // Score GUI strings
+        scoreGuiTitle = locale.getString("score.gui.title", "<aqua><bold>Scores - <game></bold></aqua>");
+        scoreGuiTeamHeader = locale.getString("score.gui.teamHeader", "<team>");
+        scoreGuiTeamPlayers = locale.getString("score.gui.teamPlayers", "<gray>Players: <yellow><count></yellow></gray>");
+        scoreGuiScoreName = locale.getString("score.gui.scoreName", "<yellow><type></yellow>: <green><bold><score></bold></green>");
+        scoreGuiScoreTeam = locale.getString("score.gui.scoreTeam", "<gray>Team: <team></gray>");
+        scoreGuiScoreValue = locale.getString("score.gui.scoreValue", "Score: ");
         startMostObjective = locale.getString("start.MostObjective", "<aqua>Your faction's objective is to capture the most <yellow><goal></yellow>!</aqua>");
         startObjective = locale.getString("start.Objective", "<aqua>Your faction's objective is to capture <yellow><value></yellow> <yellow><goal></yellow>!</aqua>");
         startYoureAMember = locale.getString("start.YoureAMember", "<aqua>You're a member of <yellow><name></yellow> faction!</aqua>");

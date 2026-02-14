@@ -126,7 +126,7 @@ import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
  */
 public class Register extends BeaconzPluginDependent {
 
-    private static final boolean DEBUG = false;
+    private static final boolean DEBUG = true;
 
     // SQL table definitions
     private static final String CREATE_BEACONS_TABLE =
@@ -230,6 +230,13 @@ public class Register extends BeaconzPluginDependent {
     private final HashMap<BeaconObj, Set<Point2D>> baseBlocksInverse = new HashMap<>();
 
     /**
+     * Pending ownership resolutions - beacons that have owner teams in database
+     * but couldn't be resolved during load because games weren't initialized yet.
+     * This is resolved after games are fully loaded.
+     */
+    private final HashMap<BeaconObj, String> pendingOwnership = new HashMap<>();
+
+    /**
      * Initializes all database tables required for storing beacon data.
      * Called during Register construction to ensure tables exist.
      */
@@ -311,12 +318,39 @@ public class Register extends BeaconzPluginDependent {
                 }
 
                 // Save beacons
+                if (DEBUG) {
+                    getLogger().info("DEBUG: ========== SAVING BEACONS TO DATABASE ==========");
+                }
+
                 String insertBeacon = "INSERT INTO beacons (x, y, z, game_name, owner_team, map_id) VALUES (?, ?, ?, ?, ?, ?)";
+                int beaconsSaved = 0;
+                int beaconsWithOwnership = 0;
+
                 try (PreparedStatement stmt = conn.prepareStatement(insertBeacon)) {
                     for (BeaconObj beacon : beaconRegister.values()) {
                         Game game = getGameMgr().getGame(beacon.getPoint());
                         String gameName = game == null ? "None" : PlainTextComponentSerializer.plainText().serialize(game.getName());
                         String owner = beacon.getOwnership() == null ? null : beacon.getOwnership().getName();
+
+                        if (DEBUG && beaconsSaved < 5) { // Log first 5 beacons
+                            getLogger().info("DEBUG: Saving beacon #" + (beaconsSaved + 1) + ":");
+                            getLogger().info("DEBUG:   Position: (" + beacon.getX() + ", " + beacon.getY() + ", " + beacon.getZ() + ")");
+                            getLogger().info("DEBUG:   Game: " + gameName);
+                            getLogger().info("DEBUG:   Owner Team: " + (owner == null ? "NULL" : owner));
+                            getLogger().info("DEBUG:   Map ID: " + beacon.getId());
+                        }
+
+                        // ALWAYS log beacons WITH ownership to see what's being saved
+                        if (owner != null) {
+                            beaconsWithOwnership++;
+                            if (DEBUG) {
+                                getLogger().info("DEBUG: *** Beacon WITH OWNERSHIP being saved:");
+                                getLogger().info("DEBUG:   Position: (" + beacon.getX() + ", " + beacon.getY() + ", " + beacon.getZ() + ")");
+                                getLogger().info("DEBUG:   Game: " + gameName);
+                                getLogger().info("DEBUG:   Owner Team: " + owner);
+                                getLogger().info("DEBUG:   Map ID: " + beacon.getId());
+                            }
+                        }
 
                         stmt.setInt(1, beacon.getX());
                         stmt.setInt(2, beacon.getY());
@@ -325,8 +359,16 @@ public class Register extends BeaconzPluginDependent {
                         stmt.setString(5, owner);
                         stmt.setObject(6, beacon.getId());
                         stmt.addBatch();
+                        beaconsSaved++;
                     }
                     stmt.executeBatch();
+                }
+
+                if (DEBUG) {
+                    getLogger().info("DEBUG: ========== SAVE COMPLETE ==========");
+                    getLogger().info("DEBUG: Saved " + beaconsSaved + " beacons to database");
+                    getLogger().info("DEBUG: " + beaconsWithOwnership + " beacons have ownership");
+                    getLogger().info("DEBUG: " + (beaconsSaved - beaconsWithOwnership) + " beacons are unowned");
                 }
 
                 // Save beacon links
@@ -407,9 +449,7 @@ public class Register extends BeaconzPluginDependent {
                 }
 
                 conn.commit();
-                if (DEBUG) {
-                    getLogger().info("Successfully saved " + beaconRegister.size() + " beacons to database");
-                }
+                getLogger().info("Successfully saved " + beaconRegister.size() + " beacons to database");
 
             } catch (SQLException e) {
                 conn.rollback();
@@ -600,12 +640,17 @@ public class Register extends BeaconzPluginDependent {
 
             // === PHASE 1: Load all beacons ===
             beaconLinks.clear();
+            pendingOwnership.clear(); // Clear any previous pending ownership
             HashMap<Point2D, BeaconObj> loadedBeacons = new HashMap<>();
 
             String selectBeacons = "SELECT x, y, z, game_name, owner_team, map_id FROM beacons";
             int beaconCountInDB = 0;
             int beaconsLoaded = 0;
             int beaconsSkippedNoGame = 0;
+
+            if (DEBUG) {
+                getLogger().info("DEBUG: ========== LOADING BEACONS FROM DATABASE ==========");
+            }
 
             try (Statement stmt = conn.createStatement();
                  ResultSet rs = stmt.executeQuery(selectBeacons)) {
@@ -617,6 +662,15 @@ public class Register extends BeaconzPluginDependent {
                     int z = rs.getInt("z");
                     String gameName = rs.getString("game_name");
                     String ownerTeamName = rs.getString("owner_team");
+                    Integer mapId = (Integer) rs.getObject("map_id");
+
+                    if (DEBUG) {
+                        getLogger().info("DEBUG: Loading beacon #" + beaconCountInDB + " from DB:");
+                        getLogger().info("DEBUG:   Position: (" + x + ", " + y + ", " + z + ")");
+                        getLogger().info("DEBUG:   Game: " + (gameName == null ? "NULL" : gameName));
+                        getLogger().info("DEBUG:   Owner Team: " + (ownerTeamName == null ? "NULL" : ownerTeamName));
+                        getLogger().info("DEBUG:   Map ID: " + (mapId == null ? "NULL" : mapId));
+                    }
 
                     // Load beacon WITHOUT requiring game to exist yet
                     // Game/region initialization happens AFTER register load, so we can't look up the game yet
@@ -626,34 +680,26 @@ public class Register extends BeaconzPluginDependent {
                     beaconsLoaded++;
 
                     // Set map ID if present
-                    Integer mapId = (Integer) rs.getObject("map_id");
                     if (mapId != null) {
                         beacon.setId(mapId);
                     }
 
-                    // Try to resolve team ownership if game is available
-                    // This will succeed on subsequent loads after game initialization
+                    // Store owner team name for later resolution
                     if (ownerTeamName != null) {
-                        Game game = getGameMgr().getGame(x, z);
-                        if (game != null) {
-                            Team team = game.getScorecard().getTeam(ownerTeamName);
-                            if (team != null) {
-                                beacon.setOwnership(team);
-                                // Initialize link list for this game
-                                beaconLinks.computeIfAbsent(game, k -> new ArrayList<>());
-                            }
-                        } else {
-                            // Game not initialized yet - beacon loaded as unowned
-                            // This is normal during first load, team will be set when beacon is captured
-                            beaconsSkippedNoGame++;
+                        pendingOwnership.put(beacon, ownerTeamName);
+                        if (DEBUG) {
+                            getLogger().info("DEBUG:   -> Added to pending ownership resolution");
                         }
+                    } else if (DEBUG) {
+                        getLogger().info("DEBUG:   -> No owner team in database (unowned beacon)");
                     }
                 }
             }
 
-            getLogger().info("Successfully loaded " + beaconsLoaded + " beacons");
-            if (beaconsSkippedNoGame > 0) {
-                getLogger().info(beaconsSkippedNoGame + " beacons loaded without team ownership (game not initialized yet)");
+            if (DEBUG) {
+                getLogger().info("DEBUG: ========== DATABASE LOADING COMPLETE ==========");
+                getLogger().info("DEBUG: Loaded " + beaconsLoaded + " beacons from database");
+                getLogger().info("DEBUG: " + pendingOwnership.size() + " beacons have pending ownership to resolve");
             }
 
             // === PHASE 2: Load base blocks ===
@@ -737,6 +783,7 @@ public class Register extends BeaconzPluginDependent {
             }
 
             // === PHASE 5: Load beacon links ===
+            int linksLoaded = 0;
             String selectLinks = "SELECT game_name, x1, z1, x2, z2, timestamp FROM beacon_links";
             try (Statement stmt = conn.createStatement();
                  ResultSet rs = stmt.executeQuery(selectLinks)) {
@@ -755,22 +802,116 @@ public class Register extends BeaconzPluginDependent {
                         BeaconLink link = new BeaconLink(beacon1, beacon2, timestamp);
                         Game game = getGameMgr().getGame(beacon1.getPoint());
                         if (game != null) {
-                            List<BeaconLink> links = beaconLinks.get(game);
-                            if (links != null && !links.contains(link)) {
+                            // Use computeIfAbsent to ensure the list exists
+                            List<BeaconLink> links = beaconLinks.computeIfAbsent(game, k -> new ArrayList<>());
+                            if (!links.contains(link)) {
                                 links.add(link);
+                                linksLoaded++;
                             }
                         }
                     }
                 }
             }
 
-            // === PHASE 6: Create triangle fields from links ===
+            if (DEBUG) {
+                getLogger().info("DEBUG: Loaded " + linksLoaded + " beacon links from database");
+            }
+
+            // === PHASE 6: Resolve pending beacon ownership ===
+            // This must happen BEFORE creating triangle fields so that BeaconLink owner is set correctly
+            if (DEBUG) {
+                getLogger().info("DEBUG: ========== RESOLVING BEACON OWNERSHIP ==========");
+                getLogger().info("DEBUG: Attempting to resolve " + pendingOwnership.size() + " beacons");
+            }
+
+            int ownershipResolved = 0;
+            int ownershipFailed = 0;
+            int ownershipFailedNoGame = 0;
+            int ownershipFailedNoScorecard = 0;
+            int ownershipFailedNoTeam = 0;
+
+            for (Entry<BeaconObj, String> entry : pendingOwnership.entrySet()) {
+                BeaconObj beacon = entry.getKey();
+                String teamName = entry.getValue();
+
+                if (DEBUG) {
+                    getLogger().info("DEBUG: Resolving beacon at " + beacon.getPoint() + " -> team '" + teamName + "'");
+                }
+
+                Game game = getGameMgr().getGame(beacon.getPoint());
+                if (game == null) {
+                    ownershipFailed++;
+                    ownershipFailedNoGame++;
+                    if (DEBUG) {
+                        getLogger().warning("DEBUG:   FAILED: No game found at location " + beacon.getPoint());
+                    }
+                    continue;
+                }
+
+                if (DEBUG) {
+                    getLogger().info("DEBUG:   Found game: " + PlainTextComponentSerializer.plainText().serialize(game.getName()));
+                }
+
+                if (game.getScorecard() == null) {
+                    ownershipFailed++;
+                    ownershipFailedNoScorecard++;
+                    if (DEBUG) {
+                        getLogger().warning("DEBUG:   FAILED: Game has no scorecard");
+                    }
+                    continue;
+                }
+
+                Team team = game.getScorecard().getTeam(teamName);
+                if (team == null) {
+                    ownershipFailed++;
+                    ownershipFailedNoTeam++;
+                    if (DEBUG) {
+                        getLogger().warning("DEBUG:   FAILED: Team '" + teamName + "' not found in game");
+                        getLogger().warning("DEBUG:   Available teams: " + game.getScorecard().getScoreboard().getTeams().stream()
+                            .map(t -> t.getName())
+                            .reduce((a, b) -> a + ", " + b)
+                            .orElse("(none)"));
+                    }
+                    continue;
+                }
+
+                // SUCCESS!
+                beacon.setOwnership(team);
+                beaconLinks.computeIfAbsent(game, k -> new ArrayList<>());
+                ownershipResolved++;
+
+                if (DEBUG) {
+                    getLogger().info("DEBUG:   SUCCESS: Set ownership to team '" + team.getName() + "'");
+                }
+            }
+
+            if (DEBUG) {
+                getLogger().info("DEBUG: ========== OWNERSHIP RESOLUTION COMPLETE ==========");
+                getLogger().info("DEBUG: Successfully resolved: " + ownershipResolved + " beacons");
+                if (ownershipFailed > 0) {
+                    getLogger().warning("DEBUG: FAILED to resolve: " + ownershipFailed + " beacons");
+                    getLogger().warning("DEBUG:   No game found: " + ownershipFailedNoGame);
+                    getLogger().warning("DEBUG:   No scorecard: " + ownershipFailedNoScorecard);
+                    getLogger().warning("DEBUG:   Team not found: " + ownershipFailedNoTeam);
+                }
+            }
+
+            // === PHASE 7: Create triangle fields from links ===
+            // This must happen AFTER ownership is resolved so BeaconLink owner is set correctly
+            if (DEBUG) {
+                getLogger().info("DEBUG: ========== CREATING TRIANGLE FIELDS FROM LINKS ==========");
+            }
+
             for (Entry<Game, List<BeaconLink>> entry : beaconLinks.entrySet()) {
                 Collections.sort(entry.getValue());
                 for (BeaconLink link : entry.getValue()) {
                     link.getBeacon1().addLink(link.getBeacon2());
                     link.getBeacon2().addLink(link.getBeacon1());
                 }
+            }
+
+            if (DEBUG) {
+                getLogger().info("DEBUG: Triangle fields created from " + beaconLinks.values().stream().mapToInt(List::size).sum() + " links");
             }
 
             // Recalculate scores for all games
@@ -784,6 +925,161 @@ public class Register extends BeaconzPluginDependent {
             getLogger().severe("Failed to load register from database: " + e.getMessage());
             // Fallback to YAML
             loadRegisterYAML();
+        }
+    }
+
+    /**
+     * Resolves pending beacon ownership after games are fully loaded.
+     * This should be called after all games have been loaded from the database,
+     * as beacons loaded before games are initialized cannot resolve their team ownership.
+     * <p>
+     * This method attempts to resolve all beacons in the pendingOwnership map by
+     * looking up their game and team, then setting the beacon's ownership accordingly.
+     */
+    public void resolvePendingOwnership() {
+        if (pendingOwnership.isEmpty()) {
+            if (DEBUG) {
+                getLogger().info("DEBUG: No pending ownership to resolve");
+            }
+            return;
+        }
+
+        if (DEBUG) {
+            getLogger().info("DEBUG: ========== RE-RESOLVING BEACON OWNERSHIP ==========");
+            getLogger().info("DEBUG: Attempting to resolve " + pendingOwnership.size() + " beacons after games loaded");
+        }
+
+        int ownershipResolved = 0;
+        int ownershipFailed = 0;
+        int ownershipFailedNoGame = 0;
+        int ownershipFailedNoScorecard = 0;
+        int ownershipFailedNoTeam = 0;
+
+        // Create a copy to iterate over since we'll be modifying the original map
+        HashMap<BeaconObj, String> toResolve = new HashMap<>(pendingOwnership);
+
+        for (Entry<BeaconObj, String> entry : toResolve.entrySet()) {
+            BeaconObj beacon = entry.getKey();
+            String teamName = entry.getValue();
+
+            if (DEBUG) {
+                getLogger().info("DEBUG: Re-resolving beacon at " + beacon.getPoint() + " -> team '" + teamName + "'");
+            }
+
+            Game game = getGameMgr().getGame(beacon.getPoint());
+            if (game == null) {
+                ownershipFailed++;
+                ownershipFailedNoGame++;
+                if (DEBUG) {
+                    getLogger().warning("DEBUG:   FAILED: No game found at location " + beacon.getPoint());
+                }
+                continue;
+            }
+
+            if (DEBUG) {
+                getLogger().info("DEBUG:   Found game: " + PlainTextComponentSerializer.plainText().serialize(game.getName()));
+            }
+
+            if (game.getScorecard() == null) {
+                ownershipFailed++;
+                ownershipFailedNoScorecard++;
+                if (DEBUG) {
+                    getLogger().warning("DEBUG:   FAILED: Game has no scorecard");
+                }
+                continue;
+            }
+
+            Team team = game.getScorecard().getTeam(teamName);
+            if (team == null) {
+                ownershipFailed++;
+                ownershipFailedNoTeam++;
+                if (DEBUG) {
+                    getLogger().warning("DEBUG:   FAILED: Team '" + teamName + "' not found in game");
+                    getLogger().warning("DEBUG:   Available teams: " + game.getScorecard().getScoreboard().getTeams().stream()
+                        .map(t -> t.getName())
+                        .reduce((a, b) -> a + ", " + b)
+                        .orElse("(none)"));
+                }
+                continue;
+            }
+
+            // SUCCESS!
+            beacon.setOwnership(team);
+            beaconLinks.computeIfAbsent(game, k -> new ArrayList<>());
+            pendingOwnership.remove(beacon); // Remove from pending
+            ownershipResolved++;
+
+            if (DEBUG) {
+                getLogger().info("DEBUG:   SUCCESS: Set ownership to team '" + team.getName() + "'");
+            }
+        }
+
+        if (DEBUG) {
+            getLogger().info("DEBUG: ========== RE-RESOLUTION COMPLETE ==========");
+        }
+
+        getLogger().info("Resolved ownership for " + ownershipResolved + " beacons after games loaded");
+        if (ownershipFailed > 0) {
+            getLogger().warning("Still failed to resolve " + ownershipFailed + " beacons:");
+            getLogger().warning("  No game found: " + ownershipFailedNoGame);
+            getLogger().warning("  No scorecard: " + ownershipFailedNoScorecard);
+            getLogger().warning("  Team not found: " + ownershipFailedNoTeam);
+        }
+
+        // CRITICAL FIX: Now that ownership is resolved, we need to recreate the links and triangle fields
+        // that were loaded from the database but couldn't be fully initialized because beacons lacked ownership
+        if (ownershipResolved > 0) {
+            if (DEBUG) {
+                getLogger().info("DEBUG: Recreating links and triangle fields for " + ownershipResolved + " newly owned beacons");
+            }
+
+            // Update BeaconLink owners (they were set to null during initial load because beacons had no ownership)
+            for (List<BeaconLink> links : beaconLinks.values()) {
+                for (BeaconLink link : links) {
+                    // Re-set the owner from beacon1's current ownership
+                    if (link.getBeacon1().getOwnership() != null) {
+                        // Use reflection or recreate the link - actually, BeaconLink.owner is set in constructor
+                        // We need to check if the current owner is null and update it
+                        if (link.getOwner() == null && link.getBeacon1().getOwnership() != null) {
+                            // Create new link with correct owner
+                            BeaconLink newLink = new BeaconLink(link.getBeacon1(), link.getBeacon2(), link.getTimeStamp());
+                            // Replace in the list - we need to recreate all links
+                        }
+                    }
+                }
+            }
+
+            // Rebuild all links with correct ownership
+            HashMap<Game, List<BeaconLink>> rebuiltLinks = new HashMap<>();
+            for (Entry<Game, List<BeaconLink>> entry : beaconLinks.entrySet()) {
+                List<BeaconLink> newLinks = new ArrayList<>();
+                for (BeaconLink oldLink : entry.getValue()) {
+                    // Recreate link so owner is set correctly from beacon's current ownership
+                    BeaconLink newLink = new BeaconLink(oldLink.getBeacon1(), oldLink.getBeacon2(), oldLink.getTimeStamp());
+                    newLinks.add(newLink);
+                }
+                rebuiltLinks.put(entry.getKey(), newLinks);
+            }
+            beaconLinks.clear();
+            beaconLinks.putAll(rebuiltLinks);
+
+            if (DEBUG) {
+                getLogger().info("DEBUG: Rebuilt " + beaconLinks.values().stream().mapToInt(List::size).sum() + " links with ownership");
+            }
+        }
+
+        // Recalculate scores for all affected games
+        Set<Game> affectedGames = new HashSet<>();
+        for (List<BeaconLink> links : beaconLinks.values()) {
+            for (BeaconLink link : links) {
+                Game g = getGameMgr().getGame(link.getBeacon1().getPoint());
+                if (g != null) {
+                    affectedGames.add(g);
+                }
+            }
+        }
+        for (Game game : affectedGames) {
+            recalculateScore(game);
         }
     }
 
@@ -1743,7 +2039,6 @@ public class Register extends BeaconzPluginDependent {
      * @return beacon or null if it doesn't exist
      */
     public BeaconObj getBeaconAt(Point2D point) {
-        getLogger().info("DEBUG: getBeaconAt " + point);
         return baseBlocks.get(point);
     }
 

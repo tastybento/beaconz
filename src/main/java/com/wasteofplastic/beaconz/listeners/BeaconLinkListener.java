@@ -199,6 +199,7 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
         // Verify the beacon is owned by the player's team
         // Cannot link from unowned or enemy beacons
         if (beacon.getOwnership() == null || !beacon.getOwnership().equals(team)) {
+            getLogger().info("DEBUG: becon ownership: " + (beacon.getOwnership() == null ? "null" : beacon.getOwnership().getName()));
             player.sendMessage(Lang.beaconYouMustCapturedBeacon);
             event.setCancelled(true);
             return;
@@ -214,6 +215,7 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
         // Verify the mapped beacon is also owned by the player's team
         // Cannot link to unowned or enemy beacons
         if (mappedBeacon.getOwnership() == null || !mappedBeacon.getOwnership().equals(team)) {
+            getLogger().info("DEBUG: mapped beacon ownership: " + (mappedBeacon.getOwnership() == null ? "null" : mappedBeacon.getOwnership().getName()));
             player.sendMessage(MiniMessage.miniMessage().deserialize(Lang.beaconOriginNotOwned,
                     Placeholder.component("team", team.displayName()))
                     );

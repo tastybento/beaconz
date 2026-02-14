@@ -20,7 +20,7 @@
  * THE SOFTWARE.
  */
 
-package com.wasteofplastic.beaconz.commands;
+package com.wasteofplastic.beaconz.commands.subcommands;
 
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
