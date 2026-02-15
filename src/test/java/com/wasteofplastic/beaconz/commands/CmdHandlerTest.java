@@ -108,6 +108,8 @@ class CmdHandlerTest {
         team2 = mock(Team.class);
         when(team1.displayName()).thenReturn(Component.text("Red Team"));
         when(team2.displayName()).thenReturn(Component.text("Blue Team"));
+        when(team1.getName()).thenReturn("red");
+        when(team2.getName()).thenReturn("blue");
     }
 
     /**
@@ -121,6 +123,7 @@ class CmdHandlerTest {
         Lang.errorYouMustBeInAGame = Component.text("You must be in a game");
         Lang.errorNoSuchGame = Component.text("No such game");
         Lang.errorUnknownCommand = Component.text("Unknown command");
+        Lang.errorNoTeams = Component.text("No teams found");
         Lang.helpHelp = Component.text("- shows this help");
         Lang.helpLeave = Component.text("- leave a game");
         Lang.helpScore = Component.text("- show the team scores");
@@ -130,6 +133,14 @@ class CmdHandlerTest {
         Lang.scoreScores = Component.text("Scores:");
         Lang.scoreGame = "[score] [unit]";
         Lang.scoreTeam = "<team>";
+
+        // Score GUI strings
+        Lang.scoreGuiTitle = "<aqua><bold>Scores - <game></bold></aqua>";
+        Lang.scoreGuiTeamHeader = "<team_color><bold><team></bold></team_color>";
+        Lang.scoreGuiTeamPlayers = "<gray>Players: <white><count></white></gray>";
+        Lang.scoreGuiScoreName = "<yellow><bold><score_type></bold></yellow>";
+        Lang.scoreGuiScoreTeam = "<gray>Team: <team_color><team></team_color></gray>";
+        Lang.scoreGuiScoreValue = "Value: ";
     }
 
     /**
@@ -322,7 +333,7 @@ class CmdHandlerTest {
 
     /**
      * Test the /beaconz score command when player is in game but no team.
-     * Should display error message.
+     * Should still display score GUI with all teams.
      */
     @Test
     void testOnCommand_Score_InGameNoTeam() {
@@ -333,13 +344,20 @@ class CmdHandlerTest {
         // Mock player in a game but not on a team
         when(gameMgr.getGame(any(Location.class))).thenReturn(game);
         when(game.getScorecard()).thenReturn(scorecard);
+        when(game.getName()).thenReturn(TEST_GAME);
         when(scorecard.getTeam(player)).thenReturn(null);
+
+        // The GUI still needs the scoreboard to show all teams
+        when(scorecard.getScoreboard()).thenReturn(scoreboard);
+        when(scoreboard.getTeams()).thenReturn(Set.of(team1, team2));
+        when(scorecard.getScore(any(Team.class), any(GameScoreGoal.class))).thenReturn(50);
 
         // Execute score command
         boolean result = handler.onCommand(player, command, "beaconz", new String[]{"score"});
 
-        // Verify command handled
+        // Verify command handled and GUI shown
         assertTrue(result, "Command should be handled");
+        verify(scorecard).refreshScores();
     }
 
     // ==================== Scoreboard Toggle Tests ====================
