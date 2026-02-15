@@ -126,7 +126,7 @@ import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
  */
 public class Register extends BeaconzPluginDependent {
 
-    private static final boolean DEBUG = true;
+    private static final boolean DEBUG = false;
 
     // SQL table definitions
     private static final String CREATE_BEACONS_TABLE =
