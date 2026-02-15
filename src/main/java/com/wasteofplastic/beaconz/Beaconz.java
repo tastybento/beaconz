@@ -521,6 +521,8 @@ public class Beaconz extends JavaPlugin {
     public void loadConfig() {
         // Use scoreboard
         Settings.useScoreboard = getConfig().getBoolean("general.usescoreboard");
+        // Friendly fire
+        Settings.allowFriendlyFire = getConfig().getBoolean("teams.friendlyFire", false);
         // Show timer
         Settings.showTimer = getConfig().getBoolean("general.showtimer");
         // Dynmap

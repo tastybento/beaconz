@@ -280,4 +280,9 @@ public class Settings {
      * Number of locking blocks required (for largest team)
      */
     public static int nbrLockingBlocks;
+
+    /**
+     * Allow friendly fire or not
+     */
+    public static boolean allowFriendlyFire;
 }

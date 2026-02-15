@@ -653,7 +653,7 @@ public class Scorecard extends BeaconzPluginDependent {
         if (team == null) {
             // Create the team
             team = scoreboard.registerNewTeam(teamName);
-            team.setAllowFriendlyFire(false);
+            team.setAllowFriendlyFire(Settings.allowFriendlyFire);
             team.prefix(Component.text("[" + teamDisplayName +"] ").color(teamChatColor(team)));
             team.displayName(Component.text(teamDisplayName));
             // Store the block for the team
