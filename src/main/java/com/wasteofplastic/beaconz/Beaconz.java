@@ -76,6 +76,7 @@ import com.wasteofplastic.beaconz.listeners.PlayerDeathListener;
 import com.wasteofplastic.beaconz.listeners.PlayerJoinLeaveListener;
 import com.wasteofplastic.beaconz.listeners.PlayerMovementListener;
 import com.wasteofplastic.beaconz.listeners.PlayerTeleportListener;
+import com.wasteofplastic.beaconz.listeners.ScoreGUIListener;
 import com.wasteofplastic.beaconz.listeners.SkyListeners;
 import com.wasteofplastic.beaconz.storage.BeaconzStore;
 import com.wasteofplastic.beaconz.storage.Messages;
@@ -291,6 +292,9 @@ public class Beaconz extends JavaPlugin {
 
             // Lobby listener for sign-based game joining
             getServer().getPluginManager().registerEvents(new LobbyListener(plugin), plugin);
+
+            // Score GUI listener for inventory interactions
+            getServer().getPluginManager().registerEvents(new ScoreGUIListener(), plugin);
 
             // Load player message queues
             messages = new Messages(plugin);

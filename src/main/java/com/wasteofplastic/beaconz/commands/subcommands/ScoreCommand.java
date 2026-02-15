@@ -82,7 +82,6 @@ public class ScoreCommand extends BeaconzPluginDependent implements SubCommand {
      * Layout dynamically scales based on number of teams to ensure all teams are shown.
      */
     private void showScoreGUI(Player player, Game game) {
-        getLogger().info("DEBUG: Showing score GUI for player " + player.getName() + " in game " + game.getName());
         // Refresh scores first
         game.getScorecard().refreshScores();
 
@@ -94,7 +93,7 @@ public class ScoreCommand extends BeaconzPluginDependent implements SubCommand {
 
         // Calculate inventory size and scores to show per team
         int teamCount = teams.size();
-        InventoryLayout layout = calculateLayout(teamCount);
+        InventoryLayout layout = calculateLayout(teamCount, game);
 
         // Create inventory
         Component title = MiniMessage.miniMessage().deserialize(Lang.scoreGuiTitle,
@@ -123,16 +122,13 @@ public class ScoreCommand extends BeaconzPluginDependent implements SubCommand {
     }
 
     /**
-     * Calculate the optimal inventory layout based on team count.
+     * Calculate the optimal inventory layout based on team count and game score types.
      */
-    private InventoryLayout calculateLayout(int teamCount) {
-        // All available score types in priority order
-        GameScoreGoal[] allScoreTypes = {
-            GameScoreGoal.BEACONS,
-            GameScoreGoal.LINKS,
-            GameScoreGoal.TRIANGLES,
-            GameScoreGoal.AREA
-        };
+    private InventoryLayout calculateLayout(int teamCount, Game game) {
+        // Get the score types being tracked by this game
+        List<GameScoreGoal> gameScoreTypes = game.getScoretypes();
+        GameScoreGoal[] scoreTypesToShow = gameScoreTypes.toArray(new GameScoreGoal[0]);
+        int maxScoresAvailable = scoreTypesToShow.length;
 
         // Inventory sizes must be multiples of 9 (up to 54)
         int slotsPerTeam;
@@ -140,38 +136,38 @@ public class ScoreCommand extends BeaconzPluginDependent implements SubCommand {
         int scoresPerTeam;
 
         if (teamCount <= 2) {
-            // 2 teams: Show all 4 scores per team = 5 slots per team (1 header + 4 scores)
-            slotsPerTeam = 5;
-            scoresPerTeam = 4;
+            // 2 teams: Show all available scores (up to 4) per team
+            scoresPerTeam = Math.min(maxScoresAvailable, 4);
+            slotsPerTeam = 1 + scoresPerTeam; // 1 header + scores
             inventorySize = 18; // 2 rows
         } else if (teamCount <= 3) {
-            // 3 teams: Show all 4 scores per team = 5 slots per team
-            slotsPerTeam = 5;
-            scoresPerTeam = 4;
+            // 3 teams: Show all available scores (up to 4) per team
+            scoresPerTeam = Math.min(maxScoresAvailable, 4);
+            slotsPerTeam = 1 + scoresPerTeam;
             inventorySize = 18; // 2 rows
         } else if (teamCount <= 5) {
-            // 4-5 teams: Show all 4 scores per team = 5 slots per team
-            slotsPerTeam = 5;
-            scoresPerTeam = 4;
+            // 4-5 teams: Show all available scores (up to 4) per team
+            scoresPerTeam = Math.min(maxScoresAvailable, 4);
+            slotsPerTeam = 1 + scoresPerTeam;
             inventorySize = 27; // 3 rows
         } else if (teamCount <= 8) {
-            // 6-8 teams: Show 3 scores per team = 4 slots per team
-            slotsPerTeam = 4;
-            scoresPerTeam = 3;
+            // 6-8 teams: Show up to 3 scores per team
+            scoresPerTeam = Math.min(maxScoresAvailable, 3);
+            slotsPerTeam = 1 + scoresPerTeam;
             inventorySize = 36; // 4 rows
         } else if (teamCount <= 13) {
-            // 9-13 teams: Show 3 scores per team = 4 slots per team
-            slotsPerTeam = 4;
-            scoresPerTeam = 3;
+            // 9-13 teams: Show up to 3 scores per team
+            scoresPerTeam = Math.min(maxScoresAvailable, 3);
+            slotsPerTeam = 1 + scoresPerTeam;
             inventorySize = 54; // 6 rows
         } else {
-            // 14-18 teams: Show 2 scores per team = 3 slots per team
-            slotsPerTeam = 3;
-            scoresPerTeam = 2;
+            // 14-18 teams: Show up to 2 scores per team
+            scoresPerTeam = Math.min(maxScoresAvailable, 2);
+            slotsPerTeam = 1 + scoresPerTeam;
             inventorySize = 54; // 6 rows
         }
 
-        return new InventoryLayout(inventorySize, scoresPerTeam, allScoreTypes, slotsPerTeam);
+        return new InventoryLayout(inventorySize, scoresPerTeam, scoreTypesToShow, slotsPerTeam);
     }
 
     /**
@@ -244,39 +240,30 @@ public class ScoreCommand extends BeaconzPluginDependent implements SubCommand {
     }
 
     /**
-     * Get a colored banner material based on team color.
+     * Get a colored banner material based on team name.
+     * Team names are color names (e.g., "red", "blue", "orange", etc.)
      */
     private Material getBannerMaterialForTeam(Team team) {
-        // Try to determine banner color from team color
-        // Some teams may not have colors set yet, which throws IllegalStateException
-        try {
-            if (team.color() == null) {
-                return TEAM_ICON_FALLBACK;
-            }
+        // Get team name and convert to uppercase for comparison
+        String teamName = team.getName().toUpperCase();
 
-            // Compare with NamedTextColor constants
-            if (team.color().equals(NamedTextColor.WHITE)) return Material.WHITE_BANNER;
-            if (team.color().equals(NamedTextColor.GRAY)) return Material.GRAY_BANNER;
-            if (team.color().equals(NamedTextColor.DARK_GRAY)) return Material.GRAY_BANNER;
-            if (team.color().equals(NamedTextColor.BLACK)) return Material.BLACK_BANNER;
-            if (team.color().equals(NamedTextColor.RED)) return Material.RED_BANNER;
-            if (team.color().equals(NamedTextColor.DARK_RED)) return Material.RED_BANNER;
-            if (team.color().equals(NamedTextColor.GOLD)) return Material.ORANGE_BANNER;
-            if (team.color().equals(NamedTextColor.YELLOW)) return Material.YELLOW_BANNER;
-            if (team.color().equals(NamedTextColor.GREEN)) return Material.GREEN_BANNER;
-            if (team.color().equals(NamedTextColor.DARK_GREEN)) return Material.GREEN_BANNER;
-            if (team.color().equals(NamedTextColor.AQUA)) return Material.CYAN_BANNER;
-            if (team.color().equals(NamedTextColor.DARK_AQUA)) return Material.CYAN_BANNER;
-            if (team.color().equals(NamedTextColor.BLUE)) return Material.BLUE_BANNER;
-            if (team.color().equals(NamedTextColor.DARK_BLUE)) return Material.BLUE_BANNER;
-            if (team.color().equals(NamedTextColor.LIGHT_PURPLE)) return Material.MAGENTA_BANNER;
-            if (team.color().equals(NamedTextColor.DARK_PURPLE)) return Material.PURPLE_BANNER;
-
-            return TEAM_ICON_FALLBACK;
-        } catch (IllegalStateException e) {
-            // Team doesn't have a color set (throws "Team colors must have hex values")
-            return TEAM_ICON_FALLBACK;
-        }
+        // Map team name to banner color
+        return switch (teamName) {
+            case "WHITE" -> Material.WHITE_BANNER;
+            case "GRAY", "LIGHTGRAY" -> Material.LIGHT_GRAY_BANNER;
+            case "BLACK" -> Material.BLACK_BANNER;
+            case "RED" -> Material.RED_BANNER;
+            case "ORANGE" -> Material.ORANGE_BANNER;
+            case "YELLOW" -> Material.YELLOW_BANNER;
+            case "LIME" -> Material.LIME_BANNER;
+            case "GREEN" -> Material.GREEN_BANNER;
+            case "CYAN", "LIGHTBLUE" -> Material.CYAN_BANNER;
+            case "BLUE" -> Material.BLUE_BANNER;
+            case "PURPLE" -> Material.PURPLE_BANNER;
+            case "MAGENTA", "PINK" -> Material.MAGENTA_BANNER;
+            case "BROWN" -> Material.BROWN_BANNER;
+            default -> TEAM_ICON_FALLBACK; // White banner as fallback
+        };
     }
 
     /**
