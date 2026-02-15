@@ -914,10 +914,8 @@ public class Register extends BeaconzPluginDependent {
                 getLogger().info("DEBUG: Triangle fields created from " + beaconLinks.values().stream().mapToInt(List::size).sum() + " links");
             }
 
-            // Recalculate scores for all games
-            for (Game game : beaconLinks.keySet()) {
-                recalculateScore(game);
-            }
+            // Note: Score recalculation is deferred until after ownership resolution
+            // (see resolveOwnershipAfterGamesLoaded method which calls recalculateScore)
 
             getLogger().info("Loaded " + loadedBeacons.size() + " beacons from database");
 

@@ -1033,7 +1033,9 @@ public class Region extends BeaconzPluginDependent {
         final Block space1 = location.getBlock();
         final Block space2 = location.getBlock().getRelative(BlockFace.UP);
 
-        if (!space1.isPassable() || !space2.isPassable() || ground.isPassable() || ground.isLiquid() || space1.isLiquid() || space2.isLiquid()) {
+        if (!space1.isPassable() || !space2.isPassable() || ground.isPassable()
+                || ground.isLiquid() || space1.isLiquid() || space2.isLiquid()
+        || ground.getType() == Material.KELP) {
             return false;
         }
 
