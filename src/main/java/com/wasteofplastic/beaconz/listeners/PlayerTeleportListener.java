@@ -30,6 +30,8 @@ import java.util.UUID;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.entity.Boat;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -385,6 +387,9 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
         // Record player's starting position for movement detection
         teleportingPlayers.put(player.getUniqueId(), player.getLocation().toVector());
 
+        // check if player is teleporting from the lobby
+        boolean fromLobby = getGameMgr().isLocationInLobby(from);
+
         // Schedule the delayed teleport check
         getServer().getScheduler().runTaskLater(getBeaconzPlugin(), () -> {
             // Verify player is still valid and in the teleporting set
@@ -394,7 +399,6 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
                     // Player stood still - proceed with teleport
                     // This will trigger onTeleport again, but with teleporting flag set
                     player.teleportAsync(to);
-
                 } else {
                     // Player moved - cancel the teleport
                     player.sendMessage(Lang.teleportYouMoved);

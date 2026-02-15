@@ -449,7 +449,6 @@ public class Register extends BeaconzPluginDependent {
                 }
 
                 conn.commit();
-                getLogger().info("Successfully saved " + beaconRegister.size() + " beacons to database");
 
             } catch (SQLException e) {
                 conn.rollback();

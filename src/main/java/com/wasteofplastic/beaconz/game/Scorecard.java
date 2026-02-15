@@ -28,6 +28,7 @@ import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.Boat;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
@@ -771,7 +772,18 @@ public class Scorecard extends BeaconzPluginDependent {
                     }
                 }
             }
-            player.teleport(loc);
+            player.teleportAsync(loc).thenAccept(success -> {
+                if (!success) {
+                    getLogger().info("DEBUG: using scorecard teleport");
+                    if (success) {
+                        if (player.getLocation().getBlock().getType() == Material.WATER) {
+                            // Put user in a boat if they end up in water after teleporting to prevent drowning
+                            Boat boat = player.getWorld().spawn(player.getLocation(), org.bukkit.entity.Boat.class);
+                            boat.setPassenger(player);
+                        }
+                    }
+                }
+            });
             player.setScoreboard(scoreboard);
         }
     }

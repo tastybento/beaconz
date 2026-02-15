@@ -450,21 +450,17 @@ public class NewGameGUI extends BeaconzPluginDependent implements Listener {
      */
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
-        beaconzPlugin.getLogger().info(event.getEventName());
         if (!(event.getWhoClicked() instanceof Player player)) return;
-        beaconzPlugin.getLogger().info("DEBUG: Player clicked in inventory");
         Component viewTitle = event.getView().title();
 
         // Check if it's the main GUI
         if (viewTitle.equals(Component.text(GUI_TITLE))) {
-            beaconzPlugin.getLogger().info("DEBUG: Main GUI click detected");
             handleMainGUIClick(event, player);
             return;
         }
 
         // Check if it's the score types selector
         if (viewTitle.equals(Component.text("Select Score Types"))) {
-            beaconzPlugin.getLogger().info("DEBUG: Select Score Types click detected");
             handleScoreTypeSelectorClick(event, player);
         }
     }

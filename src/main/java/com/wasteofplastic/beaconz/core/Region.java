@@ -45,6 +45,7 @@ import org.bukkit.block.Sign;
 import org.bukkit.block.sign.Side;
 import org.bukkit.block.sign.SignSide;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Boat;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
@@ -751,9 +752,22 @@ public class Region extends BeaconzPluginDependent {
         if (directly) {
             getBeaconzPlugin().getTeleportListener().setDirectTeleportPlayer(player.getUniqueId());
         }
+        // check if player is teleporting from the lobby
+        boolean fromLobby = getGameMgr().isPlayerInLobby(player);
         // Make the spawn point safe if it isn't anymore
         this.setSpawnPoint(spawnPoint, 20);
-        player.teleportAsync(getSpawnPoint());
+        player.teleportAsync(getSpawnPoint()).thenAccept(
+                success -> {
+                    getLogger().info("DEBUG: using region teleport");
+                    if (success && fromLobby) {
+                        if (player.getLocation().getBlock().getType() == Material.WATER) {
+                            // Put user in a boat if they end up in water after teleporting to prevent drowning
+                            Boat boat = player.getWorld().spawn(player.getLocation(), org.bukkit.entity.Boat.class);
+                            boat.setPassenger(player);
+                        }
+                    }
+                }
+        );
         // Remove any Mobs around the area
         for (Entity entity : player.getNearbyEntities(10, 10, 10)) {
             if (entity instanceof Monster) {
