@@ -46,6 +46,8 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.MapMeta;
 import org.bukkit.map.MapView;
 import org.bukkit.map.MapView.Scale;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scoreboard.Team;
@@ -654,7 +656,7 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
 
         // Apply configured penalty potion effects for attempting to mine during cooldown
         for (String effect : Settings.minePenalty) {
-            // Parse effect string format: "EFFECT_NAME:AMPLIFIER"
+            // Parse effect string format: "effect_name:amplifier" (namespaced key format)
             String[] split = effect.split(":");
             if (split.length == 2) {
                 int amplifier = 1;
@@ -666,8 +668,8 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
                         getLogger().info("DEBUG: Amplifier is " + amplifier);
                 }
 
-                // Look up the potion effect type by name
-                PotionEffectType potionEffectType = PotionEffectType.getByName(split[0]);
+                // Look up the potion effect type by namespaced key
+                PotionEffectType potionEffectType = Registry.POTION_EFFECT_TYPE.get(NamespacedKey.minecraft(split[0].toLowerCase()));
 
                 if (potionEffectType != null) {
                     // Apply the penalty effect for the remaining cooldown duration
@@ -678,10 +680,12 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
 
                     if (DEBUG)
                         getLogger().info("DEBUG: Applying " + potionEffectType + ":" + amplifier + " for " + num + " ticks");
+                } else {
+                    getLogger().warning("Unknown potion effect type: " + split[0]);
                 }
             } else {
                 // Invalid configuration format - log warning
-                getLogger().warning("Unknown hack cooldown effect" + effect);
+                getLogger().warning("Invalid mine penalty format: " + effect + " (expected format: effect_name:amplifier)");
             }
         }
     }
