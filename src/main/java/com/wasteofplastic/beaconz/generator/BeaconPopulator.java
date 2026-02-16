@@ -26,7 +26,6 @@ import java.util.Random;
 import java.util.random.RandomGenerator;
 import java.util.random.RandomGeneratorFactory;
 
-import org.bukkit.HeightMap;
 import org.bukkit.Material;
 import org.bukkit.Tag;
 import org.bukkit.block.Biome;
@@ -174,8 +173,16 @@ public class BeaconPopulator extends BlockPopulator {
             int worldZ = chunkZ * 16 + z;
 
             // Figure out at which height the beacon should be placed
-            // Use the LimitedRegion's heightmap
-            int y = limitedRegion.getHeight(worldX, worldZ, HeightMap.WORLD_SURFACE);
+            // Scan downward from max height to find the highest non-air block
+            int y = worldInfo.getMaxHeight() - 1;
+            while (y > worldInfo.getMinHeight() && limitedRegion.getType(worldX, y, worldZ) == Material.AIR) {
+                y--;
+            }
+            
+            if (y <= worldInfo.getMinHeight()) {
+                // No solid blocks found
+                return;
+            }
 
             // Check the block at this position
             Material blockType = limitedRegion.getType(worldX, y, worldZ);
