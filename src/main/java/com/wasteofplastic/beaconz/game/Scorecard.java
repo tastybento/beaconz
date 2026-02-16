@@ -776,10 +776,12 @@ public class Scorecard extends BeaconzPluginDependent {
                 if (!success) {
                     getLogger().info("DEBUG: using scorecard teleport");
                     if (success) {
-                        if (player.getLocation().getBlock().getType() == Material.WATER) {
+                        if (player.getLocation().getBlock().getType() == Material.WATER
+                                || player.getLocation().getBlock().getRelative(BlockFace.DOWN).getType() == Material.WATER
+                        ) {
                             // Put user in a boat if they end up in water after teleporting to prevent drowning
                             Boat boat = player.getWorld().spawn(player.getLocation(), org.bukkit.entity.Boat.class);
-                            boat.setPassenger(player);
+                            boat.addPassenger(player);
                         }
                     }
                 }
@@ -816,8 +818,13 @@ public class Scorecard extends BeaconzPluginDependent {
                     team=t;
                 }
             }
-            addTeamPlayer(team, player);
+            if (team != null) {
+                addTeamPlayer(team, player);
+            } else {
+                getLogger().warning("Could not assign team to player " + player.getName() + " because no teams exist for game " + gameName);
+            }
         }
+
     }
 
 
@@ -935,7 +942,7 @@ public class Scorecard extends BeaconzPluginDependent {
                             try {
                                 UUID uuid = UUID.fromString(uuidText);
                                 OfflinePlayer player = getBeaconzPlugin().getServer().getOfflinePlayer(uuid);
-                                team.addEntry(player.getName());
+                                team.addPlayer(player);
                                 teamLookup.put(uuid, team);
 
                                 // Add to teamMembers map
@@ -989,7 +996,6 @@ public class Scorecard extends BeaconzPluginDependent {
 
         } catch (SQLException e) {
             getLogger().severe("Failed to load team members from database for game " + gameName + ": " + e.getMessage());
-            e.printStackTrace();
         }
     }
 
@@ -1077,7 +1083,6 @@ public class Scorecard extends BeaconzPluginDependent {
 
         } catch (SQLException e) {
             getLogger().severe("Failed to save team members to database for game " + gameName + ": " + e.getMessage());
-            e.printStackTrace();
         }
     }
 
@@ -1610,7 +1615,6 @@ public class Scorecard extends BeaconzPluginDependent {
 
         } catch (SQLException e) {
             getLogger().severe("Failed to delete team members from database for game " + gameName + ": " + e.getMessage());
-            e.printStackTrace();
         }
     }
 
