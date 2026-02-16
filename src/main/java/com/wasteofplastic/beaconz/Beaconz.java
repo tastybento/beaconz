@@ -45,6 +45,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.generator.BlockPopulator;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -509,7 +511,6 @@ public class Beaconz extends JavaPlugin {
      * Invalid or missing values are replaced with sensible defaults and warnings
      * are logged for administrator attention.
      */
-    @SuppressWarnings("deprecation")
     public void loadConfig() {
         // Use scoreboard
         Settings.useScoreboard = getConfig().getBoolean("general.usescoreboard");
@@ -707,13 +708,15 @@ public class Beaconz extends JavaPlugin {
                     for (String effectString : effectsList) {
                         String[] split = effectString.split(":");
                         if (split.length == 1 || split.length > 2) {
-                            PotionEffectType type = PotionEffectType.getByName(split[0]);
+                            PotionEffectType type = Registry.POTION_EFFECT_TYPE.get(NamespacedKey.minecraft(split[0].toLowerCase()));
                             if (type != null) {
                                 effects.add(new PotionEffect(type, Integer.MAX_VALUE, 1));
+                            } else {
+                                getLogger().warning("Unknown potion effect type: " + split[0]);
                             }
                         }
                         if (split.length == 2) {
-                            PotionEffectType type = PotionEffectType.getByName(split[0]);
+                            PotionEffectType type = Registry.POTION_EFFECT_TYPE.get(NamespacedKey.minecraft(split[0].toLowerCase()));
                             if (type != null) {
                                 if (NumberUtils.isNumber(split[1])) {
                                     // Adding enemy effect
@@ -721,6 +724,8 @@ public class Beaconz extends JavaPlugin {
                                 } else {
                                     effects.add(new PotionEffect(type, Integer.MAX_VALUE, 1));
                                 }
+                            } else {
+                                getLogger().warning("Unknown potion effect type: " + split[0]);
                             }
 
                         }
@@ -742,19 +747,23 @@ public class Beaconz extends JavaPlugin {
                     for (String effectString : effectsList) {
                         String[] split = effectString.split(":");
                         if (split.length == 1 || split.length > 2) {
-                            PotionEffectType type = PotionEffectType.getByName(split[0]);
+                            PotionEffectType type = Registry.POTION_EFFECT_TYPE.get(NamespacedKey.minecraft(split[0].toLowerCase()));
                             if (type != null) {
                                 effects.add(new PotionEffect(type, Integer.MAX_VALUE, 1));
+                            } else {
+                                getLogger().warning("Unknown potion effect type: " + split[0]);
                             }
                         }
                         if (split.length == 2) {
-                            PotionEffectType type = PotionEffectType.getByName(split[0]);
+                            PotionEffectType type = Registry.POTION_EFFECT_TYPE.get(NamespacedKey.minecraft(split[0].toLowerCase()));
                             if (type != null) {
                                 if (NumberUtils.isNumber(split[1])) {
                                     effects.add(new PotionEffect(type, Integer.MAX_VALUE, NumberUtils.toInt(split[1])));
                                 } else {
                                     effects.add(new PotionEffect(type, Integer.MAX_VALUE, 1));
                                 }
+                            } else {
+                                getLogger().warning("Unknown potion effect type: " + split[0]);
                             }
 
                         }
@@ -1213,9 +1222,11 @@ public class Beaconz extends JavaPlugin {
      * <p>Supported formats:
      * <ul>
      *   <li>Simple: MATERIAL:QUANTITY (e.g., "DIAMOND:5")</li>
-     *   <li>Potion: POTION:POTION_TYPE:QUANTITY (e.g., "POTION:STRONG_HEALING:2")</li>
+     *   <li>Potion: POTION:potion_type:QUANTITY (e.g., "POTION:strong_healing:2")</li>
      *   <li>With name: MATERIAL:QUANTITY:DisplayName (e.g., "DIAMOND_SWORD:1:Excalibur")</li>
      * </ul>
+     *
+     * <p>Potion types use lowercase minecraft namespaced keys (e.g., healing, strong_healing, poison).
      *
      * @param player The player to give items to
      * @param itemRewards List of reward configuration strings

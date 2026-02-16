@@ -58,20 +58,20 @@ class BeaconzGiveItemsTest {
         @Test
         @DisplayName("Should give single simple item to player")
         void testGiveSingleItem() {
-            List<String> rewards = Arrays.asList("DIAMOND:5");
+            List<String> rewards = List.of("DIAMOND:5");
 
             List<ItemStack> result = plugin.giveItems(player, rewards);
 
             assertNotNull(result);
             assertEquals(1, result.size());
-            assertEquals(Material.DIAMOND, result.get(0).getType());
-            assertEquals(5, result.get(0).getAmount());
+            assertEquals(Material.DIAMOND, result.getFirst().getType());
+            assertEquals(5, result.getFirst().getAmount());
         }
 
         @Test
         @DisplayName("Should give multiple different items")
         void testGiveMultipleItems() {
-            List<String> rewards = Arrays.asList(
+            List<String> rewards = List.of(
                 "DIAMOND:5",
                 "EMERALD:3",
                 "GOLD_INGOT:10"
@@ -80,8 +80,8 @@ class BeaconzGiveItemsTest {
             List<ItemStack> result = plugin.giveItems(player, rewards);
 
             assertEquals(3, result.size());
-            assertEquals(Material.DIAMOND, result.get(0).getType());
-            assertEquals(5, result.get(0).getAmount());
+            assertEquals(Material.DIAMOND, result.getFirst().getType());
+            assertEquals(5, result.getFirst().getAmount());
             assertEquals(Material.EMERALD, result.get(1).getType());
             assertEquals(3, result.get(1).getAmount());
             assertEquals(Material.GOLD_INGOT, result.get(2).getType());
@@ -91,7 +91,7 @@ class BeaconzGiveItemsTest {
         @Test
         @DisplayName("Should add items to player inventory")
         void testItemsAddedToInventory() {
-            List<String> rewards = Arrays.asList("DIAMOND:5");
+            List<String> rewards = List.of("DIAMOND:5");
 
             plugin.giveItems(player, rewards);
 
@@ -107,12 +107,12 @@ class BeaconzGiveItemsTest {
         @Test
         @DisplayName("Should give regular potion")
         void testGiveRegularPotion() {
-            List<String> rewards = Arrays.asList("POTION:HEALING:2");
+            List<String> rewards = List.of("POTION:healing:2");
 
             List<ItemStack> result = plugin.giveItems(player, rewards);
 
             assertEquals(1, result.size());
-            ItemStack potion = result.get(0);
+            ItemStack potion = result.getFirst();
             assertEquals(Material.POTION, potion.getType());
             assertEquals(2, potion.getAmount());
 
@@ -124,12 +124,12 @@ class BeaconzGiveItemsTest {
         @Test
         @DisplayName("Should give splash potion")
         void testGiveSplashPotion() {
-            List<String> rewards = Arrays.asList("SPLASH_POTION:POISON:1");
+            List<String> rewards = List.of("SPLASH_POTION:poison:1");
 
             List<ItemStack> result = plugin.giveItems(player, rewards);
 
             assertEquals(1, result.size());
-            ItemStack potion = result.get(0);
+            ItemStack potion = result.getFirst();
             assertEquals(Material.SPLASH_POTION, potion.getType());
 
             PotionMeta meta = (PotionMeta) potion.getItemMeta();
@@ -140,12 +140,12 @@ class BeaconzGiveItemsTest {
         @Test
         @DisplayName("Should give lingering potion")
         void testGiveLingeringPotion() {
-            List<String> rewards = Arrays.asList("LINGERING_POTION:REGENERATION:3");
+            List<String> rewards = List.of("LINGERING_POTION:regeneration:3");
 
             List<ItemStack> result = plugin.giveItems(player, rewards);
 
             assertEquals(1, result.size());
-            ItemStack potion = result.get(0);
+            ItemStack potion = result.getFirst();
             assertEquals(Material.LINGERING_POTION, potion.getType());
             assertEquals(3, potion.getAmount());
 
@@ -162,12 +162,12 @@ class BeaconzGiveItemsTest {
         @Test
         @DisplayName("Should give item with display name")
         void testGiveItemWithDisplayName() {
-            List<String> rewards = Arrays.asList("DIAMOND_SWORD:1:Excalibur");
+            List<String> rewards = List.of("DIAMOND_SWORD:1:Excalibur");
 
             List<ItemStack> result = plugin.giveItems(player, rewards);
 
             assertEquals(1, result.size());
-            ItemStack sword = result.get(0);
+            ItemStack sword = result.getFirst();
             assertEquals(Material.DIAMOND_SWORD, sword.getType());
             assertEquals(Component.text("Excalibur"), sword.getItemMeta().displayName());
         }
@@ -180,7 +180,7 @@ class BeaconzGiveItemsTest {
         @Test
         @DisplayName("Should skip invalid items and continue")
         void testSkipInvalidItems() {
-            List<String> rewards = Arrays.asList(
+            List<String> rewards = List.of(
                 "DIAMOND:5",
                 "INVALID_MATERIAL:3",
                 "EMERALD:2"
@@ -190,14 +190,14 @@ class BeaconzGiveItemsTest {
 
             // Should only have the valid items
             assertEquals(2, result.size());
-            assertEquals(Material.DIAMOND, result.get(0).getType());
+            assertEquals(Material.DIAMOND, result.getFirst().getType());
             assertEquals(Material.EMERALD, result.get(1).getType());
         }
 
         @Test
         @DisplayName("Should handle empty reward list")
         void testEmptyRewardList() {
-            List<ItemStack> result = plugin.giveItems(player, Arrays.asList());
+            List<ItemStack> result = plugin.giveItems(player, List.of());
 
             assertNotNull(result);
             assertTrue(result.isEmpty());
@@ -215,7 +215,7 @@ class BeaconzGiveItemsTest {
         @Test
         @DisplayName("Should handle malformed reward strings")
         void testMalformedRewards() {
-            List<String> rewards = Arrays.asList(
+            List<String> rewards = List.of(
                 "DIAMOND",  // Missing quantity
                 "EMERALD:abc",  // Invalid quantity
                 ":5"  // Missing material
@@ -235,18 +235,18 @@ class BeaconzGiveItemsTest {
         @Test
         @DisplayName("Should handle link rewards from config")
         void testLinkRewards() {
-            List<String> rewards = Arrays.asList("EMERALD:1");
+            List<String> rewards = List.of("EMERALD:1");
 
             List<ItemStack> result = plugin.giveItems(player, rewards);
 
             assertEquals(1, result.size());
-            assertEquals(Material.EMERALD, result.get(0).getType());
+            assertEquals(Material.EMERALD, result.getFirst().getType());
         }
 
         @Test
         @DisplayName("Should handle newbie kit from config")
         void testNewbieKit() {
-            List<String> rewards = Arrays.asList(
+            List<String> rewards = List.of(
                 "DIAMOND_PICKAXE:1",
                 "BREAD:2"
             );
@@ -254,7 +254,7 @@ class BeaconzGiveItemsTest {
             List<ItemStack> result = plugin.giveItems(player, rewards);
 
             assertEquals(2, result.size());
-            assertEquals(Material.DIAMOND_PICKAXE, result.get(0).getType());
+            assertEquals(Material.DIAMOND_PICKAXE, result.getFirst().getType());
             assertEquals(Material.BREAD, result.get(1).getType());
             assertEquals(2, result.get(1).getAmount());
         }
@@ -262,7 +262,7 @@ class BeaconzGiveItemsTest {
         @Test
         @DisplayName("Should handle all commented config examples")
         void testAllCommentedExamples() {
-            List<String> rewards = Arrays.asList(
+            List<String> rewards = List.of(
                 "EMERALD:1",
                 "DIAMOND:5",
                 "POTION:STRONG_HEALING:2",
@@ -274,7 +274,7 @@ class BeaconzGiveItemsTest {
             List<ItemStack> result = plugin.giveItems(player, rewards);
 
             assertEquals(6, result.size());
-            assertEquals(Material.EMERALD, result.get(0).getType());
+            assertEquals(Material.EMERALD, result.getFirst().getType());
             assertEquals(Material.DIAMOND, result.get(1).getType());
             assertEquals(Material.POTION, result.get(2).getType());
             assertEquals(Material.SPLASH_POTION, result.get(3).getType());
@@ -290,7 +290,7 @@ class BeaconzGiveItemsTest {
         @Test
         @DisplayName("Should play sound when giving items")
         void testSoundPlayed() {
-            List<String> rewards = Arrays.asList("DIAMOND:5");
+            List<String> rewards = List.of("DIAMOND:5");
 
             plugin.giveItems(player, rewards);
 
@@ -303,7 +303,7 @@ class BeaconzGiveItemsTest {
         @DisplayName("Should give items to correct player")
         void testCorrectPlayer() {
             Player player2 = server.addPlayer("Player2");
-            List<String> rewards = Arrays.asList("DIAMOND:5");
+            List<String> rewards = List.of("DIAMOND:5");
 
             plugin.giveItems(player, rewards);
 
@@ -315,7 +315,7 @@ class BeaconzGiveItemsTest {
         @Test
         @DisplayName("Should handle multiple rewards of same type")
         void testMultipleSameType() {
-            List<String> rewards = Arrays.asList(
+            List<String> rewards = List.of(
                 "DIAMOND:5",
                 "DIAMOND:3"
             );
@@ -324,7 +324,7 @@ class BeaconzGiveItemsTest {
 
             assertEquals(2, result.size());
             // Both should be diamonds
-            assertEquals(Material.DIAMOND, result.get(0).getType());
+            assertEquals(Material.DIAMOND, result.getFirst().getType());
             assertEquals(Material.DIAMOND, result.get(1).getType());
         }
     }

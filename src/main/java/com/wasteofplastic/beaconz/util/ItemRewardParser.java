@@ -27,6 +27,8 @@ import java.util.List;
 import java.util.logging.Logger;
 
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.PotionMeta;
@@ -40,11 +42,13 @@ import net.kyori.adventure.text.Component;
  * <p>Supported formats:
  * <ul>
  *   <li><b>Simple:</b> {@code MATERIAL:QUANTITY} - e.g., "DIAMOND:5"</li>
- *   <li><b>Potion:</b> {@code POTION:POTION_TYPE:QUANTITY} - e.g., "POTION:STRONG_HEALING:2"</li>
- *   <li><b>Splash Potion:</b> {@code SPLASH_POTION:POTION_TYPE:QUANTITY} - e.g., "SPLASH_POTION:POISON:1"</li>
- *   <li><b>Lingering Potion:</b> {@code LINGERING_POTION:POTION_TYPE:QUANTITY} - e.g., "LINGERING_POTION:REGENERATION:3"</li>
+ *   <li><b>Potion:</b> {@code POTION:potion_type:QUANTITY} - e.g., "POTION:strong_healing:2"</li>
+ *   <li><b>Splash Potion:</b> {@code SPLASH_POTION:potion_type:QUANTITY} - e.g., "SPLASH_POTION:poison:1"</li>
+ *   <li><b>Lingering Potion:</b> {@code LINGERING_POTION:potion_type:QUANTITY} - e.g., "LINGERING_POTION:regeneration:3"</li>
  *   <li><b>With Display Name:</b> {@code MATERIAL:QUANTITY:Display Name} - e.g., "DIAMOND_SWORD:1:Excalibur"</li>
  * </ul>
+ *
+ * <p>Potion types use lowercase minecraft namespaced keys (e.g., healing, strong_healing, poison, regeneration).
  *
  * <p>This replaces the legacy durability-based format which is no longer supported in modern Minecraft.
  *
@@ -157,7 +161,7 @@ public class ItemRewardParser {
 
     /**
      * Parses a potion reward.
-     * Format: POTION_MATERIAL:POTION_TYPE:QUANTITY
+     * Format: POTION_MATERIAL:potion_type:QUANTITY (using lowercase namespaced key for potion type)
      *
      * @param potionMaterial The potion material (POTION, SPLASH_POTION, or LINGERING_POTION)
      * @param parts The split reward string parts
@@ -165,18 +169,16 @@ public class ItemRewardParser {
      */
     private ItemStack parsePotionReward(Material potionMaterial, String[] parts) {
         if (parts.length < 3) {
-            logger.severe("Invalid potion format. Expected: " + potionMaterial + ":POTION_TYPE:QUANTITY");
-            logger.severe("Example: POTION:STRONG_HEALING:2");
+            logger.severe("Invalid potion format. Expected: " + potionMaterial + ":potion_type:QUANTITY");
+            logger.severe("Example: POTION:healing:2 or POTION:strong_healing:2");
             listAvailablePotionTypes();
             return null;
         }
 
-        // Parse potion type
-        String potionTypeName = parts[1].trim().toUpperCase();
-        PotionType potionType;
-        try {
-            potionType = PotionType.valueOf(potionTypeName);
-        } catch (IllegalArgumentException e) {
+        // Parse potion type using namespaced key (lowercase)
+        String potionTypeName = parts[1].trim().toLowerCase();
+        PotionType potionType = Registry.POTION.get(NamespacedKey.minecraft(potionTypeName));
+        if (potionType == null) {
             logger.severe("Unknown potion type: " + potionTypeName);
             listAvailablePotionTypes();
             return null;
@@ -234,13 +236,15 @@ public class ItemRewardParser {
     }
 
     /**
-     * Lists all available potion types.
+     * Lists all available potion types using their namespaced key names.
      */
     private void listAvailablePotionTypes() {
         StringBuilder potionTypes = new StringBuilder("Available potion types: ");
-        for (PotionType type : PotionType.values()) {
-            potionTypes.append(type.name()).append(", ");
+        for (PotionType type : Registry.POTION) {
+            potionTypes.append(type.getKey().getKey()).append(", ");
         }
-        logger.severe(potionTypes.substring(0, potionTypes.length() - 2));
+        if (potionTypes.length() > 24) {
+            logger.severe(potionTypes.substring(0, potionTypes.length() - 2));
+        }
     }
 }
