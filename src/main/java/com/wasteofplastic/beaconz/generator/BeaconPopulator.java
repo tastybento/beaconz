@@ -61,7 +61,7 @@ public class BeaconPopulator extends BlockPopulator {
 
     @Override
     public void populate(@NotNull WorldInfo worldInfo, @NotNull Random unused, int chunkX, int chunkZ, @NotNull LimitedRegion limitedRegion) {
-        boolean cornerBeacon;
+        boolean cornerBeacon = false;
         Integer cornerX = null;
         Integer cornerZ = null;
 
@@ -129,19 +129,21 @@ public class BeaconPopulator extends BlockPopulator {
 
         // pseudo-randomly place a beacon
         // Mix all seed components using XOR and bit rotation
-        long seed3 = System.currentTimeMillis();
         long seed4 = Settings.seedAdjustment;
 
-        long combinedSeed = (long) chunkX ^
+        long combinedSeed = chunkX ^
                 Long.rotateLeft(chunkZ, 17) ^
-                Long.rotateLeft(seed3, 31) ^ 
                 Long.rotateLeft(seed4, 42);
 
         RandomGenerator gen = RandomGeneratorFactory.of("Xoshiro256PlusPlus").create(combinedSeed);
         double nd = gen.nextDouble();
 
-        // Compare the pseudo-random double generated with the game's beacon distribution threshold        
-        double distribution = plugin.getGameMgr().getRegion(chunkX << 4, chunkZ << 4).getGame().getGamedistribution();
+        // Compare the pseudo-random double generated with the game's beacon distribution threshold
+        Region region = plugin.getGameMgr().getRegion(chunkX << 4, chunkZ << 4);
+        if (region == null || region.getGame() == null) {
+            return;
+        }
+        double distribution = region.getGame().getGamedistribution();
         if (nd < distribution || cornerBeacon) {
             int x;
             int z;
@@ -172,8 +174,8 @@ public class BeaconPopulator extends BlockPopulator {
             int worldZ = chunkZ * 16 + z;
 
             // Figure out at which height the beacon should be placed
-            // Use the world's heightmap via LimitedRegion
-            int y = limitedRegion.getWorld().getHighestBlockYAt(worldX, worldZ, HeightMap.WORLD_SURFACE);
+            // Use the LimitedRegion's heightmap
+            int y = limitedRegion.getHeight(worldX, worldZ, HeightMap.WORLD_SURFACE);
 
             // Check the block at this position
             Material blockType = limitedRegion.getType(worldX, y, worldZ);
@@ -181,7 +183,7 @@ public class BeaconPopulator extends BlockPopulator {
 
             if (blockType == Material.SNOW) {
                 // There can be snow in trees, so need to move down to ground level
-                while (y > limitedRegion.getWorld().getMinHeight() &&
+                while (y > worldInfo.getMinHeight() &&
                         (limitedRegion.getType(worldX, y, worldZ) == Material.SNOW
                         || limitedRegion.getType(worldX, y, worldZ) == Material.AIR
                         || Tag.LEAVES.isTagged(limitedRegion.getType(worldX, y, worldZ)))) {
@@ -201,11 +203,16 @@ public class BeaconPopulator extends BlockPopulator {
                     || blockType == Material.RED_MUSHROOM_BLOCK
                     || blockType == Material.OBSIDIAN) {
                 // if found an obsidian, we only keep going down if it's NOT capping a beacon
-                if (blockType == Material.OBSIDIAN && limitedRegion.getType(worldX, y - 1, worldZ) != Material.BEACON) {
-                    break;
+                if (blockType == Material.OBSIDIAN) {
+                    int belowY = y - 1;
+                    if (belowY < worldInfo.getMinHeight()
+                            || !limitedRegion.isInRegion(worldX, belowY, worldZ)
+                            || limitedRegion.getType(worldX, belowY, worldZ) != Material.BEACON) {
+                        break;
+                    }
                 }
                 y--;
-                if (y <= limitedRegion.getWorld().getMinHeight()) {
+                if (y <= worldInfo.getMinHeight()) {
                     // Oops, nothing here
                     return;
                 }
@@ -213,9 +220,15 @@ public class BeaconPopulator extends BlockPopulator {
             }
 
             // Else make it into a beacon
+            // Verify beacon position is within the LimitedRegion
+            if (!limitedRegion.isInRegion(worldX, y, worldZ)) {
+                return;
+            }
             limitedRegion.setType(worldX, y, worldZ, Material.BEACON);
             // Add the capstone
-            limitedRegion.setType(worldX, y + 1, worldZ, Material.OBSIDIAN);
+            if (y + 1 <= worldInfo.getMaxHeight() && limitedRegion.isInRegion(worldX, y + 1, worldZ)) {
+                limitedRegion.setType(worldX, y + 1, worldZ, Material.OBSIDIAN);
+            }
 
             // Create the pyramid (one level below the beacon)
             int pyramidY = y - 1;
@@ -223,7 +236,11 @@ public class BeaconPopulator extends BlockPopulator {
             // All diamond blocks for now - 3x3 pyramid base
             for (int dx = -1; dx <= 1; dx++) {
                 for (int dz = -1; dz <= 1; dz++) {
-                    limitedRegion.setType(worldX + dx, pyramidY, worldZ + dz, Material.DIAMOND_BLOCK);
+                    int blockX = worldX + dx;
+                    int blockZ = worldZ + dz;
+                    if (limitedRegion.isInRegion(blockX, pyramidY, blockZ)) {
+                        limitedRegion.setType(blockX, pyramidY, blockZ, Material.DIAMOND_BLOCK);
+                    }
                 }
             }
 
