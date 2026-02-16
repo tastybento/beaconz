@@ -8,7 +8,7 @@
  * <ul>
  *   <li>{@link com.wasteofplastic.beaconz.storage.BeaconzStore} - Player inventory and state persistence</li>
  *   <li>{@link com.wasteofplastic.beaconz.storage.Messages} - Offline message queue system</li>
- *   <li>{@link com.wasteofplastic.beaconz.storage.TinyDB} - Player name to UUID database</li>
+ *   <li>{@link com.wasteofplastic.beaconz.storage.NameDB} - Player name to UUID database</li>
  * </ul>
  *
  * <h2>Inventory Storage:</h2>
