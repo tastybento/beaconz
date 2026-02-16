@@ -384,7 +384,6 @@ public class Game extends BeaconzPluginDependent {
 
         } catch (SQLException e) {
             getLogger().severe("Failed to save game " + gameName + " to database: " + e.getMessage());
-            e.printStackTrace();
         }
 
         // Save team membership data separately

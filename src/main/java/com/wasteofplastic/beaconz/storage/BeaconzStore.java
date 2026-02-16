@@ -97,7 +97,6 @@ public class BeaconzStore extends BeaconzPluginDependent {
 
         } catch (SQLException e) {
             getLogger().severe("Failed to initialize player_inventories database table: " + e.getMessage());
-            e.printStackTrace();
         }
     }
 
@@ -169,7 +168,6 @@ public class BeaconzStore extends BeaconzPluginDependent {
             }
         } catch (SQLException e) {
             getLogger().severe("Failed to get inventory for " + player.getName() + " in game " + gameName + ": " + e.getMessage());
-            e.printStackTrace();
         }
 
         return null;
@@ -250,7 +248,6 @@ public class BeaconzStore extends BeaconzPluginDependent {
 
         } catch (SQLException e) {
             getLogger().severe("Failed to store inventory for " + player.getName() + " in game " + gameName + ": " + e.getMessage());
-            e.printStackTrace();
         }
 
         // Clear the player's inventory
@@ -283,7 +280,6 @@ public class BeaconzStore extends BeaconzPluginDependent {
 
         } catch (SQLException e) {
             getLogger().severe("Failed to remove game inventories for " + gameName + ": " + e.getMessage());
-            e.printStackTrace();
         }
     }
 

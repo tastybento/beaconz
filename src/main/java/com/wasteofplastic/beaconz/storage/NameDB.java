@@ -46,7 +46,6 @@ public class NameDB {
             plugin.getLogger().info("Loaded " + size() + " player names from database");
         } catch (SQLException e) {
             plugin.getLogger().severe("Failed to initialize player name database: " + e.getMessage());
-            e.printStackTrace();
         }
     }
 

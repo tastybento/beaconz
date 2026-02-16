@@ -313,7 +313,6 @@ public class GameMgr extends BeaconzPluginDependent {
 
                     } catch (Exception e) {
                         getLogger().severe("Error loading game from database: " + e.getMessage());
-                        e.printStackTrace();
                     }
                 }
 
@@ -323,7 +322,6 @@ public class GameMgr extends BeaconzPluginDependent {
             }
         } catch (SQLException e) {
             getLogger().severe("Failed to load games from database: " + e.getMessage());
-            e.printStackTrace();
         }
     }
 
