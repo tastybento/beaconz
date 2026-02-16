@@ -80,7 +80,7 @@ import com.wasteofplastic.beaconz.listeners.ScoreGUIListener;
 import com.wasteofplastic.beaconz.listeners.SkyListeners;
 import com.wasteofplastic.beaconz.storage.BeaconzStore;
 import com.wasteofplastic.beaconz.storage.Messages;
-import com.wasteofplastic.beaconz.storage.TinyDB;
+import com.wasteofplastic.beaconz.storage.NameDB;
 import com.wasteofplastic.beaconz.util.ItemRewardParser;
 
 /**
@@ -145,7 +145,7 @@ public class Beaconz extends JavaPlugin {
     protected PlayerMovementListener pml;
 
     /** Player name database for offline player lookups */
-    private TinyDB nameStore;
+    private NameDB nameStore;
 
     /** Teleport listener for managing safe teleportation */
     private PlayerTeleportListener teleportListener;
@@ -237,7 +237,7 @@ public class Beaconz extends JavaPlugin {
         }
 
         // Start the player name database for offline player lookups
-        nameStore = new TinyDB(this);
+        nameStore = new NameDB(this);
 
         // INITIALIZATION PHASE 3: Delayed Setup (1 tick later)
         // Schedule most initialization for 1 tick after enable to ensure
@@ -394,14 +394,6 @@ public class Beaconz extends JavaPlugin {
             }
         }
 
-        // Save player name database
-        if (nameStore != null) {
-            try {
-                nameStore.saveDB();
-            } catch (Exception e) {
-                getLogger().warning("Failed to save name store during shutdown: " + e.getMessage());
-            }
-        }
 
         // Close database connection pool AFTER all saves are complete
         this.closeDataSource();
@@ -1071,7 +1063,7 @@ public class Beaconz extends JavaPlugin {
      *
      * @return The player name database instance
      */
-    public TinyDB getNameStore() {
+    public NameDB getNameStore() {
         return nameStore;
     }
 
