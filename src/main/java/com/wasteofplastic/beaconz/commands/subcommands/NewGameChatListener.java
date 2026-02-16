@@ -26,10 +26,12 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.AsyncPlayerChatEvent;
 
 import com.wasteofplastic.beaconz.Beaconz;
 import com.wasteofplastic.beaconz.BeaconzPluginDependent;
+
+import io.papermc.paper.event.player.AsyncChatEvent;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
 /**
  * Listens for chat input when players are entering game names from the GUI.
@@ -65,14 +67,14 @@ public class NewGameChatListener extends BeaconzPluginDependent implements Liste
      * @param event the chat event
      */
     @EventHandler(priority = EventPriority.LOWEST)
-    public void onChat(AsyncPlayerChatEvent event) {
+    public void onChat(AsyncChatEvent event) {
         Player player = event.getPlayer();
         NewGameGUI.PendingGameCreation pending = gui.getPendingCreation(player);
 
         if (pending != null) {
             event.setCancelled(true);
 
-            String gameName = event.getMessage().trim();
+            String gameName = PlainTextComponentSerializer.plainText().serialize(event.message()).trim();
 
             // Run on main thread since game creation involves world operations
             getBeaconzPlugin().getServer().getScheduler().runTask(getBeaconzPlugin(), () -> command.completeGameCreation(player, gameName, pending.params));
