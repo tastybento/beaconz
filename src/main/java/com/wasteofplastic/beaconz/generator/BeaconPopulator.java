@@ -26,14 +26,13 @@ import java.util.Random;
 import java.util.random.RandomGenerator;
 import java.util.random.RandomGeneratorFactory;
 
-import org.bukkit.Chunk;
+import org.bukkit.HeightMap;
 import org.bukkit.Material;
 import org.bukkit.Tag;
-import org.bukkit.World;
 import org.bukkit.block.Biome;
-import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
 import org.bukkit.generator.BlockPopulator;
+import org.bukkit.generator.LimitedRegion;
+import org.bukkit.generator.WorldInfo;
 import org.jetbrains.annotations.NotNull;
 
 import com.wasteofplastic.beaconz.Beaconz;
@@ -43,7 +42,7 @@ import com.wasteofplastic.beaconz.core.Region;
 
 /**
  * BeaconPopulator class
- * @author TastyBento
+ * @author tastybento
  * <p>
  * This is called every time a chunk is generated in the world
  * The idea is to place a single beacon on a chunk if a XorShift
@@ -51,11 +50,6 @@ import com.wasteofplastic.beaconz.core.Region;
  * If Settings.distribution were 1, every chunk would get a single beacon;
  * the lower it is, the fewer chunks get a beacon and the beacons
  * are more spread out in the world.
- * <p>
- * Note added by EBaldino: in order to be able to regenerate and repopulate chunks for specific game regions,
- * and considering that other plugins may regenerate a chunk in an active game area, I am removing this from
- * the world's populators and calling it explicitly in WorldListener.onChunkLoad
- *
  */
 public class BeaconPopulator extends BlockPopulator {
     private final Beaconz plugin;
@@ -66,7 +60,7 @@ public class BeaconPopulator extends BlockPopulator {
     }
 
     @Override
-    public void populate(@NotNull World world, @NotNull Random unused, @NotNull Chunk source) {
+    public void populate(@NotNull WorldInfo worldInfo, @NotNull Random unused, int chunkX, int chunkZ, @NotNull LimitedRegion limitedRegion) {
         boolean cornerBeacon;
         Integer cornerX = null;
         Integer cornerZ = null;
@@ -78,8 +72,6 @@ public class BeaconPopulator extends BlockPopulator {
 
         // Make sure we're within the boundaries of a game
         if (plugin.getGameMgr() != null) {
-            int X = source.getX();
-            int Z = source.getZ();
 
             if (plugin.getGameMgr().getLobby() == null) {
                 // No lobby yet
@@ -88,12 +80,12 @@ public class BeaconPopulator extends BlockPopulator {
                 return;
             }
             // Don't do anything in the lobby
-            if (plugin.getGameMgr().getLobby().containsPoint(X * 16, Z * 16)) {
+            if (plugin.getGameMgr().getLobby().containsPoint(chunkX * 16, chunkZ * 16)) {
                 if (DEBUG)
                     plugin.getLogger().info("DEBUG: no beaconz in lobby");
                 return;
             }
-            if (plugin.getGameMgr().getLobby().containsPoint(X * 16 + 15, Z * 16 + 15)) {
+            if (plugin.getGameMgr().getLobby().containsPoint(chunkX * 16 + 15, chunkZ * 16 + 15)) {
                 if (DEBUG)
                     plugin.getLogger().info("DEBUG: no beaconz in lobby");
                 return;
@@ -101,22 +93,22 @@ public class BeaconPopulator extends BlockPopulator {
 
             // Don't do anything unless inside a region
             // Check min coords
-            Region region1 = plugin.getGameMgr().getRegion(X * 16, Z * 16);
+            Region region1 = plugin.getGameMgr().getRegion(chunkX * 16, chunkZ * 16);
             if (region1 == null) {
                 if (DEBUG)
                     plugin.getLogger().info("DEBUG: non-region");
                 return;
             }
             // Check max coords of this chunk
-            Region region2 = plugin.getGameMgr().getRegion(X * 16 + 15, Z * 16 + 15);
+            Region region2 = plugin.getGameMgr().getRegion(chunkX * 16 + 15, chunkZ * 16 + 15);
             if (region2 == null || region1 != region2) {
                 if (DEBUG)
                     plugin.getLogger().info("DEBUG: non-region");
                 return;
             }
             // If we're in the corner chunk of a region, get the coordinates offset to build the corner beacon
-            int cX = X << 4;
-            int cZ = Z << 4;
+            int cX = chunkX << 4;
+            int cZ = chunkZ << 4;
             int xMin = (int) region1.corners()[0].getX();
             int xMax = (int) region1.corners()[1].getX()-16;
             int zMin = (int) region1.corners()[0].getY();
@@ -133,17 +125,15 @@ public class BeaconPopulator extends BlockPopulator {
             return;
         }
         if (DEBUG)
-            plugin.getLogger().info("DEBUG: Populating chunk: " + source.getX() + ":" + source.getZ());
+            plugin.getLogger().info("DEBUG: Populating chunk: " + chunkX + ":" + chunkZ);
 
         // pseudo-randomly place a beacon
         // Mix all seed components using XOR and bit rotation
-        long seed1 = source.getX();
-        long seed2 = source.getZ();
         long seed3 = System.currentTimeMillis();
         long seed4 = Settings.seedAdjustment;
 
-        long combinedSeed = seed1 ^ 
-                Long.rotateLeft(seed2, 17) ^ 
+        long combinedSeed = (long) chunkX ^
+                Long.rotateLeft(chunkZ, 17) ^
                 Long.rotateLeft(seed3, 31) ^ 
                 Long.rotateLeft(seed4, 42);
 
@@ -151,7 +141,7 @@ public class BeaconPopulator extends BlockPopulator {
         double nd = gen.nextDouble();
 
         // Compare the pseudo-random double generated with the game's beacon distribution threshold        
-        double distribution = plugin.getGameMgr().getRegion(source.getX() << 4, source.getZ() << 4).getGame().getGamedistribution();
+        double distribution = plugin.getGameMgr().getRegion(chunkX << 4, chunkZ << 4).getGame().getGamedistribution();
         if (nd < distribution || cornerBeacon) {
             int x;
             int z;
@@ -168,70 +158,77 @@ public class BeaconPopulator extends BlockPopulator {
             // Check if there is already a beacon here, if so, don't make it again
             // This should never happen...
             if (plugin.getRegister() != null) {
-                if (plugin.getRegister().getBeaconAt((source.getX() * 16 + x), (source.getZ()*16 + z)) != null) {
+                if (plugin.getRegister().getBeaconAt((chunkX * 16 + x), (chunkZ * 16 + z)) != null) {
                     if (DEBUG)
-                        plugin.getLogger().info("DEBUG: Beacon already at " + (source.getX() * 16 + x) + "," + (source.getZ()*16 + z));
+                        plugin.getLogger().info("DEBUG: Beacon already at " + (chunkX * 16 + x) + "," + (chunkZ * 16 + z));
                     return;
                 }
             }
             if (DEBUG)
-                plugin.getLogger().info("DEBUG: Creating beacon at " + (source.getX() * 16 + x) + "," + (source.getZ()*16 + z));
+                plugin.getLogger().info("DEBUG: Creating beacon at " + (chunkX * 16 + x) + "," + (chunkZ * 16 + z));
+
+            // Calculate world coordinates
+            int worldX = chunkX * 16 + x;
+            int worldZ = chunkZ * 16 + z;
 
             // Figure out at which height the beacon should be placed
-            int y = source.getChunkSnapshot().getHighestBlockYAt(x, z);
-            Block b = source.getBlock(x, y, z);
-            if (b.getType().equals(Material.SNOW)) {
+            // Use the world's heightmap via LimitedRegion
+            int y = limitedRegion.getWorld().getHighestBlockYAt(worldX, worldZ, HeightMap.WORLD_SURFACE);
+
+            // Check the block at this position
+            Material blockType = limitedRegion.getType(worldX, y, worldZ);
+            Biome biome = limitedRegion.getBiome(worldX, y, worldZ);
+
+            if (blockType == Material.SNOW) {
                 // There can be snow in trees, so need to move down to ground level
-                while (y > 0 && (source.getBlock(x, y, z).getType().equals(Material.SNOW) 
-                        || source.getBlock(x, y, z).getType().equals(Material.AIR)
-                        || Tag.LEAVES.isTagged(source.getBlock(x, y, z).getType()))) {
+                while (y > limitedRegion.getWorld().getMinHeight() &&
+                        (limitedRegion.getType(worldX, y, worldZ) == Material.SNOW
+                        || limitedRegion.getType(worldX, y, worldZ) == Material.AIR
+                        || Tag.LEAVES.isTagged(limitedRegion.getType(worldX, y, worldZ)))) {
                     y--;
                 }
-                b = source.getBlock(x, y, z);
-            }      
+                blockType = limitedRegion.getType(worldX, y, worldZ);
+                biome = limitedRegion.getBiome(worldX, y, worldZ);
+            }
             // Don't make in the ocean or deep ocean because they are too easy to find.
             // Frozen ocean okay for now.
-            if (b.getBiome().equals(Biome.OCEAN) || b.getBiome().equals(Biome.DEEP_OCEAN)) {
+            if (biome == Biome.OCEAN || biome == Biome.DEEP_OCEAN) {
                 return;
             }
-            while (b.getType().equals(Material.AIR) 
-                    || Tag.LEAVES.isTagged(b.getType())
-                    || b.getType().equals(Material.BROWN_MUSHROOM_BLOCK) 
-                    || b.getType().equals(Material.RED_MUSHROOM_BLOCK) 
-                    || b.getType().equals(Material.OBSIDIAN)) {
-                // if found an obsidian, we only keep going down if it's NOT capping a beacon .. this shouldn't really happen either, since we're regenerating the chunk... 
-                // ... but, just in case, it should help avoid the creation of diamond towers, which were plentiful during testing...
-                if (b.getType().equals(Material.OBSIDIAN) && !b.getRelative(BlockFace.DOWN).getType().equals(Material.BEACON)) {
+            while (blockType == Material.AIR
+                    || Tag.LEAVES.isTagged(blockType)
+                    || blockType == Material.BROWN_MUSHROOM_BLOCK
+                    || blockType == Material.RED_MUSHROOM_BLOCK
+                    || blockType == Material.OBSIDIAN) {
+                // if found an obsidian, we only keep going down if it's NOT capping a beacon
+                if (blockType == Material.OBSIDIAN && limitedRegion.getType(worldX, y - 1, worldZ) != Material.BEACON) {
                     break;
                 }
                 y--;
-                if (y == 0) {
+                if (y <= limitedRegion.getWorld().getMinHeight()) {
                     // Oops, nothing here
                     return;
                 }
-                b = source.getBlock(x, y, z);
+                blockType = limitedRegion.getType(worldX, y, worldZ);
             }
 
             // Else make it into a beacon
-            b.setType(Material.BEACON);
+            limitedRegion.setType(worldX, y, worldZ, Material.BEACON);
             // Add the capstone
-            b.getRelative(BlockFace.UP).setType(Material.OBSIDIAN);
-            // Create the pyramid
-            b = b.getRelative(BlockFace.DOWN);
+            limitedRegion.setType(worldX, y + 1, worldZ, Material.OBSIDIAN);
 
-            // All diamond blocks for now
-            b.setType(Material.DIAMOND_BLOCK);
-            b.getRelative(BlockFace.SOUTH).setType(Material.DIAMOND_BLOCK);
-            b.getRelative(BlockFace.SOUTH_EAST).setType(Material.DIAMOND_BLOCK);
-            b.getRelative(BlockFace.SOUTH_WEST).setType(Material.DIAMOND_BLOCK);
-            b.getRelative(BlockFace.EAST).setType(Material.DIAMOND_BLOCK);
-            b.getRelative(BlockFace.WEST).setType(Material.DIAMOND_BLOCK);
-            b.getRelative(BlockFace.NORTH).setType(Material.DIAMOND_BLOCK);
-            b.getRelative(BlockFace.NORTH_EAST).setType(Material.DIAMOND_BLOCK);
-            b.getRelative(BlockFace.NORTH_WEST).setType(Material.DIAMOND_BLOCK);
+            // Create the pyramid (one level below the beacon)
+            int pyramidY = y - 1;
+
+            // All diamond blocks for now - 3x3 pyramid base
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dz = -1; dz <= 1; dz++) {
+                    limitedRegion.setType(worldX + dx, pyramidY, worldZ + dz, Material.DIAMOND_BLOCK);
+                }
+            }
 
             // Register the beacon
-            plugin.getRegister().addBeacon(null, (source.getX() * 16 + x), y, (source.getZ()*16 + z));
+            plugin.getRegister().addBeacon(null, worldX, y, worldZ);
         }
     }
 }
