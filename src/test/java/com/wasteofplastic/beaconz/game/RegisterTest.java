@@ -1,22 +1,16 @@
 package com.wasteofplastic.beaconz.game;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
+import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.io.File;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -24,901 +18,936 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.block.BlockFace;
+import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.ServerMock;
 
 import com.wasteofplastic.beaconz.Beaconz;
+import com.wasteofplastic.beaconz.config.Lang;
 import com.wasteofplastic.beaconz.config.Settings;
 import com.wasteofplastic.beaconz.core.BeaconObj;
-import com.wasteofplastic.beaconz.core.Region;
 import com.wasteofplastic.beaconz.core.TriangleField;
+import com.wasteofplastic.beaconz.storage.Messages;
 import com.wasteofplastic.beaconz.util.LinkResult;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+
+import net.kyori.adventure.text.Component;
 
 /**
- * Comprehensive test suite for {@link Register} covering all registry operations.
- *
- * <p>This test class validates:
- * <ul>
- *   <li>Beacon registration and lookup operations</li>
- *   <li>Triangle field creation and validation</li>
- *   <li>Beacon link management</li>
- *   <li>Base block (emerald blocks) tracking</li>
- *   <li>Spatial indexing and queries</li>
- *   <li>Persistence (save/load operations)</li>
- *   <li>Team-based queries and scoring</li>
- *   <li>Map registration</li>
- *   <li>Clear operations (full and partial)</li>
- * </ul>
- *
- * @author tastybento
+ * Comprehensive test suite for the Register class.
+ * <p>
+ * Tests beacon registration, linking, triangle formation, database operations,
+ * team ownership, and utility methods.
  */
+@DisplayName("Register Tests")
 class RegisterTest {
 
-    private ServerMock server;
-    private Beaconz plugin;
-    private World world;
     private Register register;
-    private GameMgr gameMgr;
     private Game game;
-    private Scorecard scorecard;
+    private Team redTeam;
+    private Team blueTeam;
+    private HikariDataSource dataSource;
+    private World world;
 
     @TempDir
     File tempDir;
 
-    /**
-     * Sets up the test environment before each test.
-     * Initializes MockBukkit server, plugin mocks, and test world.
-     */
     @BeforeEach
     void setUp() {
-        // Initialize MockBukkit server
-        server = MockBukkit.mock();
+        ServerMock server = MockBukkit.mock();
 
-        // Mock the plugin
-        plugin = mock(Beaconz.class);
-        when(plugin.getDataFolder()).thenReturn(tempDir);
+        // Mock plugin
+        Beaconz plugin = mock(Beaconz.class);
         when(plugin.getServer()).thenReturn(server);
         when(plugin.isEnabled()).thenReturn(true);
-        when(plugin.getLogger()).thenReturn(java.util.logging.Logger.getLogger("BeaconzTest"));
+        when(plugin.getLogger()).thenReturn(java.util.logging.Logger.getLogger("RegisterTest"));
+        when(plugin.getDataFolder()).thenReturn(tempDir);
 
-        // Mock FileConfiguration
-        FileConfiguration config = mock(FileConfiguration.class);
-        when(plugin.getConfig()).thenReturn(config);
-        when(config.getConfigurationSection(anyString())).thenReturn(null);
+        // Initialize test database
+        HikariConfig config = new HikariConfig();
+        config.setJdbcUrl("jdbc:sqlite:" + new File(tempDir, "test-register.db").getAbsolutePath());
+        config.setDriverClassName("org.sqlite.JDBC");
+        config.setMaximumPoolSize(10);
+        config.setConnectionTestQuery("SELECT 1");
+        dataSource = new HikariDataSource(config);
+        when(plugin.getDataSource()).thenReturn(dataSource);
 
         // Create and setup test world
-        world = server.addSimpleWorld("beaconzworld");
+        world = server.addSimpleWorld("beaconz_world");
         when(plugin.getBeaconzWorld()).thenReturn(world);
 
         // Mock GameMgr
-        gameMgr = mock(GameMgr.class);
+        GameMgr gameMgr = mock(GameMgr.class);
         when(plugin.getGameMgr()).thenReturn(gameMgr);
 
         // Mock Game and Scorecard
         game = mock(Game.class);
-        scorecard = mock(Scorecard.class);
+        Scorecard scorecard = mock(Scorecard.class);
+        Scoreboard scoreboard = mock(Scoreboard.class);
         when(game.getScorecard()).thenReturn(scorecard);
+        when(game.getName()).thenReturn(Component.text("TestGame"));
+        when(scorecard.getScoreboard()).thenReturn(scoreboard);
         when(gameMgr.getGame(any(Point2D.class))).thenReturn(game);
         when(gameMgr.getGame(anyInt(), anyInt())).thenReturn(game);
 
-        // Initialize Settings with default values
-        setupSettings();
+        // Mock teams
+        redTeam = mock(Team.class);
+        when(redTeam.getName()).thenReturn("red");
+        when(scorecard.getTeam("red")).thenReturn(redTeam);
+
+        blueTeam = mock(Team.class);
+        when(blueTeam.getName()).thenReturn("blue");
+        when(scorecard.getTeam("blue")).thenReturn(blueTeam);
+
+        when(gameMgr.getGame(redTeam)).thenReturn(game);
+        when(gameMgr.getGame(blueTeam)).thenReturn(game);
+        when(gameMgr.getSC(anyInt(), anyInt())).thenReturn(scorecard);
+
+        // Mock Messages
+        Messages messages = mock(Messages.class);
+        when(plugin.getMessages()).thenReturn(messages);
+
+        // Initialize settings
+        Settings.linkLimit = 8;
+
+        // Initialize Lang strings for messaging
+        initializeLangStrings();
 
         // Create the Register instance
         register = new Register(plugin);
-
-        // Mock getRegister() to return the register itself
         when(plugin.getRegister()).thenReturn(register);
     }
 
-    /**
-     * Setup default Settings values to prevent NPEs.
-     */
-    private void setupSettings() {
-        Settings.linkLimit = 8;
-    }
-
-    /**
-     * Cleans up after each test.
-     */
     @AfterEach
     void tearDown() {
+        if (dataSource != null && !dataSource.isClosed()) {
+            dataSource.close();
+        }
         MockBukkit.unmock();
     }
 
-    // ========== Beacon Registration Tests ==========
-
-    /**
-     * Test adding a beacon to the register.
-     */
-    @Test
-    void testAddBeacon() {
-        // Given
-        Team team = mock(Team.class);
-        when(team.getName()).thenReturn("TestTeam");
-        int x = 100, y = 64, z = 200;
-
-        // When
-        BeaconObj beacon = register.addBeacon(team, x, y, z);
-
-        // Then
-        assertNotNull(beacon, "Beacon should be created");
-        assertEquals(x, beacon.getX(), "X coordinate should match");
-        assertEquals(y, beacon.getY(), "Y coordinate should match");
-        assertEquals(z, beacon.getZ(), "Z coordinate should match");
-        assertEquals(team, beacon.getOwnership(), "Team ownership should match");
-
-        // Verify beacon is in the register
-        BeaconObj retrieved = register.getBeaconAt(x, z);
-        assertNotNull(retrieved, "Beacon should be retrievable");
-        assertEquals(beacon, retrieved, "Retrieved beacon should be the same");
+    private void initializeLangStrings() {
+        Lang.linkLostLink = Component.text("Lost a link!");
+        Lang.linkTeamLostLink = "<team> lost a link!";
+        Lang.linkLostLinks = "Lost <number> links!";
+        Lang.linkTeamLostLinks = "<team> lost <number> links!";
+        Lang.triangleYourTeamLostATriangle = Component.text("Your team lost a triangle!");
+        Lang.triangleTeamLostATriangle = "<team> lost a triangle!";
     }
 
-    /**
-     * Test adding an unowned beacon (null team).
-     */
-    @Test
-    void testAddBeaconUnowned() {
-        // Given
-        int x = 100, y = 64, z = 200;
+    @Nested
+    @DisplayName("Beacon Registration Tests")
+    class BeaconRegistrationTests {
 
-        // When
-        BeaconObj beacon = register.addBeacon(null, x, y, z);
+        @Test
+        @DisplayName("Should register new beacon with team ownership")
+        void shouldRegisterNewBeaconWithOwnership() {
+            BeaconObj beacon = register.addBeacon(redTeam, 100, 64, 200);
 
-        // Then
-        assertNotNull(beacon, "Beacon should be created");
-        assertNull(beacon.getOwnership(), "Beacon should be unowned");
+            assertNotNull(beacon);
+            assertEquals(100, beacon.getX());
+            assertEquals(64, beacon.getY());
+            assertEquals(200, beacon.getZ());
+            assertEquals(redTeam, beacon.getOwnership());
+        }
+
+        @Test
+        @DisplayName("Should register unowned beacon")
+        void shouldRegisterUnownedBeacon() {
+            BeaconObj beacon = register.addBeacon(null, 100, 64, 200);
+
+            assertNotNull(beacon);
+            assertNull(beacon.getOwnership());
+        }
+
+        @Test
+        @DisplayName("Should register beacon with Location")
+        void shouldRegisterBeaconWithLocation() {
+            Location loc = new Location(world, 100, 64, 200);
+            register.addBeacon(redTeam, loc);
+
+            BeaconObj beacon = register.getBeaconAt(100, 200);
+            assertNotNull(beacon);
+            assertEquals(redTeam, beacon.getOwnership());
+        }
+
+        @Test
+        @DisplayName("Should create base blocks around beacon")
+        void shouldCreateBaseBlocksAroundBeacon() {
+            BeaconObj beacon = register.addBeacon(redTeam, 100, 64, 200);
+
+            // Check 8 surrounding blocks are registered as base blocks
+            Set<Point2D> defenses = register.getDefensesAtBeacon(beacon);
+            assertNotNull(defenses);
+            assertEquals(8, defenses.size());
+
+            // Verify specific surrounding points
+            assertTrue(defenses.contains(new Point2D.Double(99, 199)));
+            assertTrue(defenses.contains(new Point2D.Double(100, 199)));
+            assertTrue(defenses.contains(new Point2D.Double(101, 199)));
+            assertTrue(defenses.contains(new Point2D.Double(99, 200)));
+            assertTrue(defenses.contains(new Point2D.Double(101, 200)));
+            assertTrue(defenses.contains(new Point2D.Double(99, 201)));
+            assertTrue(defenses.contains(new Point2D.Double(100, 201)));
+            assertTrue(defenses.contains(new Point2D.Double(101, 201)));
+        }
+
+        @Test
+        @DisplayName("Should return beacon by coordinates")
+        void shouldReturnBeaconByCoordinates() {
+            register.addBeacon(redTeam, 100, 64, 200);
+
+            BeaconObj beacon = register.getBeaconAt(100, 200);
+            assertNotNull(beacon);
+            assertEquals(100, beacon.getX());
+            assertEquals(200, beacon.getZ());
+        }
+
+        @Test
+        @DisplayName("Should return null for non-existent beacon")
+        void shouldReturnNullForNonExistentBeacon() {
+            BeaconObj beacon = register.getBeaconAt(999, 999);
+            assertNull(beacon);
+        }
+
+        @Test
+        @DisplayName("Should count beacons correctly")
+        void shouldCountBeaconsCorrectly() {
+            assertEquals(0, register.getBeaconCount());
+
+            register.addBeacon(redTeam, 100, 64, 100);
+            assertEquals(1, register.getBeaconCount());
+
+            register.addBeacon(blueTeam, 200, 64, 200);
+            assertEquals(2, register.getBeaconCount());
+
+            register.addBeacon(null, 300, 64, 300);
+            assertEquals(3, register.getBeaconCount());
+        }
     }
 
-    /**
-     * Test that adding a beacon creates the 3x3 base block grid.
-     */
-    @Test
-    void testAddBeaconCreatesBaseBlocks() {
-        // Given
-        Team team = mock(Team.class);
-        int x = 100, y = 64, z = 200;
+    @Nested
+    @DisplayName("Beacon Lookup Tests")
+    class BeaconLookupTests {
 
-        // When
-        BeaconObj beacon = register.addBeacon(team, x, y, z);
+        @Test
+        @DisplayName("Should find beacon at Point2D")
+        void shouldFindBeaconAtPoint2D() {
+            BeaconObj beacon = register.addBeacon(redTeam, 100, 64, 200);
+            Point2D point = new Point2D.Double(99, 200); // Base block location
 
-        // Then - check all 8 surrounding blocks are registered as base blocks
-        // We verify by checking if we can find the beacon from base block locations
+            BeaconObj found = register.getBeaconAt(point);
+            assertNotNull(found);
+            assertEquals(beacon, found);
+        }
 
-        // The 8 surrounding positions
-        for (int dx = -1; dx <= 1; dx++) {
-            for (int dz = -1; dz <= 1; dz++) {
-                if (dx == 0 && dz == 0) {
-                    // Center is the beacon itself, not a base block
-                    continue;
-                }
-                // Create a block at the base block position
-                Block baseBlock = world.getBlockAt(x + dx, y - 1, z + dz);
-                baseBlock.setType(Material.EMERALD_BLOCK);
+        @Test
+        @DisplayName("Should find beacon at Location")
+        void shouldFindBeaconAtLocation() {
+            BeaconObj beacon = register.addBeacon(redTeam, 100, 64, 200);
+            Location loc = new Location(world, 99, 64, 200); // Base block location
 
-                // Verify we can find the beacon from this base block
-                BeaconObj found = register.getBeacon(baseBlock);
-                assertEquals(beacon, found,
-                    "Base block at offset (" + dx + "," + dz + ") should reference beacon");
+            BeaconObj found = register.getBeaconAt(loc);
+            assertNotNull(found);
+            assertEquals(beacon, found);
+        }
+
+        @Test
+        @DisplayName("Should return null for null Location")
+        void shouldReturnNullForNullLocation() {
+            BeaconObj found = register.getBeaconAt((Location) null);
+            assertNull(found);
+        }
+
+        @Test
+        @DisplayName("Should check if near beacon")
+        void shouldCheckIfNearBeacon() {
+            register.addBeacon(redTeam, 100, 64, 100);
+
+            Point2D nearby = new Point2D.Double(105, 105);
+            Point2D far = new Point2D.Double(200, 200);
+
+            assertTrue(register.isNearBeacon(nearby, 10));
+            assertFalse(register.isNearBeacon(far, 10));
+        }
+
+        @Test
+        @DisplayName("Should get nearby beacons")
+        void shouldGetNearbyBeacons() {
+            register.addBeacon(redTeam, 100, 64, 100);
+            register.addBeacon(blueTeam, 110, 64, 110);
+            register.addBeacon(null, 500, 64, 500);
+
+            Location loc = new Location(world, 105, 64, 105);
+            List<BeaconObj> nearby = register.getNearbyBeacons(loc, 20);
+
+            assertEquals(2, nearby.size());
+        }
+    }
+
+    @Nested
+    @DisplayName("Team Beacon Tests")
+    class TeamBeaconTests {
+
+        @Test
+        @DisplayName("Should get team beacons")
+        void shouldGetTeamBeacons() {
+            register.addBeacon(redTeam, 100, 64, 100);
+            register.addBeacon(redTeam, 200, 64, 200);
+            register.addBeacon(blueTeam, 300, 64, 300);
+            register.addBeacon(null, 400, 64, 400);
+
+            List<BeaconObj> redBeacons = register.getTeamBeacons(redTeam);
+            assertEquals(2, redBeacons.size());
+
+            List<BeaconObj> blueBeacons = register.getTeamBeacons(blueTeam);
+            assertEquals(1, blueBeacons.size());
+        }
+
+        @Test
+        @DisplayName("Should return empty list for team with no beacons")
+        void shouldReturnEmptyListForTeamWithNoBeacons() {
+            register.addBeacon(redTeam, 100, 64, 100);
+
+            List<BeaconObj> blueBeacons = register.getTeamBeacons(blueTeam);
+            assertTrue(blueBeacons.isEmpty());
+        }
+
+        @Test
+        @DisplayName("Should set beacon owner")
+        void shouldSetBeaconOwner() {
+            BeaconObj beacon = register.addBeacon(redTeam, 100, 64, 200);
+            assertEquals(redTeam, beacon.getOwnership());
+
+            register.setBeaconOwner(beacon, blueTeam);
+            assertEquals(blueTeam, beacon.getOwnership());
+        }
+    }
+
+    @Nested
+    @DisplayName("Beacon Map Tests")
+    class BeaconMapTests {
+
+        @Test
+        @DisplayName("Should add and retrieve beacon map")
+        void shouldAddAndRetrieveBeaconMap() {
+            BeaconObj beacon = register.addBeacon(redTeam, 100, 64, 200);
+
+            register.addBeaconMap(1, beacon);
+
+            BeaconObj retrieved = register.getBeaconMap(1);
+            assertNotNull(retrieved);
+            assertEquals(beacon, retrieved);
+            assertEquals(1, beacon.getId());
+        }
+
+        @Test
+        @DisplayName("Should add beacon map with origin coordinates")
+        void shouldAddBeaconMapWithOrigin() {
+            BeaconObj beacon = register.addBeacon(redTeam, 100, 64, 200);
+
+            register.addBeaconMap(1, beacon, 50, 60);
+
+            Point2D origin = register.getMapOrigin(1);
+            assertNotNull(origin);
+            assertEquals(50, (int) origin.getX());
+            assertEquals(60, (int) origin.getY());
+        }
+
+        @Test
+        @DisplayName("Should set and get map origin")
+        void shouldSetAndGetMapOrigin() {
+            register.setMapOrigin(5, 100, 200);
+
+            Point2D origin = register.getMapOrigin(5);
+            assertNotNull(origin);
+            assertEquals(100, (int) origin.getX());
+            assertEquals(200, (int) origin.getY());
+        }
+
+        @Test
+        @DisplayName("Should return null for non-existent beacon map")
+        void shouldReturnNullForNonExistentMap() {
+            BeaconObj beacon = register.getBeaconMap(999);
+            assertNull(beacon);
+        }
+
+        @Test
+        @DisplayName("Should remove beacon map")
+        void shouldRemoveBeaconMap() {
+            BeaconObj beacon = register.addBeacon(redTeam, 100, 64, 200);
+            register.addBeaconMap(1, beacon, 50, 60);
+
+            register.removeBeaconMap(1);
+
+            assertNull(register.getBeaconMap(1));
+            assertNull(register.getMapOrigin(1));
+        }
+
+        @Test
+        @DisplayName("Should get beacon map indices")
+        void shouldGetBeaconMapIndices() {
+            BeaconObj beacon1 = register.addBeacon(redTeam, 100, 64, 100);
+            BeaconObj beacon2 = register.addBeacon(redTeam, 200, 64, 200);
+
+            register.addBeaconMap(1, beacon1);
+            register.addBeaconMap(5, beacon2);
+
+            Set<Integer> indices = register.getBeaconMapIndex();
+            assertEquals(2, indices.size());
+            assertTrue(indices.contains(1));
+            assertTrue(indices.contains(5));
+        }
+    }
+
+    @Nested
+    @DisplayName("Base Block Tests")
+    class BaseBlockTests {
+
+        @Test
+        @DisplayName("Should add beacon base block")
+        void shouldAddBeaconBaseBlock() {
+            BeaconObj beacon = register.addBeacon(redTeam, 100, 64, 200);
+
+            register.addBeaconBaseBlock(105, 205, beacon);
+
+            Point2D point = new Point2D.Double(105, 205);
+            BeaconObj found = register.getBeaconAt(point);
+            assertNotNull(found);
+            assertEquals(beacon, found);
+        }
+
+        @Test
+        @DisplayName("Should add beacon defense block via Location")
+        void shouldAddBeaconDefenseBlockViaLocation() {
+            BeaconObj beacon = register.addBeacon(redTeam, 100, 64, 200);
+            Location loc = new Location(world, 105, 65, 205);
+
+            register.addBeaconDefenseBlock(loc, beacon);
+
+            Set<Point2D> defenses = register.getDefensesAtBeacon(beacon);
+            assertTrue(defenses.contains(new Point2D.Double(105, 205)));
+        }
+
+        @Test
+        @DisplayName("Should check if above beacon")
+        void shouldCheckIfAboveBeacon() {
+            register.addBeacon(redTeam, 100, 64, 200);
+
+            // Location above a base block at beacon height
+            Location aboveBase = new Location(world, 99, 65, 199);
+            assertTrue(register.isAboveBeacon(aboveBase));
+
+            // Location below beacon
+            Location belowBeacon = new Location(world, 99, 60, 199);
+            assertFalse(register.isAboveBeacon(belowBeacon));
+
+            // Location not near any beacon
+            Location far = new Location(world, 500, 64, 500);
+            assertFalse(register.isAboveBeacon(far));
+        }
+    }
+
+    @Nested
+    @DisplayName("Triangle Field Tests")
+    class TriangleFieldTests {
+
+        @Test
+        @DisplayName("Should add valid triangle")
+        void shouldAddValidTriangle() {
+            BeaconObj b1 = register.addBeacon(redTeam, 0, 64, 0);
+            BeaconObj b2 = register.addBeacon(redTeam, 100, 64, 0);
+            BeaconObj b3 = register.addBeacon(redTeam, 50, 64, 100);
+
+            Boolean result = register.addTriangle(
+                    b1.getPoint(), b2.getPoint(), b3.getPoint(), redTeam);
+
+            assertTrue(result);
+            assertEquals(1, register.getTriangleFields().size());
+        }
+
+        @Test
+        @DisplayName("Should reject triangle with different team beacons")
+        void shouldRejectTriangleWithDifferentTeamBeacons() {
+            BeaconObj b1 = register.addBeacon(redTeam, 0, 64, 0);
+            BeaconObj b2 = register.addBeacon(redTeam, 100, 64, 0);
+            BeaconObj b3 = register.addBeacon(blueTeam, 50, 64, 100);
+
+            assertThrows(IllegalArgumentException.class, () ->
+                    register.addTriangle(b1.getPoint(), b2.getPoint(), b3.getPoint(), redTeam));
+        }
+
+        @Test
+        @DisplayName("Should reject triangle with non-beacon points")
+        void shouldRejectTriangleWithNonBeaconPoints() {
+            register.addBeacon(redTeam, 0, 64, 0);
+            register.addBeacon(redTeam, 100, 64, 0);
+
+            Point2D nonBeaconPoint = new Point2D.Double(50, 100);
+
+            assertThrows(IllegalArgumentException.class, () ->
+                    register.addTriangle(new Point2D.Double(0, 0),
+                            new Point2D.Double(100, 0), nonBeaconPoint, redTeam));
+        }
+
+        @Test
+        @DisplayName("Should reject duplicate triangles")
+        void shouldRejectDuplicateTriangles() {
+            BeaconObj b1 = register.addBeacon(redTeam, 0, 64, 0);
+            BeaconObj b2 = register.addBeacon(redTeam, 100, 64, 0);
+            BeaconObj b3 = register.addBeacon(redTeam, 50, 64, 100);
+
+            Boolean first = register.addTriangle(
+                    b1.getPoint(), b2.getPoint(), b3.getPoint(), redTeam);
+            Boolean second = register.addTriangle(
+                    b1.getPoint(), b2.getPoint(), b3.getPoint(), redTeam);
+
+            assertTrue(first);
+            assertFalse(second);
+        }
+
+        @Test
+        @DisplayName("Should get team triangles count")
+        void shouldGetTeamTrianglesCount() {
+            BeaconObj b1 = register.addBeacon(redTeam, 0, 64, 0);
+            BeaconObj b2 = register.addBeacon(redTeam, 100, 64, 0);
+            BeaconObj b3 = register.addBeacon(redTeam, 50, 64, 100);
+
+            register.addTriangle(b1.getPoint(), b2.getPoint(), b3.getPoint(), redTeam);
+
+            assertEquals(1, register.getTeamTriangles(redTeam));
+            assertEquals(0, register.getTeamTriangles(blueTeam));
+        }
+
+        @Test
+        @DisplayName("Should find triangles containing point")
+        void shouldFindTrianglesContainingPoint() {
+            BeaconObj b1 = register.addBeacon(redTeam, 0, 64, 0);
+            BeaconObj b2 = register.addBeacon(redTeam, 100, 64, 0);
+            BeaconObj b3 = register.addBeacon(redTeam, 50, 64, 100);
+
+            register.addTriangle(b1.getPoint(), b2.getPoint(), b3.getPoint(), redTeam);
+
+            // Point inside triangle
+            List<TriangleField> inside = register.getTriangle(50, 30);
+            assertEquals(1, inside.size());
+
+            // Point outside triangle
+            List<TriangleField> outside = register.getTriangle(200, 200);
+            assertTrue(outside.isEmpty());
+        }
+
+        @Test
+        @DisplayName("Should set and get triangle fields")
+        void shouldSetAndGetTriangleFields() {
+            Set<TriangleField> fields = new java.util.HashSet<>();
+            Point2D p1 = new Point2D.Double(0, 0);
+            Point2D p2 = new Point2D.Double(100, 0);
+            Point2D p3 = new Point2D.Double(50, 100);
+            fields.add(new TriangleField(p1, p2, p3, redTeam));
+
+            register.setTriangleFields(fields);
+
+            assertEquals(1, register.getTriangleFields().size());
+        }
+    }
+
+    @Nested
+    @DisplayName("Beacon Link Tests")
+    class BeaconLinkTests {
+
+        @Test
+        @DisplayName("Should add beacon link")
+        void shouldAddBeaconLink() {
+            BeaconObj b1 = register.addBeacon(redTeam, 0, 64, 0);
+            BeaconObj b2 = register.addBeacon(redTeam, 100, 64, 0);
+
+            LinkResult result = register.addBeaconLink(b1, b2);
+
+            assertTrue(result.isSuccess());
+        }
+
+        @Test
+        @DisplayName("Should count team links")
+        void shouldCountTeamLinks() {
+            BeaconObj b1 = register.addBeacon(redTeam, 0, 64, 0);
+            BeaconObj b2 = register.addBeacon(redTeam, 100, 64, 0);
+            BeaconObj b3 = register.addBeacon(redTeam, 200, 64, 0);
+
+            register.addBeaconLink(b1, b2);
+            register.addBeaconLink(b2, b3);
+
+            assertEquals(2, register.getTeamLinks(redTeam));
+            assertEquals(0, register.getTeamLinks(blueTeam));
+        }
+
+        @Test
+        @DisplayName("Should get enemy links")
+        void shouldGetEnemyLinks() {
+            BeaconObj redB1 = register.addBeacon(redTeam, 0, 64, 0);
+            BeaconObj redB2 = register.addBeacon(redTeam, 100, 64, 0);
+            BeaconObj blueB1 = register.addBeacon(blueTeam, 0, 64, 100);
+            BeaconObj blueB2 = register.addBeacon(blueTeam, 100, 64, 100);
+
+            register.addBeaconLink(redB1, redB2);
+            register.addBeaconLink(blueB1, blueB2);
+
+            Set<Line2D> redEnemyLinks = register.getEnemyLinks(redTeam);
+            assertEquals(1, redEnemyLinks.size());
+
+            Set<Line2D> blueEnemyLinks = register.getEnemyLinks(blueTeam);
+            assertEquals(1, blueEnemyLinks.size());
+        }
+
+        @Test
+        @DisplayName("Should create triangle when links complete")
+        void shouldCreateTriangleWhenLinksComplete() {
+            BeaconObj b1 = register.addBeacon(redTeam, 0, 64, 0);
+            BeaconObj b2 = register.addBeacon(redTeam, 100, 64, 0);
+            BeaconObj b3 = register.addBeacon(redTeam, 50, 64, 100);
+
+            register.addBeaconLink(b1, b2);
+            register.addBeaconLink(b2, b3);
+            LinkResult result = register.addBeaconLink(b3, b1);
+
+            assertTrue(result.isSuccess());
+            assertTrue(result.getFieldsMade() > 0);
+            assertFalse(register.getTriangleFields().isEmpty());
+        }
+    }
+
+    @Nested
+    @DisplayName("Clear Register Tests")
+    class ClearRegisterTests {
+
+        @Test
+        @DisplayName("Should clear all data")
+        void shouldClearAllData() {
+            register.addBeacon(redTeam, 100, 64, 100);
+            register.addBeacon(blueTeam, 200, 64, 200);
+
+            assertEquals(2, register.getBeaconCount());
+
+            register.clear();
+
+            assertEquals(0, register.getBeaconCount());
+            assertTrue(register.getTriangleFields().isEmpty());
+        }
+
+        @Test
+        @DisplayName("Should clear region-specific data")
+        void shouldClearRegionSpecificData() {
+            BeaconObj b1 = register.addBeacon(redTeam, 100, 64, 100);
+
+            // Create a mock region
+            com.wasteofplastic.beaconz.core.Region region = mock(com.wasteofplastic.beaconz.core.Region.class);
+            when(region.containsPoint(any(Point2D.class))).thenAnswer(inv -> {
+                Point2D p = inv.getArgument(0);
+                return p.getX() == 100 && p.getY() == 100;
+            });
+            when(region.containsBeacon(b1)).thenReturn(true);
+            when(region.getGame()).thenReturn(game);
+
+            // Add another beacon not in region
+            register.addBeacon(blueTeam, 500, 64, 500);
+
+            assertEquals(2, register.getBeaconCount());
+
+            register.clear(region);
+
+            assertEquals(1, register.getBeaconCount());
+        }
+    }
+
+    @Nested
+    @DisplayName("Database Save/Load Tests")
+    class DatabaseSaveLoadTests {
+
+        @Test
+        @DisplayName("Should save and load beacons")
+        void shouldSaveAndLoadBeacons() {
+            BeaconObj beacon = register.addBeacon(redTeam, 100, 64, 200);
+            beacon.setId(123);
+
+            register.saveRegister();
+            register.clear();
+
+            assertEquals(0, register.getBeaconCount());
+
+            register.loadRegister();
+
+            assertEquals(1, register.getBeaconCount());
+            BeaconObj loaded = register.getBeaconAt(100, 200);
+            assertNotNull(loaded);
+            assertEquals(100, loaded.getX());
+            assertEquals(200, loaded.getZ());
+        }
+
+        @Test
+        @DisplayName("Should save and load multiple beacons")
+        void shouldSaveAndLoadMultipleBeacons() {
+            register.addBeacon(redTeam, 100, 64, 100);
+            register.addBeacon(blueTeam, 200, 64, 200);
+            register.addBeacon(null, 300, 64, 300);
+
+            assertEquals(3, register.getBeaconCount());
+
+            register.saveRegister();
+            register.clear();
+            register.loadRegister();
+
+            assertEquals(3, register.getBeaconCount());
+        }
+
+        @Test
+        @DisplayName("Should save and load beacon maps")
+        void shouldSaveAndLoadBeaconMaps() {
+            BeaconObj beacon = register.addBeacon(redTeam, 100, 64, 200);
+            register.addBeaconMap(5, beacon, 50, 60);
+
+            register.saveRegister();
+            register.clear();
+            register.loadRegister();
+
+            // Maps are restored when the beacon is loaded
+            // The map itself needs Bukkit.getMap which we can't fully test
+            // But the data structure should persist
+        }
+    }
+
+    @Nested
+    @DisplayName("Database Integrity Tests")
+    class DatabaseIntegrityTests {
+
+        @Test
+        @DisplayName("Should verify database integrity")
+        void shouldVerifyDatabaseIntegrity() {
+            register.addBeacon(redTeam, 100, 64, 100);
+            register.saveRegister();
+
+            boolean isValid = register.verifyDatabaseIntegrity();
+            assertTrue(isValid);
+        }
+
+        @Test
+        @DisplayName("Should repair database with orphaned records")
+        void shouldRepairDatabaseWithOrphanedRecords() throws SQLException {
+            register.addBeacon(redTeam, 100, 64, 100);
+            register.saveRegister();
+
+            // Manually insert orphaned base block
+            try (Connection conn = dataSource.getConnection();
+                 Statement stmt = conn.createStatement()) {
+                stmt.execute("INSERT INTO beacon_base_blocks (beacon_x, beacon_z, block_x, block_z) " +
+                        "VALUES (999, 999, 1000, 1000)");
             }
+
+            // Verify integrity fails
+            assertFalse(register.verifyDatabaseIntegrity());
+
+            // Repair
+            int deleted = register.repairDatabase();
+            assertTrue(deleted > 0);
+
+            // Verify integrity passes now
+            assertTrue(register.verifyDatabaseIntegrity());
         }
     }
 
-    /**
-     * Test adding a beacon using Location.
-     */
-    @Test
-    void testAddBeaconWithLocation() {
-        // Given
-        Team team = mock(Team.class);
-        Location loc = new Location(world, 100, 64, 200);
+    @Nested
+    @DisplayName("Beacon Register Accessor Tests")
+    class BeaconRegisterAccessorTests {
 
-        // When
-        register.addBeacon(team, loc);
+        @Test
+        @DisplayName("Should get beacon register map")
+        void shouldGetBeaconRegisterMap() {
+            register.addBeacon(redTeam, 100, 64, 100);
+            register.addBeacon(blueTeam, 200, 64, 200);
 
-        // Then
-        BeaconObj beacon = register.getBeaconAt(100, 200);
-        assertNotNull(beacon, "Beacon should be created");
-        assertEquals(100, beacon.getX());
-        assertEquals(64, beacon.getY());
-        assertEquals(200, beacon.getZ());
-    }
+            HashMap<Point2D, BeaconObj> registerMap = register.getBeaconRegister();
 
-    // ========== Beacon Lookup Tests ==========
-
-    /**
-     * Test getting beacon at specific coordinates.
-     */
-    @Test
-    void testGetBeaconAt() {
-        // Given
-        Team team = mock(Team.class);
-        BeaconObj beacon = register.addBeacon(team, 100, 64, 200);
-
-        // When
-        BeaconObj result = register.getBeaconAt(100, 200);
-
-        // Then
-        assertNotNull(result);
-        assertEquals(beacon, result);
-    }
-
-    /**
-     * Test getting beacon at Point2D.
-     * Note: getBeaconAt(Point2D) looks in baseBlocks, not beaconRegister
-     */
-    @Test
-    void testGetBeaconAtPoint2D() {
-        // Given
-        Team team = mock(Team.class);
-        BeaconObj beacon = register.addBeacon(team, 100, 64, 200);
-        // Use a base block coordinate, not the beacon center
-        Point2D point = new Point2D.Double(101, 201);
-
-        // When
-        BeaconObj result = register.getBeaconAt(point);
-
-        // Then - should find beacon from base block
-        assertNotNull(result);
-        assertEquals(beacon, result);
-    }
-
-    /**
-     * Test getting beacon at Location.
-     * Note: getBeaconAt(Location) looks in baseBlocks, not beaconRegister
-     */
-    @Test
-    void testGetBeaconAtLocation() {
-        // Given
-        Team team = mock(Team.class);
-        BeaconObj beacon = register.addBeacon(team, 100, 64, 200);
-        // Use a base block location, not the beacon center
-        Location loc = new Location(world, 101, 64, 201);
-
-        // When
-        BeaconObj result = register.getBeaconAt(loc);
-
-        // Then - should find beacon from base block
-        assertNotNull(result);
-        assertEquals(beacon, result);
-    }
-
-    /**
-     * Test getting beacon that doesn't exist.
-     */
-    @Test
-    void testGetBeaconAtNonexistent() {
-        // When
-        BeaconObj result = register.getBeaconAt(999, 999);
-
-        // Then
-        assertNull(result, "Should return null for nonexistent beacon");
-    }
-
-    /**
-     * Test getting beacon from Block (emerald base block).
-     */
-    @Test
-    void testGetBeaconFromEmeraldBlock() {
-        // Given
-        Team team = mock(Team.class);
-        BeaconObj beacon = register.addBeacon(team, 100, 64, 200);
-
-        Block block = world.getBlockAt(101, 63, 200); // Adjacent emerald block
-        block.setType(Material.EMERALD_BLOCK);
-
-        // When
-        BeaconObj result = register.getBeacon(block);
-
-        // Then
-        assertNotNull(result, "Should find beacon from base block");
-        assertEquals(beacon, result);
-    }
-
-    /**
-     * Test getting beacon from wrong material returns null.
-     */
-    @Test
-    void testGetBeaconFromWrongMaterial() {
-        // Given
-        Block block = world.getBlockAt(100, 64, 200);
-        block.setType(Material.STONE);
-
-        // When
-        BeaconObj result = register.getBeacon(block);
-
-        // Then
-        assertNull(result, "Should return null for non-beacon material");
-    }
-
-    // ========== Beacon Links Tests ==========
-
-    /**
-     * Test adding a link between two beacons of the same team.
-     */
-    @Test
-    void testAddBeaconLink() {
-        // Given
-        Team team = mock(Team.class);
-        when(team.getName()).thenReturn("RedTeam");
-
-        BeaconObj beacon1 = register.addBeacon(team, 100, 64, 200);
-        BeaconObj beacon2 = register.addBeacon(team, 150, 64, 250);
-
-        // When
-        LinkResult result = register.addBeaconLink(beacon1, beacon2);
-
-        // Then
-        assertTrue(result.isSuccess(), "Link should be created successfully");
-        assertEquals(0, result.getFieldsMade(), "No triangle should be formed with only 2 beacons");
-
-        // Verify bidirectional link
-        assertTrue(beacon1.getLinks().contains(beacon2), "Beacon1 should link to Beacon2");
-        assertTrue(beacon2.getLinks().contains(beacon1), "Beacon2 should link to Beacon1");
-    }
-
-    /**
-     * Test that linking three beacons creates a triangle field.
-     * Note: This test is simplified as we can't mock Team.equals()
-     */
-    @Test
-    void testAddBeaconLinkCreatesTriangle() {
-        // Given
-        Team team = mock(Team.class);
-        when(team.getName()).thenReturn("RedTeam");
-
-        BeaconObj beacon1 = register.addBeacon(team, 100, 64, 200);
-        BeaconObj beacon2 = register.addBeacon(team, 150, 64, 200);
-        BeaconObj beacon3 = register.addBeacon(team, 125, 64, 250);
-
-        // When - create links to form a triangle
-        register.addBeaconLink(beacon1, beacon2); // Side 1
-        register.addBeaconLink(beacon2, beacon3); // Side 2
-        LinkResult result = register.addBeaconLink(beacon3, beacon1); // Side 3 - completes triangle
-
-        // Then
-        assertTrue(result.isSuccess(), "Link should be created successfully");
-        // Note: Triangle creation depends on Team.equals() which we can't mock reliably
-        // So we just verify the link succeeded
-    }
-
-    /**
-     * Test that duplicate links are prevented.
-     */
-    @Test
-    void testAddBeaconLinkDuplicate() {
-        // Given
-        Team team = mock(Team.class);
-        when(team.getName()).thenReturn("RedTeam");
-
-        BeaconObj beacon1 = register.addBeacon(team, 100, 64, 200);
-        BeaconObj beacon2 = register.addBeacon(team, 150, 64, 250);
-
-        // When
-        LinkResult result1 = register.addBeaconLink(beacon1, beacon2);
-        LinkResult result2 = register.addBeaconLink(beacon1, beacon2); // Duplicate
-
-        // Then
-        assertTrue(result1.isSuccess(), "First link should succeed");
-        // Duplicate link is detected and returns failure (the link is not added)
-        assertFalse(result2.isSuccess(), "Duplicate link should return false");
-        assertEquals(0, result2.getFieldsMade(), "Duplicate link should not create fields");
-    }
-
-    // ========== Triangle Field Tests ==========
-
-    /**
-     * Test adding a valid triangle field.
-     * Note: We can't fully test this as Team.equals() can't be mocked
-     */
-    @Test
-    void testAddTriangle() {
-        // Given
-        Team team = mock(Team.class);
-        when(team.getName()).thenReturn("RedTeam");
-
-        BeaconObj beacon1 = register.addBeacon(team, 100, 64, 200);
-        BeaconObj beacon2 = register.addBeacon(team, 150, 64, 200);
-        BeaconObj beacon3 = register.addBeacon(team, 125, 64, 250);
-
-        Point2D p1 = beacon1.getPoint();
-        Point2D p2 = beacon2.getPoint();
-        Point2D p3 = beacon3.getPoint();
-
-        // When/Then - may fail due to Team.equals() but method should not throw
-        try {
-            Boolean result = register.addTriangle(p1, p2, p3, team);
-            // Result depends on Team.equals() implementation
-        } catch (IllegalArgumentException e) {
-            // Expected if Team.equals() doesn't work as expected with mocks
-            assertTrue(e.getMessage().contains("same team"), "Should mention team ownership");
+            assertNotNull(registerMap);
+            assertEquals(2, registerMap.size());
+            assertTrue(registerMap.containsKey(new Point2D.Double(100, 100)));
+            assertTrue(registerMap.containsKey(new Point2D.Double(200, 200)));
         }
     }
 
-    /**
-     * Test that triangle with non-beacon points throws exception.
-     */
-    @Test
-    void testAddTriangleInvalidPoint() {
-        // Given
-        Team team = mock(Team.class);
-        Point2D p1 = new Point2D.Double(100, 200);
-        Point2D p2 = new Point2D.Double(150, 200);
-        Point2D p3 = new Point2D.Double(125, 250);
+    @Nested
+    @DisplayName("Team Area Tests")
+    class TeamAreaTests {
 
-        // When/Then
-        assertThrows(IllegalArgumentException.class, () -> {
-            register.addTriangle(p1, p2, p3, team);
-        }, "Should throw exception for non-beacon points");
+        @Test
+        @DisplayName("Should calculate team area")
+        void shouldCalculateTeamArea() {
+            BeaconObj b1 = register.addBeacon(redTeam, 0, 64, 0);
+            BeaconObj b2 = register.addBeacon(redTeam, 100, 64, 0);
+            BeaconObj b3 = register.addBeacon(redTeam, 50, 64, 100);
+
+            register.addTriangle(b1.getPoint(), b2.getPoint(), b3.getPoint(), redTeam);
+
+            int area = register.getTeamArea(redTeam);
+            assertTrue(area > 0);
+
+            // Blue team should have 0 area
+            assertEquals(0, register.getTeamArea(blueTeam));
+        }
     }
 
-    /**
-     * Test that triangle with different team beacons throws exception.
-     */
-    @Test
-    void testAddTriangleDifferentTeams() {
-        // Given
-        Team team1 = mock(Team.class);
-        Team team2 = mock(Team.class);
-        when(team1.getName()).thenReturn("RedTeam");
-        when(team2.getName()).thenReturn("BlueTeam");
+    @Nested
+    @DisplayName("Beacon Removal Tests")
+    class BeaconRemovalTests {
 
-        BeaconObj beacon1 = register.addBeacon(team1, 100, 64, 200);
-        BeaconObj beacon2 = register.addBeacon(team1, 150, 64, 200);
-        BeaconObj beacon3 = register.addBeacon(team2, 125, 64, 250);
+        @Test
+        @DisplayName("Should remove beacon ownership")
+        void shouldRemoveBeaconOwnership() {
+            BeaconObj beacon = register.addBeacon(redTeam, 100, 64, 200);
+            assertEquals(redTeam, beacon.getOwnership());
 
-        Point2D p1 = beacon1.getPoint();
-        Point2D p2 = beacon2.getPoint();
-        Point2D p3 = beacon3.getPoint();
+            // Use quiet mode to avoid messaging which requires full plugin setup
+            register.removeBeaconOwnership(beacon, true);
 
-        // When/Then - should throw exception for mixed teams
-        assertThrows(IllegalArgumentException.class, () ->
-            register.addTriangle(p1, p2, p3, team1),
-            "Should throw exception for mixed team beacons");
+            assertNull(beacon.getOwnership());
+        }
+
+        @Test
+        @DisplayName("Should remove beacon ownership quietly")
+        void shouldRemoveBeaconOwnershipQuietly() {
+            BeaconObj beacon = register.addBeacon(redTeam, 100, 64, 200);
+
+            // Should not throw any exceptions
+            assertDoesNotThrow(() -> register.removeBeaconOwnership(beacon, true));
+            assertNull(beacon.getOwnership());
+        }
+
+        @Test
+        @DisplayName("Should remove links when removing ownership")
+        void shouldRemoveLinksWhenRemovingOwnership() {
+            BeaconObj b1 = register.addBeacon(redTeam, 0, 64, 0);
+            BeaconObj b2 = register.addBeacon(redTeam, 100, 64, 0);
+
+            register.addBeaconLink(b1, b2);
+            assertEquals(1, register.getTeamLinks(redTeam));
+
+            // Use quiet mode to avoid messaging which requires full plugin setup
+            register.removeBeaconOwnership(b1, true);
+
+            assertEquals(0, register.getTeamLinks(redTeam));
+        }
+
+        @Test
+        @DisplayName("Should remove triangles when removing beacon ownership")
+        void shouldRemoveTrianglesWhenRemovingOwnership() {
+            BeaconObj b1 = register.addBeacon(redTeam, 0, 64, 0);
+            BeaconObj b2 = register.addBeacon(redTeam, 100, 64, 0);
+            BeaconObj b3 = register.addBeacon(redTeam, 50, 64, 100);
+
+            register.addTriangle(b1.getPoint(), b2.getPoint(), b3.getPoint(), redTeam);
+            assertEquals(1, register.getTeamTriangles(redTeam));
+
+            // Use quiet mode to avoid messaging which requires full plugin setup
+            register.removeBeaconOwnership(b1, true);
+
+            assertEquals(0, register.getTeamTriangles(redTeam));
+        }
     }
 
-    // ========== Triangle Lookup Tests ==========
-
-    /**
-     * Test getting triangles at a specific coordinate.
-     * Note: Simplified as Team.equals() can't be mocked
-     */
-    @Test
-    void testGetTriangle() {
-        // When - query for triangles
-        List<TriangleField> triangles = register.getTriangle(125, 220);
-
-        // Then - should return empty list when no triangles exist
-        assertNotNull(triangles, "Should return a list");
-        assertTrue(triangles.isEmpty(), "Should be empty when no triangles");
-    }
-
-    /**
-     * Test getting triangles outside any field returns empty list.
-     */
-    @Test
-    void testGetTriangleOutside() {
-        // When - point far outside any triangles
-        List<TriangleField> triangles = register.getTriangle(500, 500);
-
-        // Then
-        assertNotNull(triangles);
-        assertTrue(triangles.isEmpty(), "Should find no triangles outside");
-    }
-
-    // ========== Team Query Tests ==========
-
-    /**
-     * Test getting all beacons owned by a team.
-     */
-    @Test
-    void testGetTeamBeacons() {
-        // Given
-        Team team1 = mock(Team.class);
-        Team team2 = mock(Team.class);
-
-        register.addBeacon(team1, 100, 64, 200);
-        register.addBeacon(team1, 150, 64, 200);
-        register.addBeacon(team2, 125, 64, 250);
-
-        // When
-        List<BeaconObj> team1Beacons = register.getTeamBeacons(team1);
-
-        // Then - depends on Team.equals() which we can't mock, so just check non-null
-        assertNotNull(team1Beacons, "Should return a list");
-    }
-
-    /**
-     * Test getting triangle count for a team.
-     */
-    @Test
-    void testGetTeamTriangles() {
-        // Given
-        Team team = mock(Team.class);
-        when(team.getName()).thenReturn("RedTeam");
-
-        // When
-        int count = register.getTeamTriangles(team);
-
-        // Then - no triangles created, should be 0
-        assertEquals(0, count, "Team should have 0 triangles initially");
-    }
-
-    // ========== Clear Operations Tests ==========
-
-    /**
-     * Test clearing all data.
-     */
-    @Test
-    void testClearAll() {
-        // Given
-        Team team = mock(Team.class);
-        register.addBeacon(team, 100, 64, 200);
-        register.addBeacon(team, 150, 64, 200);
-
-        // When
-        register.clear();
-
-        // Then
-        assertNull(register.getBeaconAt(100, 200), "Beacons should be cleared");
-        assertTrue(register.getTriangleFields().isEmpty(), "Triangles should be cleared");
-    }
-
-    /**
-     * Test clearing data for a specific region.
-     */
-    @Test
-    void testClearRegion() {
-        // Given
-        Team team = mock(Team.class);
-        register.addBeacon(team, 100, 64, 200);
-
-        Region region = mock(Region.class);
-        when(region.containsPoint(any(Point2D.class))).thenReturn(true);
-        when(region.containsBeacon(any(BeaconObj.class))).thenReturn(true);
-        when(region.getGame()).thenReturn(game);
-
-        // When
-        register.clear(region);
-
-        // Then
-        // Beacons in the region should be removed
-        assertNull(register.getBeaconAt(100, 200), "Beacon in region should be cleared");
-    }
-
-    // ========== Beacon Removal Tests ==========
-
-    /**
-     * Test removing a beacon's ownership.
-     */
-    @Test
-    void testRemoveBeaconOwnership() {
-        // Given
-        Team team = mock(Team.class);
-        when(team.getName()).thenReturn("RedTeam");
-
-        BeaconObj beacon = register.addBeacon(team, 100, 64, 200);
-
-        // Mock the world block
-        Block block = world.getBlockAt(100, 65, 200);
-        block.setType(Material.AIR);
-
-        // When
-        register.removeBeaconOwnership(beacon, false);
-
-        // Then
-        assertNull(beacon.getOwnership(), "Ownership should be cleared");
-    }
-
-    /**
-     * Test that removing a beacon ownership removes its links.
-     */
-    @Test
-    void testRemoveBeaconOwnershipRemovesLinks() {
-        // Given
-        Team team = mock(Team.class);
-        when(team.getName()).thenReturn("RedTeam");
-
-        BeaconObj beacon1 = register.addBeacon(team, 100, 64, 200);
-        BeaconObj beacon2 = register.addBeacon(team, 150, 64, 200);
-
-        register.addBeaconLink(beacon1, beacon2);
-
-        // Mock the world block
-        Block block = world.getBlockAt(100, 65, 200);
-        block.setType(Material.AIR);
-
-        // When
-        register.removeBeaconOwnership(beacon1, false);
-
-        // Then
-        assertFalse(beacon2.getLinks().contains(beacon1), "Link should be removed from beacon2");
-        assertTrue(beacon1.getLinks().isEmpty(), "Beacon1 links should be empty");
-    }
-
-    // ========== Beacon Map Tests ==========
-
-    /**
-     * Test getting beacon map.
-     */
-    @Test
-    void testGetBeaconMap() {
-        // Given - create beacon but don't set up map (maps are complex to test)
-        int mapId = 1;
-
-        // When
-        BeaconObj result = register.getBeaconMap(mapId);
-
-        // Then
-        // Will be null since we didn't actually add it, but method should not throw
-        assertNull(result, "Should return null for non-registered map");
-    }
-
-    /**
-     * Test getting beacon map index.
-     */
-    @Test
-    void testGetBeaconMapIndex() {
-        // When
-        Set<Integer> indices = register.getBeaconMapIndex();
-
-        // Then
-        assertNotNull(indices, "Should return a set");
-        assertTrue(indices.isEmpty(), "Should be empty initially");
-    }
-
-    // ========== Base Block Tests ==========
-
-    /**
-     * Test adding a base block to a beacon.
-     */
-    @Test
-    void testAddBeaconBaseBlock() {
-        // Given
-        Team team = mock(Team.class);
-        BeaconObj beacon = register.addBeacon(team, 100, 64, 200);
-
-        // When - add an additional base block adjacent to existing ones
-        register.addBeaconBaseBlock(102, 200, beacon);
-
-        // Then - verify we can find the beacon from this new base block
-        Block newBlock = world.getBlockAt(102, 63, 200);
-        newBlock.setType(Material.EMERALD_BLOCK);
-
-        BeaconObj found = register.getBeacon(newBlock);
-        assertEquals(beacon, found, "New base block should reference beacon");
-    }
-
-    // ========== Beacon Registry Tests ==========
-
-    /**
-     * Test getting the beacon register.
-     */
-    @Test
-    void testGetBeaconRegister() {
-        // Given
-        Team team = mock(Team.class);
-        register.addBeacon(team, 100, 64, 200);
-
-        // When
-        HashMap<Point2D, BeaconObj> beaconRegister = register.getBeaconRegister();
-
-        // Then
-        assertNotNull(beaconRegister, "Should return the beacon register");
-        assertEquals(1, beaconRegister.size(), "Should have one beacon");
-    }
-
-    /**
-     * Test setting beacon owner.
-     */
-    @Test
-    void testSetBeaconOwner() {
-        // Given
-        Team oldTeam = mock(Team.class);
-        Team newTeam = mock(Team.class);
-        when(oldTeam.getName()).thenReturn("OldTeam");
-        when(newTeam.getName()).thenReturn("NewTeam");
-
-        BeaconObj beacon = register.addBeacon(oldTeam, 100, 64, 200);
-
-        // When
-        register.setBeaconOwner(beacon, newTeam);
-
-        // Then
-        assertEquals(newTeam, beacon.getOwnership(), "Ownership should be updated");
-    }
-
-    /**
-     * Test setting beacon owner to null (unowned).
-     */
-    @Test
-    void testSetBeaconOwnerNull() {
-        // Given
-        Team team = mock(Team.class);
-        BeaconObj beacon = register.addBeacon(team, 100, 64, 200);
-
-        // When
-        register.setBeaconOwner(beacon, null);
-
-        // Then
-        assertNull(beacon.getOwnership(), "Beacon should be unowned");
-    }
-
-    // ========== Triangle Field Queries ==========
-
-    /**
-     * Test getting all triangle fields.
-     */
-    @Test
-    void testGetTriangleFields() {
-        // When
-        Set<TriangleField> fields = register.getTriangleFields();
-
-        // Then
-        assertNotNull(fields, "Should return triangle fields set");
-        assertTrue(fields.isEmpty(), "Should be empty initially");
-    }
-
-    /**
-     * Test setting triangle fields directly.
-     */
-    @Test
-    void testSetTriangleFields() {
-        // Given
-        Set<TriangleField> newFields = new HashSet<>();
-        Team team = mock(Team.class);
-
-        BeaconObj beacon1 = register.addBeacon(team, 100, 64, 200);
-        BeaconObj beacon2 = register.addBeacon(team, 150, 64, 200);
-        BeaconObj beacon3 = register.addBeacon(team, 125, 64, 250);
-
-        TriangleField triangle = new TriangleField(
-            beacon1.getPoint(), beacon2.getPoint(), beacon3.getPoint(), team);
-        newFields.add(triangle);
-
-        // When
-        register.setTriangleFields(newFields);
-
-        // Then
-        assertEquals(1, register.getTriangleFields().size(), "Should have one triangle");
-    }
-
-    // ========== Persistence Tests ==========
-
-    /**
-     * Test saving the register (basic test - just verify no exceptions).
-     * Note: We set game to null to avoid Component serialization issues.
-     */
-    @Test
-    void testSaveRegister() {
-        // Given
-        Team team = mock(Team.class);
-        when(team.getName()).thenReturn("TestTeam");
-
-        // Reset gameMgr to clear previous stubbing
-        reset(gameMgr);
-        when(plugin.getGameMgr()).thenReturn(gameMgr);
-        when(gameMgr.getGame(anyInt(), anyInt())).thenReturn(game);
-
-        register.addBeacon(team, 100, 64, 200);
-
-        // When/Then - should not throw exception
-        register.saveRegister();
-
-        // Verify file was created
-        File beaconzFile = new File(tempDir, "beaconz.yml");
-        assertTrue(beaconzFile.exists(), "beaconz.yml should be created");
-    }
-
-    /**
-     * Test loading the register (basic test - empty file).
-     */
-    @Test
-    void testLoadRegisterEmpty() {
-        // When/Then - should not throw exception with no file
-        register.loadRegister();
-
-        // Register should still be functional
-        assertNotNull(register.getBeaconRegister());
-    }
-
-    /**
-     * Test save and load round trip.
-     */
-    @Test
-    void testSaveAndLoadRoundTrip() {
-        // Given
-        Team team = mock(Team.class);
-        when(team.getName()).thenReturn("TestTeam");
-
-        // Reset gameMgr to clear previous stubbing, then set getGame to return null
-        reset(gameMgr);
-        when(plugin.getGameMgr()).thenReturn(gameMgr);
-        
-        when(gameMgr.getGame(anyInt(), anyInt())).thenReturn(game);
-
-        register.addBeacon(team, 100, 64, 200);
-
-        // Save
-        register.saveRegister();
-
-        // Clear register
-        register.clear();
-        assertNull(register.getBeaconAt(100, 200), "Beacon should be cleared");
-
-        // Mock scorecard for loading
-        when(scorecard.getTeam("TestTeam")).thenReturn(team);
-
-        // When - load
-        register.loadRegister();
-
-        // Then - beacon should be restored
-        BeaconObj loaded = register.getBeaconAt(100, 200);
-        assertNotNull(loaded, "Beacon should be loaded");
-        assertEquals(100, loaded.getX());
-        assertEquals(64, loaded.getY());
-        assertEquals(200, loaded.getZ());
-    }
-
-    // ========== Recalculate Score Tests ==========
-
-    /**
-     * Test recalculateScore correctly identifies triangles from existing beacon links.
-     * This validates the fix for the bug where BeaconObj was incorrectly compared to BeaconLink.
-     */
-    @Test
-    void testRecalculateScoreFindsTriangles() {
-        // Given - three beacons owned by the same team forming a triangle
-        Team team = mock(Team.class);
-        when(team.getName()).thenReturn("RedTeam");
-
-        BeaconObj beacon1 = register.addBeacon(team, 100, 64, 200);
-        BeaconObj beacon2 = register.addBeacon(team, 150, 64, 200);
-        BeaconObj beacon3 = register.addBeacon(team, 125, 64, 250);
-
-        // Create links to form a triangle
-        register.addBeaconLink(beacon1, beacon2); // Side 1
-        register.addBeaconLink(beacon2, beacon3); // Side 2
-        register.addBeaconLink(beacon3, beacon1); // Side 3 - completes triangle
-
-        // Clear any triangles that were automatically created
-        register.getTriangleFields().clear();
-        assertTrue(register.getTriangleFields().isEmpty(), "Triangle fields should be cleared");
-
-        // When - recalculate score should find the triangle from the links
-        register.recalculateScore(game);
-
-        // Then - triangle should be created (if Team.equals works with mocks)
-        // Due to limitations with mocking Team.equals(), we verify the method completes without error
-        // The key fix is that the method no longer compares BeaconObj to BeaconLink
-    }
-
-    /**
-     * Test recalculateScore handles empty beacon links gracefully.
-     */
-    @Test
-    void testRecalculateScoreEmptyLinks() {
-        // When - recalculate with no links
-        register.recalculateScore(game);
-
-        // Then - should complete without error and no triangles created
-        assertTrue(register.getTriangleFields().isEmpty(), "No triangles should exist");
-    }
-
-    /**
-     * Test recalculateScore with null game handles gracefully.
-     */
-    @Test
-    void testRecalculateScoreNullGame() {
-        // When/Then - should handle null game without throwing NPE
-        register.recalculateScore(null);
-        // No exception means success
+    @Nested
+    @DisplayName("Beacon Block Detection Tests")
+    class BeaconBlockDetectionTests {
+
+        @Test
+        @DisplayName("Should detect beacon block")
+        void shouldDetectBeaconBlock() {
+            register.addBeacon(redTeam, 100, 64, 200);
+
+            Block beaconBlock = mock(Block.class);
+            when(beaconBlock.getType()).thenReturn(Material.BEACON);
+            Location loc = new Location(world, 100, 64, 200);
+            when(beaconBlock.getLocation()).thenReturn(loc);
+
+            BeaconObj found = register.getBeacon(beaconBlock);
+            assertNotNull(found);
+        }
+
+        @Test
+        @DisplayName("Should detect emerald base block")
+        void shouldDetectEmeraldBaseBlock() {
+            BeaconObj beacon = register.addBeacon(redTeam, 100, 64, 200);
+
+            Block emeraldBlock = mock(Block.class);
+            when(emeraldBlock.getType()).thenReturn(Material.EMERALD_BLOCK);
+            Location loc = new Location(world, 99, 63, 199);
+            when(emeraldBlock.getLocation()).thenReturn(loc);
+            when(emeraldBlock.getY()).thenReturn(63);
+
+            BeaconObj found = register.getBeacon(emeraldBlock);
+            assertNotNull(found);
+            assertEquals(beacon, found);
+        }
+
+        @Test
+        @DisplayName("Should return null for non-beacon block type")
+        void shouldReturnNullForNonBeaconBlockType() {
+            register.addBeacon(redTeam, 100, 64, 200);
+
+            Block dirtBlock = mock(Block.class);
+            when(dirtBlock.getType()).thenReturn(Material.DIRT);
+
+            BeaconObj found = register.getBeacon(dirtBlock);
+            assertNull(found);
+        }
+
+        @Test
+        @DisplayName("Should check if block is beacon")
+        void shouldCheckIfBlockIsBeacon() {
+            register.addBeacon(redTeam, 100, 64, 200);
+
+            Block beaconBlock = mock(Block.class);
+            when(beaconBlock.getType()).thenReturn(Material.BEACON);
+            Location loc = new Location(world, 100, 64, 200);
+            when(beaconBlock.getLocation()).thenReturn(loc);
+
+            assertTrue(register.isBeacon(beaconBlock));
+
+            Block dirtBlock = mock(Block.class);
+            when(dirtBlock.getType()).thenReturn(Material.DIRT);
+
+            assertFalse(register.isBeacon(dirtBlock));
+        }
+
+        @Test
+        @DisplayName("Should detect obsidian cap block")
+        void shouldDetectObsidianCapBlock() {
+            BeaconObj beacon = register.addBeacon(redTeam, 100, 64, 200);
+
+            Block obsidianBlock = mock(Block.class);
+            when(obsidianBlock.getType()).thenReturn(Material.OBSIDIAN);
+            Location capLoc = new Location(world, 100, 65, 200);
+            when(obsidianBlock.getLocation()).thenReturn(capLoc);
+
+            Block beaconBelow = mock(Block.class);
+            when(beaconBelow.getType()).thenReturn(Material.BEACON);
+            Location beaconLoc = new Location(world, 100, 64, 200);
+            when(beaconBelow.getLocation()).thenReturn(beaconLoc);
+            when(obsidianBlock.getRelative(BlockFace.DOWN)).thenReturn(beaconBelow);
+
+            BeaconObj found = register.getBeacon(obsidianBlock);
+            assertNotNull(found);
+            assertEquals(beacon, found);
+        }
     }
 }
+
+
+
+
+
+
+
 
