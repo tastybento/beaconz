@@ -27,19 +27,22 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.scoreboard.Team;
 
 import com.wasteofplastic.beaconz.Beaconz;
 import com.wasteofplastic.beaconz.BeaconzPluginDependent;
 import com.wasteofplastic.beaconz.config.Settings;
 import com.wasteofplastic.beaconz.game.Scorecard;
+
+import io.papermc.paper.event.player.AsyncChatEvent;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
 
 /**
@@ -69,7 +72,7 @@ public class ChatListener extends BeaconzPluginDependent implements Listener {
 
 
     @EventHandler(priority = EventPriority.HIGHEST)
-    public void onChat(final AsyncPlayerChatEvent event) {
+    public void onChat(final AsyncChatEvent event) {
         // Team chat
         if (getBeaconzWorld() == null) {
             return;
@@ -79,12 +82,12 @@ public class ChatListener extends BeaconzPluginDependent implements Listener {
             event.setCancelled(true);
             // Queue the sync task because you cannot use HashMaps asynchronously. Delaying to the next tick
             // won't be a major issue for synch events either.
-            Bukkit.getScheduler().runTask(beaconzPlugin, () -> teamChat(event,event.getMessage()));
+            String message = PlainTextComponentSerializer.plainText().serialize(event.message());
+            Bukkit.getScheduler().runTask(beaconzPlugin, () -> teamChat(event.getPlayer(), message));
         }
     }
 
-    private void teamChat(final AsyncPlayerChatEvent event, String message) {
-        Player player = event.getPlayer();
+    private void teamChat(final Player player, String message) {
         // Only act if the player is in a team
         Scorecard sc = getGameMgr().getSC(player);
         if (sc == null) {
@@ -94,12 +97,17 @@ public class ChatListener extends BeaconzPluginDependent implements Listener {
         if (team != null) {
             @SuppressWarnings("deprecation")
             Set<OfflinePlayer> teamMembers = team.getPlayers();
+            // Build the team chat message using Components
+            Component teamMessage = Component.text("[", NamedTextColor.LIGHT_PURPLE)
+                    .append(team.displayName())
+                    .append(Component.text("]<", NamedTextColor.LIGHT_PURPLE))
+                    .append(player.displayName())
+                    .append(Component.text("> " + message, NamedTextColor.LIGHT_PURPLE));
             // Tell only the team members if they are online
             boolean onLine = false;
             for (OfflinePlayer teamPlayer : teamMembers) {
                 if (teamPlayer != null && teamPlayer.isOnline()) {
-                    ((Player)teamPlayer).sendMessage(ChatColor.LIGHT_PURPLE + "[" + team.getDisplayName() + "]<"
-                            + player.getDisplayName() + "> " + message);
+                    ((Player)teamPlayer).sendMessage(teamMessage);
                     if (!teamPlayer.getUniqueId().equals(player.getUniqueId())) {
                         onLine = true;
                     }
@@ -107,9 +115,11 @@ public class ChatListener extends BeaconzPluginDependent implements Listener {
             }
             // Spy function
             if (onLine) {
+                Component spyMessage = Component.text("[TCSpy] ", NamedTextColor.RED)
+                        .append(Component.text(message, NamedTextColor.WHITE));
                 for (Player onlinePlayer: beaconzPlugin.getServer().getOnlinePlayers()) {
                     if (spies.contains(onlinePlayer.getUniqueId())) {
-                        onlinePlayer.sendMessage(ChatColor.RED + "[TCSpy] " + ChatColor.WHITE + message);
+                        onlinePlayer.sendMessage(spyMessage);
                     }
                 }
             }
@@ -117,16 +127,17 @@ public class ChatListener extends BeaconzPluginDependent implements Listener {
                 // Tell everyone
                 for (Player onlinePlayer: getServer().getOnlinePlayers()) {
                     if (!onlinePlayer.equals(player)) {
-                        onlinePlayer.sendMessage(ChatColor.LIGHT_PURPLE + "[" + team.getDisplayName() + "]<"
-                                + player.getDisplayName() + "> " + message);
+                        onlinePlayer.sendMessage(teamMessage);
                     }
                 }
             }
         } else {
-            // Tell everyone
+            // Tell everyone - no team, just broadcast player name and message
+            Component broadcastMessage = player.displayName()
+                    .append(Component.text(": " + message));
             for (Player onlinePlayer: getServer().getOnlinePlayers()) {
                 if (!onlinePlayer.equals(player)) {
-                    onlinePlayer.sendMessage(event.getFormat() + ": " + message);
+                    onlinePlayer.sendMessage(broadcastMessage);
                 }
             }
         }

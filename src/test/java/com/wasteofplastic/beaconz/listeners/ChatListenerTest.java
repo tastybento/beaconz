@@ -13,8 +13,6 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,6 +24,10 @@ import org.mockito.Mockito;
 
 import com.wasteofplastic.beaconz.config.Settings;
 import com.wasteofplastic.beaconz.game.Scorecard;
+
+import io.papermc.paper.event.player.AsyncChatEvent;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 
 /**
  * Tests for {@link ChatListener} covering team chat routing, spying, and broadcast fallbacks.
@@ -70,7 +72,7 @@ class ChatListenerTest extends CommonTestBase {
     void testOnChatNullWorldOrPlayer() {
         Settings.teamChat = true;
         when(plugin.getBeaconzWorld()).thenReturn(null); // null world triggers early return
-        AsyncPlayerChatEvent event = mock(AsyncPlayerChatEvent.class);
+        AsyncChatEvent event = mock(AsyncChatEvent.class);
         listener.onChat(event);
         verify(event, never()).setCancelled(true);
         verify(scheduler, never()).runTask(eq(plugin), any(Runnable.class));
@@ -81,7 +83,7 @@ class ChatListenerTest extends CommonTestBase {
      */
     @Test
     void testOnChatTeamChatDisabledOrOtherWorld() {
-        AsyncPlayerChatEvent event = mock(AsyncPlayerChatEvent.class);
+        AsyncChatEvent event = mock(AsyncChatEvent.class);
         when(event.getPlayer()).thenReturn(player);
         when(player.getWorld()).thenReturn(world);
         Settings.teamChat = false;
@@ -95,9 +97,9 @@ class ChatListenerTest extends CommonTestBase {
      */
     @Test
     void testOnChatSchedulesTeamChat() {
-        AsyncPlayerChatEvent event = mock(AsyncPlayerChatEvent.class);
+        AsyncChatEvent event = mock(AsyncChatEvent.class);
         when(event.getPlayer()).thenReturn(player);
-        when(event.getMessage()).thenReturn("hello");
+        when(event.message()).thenReturn(Component.text("hello"));
         when(player.getWorld()).thenReturn(world);
 
         listener.onChat(event);
@@ -115,14 +117,14 @@ class ChatListenerTest extends CommonTestBase {
         Scorecard sc = mock(Scorecard.class);
         when(mgr.getSC(player)).thenReturn(sc);
         when(sc.getTeam(player)).thenReturn(team);
-        when(team.getDisplayName()).thenReturn("TeamA");
+        when(team.displayName()).thenReturn(Component.text("TeamA"));
 
         // Team members: self + another online member
         PlayerMock teammate = new PlayerMock(server, "Mate", UUID.randomUUID());
         server.addPlayer(teammate);
         when(team.getPlayers()).thenReturn(Set.of(player, teammate));
         when(player.getUniqueId()).thenReturn(UUID.randomUUID());
-        when(player.getDisplayName()).thenReturn("Sender");
+        when(player.displayName()).thenReturn(Component.text("Sender"));
 
         // Spy setup
         UUID spyId = UUID.randomUUID();
@@ -131,18 +133,26 @@ class ChatListenerTest extends CommonTestBase {
         listener.toggleSpy(spyId);
 
         // Capture and execute runnable
-        AsyncPlayerChatEvent event = mock(AsyncPlayerChatEvent.class);
+        AsyncChatEvent event = mock(AsyncChatEvent.class);
         when(player.getWorld()).thenReturn(world);
         when(event.getPlayer()).thenReturn(player);
-        when(event.getMessage()).thenReturn("msg");
+        when(event.message()).thenReturn(Component.text("msg"));
         var runnableCaptor = ArgumentCaptor.forClass(Runnable.class);
         listener.onChat(event);
         verify(scheduler).runTask(any(), runnableCaptor.capture());
         runnableCaptor.getValue().run();
 
         // Verify teammate got team chat (spy gets spy tag)
-        teammate.assertSaid(ChatColor.LIGHT_PURPLE + "[TeamA]<Sender> msg");
-        spy.assertSaid(ChatColor.RED + "[TCSpy] " + ChatColor.WHITE + "msg");
+        Component expectedTeamMessage = Component.text("[", NamedTextColor.LIGHT_PURPLE)
+                .append(Component.text("TeamA"))
+                .append(Component.text("]<", NamedTextColor.LIGHT_PURPLE))
+                .append(Component.text("Sender"))
+                .append(Component.text("> msg", NamedTextColor.LIGHT_PURPLE));
+        teammate.assertSaid(expectedTeamMessage);
+
+        Component expectedSpyMessage = Component.text("[TCSpy] ", NamedTextColor.RED)
+                .append(Component.text("msg", NamedTextColor.WHITE));
+        spy.assertSaid(expectedSpyMessage);
     }
 
     /**
@@ -153,51 +163,57 @@ class ChatListenerTest extends CommonTestBase {
         Scorecard sc = mock(Scorecard.class);
         when(mgr.getSC(player)).thenReturn(sc);
         when(sc.getTeam(player)).thenReturn(team);
-        when(team.getDisplayName()).thenReturn("TeamA");
+        when(team.displayName()).thenReturn(Component.text("TeamA"));
         when(team.getPlayers()).thenReturn(Set.of(player));
         when(player.getUniqueId()).thenReturn(UUID.randomUUID());
-        when(player.getDisplayName()).thenReturn("Sender");
+        when(player.displayName()).thenReturn(Component.text("Sender"));
 
         PlayerMock other = new PlayerMock(server, "Other", UUID.randomUUID());
         server.addPlayer(other);
 
-        AsyncPlayerChatEvent event = mock(AsyncPlayerChatEvent.class);
+        AsyncChatEvent event = mock(AsyncChatEvent.class);
 
         when(player.getWorld()).thenReturn(world);
         when(event.getPlayer()).thenReturn(player);
-        when(event.getMessage()).thenReturn("solo");
+        when(event.message()).thenReturn(Component.text("solo"));
         var runnableCaptor = ArgumentCaptor.forClass(Runnable.class);
         listener.onChat(event);
         verify(scheduler).runTask(any(), runnableCaptor.capture());
         runnableCaptor.getValue().run();
 
-        other.assertSaid(ChatColor.LIGHT_PURPLE + "[TeamA]<Sender> solo");
+        Component expectedTeamMessage = Component.text("[", NamedTextColor.LIGHT_PURPLE)
+                .append(Component.text("TeamA"))
+                .append(Component.text("]<", NamedTextColor.LIGHT_PURPLE))
+                .append(Component.text("Sender"))
+                .append(Component.text("> solo", NamedTextColor.LIGHT_PURPLE));
+        other.assertSaid(expectedTeamMessage);
     }
 
     /**
-     * teamChat: player not in a team -> default broadcast using event format.
+     * teamChat: player not in a team -> default broadcast using player display name.
      */
     @Test
     void testTeamChatPlayerWithoutTeam() {
         Scorecard sc = mock(Scorecard.class);
         when(mgr.getSC(player)).thenReturn(sc);
         when(sc.getTeam(player)).thenReturn(null);
-        when(player.getDisplayName()).thenReturn("Sender");
+        when(player.displayName()).thenReturn(Component.text("Sender"));
 
         PlayerMock other = new PlayerMock(server, "Other", UUID.randomUUID());
         server.addPlayer(other);
 
-        AsyncPlayerChatEvent event = mock(AsyncPlayerChatEvent.class);
+        AsyncChatEvent event = mock(AsyncChatEvent.class);
         when(player.getWorld()).thenReturn(world);
         when(event.getPlayer()).thenReturn(player);
-        when(event.getMessage()).thenReturn("global");
-        when(event.getFormat()).thenReturn("SenderFormat");
+        when(event.message()).thenReturn(Component.text("global"));
         var runnableCaptor = ArgumentCaptor.forClass(Runnable.class);
         listener.onChat(event);
         verify(scheduler).runTask(any(), runnableCaptor.capture());
         runnableCaptor.getValue().run();
 
-        other.assertSaid("SenderFormat: global");
+        Component expectedMessage = Component.text("Sender")
+                .append(Component.text(": global"));
+        other.assertSaid(expectedMessage);
     }
 }
 
