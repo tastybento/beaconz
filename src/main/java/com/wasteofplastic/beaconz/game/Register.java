@@ -22,8 +22,6 @@ package com.wasteofplastic.beaconz.game;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
-import java.io.File;
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -39,15 +37,11 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 
-import org.apache.commons.lang.math.NumberUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.InvalidConfigurationException;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
@@ -243,7 +237,7 @@ public class Register extends BeaconzPluginDependent {
     private void initializeDatabaseTables() {
         HikariDataSource dataSource = getBeaconzPlugin().getDataSource();
         if (dataSource == null || dataSource.isClosed()) {
-            getLogger().severe("Database not initialized! Register will use legacy YAML storage.");
+            getLogger().severe("Database not initialized!");
             return;
         }
 
@@ -294,13 +288,11 @@ public class Register extends BeaconzPluginDependent {
      * This method saves all beacons, links, base blocks, defense blocks, and maps
      * to the database. It uses batch inserts for efficiency.
      * <p>
-     * Also creates a legacy YAML backup for compatibility.
      */
     public void saveRegister() {
         HikariDataSource dataSource = getBeaconzPlugin().getDataSource();
         if (dataSource == null || dataSource.isClosed()) {
-            getLogger().warning("Database not available, falling back to YAML storage");
-            saveRegisterYAML();
+            getLogger().severe("Database not available");
             return;
         }
 
@@ -459,135 +451,6 @@ public class Register extends BeaconzPluginDependent {
 
         } catch (SQLException e) {
             getLogger().severe("Failed to save register to database: " + e.getMessage());
-            // Fallback to YAML
-            saveRegisterYAML();
-        }
-    }
-
-    /**
-     * Saves the register to the database asynchronously to avoid blocking the main thread.
-     * This is useful when beacons are created during chunk generation or other time-sensitive operations.
-     * The save happens on a separate thread to prevent lag.
-     * <p>
-     * If the server or scheduler is not available (e.g., during tests), falls back to synchronous save.
-     */
-    public void saveRegisterAsync() {
-        try {
-            // Run the save operation asynchronously to avoid blocking chunk generation
-            if (getBeaconzPlugin() != null && getBeaconzPlugin().getServer() != null) {
-                getBeaconzPlugin().getServer().getScheduler().runTaskAsynchronously(getBeaconzPlugin(), this::saveRegister);
-            } else {
-                // Fallback to synchronous save if scheduler not available (e.g., in tests)
-                saveRegister();
-            }
-        } catch (Exception e) {
-            // If async fails, fall back to synchronous save
-            getLogger().warning("Async save failed, falling back to synchronous: " + e.getMessage());
-            saveRegister();
-        }
-    }
-
-    /**
-     * Legacy YAML-based save method, kept for backwards compatibility and migration.
-     * @deprecated Use database storage via saveRegister()
-     */
-    @Deprecated
-    private void saveRegisterYAML() {
-        // Save the beacons
-        File beaconzFile = new File(getBeaconzPlugin().getDataFolder(),"beaconz.yml");
-
-        // Track which links have been stored to avoid duplicates (links are bidirectional)
-        Set<BeaconLink> storedLinks = new HashSet<>();
-        YamlConfiguration beaconzYml = new YamlConfiguration();
-
-        // Backup the existing beacons file to prevent data loss
-        if (beaconzFile.exists()) {
-            File backup = new File(getBeaconzPlugin().getDataFolder(),"beaconz.old");
-            if (!beaconzFile.renameTo(backup)) {
-                getLogger().severe("Could not create backup of beaconz.yml file!");
-            }
-        }
-
-        // Iterate through all beacons and serialize their data
-        int count = 0;
-        for (BeaconObj beacon : beaconRegister.values()) {
-            // Determine which game this beacon belongs to
-            Game game = getGameMgr().getGame(beacon.getPoint());
-            String gameName = game == null ? "None" :  PlainTextComponentSerializer.plainText().serialize(game.getName());
-            beaconzYml.set("beacon." + count + ".game",gameName);
-
-            // Store beacon ownership (team name or "unowned")
-            String owner = "unowned";
-            if (beacon.getOwnership() != null) {
-                owner = beacon.getOwnership().getName();
-            }
-
-            // Store location as "x:y:z:owner" format
-            beaconzYml.set("beacon." + count + ".location", beacon.getX() + ":" + beacon.getY() + ":" + beacon.getZ()
-            + ":" + owner);
-
-            // Store links to other beacons (only outbound links to avoid duplication)
-            if (game != null) {
-                List<String> beaconStringLinks = new ArrayList<>();
-                if (beaconLinks.containsKey(game)) {
-                    for (BeaconLink link : beaconLinks.get(game)) {
-                        // Only store each link once - when this beacon is beacon1
-                        // The reverse link will be auto-created during load
-                        if (!storedLinks.contains(link) && link.getBeacon1().equals(beacon)) {
-                            beaconStringLinks.add(link.getBeacon2().getX() +":" + link.getBeacon2().getZ()+ ":" + link.getTimeStamp());
-                            storedLinks.add(link);
-                        }
-                    }
-                    beaconzYml.set("beacon." + count + ".links", beaconStringLinks);
-                }
-            }
-
-            // Store map ID if this beacon has an associated map item
-            if (beacon.getId() != null) {
-                beaconzYml.set("beacon." + count + ".id", beacon.getId());
-            }
-
-            // Save base blocks (emerald blocks around the beacon)
-            List<String> plinthBlocksString = new ArrayList<>();
-            for (Point2D point: baseBlocksInverse.get(beacon)) {
-                plinthBlocksString.add((int)point.getX() + ":" + (int)point.getY());
-            }
-            beaconzYml.set("beacon." + count + ".baseblocks", plinthBlocksString);
-
-            // Save defensive blocks with their levels and placers
-            for (DefenseBlock defensiveBlock : beacon.getDefenseBlocks().values()) {
-                String locationKey = Beaconz.getStringLocation(defensiveBlock.getBlock().getLocation()).replace('.', '_');
-                beaconzYml.set("beacon." + count + ".defensiveblocks." + locationKey, defensiveBlock.getLevel());
-                if (defensiveBlock.getPlacer() != null) {
-                    beaconzYml.set("beacon." + count + ".defensiveblocksowner." + locationKey, defensiveBlock.getPlacer().toString());
-                }
-            }
-
-            // Save map item IDs associated with this beacon
-            List<String> maps = new ArrayList<>();
-            for (Integer id : beaconMaps.keySet()) {
-                if (beacon.equals(beaconMaps.get(id))) {
-                    // Verify the map still exists on the server before saving
-                    if (Bukkit.getMap(id) != null) {
-                        maps.add(String.valueOf(id));
-                        // Save the origin coordinates for this map
-                        Point2D origin = mapOrigins.get(id);
-                        if (origin != null) {
-                            beaconzYml.set("beacon." + count + ".maporigin." + id,
-                                    (int)origin.getX() + ":" + (int)origin.getY());
-                        }
-                    }
-                }
-            }
-            beaconzYml.set("beacon." + count + ".maps", maps);
-            count++;
-        }
-
-        // Write the configuration to disk
-        try {
-            beaconzYml.save(beaconzFile);
-        } catch (IOException e) {
-            getLogger().severe("Failed to save beaconz.yml file: " + e.getMessage());
         }
     }
 
@@ -611,32 +474,11 @@ public class Register extends BeaconzPluginDependent {
 
         HikariDataSource dataSource = getBeaconzPlugin().getDataSource();
         if (dataSource == null || dataSource.isClosed()) {
-            getLogger().warning("Database not available, falling back to YAML storage");
-            loadRegisterYAML();
+            getLogger().severe("Database not available");
             return;
         }
 
         try (Connection conn = dataSource.getConnection()) {
-            // Check if we need to migrate from YAML
-            boolean needsMigration = false;
-            try (Statement stmt = conn.createStatement();
-                 ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM beacons")) {
-                if (rs.next() && rs.getInt(1) == 0) {
-                    File yamlFile = new File(getBeaconzPlugin().getDataFolder(), "beaconz.yml");
-                    if (yamlFile.exists()) {
-                        needsMigration = true;
-                    }
-                }
-            }
-
-            if (needsMigration) {
-                getLogger().info("Migrating from YAML to database...");
-                loadRegisterYAML();
-                saveRegister(); // Save to database
-                getLogger().info("Migration complete");
-                return;
-            }
-
             // === PHASE 1: Load all beacons ===
             beaconLinks.clear();
             pendingOwnership.clear(); // Clear any previous pending ownership
@@ -645,7 +487,6 @@ public class Register extends BeaconzPluginDependent {
             String selectBeacons = "SELECT x, y, z, game_name, owner_team, map_id FROM beacons";
             int beaconCountInDB = 0;
             int beaconsLoaded = 0;
-            int beaconsSkippedNoGame = 0;
 
             if (DEBUG) {
                 getLogger().info("DEBUG: ========== LOADING BEACONS FROM DATABASE ==========");
@@ -867,7 +708,7 @@ public class Register extends BeaconzPluginDependent {
                     if (DEBUG) {
                         getLogger().warning("DEBUG:   FAILED: Team '" + teamName + "' not found in game");
                         getLogger().warning("DEBUG:   Available teams: " + game.getScorecard().getScoreboard().getTeams().stream()
-                            .map(t -> t.getName())
+                            .map(Team::getName)
                             .reduce((a, b) -> a + ", " + b)
                             .orElse("(none)"));
                     }
@@ -920,8 +761,6 @@ public class Register extends BeaconzPluginDependent {
 
         } catch (SQLException e) {
             getLogger().severe("Failed to load register from database: " + e.getMessage());
-            // Fallback to YAML
-            loadRegisterYAML();
         }
     }
 
@@ -993,7 +832,7 @@ public class Register extends BeaconzPluginDependent {
                 if (DEBUG) {
                     getLogger().warning("DEBUG:   FAILED: Team '" + teamName + "' not found in game");
                     getLogger().warning("DEBUG:   Available teams: " + game.getScorecard().getScoreboard().getTeams().stream()
-                        .map(t -> t.getName())
+                        .map(Team::getName)
                         .reduce((a, b) -> a + ", " + b)
                         .orElse("(none)"));
                 }
@@ -1077,198 +916,6 @@ public class Register extends BeaconzPluginDependent {
         }
         for (Game game : affectedGames) {
             recalculateScore(game);
-        }
-    }
-
-    /**
-     * Legacy YAML-based load method, kept for backwards compatibility and migration.
-     * @deprecated Use database storage via loadRegister()
-     */
-    @Deprecated
-    private void loadRegisterYAML() {
-        // Clear existing data to start fresh
-        clear();
-
-        File beaconzFile = new File(getBeaconzPlugin().getDataFolder(),"beaconz.yml");
-        if (!beaconzFile.exists()) {
-            return;
-        }
-
-        // Load the YAML configuration from file
-        YamlConfiguration beaconzYml = new YamlConfiguration();
-        try {
-            beaconzYml.load(beaconzFile);
-        } catch (IOException e) {
-            getLogger().severe("Failed to load beaconz.yml file: " + e.getMessage());
-        } catch (InvalidConfigurationException e) {
-            getLogger().severe("Invalid YAML configuration in beaconz.yml: " + e.getMessage());
-        }
-
-        // === PHASE 1: Load all beacons ===
-        beaconLinks.clear();
-        // Temporary storage for link data (will be processed after all beacons are loaded)
-        HashMap<BeaconObj, List<String>> beaconStringLinks = new HashMap<>();
-        ConfigurationSection configSec = beaconzYml.getConfigurationSection("beacon");
-
-        if (configSec != null) {
-            for (String beacon : configSec.getValues(false).keySet()) {
-                // Parse beacon location string "x:y:z:owner"
-                String info = configSec.getString(beacon + ".location","");
-                String[] args = info.split(":");
-
-                if (!info.isEmpty() && args.length == 4) {
-                    if (NumberUtils.isNumber(args[0]) && NumberUtils.isNumber(args[1]) && NumberUtils.isNumber(args[2])) {
-                        int x = Integer.parseInt(args[0]);
-                        int y = Integer.parseInt(args[1]);
-                        int z = Integer.parseInt(args[2]);
-
-                        // Verify the game still exists at this location
-                        Game game = getGameMgr().getGame(x, z);
-                        if (game != null) {
-                            // Resolve team ownership
-                            Team team = null;
-                            if (!args[3].equalsIgnoreCase("unowned")) {
-                                team = game.getScorecard().getTeam(args[3]);
-                            }
-
-                            // Create the beacon object and add to registry
-                            BeaconObj newBeacon = addBeacon(team, x, y, z);
-
-                            // Store link data for later processing (after all beacons exist)
-                            beaconStringLinks.put(newBeacon, configSec.getStringList(beacon + ".links"));
-
-                            // Initialize the link array for this game if needed
-                            if (beaconLinks.get(game) == null) {
-                                List<BeaconLink> pairs = new ArrayList<>();
-                                beaconLinks.put(game, pairs);
-                            }
-
-                            // Load base blocks (emerald blocks around the beacon)
-                            List<String> baseBlocks = configSec.getStringList(beacon + ".baseblocks");
-                            for (String baseBlock : baseBlocks) {
-                                String[] args2 = baseBlock.split(":");
-                                if (args2.length == 2) {
-                                    if (NumberUtils.isNumber(args2[0]) && NumberUtils.isNumber(args2[1])) {
-                                        int blockX = Integer.parseInt(args2[0]);
-                                        int blockZ = Integer.parseInt(args2[1]);
-                                        addBeaconBaseBlock(blockX, blockZ, newBeacon);
-                                    }
-                                }
-                            }
-
-                            // Load defensive blocks with their levels
-                            ConfigurationSection defBlocks = configSec.getConfigurationSection(beacon + ".defensiveblocks");
-                            if (defBlocks != null) {
-                                for (String defenseBlock : defBlocks.getKeys(false)) {
-                                    // Get the block at the stored location
-                                    Block b = Beaconz.getLocationString(defenseBlock).getBlock();
-                                    int level = defBlocks.getInt(defenseBlock);
-                                    // Try to get the player who placed this defensive block
-                                    String owner = configSec.getString(beacon + ".defensiveblocksowner." + defenseBlock);
-                                    newBeacon.addDefenseBlock(b,level,owner);
-                                }
-                            }
-
-                            // Load map item IDs and initialize renderers
-                            List<String> maps = configSec.getStringList(beacon + ".maps");
-                            for (String mapNumber: maps) {
-                                int id = Integer.parseInt(mapNumber);
-                                beaconMaps.put(id, newBeacon);
-
-                                // Load map origin coordinates
-                                String originStr = configSec.getString(beacon + ".maporigin." + id);
-                                if (originStr != null) {
-                                    String[] parts = originStr.split(":");
-                                    if (parts.length == 2) {
-                                        try {
-                                            int originX = Integer.parseInt(parts[0]);
-                                            int originZ = Integer.parseInt(parts[1]);
-                                            mapOrigins.put(id, new Point2D.Double(originX, originZ));
-                                        } catch (NumberFormatException e) {
-                                            getLogger().warning("Invalid map origin coordinates for map " + id + ": " + originStr);
-                                        }
-                                    }
-                                }
-
-                                MapView map = Bukkit.getMap(id);
-                                if (map != null) {
-                                    // Remove old renderers and add fresh ones
-                                    for (MapRenderer renderer : map.getRenderers()) {
-                                        if (renderer instanceof TerritoryMapRenderer || renderer instanceof BeaconMap) {
-                                            map.removeRenderer(renderer);
-                                        }
-                                    }
-                                    map.addRenderer(new TerritoryMapRenderer(getBeaconzPlugin()));
-
-                                    // Create BeaconMap renderer with origin coordinates if available
-                                    Point2D origin = mapOrigins.get(id);
-                                    if (origin != null) {
-                                        map.addRenderer(new BeaconMap(getBeaconzPlugin(), (int)origin.getX(), (int)origin.getY()));
-                                    } else {
-                                        map.addRenderer(new BeaconMap(getBeaconzPlugin()));
-                                    }
-                                } else {
-                                    getLogger().severe("Could not load map #" + id + " as it doesn't exist on this server. Skipping...");
-                                }
-                            }
-                        }
-                        // If game is null, beacon is from a deleted game - skip it
-                    }
-                }
-            }
-        }
-
-        // === PHASE 2: Reconstruct beacon links ===
-        // Now that all beacons exist, we can resolve link references
-        long count = 0;
-        for (BeaconObj beacon: beaconStringLinks.keySet()) {
-            for (String link : beaconStringLinks.get(beacon)) {
-                // Parse link string "destX:destZ:timestamp"
-                String[] args = link.split(":");
-                BeaconObj dest = beaconRegister.get(new Point2D.Double(Double.parseDouble(args[0]), Double.parseDouble(args[1])));
-                if (dest != null) {
-                    // Extract timestamp (or assign sequential timestamp if missing from old saves)
-                    long linkTime;
-                    if (args.length == 3) {
-                        linkTime = Long.parseLong(args[2]);
-                    } else {
-                        // Old format without timestamp - assign sequential times
-                        count += 1000;
-                        linkTime = count;
-                    }
-
-                    // Create the link object
-                    BeaconLink newBeaconPair = new BeaconLink(beacon, dest, linkTime);
-                    Game game = getGameMgr().getGame(beacon.getPoint());
-                    if (game != null) {
-                        if (beaconLinks.get(game) == null) {
-                            List<BeaconLink> pairs = new ArrayList<>();
-                            beaconLinks.put(game, pairs);
-                        }
-                        // Check for duplicate links before adding
-                        if (!beaconLinks.get(game).contains(newBeaconPair)) {
-                            beaconLinks.get(game).add(newBeaconPair);
-                        } else {
-                            getLogger().warning("Removed duplicate link");
-                        }
-                    }
-                }
-            }
-        }
-
-        // === PHASE 3: Create beacon links and triangle fields ===
-        // Process each game's links in chronological order
-        for (Entry<Game, List<BeaconLink>> entry : beaconLinks.entrySet()) {
-            // Sort by timestamp to recreate links in the same order they were made
-            Collections.sort(entry.getValue());
-
-            // Create the actual bidirectional links in the beacon objects
-            for (BeaconLink beaconPair: entry.getValue()) {
-                beaconPair.getBeacon1().addOutboundLink(beaconPair.getBeacon2());
-            }
-
-            // Recalculate scores and auto-generate triangle fields
-            recalculateScore(entry.getKey());
         }
     }
 
@@ -1807,7 +1454,7 @@ public class Register extends BeaconzPluginDependent {
                         getMessages().tellTeam(oldOwner, Lang.linkLostLink);
                         getMessages().tellOtherTeams(oldOwner, MiniMessage.miniMessage().deserialize(Lang.linkTeamLostLink,
                                 Placeholder.component("team", oldOwner.displayName())));
-                    } else if (linkLossCount > 1) {
+                    } else if (linkLossCount > 1 && !quiet) {
                         String count = String.valueOf(linkLossCount);
                         getMessages().tellTeam(oldOwner, MiniMessage.miniMessage().deserialize(Lang.linkLostLinks,
                                 Placeholder.component("number", Component.text(count))));

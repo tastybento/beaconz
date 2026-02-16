@@ -314,15 +314,12 @@ public class Beaconz extends JavaPlugin {
             // GAME CREATION
             // Create the default game if no games exist (first run)
             if (gameMgr.getGames().isEmpty()) {
-                getLogger().info("DEBUG: No games exist - creating default game");
                 gameMgr.newGame(Settings.defaultGameName).thenAccept(success -> {
                     // RESOLVE PENDING BEACON OWNERSHIP
                     // After game creation completes, resolve beacons that couldn't find their games during initial load
-                    getLogger().info("DEBUG: Default game created - calling resolvePendingOwnership");
                     register.resolvePendingOwnership();
                 });
             } else {
-                getLogger().info("DEBUG: Games already exist (" + gameMgr.getGames().size() + " games) - calling resolvePendingOwnership immediately");
                 // Games already exist, resolve pending ownership immediately
                 register.resolvePendingOwnership();
             }
