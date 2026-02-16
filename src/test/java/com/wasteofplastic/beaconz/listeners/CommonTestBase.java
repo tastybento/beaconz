@@ -34,7 +34,7 @@ import com.wasteofplastic.beaconz.game.Register;
 import com.wasteofplastic.beaconz.game.Scorecard;
 import com.wasteofplastic.beaconz.storage.BeaconzStore;
 import com.wasteofplastic.beaconz.storage.Messages;
-import com.wasteofplastic.beaconz.storage.TinyDB;
+import com.wasteofplastic.beaconz.storage.NameDB;
 
 import net.kyori.adventure.text.Component;
 
@@ -62,7 +62,7 @@ public abstract class CommonTestBase {
     @Mock
     protected BeaconzStore store;
     @Mock
-    protected TinyDB nameStore;
+    protected NameDB nameStore;
 
     // Game & scoring
     @Mock

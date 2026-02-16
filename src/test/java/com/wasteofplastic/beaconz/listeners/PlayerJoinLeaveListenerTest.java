@@ -29,7 +29,7 @@ import com.google.common.collect.HashBiMap;
 import com.wasteofplastic.beaconz.config.Lang;
 import com.wasteofplastic.beaconz.core.Region;
 import com.wasteofplastic.beaconz.storage.Messages;
-import com.wasteofplastic.beaconz.storage.TinyDB;
+import com.wasteofplastic.beaconz.storage.NameDB;
 
 import net.kyori.adventure.text.Component;
 
@@ -46,7 +46,7 @@ class PlayerJoinLeaveListenerTest extends CommonTestBase {
     void setUpListener() {
         listener = new PlayerJoinLeaveListener(plugin);
         // Mock TinyDB name store
-        TinyDB nameStore = mock(TinyDB.class);
+        NameDB nameStore = mock(NameDB.class);
         when(plugin.getNameStore()).thenReturn(nameStore);
         // Game and scorecard
         when(game.getScorecard()).thenReturn(scorecard);

@@ -34,7 +34,7 @@ import com.wasteofplastic.beaconz.listeners.PlayerMovementListener;
 import com.wasteofplastic.beaconz.listeners.PlayerTeleportListener;
 import com.wasteofplastic.beaconz.storage.BeaconzStore;
 import com.wasteofplastic.beaconz.storage.Messages;
-import com.wasteofplastic.beaconz.storage.TinyDB;
+import com.wasteofplastic.beaconz.storage.NameDB;
 
 import net.kyori.adventure.text.Component;
 
@@ -188,9 +188,9 @@ class BeaconzTest {
         }
 
         @Test
-        @DisplayName("getNameStore() should return TinyDB")
+        @DisplayName("getNameStore() should return NameDB")
         void testGetNameStore() {
-            TinyDB nameStore = plugin.getNameStore();
+            NameDB nameStore = plugin.getNameStore();
             assertNotNull(nameStore);
         }
 
