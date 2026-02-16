@@ -225,7 +225,6 @@ public class BeaconPopulator extends BlockPopulator {
                 return;
             }
             limitedRegion.setType(worldX, y, worldZ, Material.BEACON);
-            
             // Add the capstone
             if (y + 1 <= worldInfo.getMaxHeight() && limitedRegion.isInRegion(worldX, y + 1, worldZ)) {
                 limitedRegion.setType(worldX, y + 1, worldZ, Material.OBSIDIAN);
