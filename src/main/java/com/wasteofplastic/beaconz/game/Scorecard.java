@@ -454,8 +454,7 @@ public class Scorecard extends BeaconzPluginDependent {
         if (csect != null) {
             for (String teamName: csect.getValues(false).keySet()) {
                 Material teamBlock = Material.getMaterial(csect.getString(teamName + ".glasscolor"));
-                //IMPORTANT: The team's display name must ALWAYS be the team's name, PRECEEDED BY the ChatColor
-                String teamDisplayName = ChatColor.translateAlternateColorCodes('&', csect.getString(teamName + ".displayname", teamName));
+                String teamDisplayName = csect.getString(teamName + ".displayname", teamName);
                 if (teamName.length() > 16) {
                     teamName = teamName.substring(0, 16);
                 }

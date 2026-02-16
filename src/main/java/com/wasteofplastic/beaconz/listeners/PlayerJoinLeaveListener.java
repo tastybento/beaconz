@@ -168,7 +168,6 @@ public class PlayerJoinLeaveListener extends BeaconzPluginDependent implements L
 
                     if (DEBUG) {
                         getLogger().info("DEBUG: Player is in team - " + game.getScorecard().getTeam(player));
-                        getLogger().info("DEBUG: Player is in team - " + game.getScorecard().getTeam(player).getDisplayName());
                     }
 
                     // Join the game but don't teleport (false = stay at current location)

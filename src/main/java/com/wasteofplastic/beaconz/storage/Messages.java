@@ -181,16 +181,6 @@ public class Messages extends BeaconzPluginDependent {
     }
 
     /**
-     * Tells a message to all members of team, regardless of whether they are online or offline
-     * @param team - team to send message to
-     * @param message - message to send
-     */
-    @Deprecated
-    public void tellTeam(Team team, String message) {
-        tellTeam(null, team, message);
-    }
-
-    /**
      * Tells a message to all members of team, regardless of whether they are online or offline.
      * Ignores player
      * @param player player sending the message
@@ -249,23 +239,6 @@ public class Messages extends BeaconzPluginDependent {
                 }
             }
         }
-    }
-    
-    
-
-    /**
-     * Broadcast a message to all teams other than this one
-     * @param team - team to exclude
-     * @param message - message to send
-     */
-    public void tellOtherTeams(Team team, String message) {
-        for (Team otherTeam : team.getScoreboard().getTeams()) {
-            if (!team.equals(otherTeam)) {
-                // Tell other players
-                tellTeam(otherTeam, message);
-            }
-        }
-
     }
 
     /**

@@ -98,8 +98,7 @@ public class ScoreCommand extends BeaconzPluginDependent implements SubCommand {
         // Create inventory
         Component title = MiniMessage.miniMessage().deserialize(Lang.scoreGuiTitle,
             Placeholder.component("game", game.getName()));
-        String legacyTitle = LegacyComponentSerializer.legacySection().serialize(title);
-        Inventory inv = Bukkit.createInventory(null, layout.size, legacyTitle);
+        Inventory inv = Bukkit.createInventory(null, layout.size, title);
 
         // Populate inventory with team scores
         int slot = 0;
@@ -188,6 +187,7 @@ public class ScoreCommand extends BeaconzPluginDependent implements SubCommand {
         List<Component> lore = new ArrayList<>();
 
         // Player count
+        @SuppressWarnings("deprecation")
         int playerCount = game.getScorecard().getScoreboard().getPlayers().stream()
             .filter(p -> team.equals(game.getScorecard().getScoreboard().getPlayerTeam(p)))
             .toList().size();

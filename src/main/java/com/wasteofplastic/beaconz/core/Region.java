@@ -763,7 +763,7 @@ public class Region extends BeaconzPluginDependent {
                         if (player.getLocation().getBlock().getType() == Material.WATER) {
                             // Put user in a boat if they end up in water after teleporting to prevent drowning
                             Boat boat = player.getWorld().spawn(player.getLocation(), org.bukkit.entity.Boat.class);
-                            boat.setPassenger(player);
+                            boat.addPassenger(player);
                         }
                     }
                 }
