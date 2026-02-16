@@ -1,26 +1,15 @@
 package com.wasteofplastic.beaconz.commands;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.Mockito.atLeast;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Set;
-
+import com.wasteofplastic.beaconz.Beaconz;
+import com.wasteofplastic.beaconz.config.Lang;
+import com.wasteofplastic.beaconz.config.Params.GameScoreGoal;
+import com.wasteofplastic.beaconz.core.Region;
+import com.wasteofplastic.beaconz.game.Game;
+import com.wasteofplastic.beaconz.game.GameMgr;
+import com.wasteofplastic.beaconz.game.Scorecard;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
-import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.scoreboard.Scoreboard;
@@ -31,15 +20,15 @@ import org.junit.jupiter.api.Test;
 import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.ServerMock;
 
-import com.wasteofplastic.beaconz.Beaconz;
-import com.wasteofplastic.beaconz.config.Lang;
-import com.wasteofplastic.beaconz.config.Params.GameScoreGoal;
-import com.wasteofplastic.beaconz.core.Region;
-import com.wasteofplastic.beaconz.game.Game;
-import com.wasteofplastic.beaconz.game.GameMgr;
-import com.wasteofplastic.beaconz.game.Scorecard;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Set;
 
-import net.kyori.adventure.text.Component;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.Mockito.*;
 
 /**
  * Comprehensive test suite for {@link CmdHandler} covering all command scenarios.
@@ -119,6 +108,8 @@ class CmdHandlerTest {
         team2 = mock(Team.class);
         when(team1.displayName()).thenReturn(Component.text("Red Team"));
         when(team2.displayName()).thenReturn(Component.text("Blue Team"));
+        when(team1.getName()).thenReturn("red");
+        when(team2.getName()).thenReturn("blue");
     }
 
     /**
@@ -132,6 +123,7 @@ class CmdHandlerTest {
         Lang.errorYouMustBeInAGame = Component.text("You must be in a game");
         Lang.errorNoSuchGame = Component.text("No such game");
         Lang.errorUnknownCommand = Component.text("Unknown command");
+        Lang.errorNoTeams = Component.text("No teams found");
         Lang.helpHelp = Component.text("- shows this help");
         Lang.helpLeave = Component.text("- leave a game");
         Lang.helpScore = Component.text("- show the team scores");
@@ -141,6 +133,14 @@ class CmdHandlerTest {
         Lang.scoreScores = Component.text("Scores:");
         Lang.scoreGame = "[score] [unit]";
         Lang.scoreTeam = "<team>";
+
+        // Score GUI strings
+        Lang.scoreGuiTitle = "<aqua><bold>Scores - <game></bold></aqua>";
+        Lang.scoreGuiTeamHeader = "<team_color><bold><team></bold></team_color>";
+        Lang.scoreGuiTeamPlayers = "<gray>Players: <white><count></white></gray>";
+        Lang.scoreGuiScoreName = "<yellow><bold><score_type></bold></yellow>";
+        Lang.scoreGuiScoreTeam = "<gray>Team: <team_color><team></team_color></gray>";
+        Lang.scoreGuiScoreValue = "Value: ";
     }
 
     /**
@@ -333,7 +333,7 @@ class CmdHandlerTest {
 
     /**
      * Test the /beaconz score command when player is in game but no team.
-     * Should display error message.
+     * Should still display score GUI with all teams.
      */
     @Test
     void testOnCommand_Score_InGameNoTeam() {
@@ -344,13 +344,20 @@ class CmdHandlerTest {
         // Mock player in a game but not on a team
         when(gameMgr.getGame(any(Location.class))).thenReturn(game);
         when(game.getScorecard()).thenReturn(scorecard);
+        when(game.getName()).thenReturn(TEST_GAME);
         when(scorecard.getTeam(player)).thenReturn(null);
+
+        // The GUI still needs the scoreboard to show all teams
+        when(scorecard.getScoreboard()).thenReturn(scoreboard);
+        when(scoreboard.getTeams()).thenReturn(Set.of(team1, team2));
+        when(scorecard.getScore(any(Team.class), any(GameScoreGoal.class))).thenReturn(50);
 
         // Execute score command
         boolean result = handler.onCommand(player, command, "beaconz", new String[]{"score"});
 
-        // Verify command handled
+        // Verify command handled and GUI shown
         assertTrue(result, "Command should be handled");
+        verify(scorecard).refreshScores();
     }
 
     // ==================== Scoreboard Toggle Tests ====================
@@ -598,7 +605,7 @@ class CmdHandlerTest {
 
     /**
      * Test executing a command with too many arguments.
-     * Should return error for unknown command.
+     * Should return true (handled with error message for unknown command).
      */
     @Test
     void testOnCommand_TooManyArguments() {
@@ -609,8 +616,8 @@ class CmdHandlerTest {
         // Execute command with 3+ arguments
         boolean result = handler.onCommand(player, command, "beaconz", new String[]{"arg1", "arg2", "arg3"});
 
-        // Verify command returned false (unknown command)
-        assertFalse(result, "Command should return false for too many arguments");
+        // Verify command was handled (unknown command error shown)
+        assertTrue(result, "Command should be handled with error message");
     }
 
     /**
@@ -630,72 +637,12 @@ class CmdHandlerTest {
         assertTrue(result, "Command should be handled");
     }
 
-    // ==================== Show Game Scores Tests ====================
-
-    /**
-     * Test the showGameScores method displays all team scores.
-     * Should show beacons, links, triangles, and area for each team.
-     */
-    @Test
-    void testShowGameScores() {
-        // Create a mock sender
-        CommandSender sender = mock(CommandSender.class);
-
-        // Mock game and scorecard
-        when(game.getScorecard()).thenReturn(scorecard);
-        when(scorecard.getScoreboard()).thenReturn(scoreboard);
-        when(scoreboard.getTeams()).thenReturn(Set.of(team1, team2));
-
-        // Mock scores for different metrics
-        when(scorecard.getScore(team1, GameScoreGoal.BEACONS)).thenReturn(5);
-        when(scorecard.getScore(team1, GameScoreGoal.LINKS)).thenReturn(8);
-        when(scorecard.getScore(team1, GameScoreGoal.TRIANGLES)).thenReturn(3);
-        when(scorecard.getScore(team1, GameScoreGoal.AREA)).thenReturn(500);
-
-        when(scorecard.getScore(team2, GameScoreGoal.BEACONS)).thenReturn(3);
-        when(scorecard.getScore(team2, GameScoreGoal.LINKS)).thenReturn(4);
-        when(scorecard.getScore(team2, GameScoreGoal.TRIANGLES)).thenReturn(1);
-        when(scorecard.getScore(team2, GameScoreGoal.AREA)).thenReturn(200);
-
-        // Call showGameScores
-        handler.showGameScores(sender, game);
-
-        // Verify refreshScores was called
-        verify(scorecard).refreshScores();
-
-        // Verify sender received messages (at least the header + 8 score lines for 2 teams)
-        verify(sender, atLeast(9)).sendMessage(any(Component.class));
-    }
-
-    /**
-     * Test showGameScores with empty team list.
-     * Should only show the header message.
-     */
-    @Test
-    void testShowGameScores_NoTeams() {
-        // Create a mock sender
-        CommandSender sender = mock(CommandSender.class);
-
-        // Mock game with no teams
-        when(game.getScorecard()).thenReturn(scorecard);
-        when(scorecard.getScoreboard()).thenReturn(scoreboard);
-        when(scoreboard.getTeams()).thenReturn(Set.of());
-
-        // Call showGameScores
-        handler.showGameScores(sender, game);
-
-        // Verify refreshScores was called
-        verify(scorecard).refreshScores();
-
-        // Verify only header message was sent
-        verify(sender, times(1)).sendMessage(any(Component.class));
-    }
 
     // ==================== Tab Completion Tests ====================
 
     /**
      * Test tab completion for the base command.
-     * Should show help, score, scoreboard, and optionally leave.
+     * Should show help, score, sb, and optionally leave.
      */
     @Test
     void testOnTabComplete_NoArgs() {
@@ -710,7 +657,7 @@ class CmdHandlerTest {
         assertNotNull(completions, "Completions should not be null");
         assertTrue(completions.contains("help"), "Should contain help");
         assertTrue(completions.contains("score"), "Should contain score");
-        assertTrue(completions.contains("scoreboard"), "Should contain scoreboard");
+        assertTrue(completions.contains("sb"), "Should contain sb");
     }
 
     /**
@@ -800,11 +747,11 @@ class CmdHandlerTest {
         // Get tab completions with partial input "sc"
         List<String> completions = handler.onTabComplete(player, command, "beaconz", new String[]{"sc"});
 
-        // Verify filtered results
+        // Verify filtered results (only 'score' starts with 'sc')
         assertNotNull(completions, "Completions should not be null");
         assertTrue(completions.contains("score"), "Should contain score");
-        assertTrue(completions.contains("scoreboard"), "Should contain scoreboard");
         assertFalse(completions.contains("help"), "Should not contain help");
+        assertFalse(completions.contains("sb"), "Should not contain sb (doesn't start with 'sc')");
     }
 
     // ==================== Tab Limit Utility Tests ====================

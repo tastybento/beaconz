@@ -35,9 +35,6 @@ world:
 
 # Lobby settings
 lobby:
-  # If true, players will not be teleported to a lobby area when they join the game.
-  # They will be automatically assigned to a team and spawned near their team's beacon.
-  skip-lobby: false
   # Coordinates for the lobby area - a square.
   # These coordinates must be divisible by 16, otherwise they will be adjusted
   lobbyx: 0
@@ -246,6 +243,9 @@ teams:
   # Number of teams. There can only be up to 14 teams. You can pick from the 16 possible
   # colors below.
   defaultNumber: 2
+
+  # Allow friendly fire. If false, players cannot hurt their teammates, but can still hurt themselves.
+  friendlyFire: false
 
   # Teams have glass colors that can be picked from these. They must be different.
   # Team names can be anything you like, but must be a single word. They are taken in

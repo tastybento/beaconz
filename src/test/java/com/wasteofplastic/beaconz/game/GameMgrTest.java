@@ -13,8 +13,15 @@ import static org.mockito.Mockito.when;
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.io.File;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -64,6 +71,7 @@ class GameMgrTest {
     private Beaconz plugin;
     private World world;
     private GameMgr gameMgr;
+    private HikariDataSource dataSource;
 
     @TempDir
     File tempDir;
@@ -84,10 +92,19 @@ class GameMgrTest {
         when(plugin.isEnabled()).thenReturn(true);
         when(plugin.getLogger()).thenReturn(java.util.logging.Logger.getLogger("BeaconzTest"));
 
+        // Initialize test database
+        HikariConfig config = new HikariConfig();
+        config.setJdbcUrl("jdbc:sqlite:" + new File(tempDir, "test-gamemgr.db").getAbsolutePath());
+        config.setDriverClassName("org.sqlite.JDBC");
+        config.setMaximumPoolSize(10);
+        config.setConnectionTestQuery("SELECT 1");
+        dataSource = new HikariDataSource(config);
+        when(plugin.getDataSource()).thenReturn(dataSource);
+
         // Mock FileConfiguration for plugin.getConfig()
-        FileConfiguration config = mock(FileConfiguration.class);
-        when(plugin.getConfig()).thenReturn(config);
-        when(config.getConfigurationSection(anyString())).thenReturn(null);
+        FileConfiguration config2 = mock(FileConfiguration.class);
+        when(plugin.getConfig()).thenReturn(config2);
+        when(config2.getConfigurationSection(anyString())).thenReturn(null);
 
         // Create and setup test world
         world = server.addSimpleWorld("beaconzworld");
@@ -129,6 +146,9 @@ class GameMgrTest {
      */
     @AfterEach
     void tearDown() {
+        if (dataSource != null && !dataSource.isClosed()) {
+            dataSource.close();
+        }
         if (server != null) {
             MockBukkit.unmock();
         }
@@ -205,20 +225,35 @@ class GameMgrTest {
 
     /**
      * Test method for {@link GameMgr#saveAllGames()}.
-     * Verifies games are saved to YAML file.
+     * Verifies games are saved to the database.
      */
     @Test
-    void testSaveAllGames() {
+    void testSaveAllGames() throws Exception {
         mockBiomeForArea(0, 0, 64, Biome.PLAINS);
         gameMgr = new GameMgr(plugin);
+
+        // Create a test game
+        String gameName = "TestGame";
+        CompletableFuture<Boolean> future = gameMgr.newGame(gameName);
+        Boolean created = future.get(); // Wait for async creation
+        assertTrue(created, "Game should be created successfully");
+
+        // Get the game from the gameMgr
+        Game game = gameMgr.getGame(gameName);
+        assertNotNull(game, "Game should exist");
 
         // Save all games
         gameMgr.saveAllGames();
 
-        // Verify games.yml was created
-        File gamesFile = new File(tempDir, "games.yml");
-        assertTrue(gamesFile.exists() || new File(tempDir, "games.old").exists(),
-                   "Games file should be created");
+        // Verify game was saved to database by querying it
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement("SELECT game_name FROM games WHERE game_name = ?")) {
+            stmt.setString(1, gameName);
+            try (ResultSet rs = stmt.executeQuery()) {
+                assertTrue(rs.next(), "Game should be saved to database");
+                assertEquals(gameName, rs.getString("game_name"), "Game name should match");
+            }
+        }
     }
 
     /**

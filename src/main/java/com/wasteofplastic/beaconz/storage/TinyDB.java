@@ -3,68 +3,170 @@ package com.wasteofplastic.beaconz.storage;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.nio.file.StandardOpenOption;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Stream;
 
 import org.bukkit.scheduler.BukkitRunnable;
 
 import com.wasteofplastic.beaconz.Beaconz;
+import com.zaxxer.hikari.HikariDataSource;
 
 /**
- * Player name to UUID database.
- * Uses JSON Lines format for better data integrity and easier maintenance.
+ * Player name to UUID database using SQLite via HikariCP connection pool.
+ * Maintains an in-memory cache for fast lookups with background database persistence.
+ * Supports migration from legacy file-based format.
  */
 public class TinyDB {
     private final Beaconz plugin;
     private final ConcurrentHashMap<String, UUID> cache;
-    private final Path databasePath;
-    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+    private final HikariDataSource dataSource;
+    private final Path legacyDatabasePath;
     private volatile boolean saving = false;
+
+    private static final String TABLE_NAME = "player_names";
+    private static final String CREATE_TABLE =
+        "CREATE TABLE IF NOT EXISTS " + TABLE_NAME + " (" +
+        "name TEXT PRIMARY KEY NOT NULL, " +
+        "uuid TEXT NOT NULL" +
+        ")";
+    private static final String INSERT_OR_REPLACE =
+        "INSERT OR REPLACE INTO " + TABLE_NAME + " (name, uuid) VALUES (?, ?)";
+    private static final String SELECT_BY_NAME =
+        "SELECT uuid FROM " + TABLE_NAME + " WHERE name = ?";
+    private static final String SELECT_ALL =
+        "SELECT name, uuid FROM " + TABLE_NAME;
+    private static final String COUNT_ALL =
+        "SELECT COUNT(*) FROM " + TABLE_NAME;
 
     public TinyDB(Beaconz plugin) {
         this.plugin = plugin;
         this.cache = new ConcurrentHashMap<>();
-        this.databasePath = plugin.getDataFolder().toPath().resolve("name-uuid.jsonl");
+        this.dataSource = plugin.getDataSource();
+        this.legacyDatabasePath = plugin.getDataFolder().toPath().resolve("name-uuid.jsonl");
 
-        // Create parent directories if needed
+        if (this.dataSource == null) {
+            plugin.getLogger().severe("Database not initialized! TinyDB will not function properly.");
+            return;
+        }
+
+        // Create the table if it doesn't exist
         try {
-            Files.createDirectories(databasePath.getParent());
+            createTable();
+
+            // Try to migrate from legacy file format first
+            migrateLegacyData();
+
             // Load existing data into cache on startup
             loadCache();
-        } catch (IOException e) {
-            plugin.getLogger().severe("Failed to initialize database: " + e.getMessage());
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Failed to initialize player name database: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
     /**
-     * Load all entries into cache on startup (lazy initialization alternative)
+     * Creates the player_names table if it doesn't exist
      */
-    private void loadCache() throws IOException {
-        if (!Files.exists(databasePath)) {
-            return;
-        }
-
-        lock.readLock().lock();
-        try (Stream<String> lines = Files.lines(databasePath)) {
-            lines.forEach(line -> {
-                String[] parts = line.split("\t");
-                if (parts.length == 2) {
-                    try {
-                        cache.put(parts[0].toLowerCase(), UUID.fromString(parts[1]));
-                    } catch (IllegalArgumentException e) {
-                        plugin.getLogger().warning("Invalid UUID in database: " + line);
-                    }
-                }
-            });
-        } finally {
-            lock.readLock().unlock();
+    private void createTable() throws SQLException {
+        try (Connection conn = dataSource.getConnection();
+             Statement stmt = conn.createStatement()) {
+            stmt.execute(CREATE_TABLE);
         }
     }
 
+    /**
+     * Migrates data from legacy file format to SQLite database
+     */
+    private void migrateLegacyData() {
+        if (!Files.exists(legacyDatabasePath)) {
+            return;
+        }
+
+        plugin.getLogger().info("Found legacy player name database, migrating to SQLite...");
+
+        try (Stream<String> lines = Files.lines(legacyDatabasePath);
+             Connection conn = dataSource.getConnection()) {
+
+            conn.setAutoCommit(false);
+
+            try (PreparedStatement stmt = conn.prepareStatement(INSERT_OR_REPLACE)) {
+                lines.forEach(line -> {
+                    String[] parts = line.split("\t");
+                    if (parts.length == 2) {
+                        try {
+                            UUID uuid = UUID.fromString(parts[1]);
+                            stmt.setString(1, parts[0].toLowerCase());
+                            stmt.setString(2, uuid.toString());
+                            stmt.addBatch();
+                        } catch (IllegalArgumentException e) {
+                            plugin.getLogger().warning("Invalid UUID in legacy database: " + line);
+                        } catch (SQLException e) {
+                            plugin.getLogger().warning("Failed to migrate entry: " + line);
+                        }
+                    }
+                });
+
+                stmt.executeBatch();
+                conn.commit();
+
+                plugin.getLogger().info("Successfully migrated legacy player name database");
+
+                // Rename the old file to indicate it's been migrated
+                try {
+                    Files.move(legacyDatabasePath,
+                              legacyDatabasePath.resolveSibling("name-uuid.jsonl.migrated"));
+                } catch (IOException e) {
+                    plugin.getLogger().warning("Could not rename legacy database file: " + e.getMessage());
+                }
+
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(true);
+            }
+
+        } catch (IOException e) {
+            plugin.getLogger().warning("Failed to read legacy database file: " + e.getMessage());
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Failed to migrate legacy database: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Load all entries from database into cache on startup
+     */
+    private void loadCache() throws SQLException {
+        try (Connection conn = dataSource.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(SELECT_ALL)) {
+
+            while (rs.next()) {
+                String name = rs.getString("name");
+                String uuidStr = rs.getString("uuid");
+                try {
+                    cache.put(name.toLowerCase(), UUID.fromString(uuidStr));
+                } catch (IllegalArgumentException e) {
+                    plugin.getLogger().warning("Invalid UUID in database for player '" + name + "': " + uuidStr);
+                }
+            }
+
+            plugin.getLogger().info("Loaded " + cache.size() + " player names from database");
+        }
+    }
+
+    // ...existing code...
+
+    /**
+     * Saves the cache to the database asynchronously
+     */
     public void asyncSaveDB() {
         if (saving) {
             return;
@@ -77,34 +179,40 @@ public class TinyDB {
         }.runTaskAsynchronously(plugin);
     }
 
+    /**
+     * Saves all cached entries to the database
+     */
     public void saveDB() {
+        if (dataSource == null) {
+            return;
+        }
+
         saving = true;
-        lock.writeLock().lock();
 
-        try {
-            // Write to temporary file first
-            Path tempPath = databasePath.resolveSibling("name-uuid.tmp");
+        try (Connection conn = dataSource.getConnection()) {
+            // Disable auto-commit for batch insert
+            conn.setAutoCommit(false);
 
-            // Use atomic write with modern Java NIO
-            try (var writer = Files.newBufferedWriter(tempPath,
-                    StandardOpenOption.CREATE,
-                    StandardOpenOption.TRUNCATE_EXISTING)) {
-
+            try (PreparedStatement stmt = conn.prepareStatement(INSERT_OR_REPLACE)) {
                 for (var entry : cache.entrySet()) {
-                    writer.write(entry.getKey());
-                    writer.write('\t');
-                    writer.write(entry.getValue().toString());
-                    writer.newLine();
+                    stmt.setString(1, entry.getKey());
+                    stmt.setString(2, entry.getValue().toString());
+                    stmt.addBatch();
                 }
+
+                stmt.executeBatch();
+                conn.commit();
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(true);
             }
 
-            // Atomic move to replace old database
-            Files.move(tempPath, databasePath, StandardCopyOption.REPLACE_EXISTING);
-
-        } catch (IOException e) {
-            plugin.getLogger().severe("Failed to save database: " + e.getMessage());
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Failed to save player name database: " + e.getMessage());
+            e.printStackTrace();
         } finally {
-            lock.writeLock().unlock();
             saving = false;
         }
     }
@@ -113,13 +221,38 @@ public class TinyDB {
      * Saves the player name to the database. Case insensitive!
      */
     public void savePlayerName(String playerName, UUID playerUUID) {
-        cache.put(playerName.toLowerCase(), playerUUID);
+        if (playerName == null || playerUUID == null) {
+            return;
+        }
+
+        String nameLower = playerName.toLowerCase();
+        cache.put(nameLower, playerUUID);
+
+        // Save to database in background
+        if (dataSource != null) {
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    try (Connection conn = dataSource.getConnection();
+                         PreparedStatement stmt = conn.prepareStatement(INSERT_OR_REPLACE)) {
+                        stmt.setString(1, nameLower);
+                        stmt.setString(2, playerUUID.toString());
+                        stmt.executeUpdate();
+                    } catch (SQLException e) {
+                        plugin.getLogger().warning("Failed to save player name '" + playerName + "': " + e.getMessage());
+                    }
+                }
+            }.runTaskAsynchronously(plugin);
+        }
     }
 
     /**
      * Gets the UUID for this player name or null if not known. Case insensitive!
      */
     public UUID getPlayerUUID(String playerName) {
+        if (playerName == null) {
+            return null;
+        }
         return cache.get(playerName.toLowerCase());
     }
 
@@ -134,6 +267,9 @@ public class TinyDB {
      * Checks if a player name is in the database
      */
     public boolean hasPlayer(String playerName) {
+        if (playerName == null) {
+            return false;
+        }
         return cache.containsKey(playerName.toLowerCase());
     }
 }

@@ -29,6 +29,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import org.apache.commons.lang.math.NumberUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -74,6 +76,7 @@ import com.wasteofplastic.beaconz.listeners.PlayerDeathListener;
 import com.wasteofplastic.beaconz.listeners.PlayerJoinLeaveListener;
 import com.wasteofplastic.beaconz.listeners.PlayerMovementListener;
 import com.wasteofplastic.beaconz.listeners.PlayerTeleportListener;
+import com.wasteofplastic.beaconz.listeners.ScoreGUIListener;
 import com.wasteofplastic.beaconz.listeners.SkyListeners;
 import com.wasteofplastic.beaconz.storage.BeaconzStore;
 import com.wasteofplastic.beaconz.storage.Messages;
@@ -147,6 +150,9 @@ public class Beaconz extends JavaPlugin {
     /** Teleport listener for managing safe teleportation */
     private PlayerTeleportListener teleportListener;
 
+    /** HikariCP data source for player name database (if using SQL storage) */
+    private HikariDataSource dataSource;
+
     /**
      * Called when the plugin is loaded (before worlds are loaded).
      * <p>
@@ -205,12 +211,22 @@ public class Beaconz extends JavaPlugin {
         loadConfig();
 
         // Register player commands
-        getCommand("beaconz").setExecutor(new CmdHandler(this));
-
+        if (getCommand("beaconz") == null) {
+            getLogger().severe("Failed to register command 'beaconz' - plugin will not function!");
+        } else {
+            getCommand("beaconz").setExecutor(new CmdHandler(this));
+        }
         // Register admin commands
-        getCommand("badmin").setExecutor(new AdminCmdHandler(this));
+        if (getCommand("badmin") == null) {
+            getLogger().severe("Failed to register command 'badmin' - admin commands will not work!");
+        } else {
+            getCommand("badmin").setExecutor(new AdminCmdHandler(this));
+        }
 
         // INITIALIZATION PHASE 2: Services
+
+        // Initialize the database connection pool
+        setupDatabase();
 
         // Initialize bStats metrics tracking
         try {
@@ -277,6 +293,9 @@ public class Beaconz extends JavaPlugin {
             // Lobby listener for sign-based game joining
             getServer().getPluginManager().registerEvents(new LobbyListener(plugin), plugin);
 
+            // Score GUI listener for inventory interactions
+            getServer().getPluginManager().registerEvents(new ScoreGUIListener(), plugin);
+
             // Load player message queues
             messages = new Messages(plugin);
 
@@ -293,10 +312,44 @@ public class Beaconz extends JavaPlugin {
             // GAME CREATION
             // Create the default game if no games exist (first run)
             if (gameMgr.getGames().isEmpty()) {
-                gameMgr.newGame(Settings.defaultGameName);
+                getLogger().info("DEBUG: No games exist - creating default game");
+                gameMgr.newGame(Settings.defaultGameName).thenAccept(success -> {
+                    // RESOLVE PENDING BEACON OWNERSHIP
+                    // After game creation completes, resolve beacons that couldn't find their games during initial load
+                    getLogger().info("DEBUG: Default game created - calling resolvePendingOwnership");
+                    register.resolvePendingOwnership();
+                });
+            } else {
+                getLogger().info("DEBUG: Games already exist (" + gameMgr.getGames().size() + " games) - calling resolvePendingOwnership immediately");
+                // Games already exist, resolve pending ownership immediately
+                register.resolvePendingOwnership();
             }
 
+            // Start periodic auto-save task to prevent data loss
+            // Saves register every 30 seconds (600 ticks)
+            startAutoSaveTask();
+
         });
+    }
+
+    /**
+     * Starts a periodic task that automatically saves the beacon register to prevent data loss.
+     * Runs every 30 seconds in the background (configurable via delay parameter).
+     */
+    private void startAutoSaveTask() {
+        // Auto-save every 30 seconds (600 ticks)
+        // First save happens 30 seconds after server start
+        long autoSaveInterval = 600L; // 30 seconds in ticks
+
+        getServer().getScheduler().runTaskTimerAsynchronously(this, () -> {
+            if (register != null) {
+                try {
+                    register.saveRegister();
+                } catch (Exception e) {
+                    getLogger().warning("Auto-save failed: " + e.getMessage());
+                }
+            }
+        }, autoSaveInterval, autoSaveInterval);
     }
 
     /**
@@ -308,6 +361,7 @@ public class Beaconz extends JavaPlugin {
      *   <li>Remove map renderers to prevent memory leaks</li>
      *   <li>Save all player inventories</li>
      *   <li>Save all game states</li>
+     *   <li>Close database connections</li>
      * </ol>
      *
      * All data is saved to disk to ensure no progress is lost when the
@@ -318,20 +372,39 @@ public class Beaconz extends JavaPlugin {
     {
         // Save beacon register (beacons, links, triangular fields)
         if (register != null) {
-            register.saveRegister();
-
-            // Remove all custom map renderers to prevent memory leaks
-            // Maps will get their renderers back when players rejoin
-            register.removeMapRenderers();
+            try {
+                register.saveRegister();
+                // Remove all custom map renderers to prevent memory leaks
+                // Maps will get their renderers back when players rejoin
+                register.removeMapRenderers();
+            } catch (Exception e) {
+                getLogger().warning("Failed to save register during shutdown: " + e.getMessage());
+            }
         }
 
-        // Save all player inventories to disk
-        if (beaconzStore != null) {
-            beaconzStore.saveInventories();
-        }
+        // Player inventories are automatically persisted to database
+        // No need to manually save - database commits on each operation
 
         // Save all game states (teams, scores, configurations)
-        getGameMgr().saveAllGames();
+        if (gameMgr != null) {
+            try {
+                gameMgr.saveAllGames();
+            } catch (Exception e) {
+                getLogger().warning("Failed to save games during shutdown: " + e.getMessage());
+            }
+        }
+
+        // Save player name database
+        if (nameStore != null) {
+            try {
+                nameStore.saveDB();
+            } catch (Exception e) {
+                getLogger().warning("Failed to save name store during shutdown: " + e.getMessage());
+            }
+        }
+
+        // Close database connection pool AFTER all saves are complete
+        this.closeDataSource();
     }
 
 
@@ -380,6 +453,7 @@ public class Beaconz extends JavaPlugin {
             register = new Register(plugin);
             // Load saved data from disk (or create empty if first run)
             register.loadRegister();
+            getLogger().info("Loaded " + register.getBeaconCount() + " beacons from database");
         }
         return register;
     }
@@ -447,6 +521,8 @@ public class Beaconz extends JavaPlugin {
     public void loadConfig() {
         // Use scoreboard
         Settings.useScoreboard = getConfig().getBoolean("general.usescoreboard");
+        // Friendly fire
+        Settings.allowFriendlyFire = getConfig().getBoolean("teams.friendlyFire", false);
         // Show timer
         Settings.showTimer = getConfig().getBoolean("general.showtimer");
         // Dynmap
@@ -477,7 +553,7 @@ public class Beaconz extends JavaPlugin {
         Settings.linkLimit = getConfig().getInt("links.linklimit", 500);
         // Link blocks enable links to reach further for less experience
         Settings.linkBlocks = new HashMap<>();
-        if (getConfig().contains("links.linkblocks")) {
+        if (getConfig().isConfigurationSection("links.linkblocks")) {
             for (String material: getConfig().getConfigurationSection("links.linkblocks").getKeys(false)) {
                 try {
                     Material mat = Material.getMaterial(material.toUpperCase());
@@ -557,7 +633,7 @@ public class Beaconz extends JavaPlugin {
         // The end result is a list of what levels are required for a player to have to build or attack at that
         // height above a beacon.
         // This is a list where the index is the height (minus 1), and the value is the level required.
-        if (getConfig().contains("defense.defenselevel")) {
+        if (getConfig().isConfigurationSection("defense.defenselevel")) {
             Settings.defenseLevels = new ArrayList<>();
             // Zero the index
             for (int i = 0; i < Settings.defenseHeight; i++) {
@@ -585,7 +661,7 @@ public class Beaconz extends JavaPlugin {
                 }
             }
         }
-        if (getConfig().contains("defense.attacklevel")) {
+        if (getConfig().isConfigurationSection("defense.attacklevel")) {
             Settings.attackLevels = new ArrayList<>();
             // Zero the index
             for (int i = 0; i < Settings.defenseHeight; i++) {
@@ -628,68 +704,72 @@ public class Beaconz extends JavaPlugin {
         Settings.seedAdjustment = getConfig().getLong("world.seedadjustment", System.currentTimeMillis());
         Settings.mineCoolDown = getConfig().getInt("mining.minecooldown", 1) * 60000L; // Minutes in millis
         ConfigurationSection enemyFieldSection = getConfig().getConfigurationSection("triangles.enemyfieldeffects");
-        // Step through the numbers
-        Settings.enemyFieldEffects = new HashMap<>();
-        for (Entry<String, Object> part : enemyFieldSection.getValues(false).entrySet()) {
-            if (NumberUtils.isNumber(part.getKey())) {
-                // It is a number, now get the string list
-                List<PotionEffect> effects = new ArrayList<>();
-                List<String> effectsList = getConfig().getStringList("triangles.enemyfieldeffects." + part.getKey());
-                for (String effectString : effectsList) {
-                    String[] split = effectString.split(":");
-                    if (split.length == 1 || split.length > 2) {
-                        PotionEffectType type = PotionEffectType.getByName(split[0]);
-                        if (type != null) {
-                            effects.add(new PotionEffect(type, Integer.MAX_VALUE, 1));
-                        }
-                    }
-                    if (split.length == 2) {
-                        PotionEffectType type = PotionEffectType.getByName(split[0]);
-                        if (type != null) {
-                            if (NumberUtils.isNumber(split[1])) {
-                                // Adding enemy effect
-                                effects.add(new PotionEffect(type, Integer.MAX_VALUE, NumberUtils.toInt(split[1])));
-                            } else {
+        if (enemyFieldSection != null) {
+            // Step through the numbers
+            Settings.enemyFieldEffects = new HashMap<>();
+            for (Entry<String, Object> part : enemyFieldSection.getValues(false).entrySet()) {
+                if (NumberUtils.isNumber(part.getKey())) {
+                    // It is a number, now get the string list
+                    List<PotionEffect> effects = new ArrayList<>();
+                    List<String> effectsList = getConfig().getStringList("triangles.enemyfieldeffects." + part.getKey());
+                    for (String effectString : effectsList) {
+                        String[] split = effectString.split(":");
+                        if (split.length == 1 || split.length > 2) {
+                            PotionEffectType type = PotionEffectType.getByName(split[0]);
+                            if (type != null) {
                                 effects.add(new PotionEffect(type, Integer.MAX_VALUE, 1));
                             }
                         }
+                        if (split.length == 2) {
+                            PotionEffectType type = PotionEffectType.getByName(split[0]);
+                            if (type != null) {
+                                if (NumberUtils.isNumber(split[1])) {
+                                    // Adding enemy effect
+                                    effects.add(new PotionEffect(type, Integer.MAX_VALUE, NumberUtils.toInt(split[1])));
+                                } else {
+                                    effects.add(new PotionEffect(type, Integer.MAX_VALUE, 1));
+                                }
+                            }
+
+                        }
 
                     }
-
+                    Settings.enemyFieldEffects.put(NumberUtils.toInt(part.getKey()), effects);
                 }
-                Settings.enemyFieldEffects.put(NumberUtils.toInt(part.getKey()), effects);
             }
         }
         Settings.friendlyFieldEffects = new HashMap<>();
         ConfigurationSection friendlyFieldSection = getConfig().getConfigurationSection("triangles.friendlyfieldeffects");
-        // Step through the numbers
-        for (Entry<String, Object> part : friendlyFieldSection.getValues(false).entrySet()) {
-            if (NumberUtils.isNumber(part.getKey())) {
-                // It is a number, now get the string list
-                List<PotionEffect> effects = new ArrayList<>();
-                List<String> effectsList = getConfig().getStringList("triangles.friendlyfieldeffects." + part.getKey());
-                for (String effectString : effectsList) {
-                    String[] split = effectString.split(":");
-                    if (split.length == 1 || split.length > 2) {
-                        PotionEffectType type = PotionEffectType.getByName(split[0]);
-                        if (type != null) {
-                            effects.add(new PotionEffect(type, Integer.MAX_VALUE, 1));
-                        }
-                    }
-                    if (split.length == 2) {
-                        PotionEffectType type = PotionEffectType.getByName(split[0]);
-                        if (type != null) {
-                            if (NumberUtils.isNumber(split[1])) {
-                                effects.add(new PotionEffect(type, Integer.MAX_VALUE, NumberUtils.toInt(split[1])));
-                            } else {
+        if (friendlyFieldSection != null) {
+            // Step through the numbers
+            for (Entry<String, Object> part : friendlyFieldSection.getValues(false).entrySet()) {
+                if (NumberUtils.isNumber(part.getKey())) {
+                    // It is a number, now get the string list
+                    List<PotionEffect> effects = new ArrayList<>();
+                    List<String> effectsList = getConfig().getStringList("triangles.friendlyfieldeffects." + part.getKey());
+                    for (String effectString : effectsList) {
+                        String[] split = effectString.split(":");
+                        if (split.length == 1 || split.length > 2) {
+                            PotionEffectType type = PotionEffectType.getByName(split[0]);
+                            if (type != null) {
                                 effects.add(new PotionEffect(type, Integer.MAX_VALUE, 1));
                             }
                         }
+                        if (split.length == 2) {
+                            PotionEffectType type = PotionEffectType.getByName(split[0]);
+                            if (type != null) {
+                                if (NumberUtils.isNumber(split[1])) {
+                                    effects.add(new PotionEffect(type, Integer.MAX_VALUE, NumberUtils.toInt(split[1])));
+                                } else {
+                                    effects.add(new PotionEffect(type, Integer.MAX_VALUE, 1));
+                                }
+                            }
+
+                        }
 
                     }
-
+                    Settings.friendlyFieldEffects.put(NumberUtils.toInt(part.getKey()), effects);
                 }
-                Settings.friendlyFieldEffects.put(NumberUtils.toInt(part.getKey()), effects);
             }
         }
         Settings.minePenalty = getConfig().getStringList("mining.minepenalty");
@@ -995,6 +1075,14 @@ public class Beaconz extends JavaPlugin {
         return nameStore;
     }
 
+    /**
+     * Gets the HikariCP data source for database operations.
+     * @return the data source, or null if not initialized
+     */
+    public HikariDataSource getDataSource() {
+        return dataSource;
+    }
+
 
     /**
      * Cleans a ":"-delimited string of any extraneous elements
@@ -1207,4 +1295,64 @@ public class Beaconz extends JavaPlugin {
         }
         return chunkGenerator;
     }
+
+    public void setupDatabase() {
+        HikariConfig config = new HikariConfig();
+        String type = getConfig().getString("database.type", "sqlite");
+        String host = getConfig().getString("database.host", "localhost");
+        int port = getConfig().getInt("database.port", 3306);
+        String database = getConfig().getString("database.database", "beaconz");
+        String username = getConfig().getString("database.username", "root");
+        String password = getConfig().getString("database.password", "");
+
+        if (type.equalsIgnoreCase("mysql")) {
+            config.setJdbcUrl("jdbc:mysql://" + host + ":" + port + "/" + database);
+            config.setUsername(username);
+            config.setPassword(password);
+        } else {
+            // SQLite setup
+            // In production, use a consistent filename so data persists across restarts
+            // In tests (when running from surefire), use unique filenames to avoid locking
+            String fileName;
+            if (System.getProperty("surefire.test.class.path") != null) {
+                // Running in test mode - use unique filename to avoid conflicts
+                fileName = getDataFolder().getPath() + "/test-storage-" +
+                    System.currentTimeMillis() + "-" + Thread.currentThread().threadId() + ".db";
+                getLogger().info("TEST MODE: Using database file: " + fileName);
+            } else {
+                // Production mode - use consistent filename for persistence
+                fileName = getDataFolder().getPath() + "/storage.db";
+                getLogger().info("PRODUCTION MODE: Using database file: " + fileName);
+            }
+            config.setJdbcUrl("jdbc:sqlite:" + fileName);
+        }
+
+        // Performance tweaks for Java 21
+        config.setMaximumPoolSize(10);
+        config.setConnectionTimeout(5000);
+
+        // SQLite specific settings to reduce locking
+        config.addDataSourceProperty("journal_mode", "WAL");
+        config.addDataSourceProperty("synchronous", "NORMAL");
+
+        this.dataSource = new HikariDataSource(config);
+    }
+
+     /**
+     * Closes the database connection pool when the plugin is disabled to prevent resource leaks.
+     * Also shuts down the auto-save task if it's running.
+     */
+    private void closeDataSource() {
+        if (this.dataSource != null && !this.dataSource.isClosed()) {
+            try {
+                // Give time for any pending operations to complete
+                this.dataSource.close();
+                getLogger().fine("Database connection pool closed successfully");
+            } catch (Exception e) {
+                getLogger().warning("Error closing database connection pool: " + e.getMessage());
+            } finally {
+                this.dataSource = null;
+            }
+        }
+     }
 }

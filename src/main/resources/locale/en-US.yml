@@ -182,6 +182,7 @@ error:
   NoLobbyYet: "<gold>Hmm, there is no lobby yet, please wait.</gold>"
   NoSuchGame: "<red>No such game!</red>"
   NoSuchTeam: "<red>Could not find faction!</red>"
+  NoTeams: "<red>There are no teams in this game!</red>"
   NotEnoughExperience: "<red>You do not have enough experience to do that!</red>"
   NotInGame: "<red>You are not in the game '<yellow><game></yellow>'!</red> <aqua>Going to the lobby...</aqua>"
   OnlyPlayers: "<red>Only players can do that!</red>"
@@ -256,6 +257,13 @@ score:
   TeamWins: "<green><bold><team> FACTION WINS!!!</bold></green>"
   game: "<aqua><score> <unit></aqua>"
   team: "<team>"
+  gui:
+    title: "<aqua><bold>Scores - <game></bold></aqua>"
+    teamHeader: "<team>"
+    teamPlayers: "<gray>Players: <yellow><count></yellow></gray>"
+    scoreName: "<yellow><type></yellow>: <green><bold><score></bold></green>"
+    scoreTeam: "<gray>Team: <team></gray>"
+    scoreValue: "Score: "
   gamemode:
     strategy: "Strategy"
     minigame: "Minigame"
