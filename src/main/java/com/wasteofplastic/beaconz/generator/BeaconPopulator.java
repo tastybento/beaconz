@@ -153,8 +153,8 @@ public class BeaconPopulator extends BlockPopulator {
                 z = cornerZ;
             } else {
                 // Otherwise, pick a random relative position in the chunk
-                x = gen.nextInt(15);
-                z = gen.nextInt(15);
+                x = gen.nextInt(16);
+                z = gen.nextInt(16);
             }
 
             // Check if there is already a beacon here, if so, don't make it again
@@ -214,6 +214,10 @@ public class BeaconPopulator extends BlockPopulator {
                 y--;
                 if (y <= worldInfo.getMinHeight()) {
                     // Oops, nothing here
+                    return;
+                }
+                // Verify the new y position is within the LimitedRegion before accessing it
+                if (!limitedRegion.isInRegion(worldX, y, worldZ)) {
                     return;
                 }
                 blockType = limitedRegion.getType(worldX, y, worldZ);
