@@ -5,7 +5,6 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -97,9 +96,6 @@ public class OurServerListener extends BeaconzPluginDependent implements Listene
     /** Map of marker IDs to AreaMarker objects for tracking existing markers */
     private final Map<String, AreaMarker> resareas = new HashMap<>();
 
-    /** Map of games that need to be processed (currently unused but available for future use) */
-    protected LinkedHashMap<String, Game> gamesToDo;
-
     /**
      * Constructs a new OurServerListener and initializes the Dynmap integration.
      * <p>
@@ -139,7 +135,7 @@ public class OurServerListener extends BeaconzPluginDependent implements Listene
         }
 
         // Initialize the Dynmap integration
-        activate(dynmap);
+        activate();
     }
 
     /**
@@ -153,12 +149,12 @@ public class OurServerListener extends BeaconzPluginDependent implements Listene
     @EventHandler(priority=EventPriority.MONITOR)
     public void onPluginEnable(PluginEnableEvent event) {
         Plugin p = event.getPlugin();
-        String name = p.getDescription().getName();
+        String name = p.getPluginMeta().getName();
 
         // Check if the enabled plugin is Dynmap
         if(name.equals("dynmap")) {
             if(dynmap.isEnabled())
-                activate(dynmap);
+                activate();
         }
     }
 
@@ -179,10 +175,8 @@ public class OurServerListener extends BeaconzPluginDependent implements Listene
      *   <li>A periodic task (configurable interval) that clears old markers and processes game boundaries</li>
      *   <li>An incremental task that processes triangle fields in batches to avoid lag</li>
      * </ol>
-     *
-     * @param dynmap the Dynmap plugin instance to integrate with
      */
-    private void activate(Plugin dynmap) {
+    private void activate() {
         /* Now, get markers API */
         MarkerAPI markerapi = api.getMarkerAPI();
         if(markerapi == null) {
@@ -410,10 +404,10 @@ public class OurServerListener extends BeaconzPluginDependent implements Listene
         }
 
         /* Set line and fill properties */
-        addStyle(name, world.getName(), m, name);
+        addStyle(m, name);
 
         /* Build popup */
-        String desc = formatInfoWindow(name, m);
+        String desc = formatInfoWindow(name);
 
         m.setDescription(desc); /* Set popup */
     }
@@ -472,10 +466,10 @@ public class OurServerListener extends BeaconzPluginDependent implements Listene
         }
 
         /* Set line and fill properties */
-        addStyle(name, world.getName(), m, triangle.getOwner().getName());
+        addStyle(m, triangle.getOwner().getName());
 
         /* Build popup */
-        String desc = formatInfoWindow(triangle.getOwner().getName(), m);
+        String desc = formatInfoWindow(triangle.getOwner().getName());
 
         m.setDescription(desc); /* Set popup */
 
@@ -495,23 +489,19 @@ public class OurServerListener extends BeaconzPluginDependent implements Listene
      *   <li>Optionally applies a custom label if configured</li>
      * </ul>
      *
-     * @param resid the resource ID (unused but kept for potential future use)
-     * @param worldid the world ID (unused but kept for potential future use)
      * @param m the AreaMarker to apply styling to
      * @param name the team name to look up styling for
      */
-    private void addStyle(String resid, String worldid, AreaMarker m, String name) {
+    private void addStyle(AreaMarker m, String name) {
         AreaStyle as = null;
 
         // Try to find team-specific styling
         if(!teamstyle.isEmpty()) {
-            //info("DEBUG: ownerstyle is not empty " + getServer().getOfflinePlayer(island.getOwner()).getName());
-            as = teamstyle.get(name);
+             as = teamstyle.get(name);
         }
 
         // Fall back to default style if no team-specific style found
         if(as == null) {
-            //info("DEBUG: as = is null - using default style");
             as = defstyle;
         }
 
@@ -547,10 +537,9 @@ public class OurServerListener extends BeaconzPluginDependent implements Listene
      * </ul>
      *
      * @param name the team name to display
-     * @param m the AreaMarker (currently unused but available for future template variables)
      * @return the formatted HTML string for the popup window
      */
-    private String formatInfoWindow(String name, AreaMarker m) {
+    private String formatInfoWindow(String name) {
         String v = "<div class=\"infowindow\">"+infowindow+"</div>";
         v = v.replace("%teamname%", name);
         return v;
