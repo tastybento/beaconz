@@ -30,8 +30,6 @@ import java.util.UUID;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.entity.Boat;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -149,16 +147,16 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
             getBeaconzPlugin().getNameStore().savePlayerName(player.getName(), player.getUniqueId());
 
             // Check if there are any messages queued for this player
-            final List<String> messages = getMessages().getMessages(player.getUniqueId());
-            if (messages != null) {
+            final List<Component> messages = getMessages().getMessages(player.getUniqueId());
+            if (messages != null && !messages.isEmpty()) {
                 // Deliver messages after a delay to ensure world is fully loaded
                 getServer().getScheduler().runTaskLater(getBeaconzPlugin(), () -> {
                     // Show header
                     player.sendMessage(Lang.titleBeaconzNews);
                     // Show each message with a number prefix
                     int i = 1;
-                    for (String message : messages) {
-                        player.sendMessage(i++ + ": " + message);
+                    for (Component message : messages) {
+                        player.sendMessage(Component.text(i++ + ": ").append(message));
                     }
                     // Clear the messages now that they've been delivered
                     getMessages().clearMessages(player.getUniqueId());
@@ -386,9 +384,6 @@ public class PlayerTeleportListener extends BeaconzPluginDependent implements Li
 
         // Record player's starting position for movement detection
         teleportingPlayers.put(player.getUniqueId(), player.getLocation().toVector());
-
-        // check if player is teleporting from the lobby
-        boolean fromLobby = getGameMgr().isLocationInLobby(from);
 
         // Schedule the delayed teleport check
         getServer().getScheduler().runTaskLater(getBeaconzPlugin(), () -> {

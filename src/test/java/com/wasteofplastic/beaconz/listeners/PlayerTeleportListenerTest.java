@@ -58,7 +58,6 @@ class PlayerTeleportListenerTest extends CommonTestBase {
     private static final String GAME_NAME = "TestGame";
 
     /**
-     * @throws java.lang.Exception
      */
     @BeforeEach
     void setUp() throws Exception {
@@ -112,7 +111,6 @@ class PlayerTeleportListenerTest extends CommonTestBase {
     }
 
     /**
-     * @throws java.lang.Exception
      */
     @AfterEach
     void tearDown() throws Exception {
@@ -159,9 +157,9 @@ class PlayerTeleportListenerTest extends CommonTestBase {
         when(player.getName()).thenReturn("TestPlayer");
         when(player.getActivePotionEffects()).thenReturn(new ArrayList<>());
 
-        List<String> messages = new ArrayList<>();
-        messages.add("Message 1");
-        messages.add("Message 2");
+        List<Component> messages = new ArrayList<>();
+        messages.add(Component.text("Message 1"));
+        messages.add(Component.text("Message 2"));
         when(this.messages.getMessages(playerUUID)).thenReturn(messages);
 
         PlayerChangedWorldEvent event = new PlayerChangedWorldEvent(player, otherWorld);

@@ -174,15 +174,13 @@ class PlayerJoinLeaveListenerTest extends CommonTestBase {
         // Mock messages store
         Messages messages = mock(Messages.class);
         when(plugin.getMessages()).thenReturn(messages);
-        List<String> queued = List.of("msg1", "msg2");
+        List<Component> queued = List.of(Component.text("msg1"), Component.text("msg2"));
         UUID uuid = UUID.randomUUID();
         when(player.getUniqueId()).thenReturn(uuid);
         when(messages.getMessages(uuid)).thenReturn(queued);
         when(player.getWorld()).thenReturn(world);
         when(mgr.getGame(player.getLocation())).thenReturn(null);
 
-        // Scheduler capture
-        BukkitScheduler scheduler = mock(BukkitScheduler.class);
         when(plugin.getServer()).thenReturn(server);
 
         PlayerJoinEvent event = new PlayerJoinEvent(player, Component.text(""));

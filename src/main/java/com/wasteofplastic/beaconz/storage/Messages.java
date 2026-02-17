@@ -22,16 +22,16 @@
 
 package com.wasteofplastic.beaconz.storage;
 
-import java.io.File;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Team;
 import org.jetbrains.annotations.NotNull;
@@ -40,135 +40,134 @@ import com.wasteofplastic.beaconz.Beaconz;
 import com.wasteofplastic.beaconz.BeaconzPluginDependent;
 import com.wasteofplastic.beaconz.game.Game;
 import com.wasteofplastic.beaconz.game.Scorecard;
+import com.zaxxer.hikari.HikariDataSource;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 
 /**
- * Handles offline messaging to players and teams
+ * Handles offline messaging to players and teams.
+ * Messages are stored as serialized Components in the SQL database.
  *
  * @author tastybento
- *
  */
 public class Messages extends BeaconzPluginDependent {
 
-    // Offline Messages
-    private final HashMap<UUID, List<String>> messages = new HashMap<>();
-    private YamlConfiguration messageStore;
-
-
     /**
-     * @param plugin - the plugin instance
+     * Creates a new Messages handler and initializes the database table.
+     *
+     * @param plugin the plugin instance
      */
     public Messages(Beaconz plugin) {
         super(plugin);
+        initializeDatabase();
     }
 
     /**
-     * Returns what messages are waiting for the player or null if none
-     *
-     * @param playerUUID - the player's UUID
-     * @return List of messages or null if none
+     * Initializes the player_messages database table.
+     * Creates the table if it doesn't exist.
      */
-    public List<String> getMessages(UUID playerUUID) {
-        return messages.get(playerUUID);
-    }
-
-    /**
-     * Clears any messages for player
-     *
-     * @param playerUUID - the player's UUID
-     */
-    public void clearMessages(UUID playerUUID) {
-        messages.remove(playerUUID);
-    }
-
-    public void saveMessages() {
-        if (messageStore == null) {
+    private void initializeDatabase() {
+        HikariDataSource dataSource = getBeaconzPlugin().getDataSource();
+        if (dataSource == null) {
+            getLogger().severe("Database not initialized! Messages will not function properly.");
             return;
         }
-        getLogger().info("Saving offline messages...");
-        try {
-            // Convert to a serialized string
-            final HashMap<String, Object> offlineMessages = new HashMap<>();
-            for (UUID p : messages.keySet()) {
-                offlineMessages.put(p.toString(), messages.get(p));
-            }
-            // Convert to YAML
-            messageStore.set("messages", offlineMessages);
-            File messageFile = new File(getDataFolder(), "messages.yml");
-            messageStore.save(messageFile);
-        } catch (Exception e) {
-            getLogger().severe("Failed to save offline messages to messages.yml: " + e.getMessage());
+
+        try (Connection conn = dataSource.getConnection();
+             Statement stmt = conn.createStatement()) {
+
+            // Create player_messages table
+            // Each message is stored as a separate row with its JSON-serialized Component
+            String createTable = "CREATE TABLE IF NOT EXISTS player_messages (" +
+                "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                "player_uuid TEXT NOT NULL, " +
+                "message_json TEXT NOT NULL, " +
+                "created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))" +
+                ")";
+
+            stmt.execute(createTable);
+
+            // Create index for fast lookup by player UUID
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_player_messages_uuid ON player_messages(player_uuid)");
+
+            getLogger().info("Database table initialized for player messages");
+
+        } catch (SQLException e) {
+            getLogger().severe("Failed to initialize player_messages database table: " + e.getMessage());
         }
     }
 
-    public boolean loadMessages() {
-        getLogger().info("Loading offline messages...");
-        try {
-            File messageFile = new File(getDataFolder(), "messages.yml");
-            messageStore.load(messageFile);
-            if (messageStore.getConfigurationSection("messages") == null) {
-                messageStore.createSection("messages"); // This is only used to
-                // create
-            }
-            HashMap<String, Object> temp = (HashMap<String, Object>) messageStore.getConfigurationSection("messages").getValues(true);
-            for (String s : temp.keySet()) {
-                List<String> messageList = messageStore.getStringList("messages." + s);
-                if (!messageList.isEmpty()) {
-                    messages.put(UUID.fromString(s), messageList);
+    /**
+     * Returns all pending messages for the player.
+     *
+     * @param playerUUID the player's UUID
+     * @return List of Component messages, or empty list if none
+     */
+    public List<Component> getMessages(UUID playerUUID) {
+        List<Component> result = new ArrayList<>();
+        HikariDataSource dataSource = getBeaconzPlugin().getDataSource();
+        if (dataSource == null) {
+            return result;
+        }
+
+        String sql = "SELECT message_json FROM player_messages WHERE player_uuid = ? ORDER BY created_at ASC";
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, playerUUID.toString());
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    String json = rs.getString("message_json");
+                    try {
+                        Component message = GsonComponentSerializer.gson().deserialize(json);
+                        result.add(message);
+                    } catch (Exception e) {
+                        getLogger().warning("Failed to deserialize message for " + playerUUID + ": " + e.getMessage());
+                    }
                 }
             }
-            return true;
-        } catch (Exception e) {
-            getLogger().severe("Failed to load offline messages from messages.yml: " + e.getMessage());
-            return false;
+
+        } catch (SQLException e) {
+            getLogger().severe("Failed to get messages for " + playerUUID + ": " + e.getMessage());
+        }
+
+        return result;
+    }
+
+    /**
+     * Clears all pending messages for the player.
+     *
+     * @param playerUUID the player's UUID
+     */
+    public void clearMessages(UUID playerUUID) {
+        HikariDataSource dataSource = getBeaconzPlugin().getDataSource();
+        if (dataSource == null) {
+            return;
+        }
+
+        String sql = "DELETE FROM player_messages WHERE player_uuid = ?";
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, playerUUID.toString());
+            stmt.executeUpdate();
+
+        } catch (SQLException e) {
+            getLogger().severe("Failed to clear messages for " + playerUUID + ": " + e.getMessage());
         }
     }
 
     /**
-     * Provides the messages for the player
+     * Tells all of a player's team members (online or offline) that something happened.
+     * Only works if the player is in the game area.
      *
-     * @param playerUUID - the player's UUID
-     * @return List of messages
-     */
-    public List<String> get(UUID playerUUID) {
-        return messages.get(playerUUID);
-    }
-
-    /**
-     * Stores a message for player
-     *
-     * @param playerUUID - the player's UUID
-     * @param playerMessages - the messages to store
-     */
-    @Deprecated
-    public void put(UUID playerUUID, List<String> playerMessages) {
-        messages.put(playerUUID, playerMessages);
-
-    }
-
-    /**
-     * Tells all of a player's team members (online or offline) that something happened. Only works if the player is in the game area.
-     *
-     * @param player - the originating player, always an online player
-     * @param message - the message to send
-     */
-    @Deprecated
-    public void tellTeam(Player player, String message) {
-        Scorecard sc = getGameMgr().getSC(player);
-        if (sc != null) {
-            Team team = sc.getTeam(player);
-            if (team != null) {
-                tellTeam(player, team, message);
-            }
-        }
-    }
-    
-    /**
-     * Tells all of a player's team members (online or offline) that something happened. Only works if the player is in the game area.
-     *
-     * @param player - the originating player, always an online player
-     * @param message - the message to send
+     * @param player the originating player, always an online player
+     * @param message the message to send
      */
     public void tellTeam(Player player, Component message) {
         Scorecard sc = getGameMgr().getSC(player);
@@ -182,103 +181,142 @@ public class Messages extends BeaconzPluginDependent {
 
     /**
      * Tells a message to all members of team, regardless of whether they are online or offline.
-     * Ignores player
-     * @param player player sending the message
-     * @param team team
-     * @param message message to send
-     */
-    @Deprecated
-    public void tellTeam(Player player, Team team, String message) {
-        // Tell other players
-        Game game = getGameMgr().getGame(team);
-        if (game != null) {
-            HashMap<Team, List<UUID>> teamMembers = game.getScorecard().getTeamMembers();
-            if (teamMembers != null) {
-                List<UUID> members = teamMembers.get(team);
-                if (members != null) {
-                    for (UUID uuid : members) {
-                        Player member = Bukkit.getPlayer(uuid);
-                        if (player == null || !player.getUniqueId().equals(uuid)) {
-                            if (member != null) {
-                                member.sendMessage(ChatColor.GOLD + "[" + game.getName() + "] " + message);
-                            } else {
-                                setMessage(uuid, ChatColor.GOLD + "[" + game.getName() + "] " + message);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    
-    /**
-     * Tells a message to all members of team, regardless of whether they are online or offline.
-     * Ignores player
-     * @param player player sending the message
-     * @param team team
+     * Ignores the originating player.
+     *
+     * @param player player sending the message (can be null to include all team members)
+     * @param team team to notify
      * @param message message to send
      */
     public void tellTeam(Player player, Team team, Component message) {
-        // Tell other players
         Game game = getGameMgr().getGame(team);
-        if (game != null) {
-            HashMap<Team, List<UUID>> teamMembers = game.getScorecard().getTeamMembers();
-            if (teamMembers != null) {
-                List<UUID> members = teamMembers.get(team);
-                if (members != null) {
-                    for (UUID uuid : members) {
-                        Player member = Bukkit.getPlayer(uuid);
-                        if (player == null || !player.getUniqueId().equals(uuid)) {
-                            if (member != null) {
-                                member.sendMessage(Component.text("[" + game.getName() + "] ").append(message));
-                            } else {
-                                setMessage(uuid, ChatColor.GOLD + "[" + game.getName() + "] " + message);
-                            }
-                        }
-                    }
-                }
+        if (game == null) {
+            return;
+        }
+
+        // Prefix the message with the game name
+        Component prefixedMessage = Component.text("[" + game.getName() + "] ", NamedTextColor.GOLD)
+                .append(message);
+
+        var teamMembers = game.getScorecard().getTeamMembers();
+        if (teamMembers == null) {
+            return;
+        }
+
+        List<UUID> members = teamMembers.get(team);
+        if (members == null) {
+            return;
+        }
+
+        for (UUID uuid : members) {
+            // Skip the originating player
+            if (player != null && player.getUniqueId().equals(uuid)) {
+                continue;
+            }
+
+            Player member = Bukkit.getPlayer(uuid);
+            if (member != null && member.isOnline()) {
+                member.sendMessage(prefixedMessage);
+            } else {
+                // Store for offline delivery
+                setMessage(uuid, prefixedMessage);
             }
         }
     }
 
     /**
-     * Sets a message for the player to receive next time they login
+     * Tells a message to all members of a team.
      *
-     * @param uuid the player's UUID
-     * @param message the message to store
+     * @param team team to notify
+     * @param message message to send
      */
-    public void setMessage(UUID uuid, String message) {
-        // getLogger().info("DEBUG: received message - " + message);
-        Player player = getServer().getPlayer(uuid);
-        // Check if player is online
-        if (player != null) {
-            if (player.isOnline()) {
-                // player.sendMessage(message);
-                return;
-            }
-        }
-        // Player is offline so store the message
-        // getLogger().info("DEBUG: player is offline - storing message");
-        List<String> playerMessages = get(uuid);
-        if (playerMessages != null) {
-            playerMessages.add(message);
-        } else {
-            playerMessages = new ArrayList<>(Collections.singletonList(message));
-        }
-        put(uuid, playerMessages);
-    }
-
     public void tellTeam(Team team, @NotNull Component message) {
-       this.tellTeam(null, team, message);
+        this.tellTeam(null, team, message);
     }
 
+    /**
+     * Tells a message to all teams except the specified one.
+     *
+     * @param team the team to exclude
+     * @param message message to send
+     */
     public void tellOtherTeams(Team team, @NotNull Component message) {
-        for (Team otherTeam : team.getScoreboard().getTeams()) {
+        var scoreboard = team.getScoreboard();
+        if (scoreboard == null) {
+            return;
+        }
+        for (Team otherTeam : scoreboard.getTeams()) {
             if (!team.equals(otherTeam)) {
-                // Tell other players
                 tellTeam(otherTeam, message);
             }
         }
-        
+    }
+
+    /**
+     * Stores a message for the player to receive next time they login.
+     * If the player is online, this method does nothing (the caller should send directly).
+     *
+     * @param uuid the player's UUID
+     * @param message the message to store as a Component
+     */
+    public void setMessage(UUID uuid, Component message) {
+        Player player = getServer().getPlayer(uuid);
+        // Don't store if player is online - they should receive messages directly
+        if (player != null && player.isOnline()) {
+            return;
+        }
+
+        HikariDataSource dataSource = getBeaconzPlugin().getDataSource();
+        if (dataSource == null) {
+            getLogger().severe("Database not initialized! Cannot store message for " + uuid);
+            return;
+        }
+
+        // Serialize the Component to JSON
+        String json = GsonComponentSerializer.gson().serialize(message);
+
+        String sql = "INSERT INTO player_messages (player_uuid, message_json) VALUES (?, ?)";
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, uuid.toString());
+            stmt.setString(2, json);
+            stmt.executeUpdate();
+
+        } catch (SQLException e) {
+            getLogger().severe("Failed to store message for " + uuid + ": " + e.getMessage());
+        }
+    }
+
+    /**
+     * Checks if a player has any pending messages.
+     *
+     * @param playerUUID the player's UUID
+     * @return true if the player has pending messages
+     */
+    public boolean hasMessages(UUID playerUUID) {
+        HikariDataSource dataSource = getBeaconzPlugin().getDataSource();
+        if (dataSource == null) {
+            return false;
+        }
+
+        String sql = "SELECT COUNT(*) FROM player_messages WHERE player_uuid = ?";
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, playerUUID.toString());
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+
+        } catch (SQLException e) {
+            getLogger().severe("Failed to check messages for " + playerUUID + ": " + e.getMessage());
+        }
+
+        return false;
     }
 }

@@ -16,6 +16,8 @@ import com.wasteofplastic.beaconz.BeaconzPluginDependent;
 import com.wasteofplastic.beaconz.config.Lang;
 import com.wasteofplastic.beaconz.game.Game;
 
+import net.kyori.adventure.text.Component;
+
 /**
  * Listener class that manages player connection and disconnection events.
  * <p>
@@ -181,8 +183,8 @@ public class PlayerJoinLeaveListener extends BeaconzPluginDependent implements L
             if (DEBUG)
                 getLogger().info("DEBUG: Checking messages for " + player.getName());
 
-            final List<String> messages = getMessages().getMessages(playerUUID);
-            if (messages != null) {
+            final List<Component> messages = getMessages().getMessages(playerUUID);
+            if (messages != null && !messages.isEmpty()) {
                 // Messages exist - schedule delivery after a short delay
                 // Delay ensures player is fully loaded and can see the messages
                 getServer().getScheduler().runTaskLater(getBeaconzPlugin(), () -> {
@@ -191,8 +193,8 @@ public class PlayerJoinLeaveListener extends BeaconzPluginDependent implements L
 
                     // Send each message with a number
                     int i = 1;
-                    for (String message : messages) {
-                        player.sendMessage(i++ + ": " + message);
+                    for (Component message : messages) {
+                        player.sendMessage(Component.text(i++ + ": ").append(message));
                     }
 
                     // Clear the message queue now that they've been delivered

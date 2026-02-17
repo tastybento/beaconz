@@ -19,7 +19,6 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -1502,7 +1501,9 @@ public class Scorecard extends BeaconzPluginDependent {
                             player.getWorld().playSound(player.getLocation(), Sound.ENTITY_FIREWORK_ROCKET_TWINKLE, 1F, 1F);
                         } else {
                             // Offline player
-                            getMessages().setMessage(uuid, "[" + game.getName() + "] " + titleline);
+                            Component message = Component.text("[" + game.getName() + "] ", NamedTextColor.GOLD)
+                                    .append(titleline);
+                            getMessages().setMessage(uuid, message);
                         }
                     }
                 }
