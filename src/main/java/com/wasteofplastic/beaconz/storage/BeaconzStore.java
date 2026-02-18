@@ -31,8 +31,6 @@ import java.sql.Statement;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.util.io.BukkitObjectInputStream;
-import org.bukkit.util.io.BukkitObjectOutputStream;
 
 import com.wasteofplastic.beaconz.Beaconz;
 import com.wasteofplastic.beaconz.BeaconzPluginDependent;
@@ -41,6 +39,9 @@ import com.zaxxer.hikari.HikariDataSource;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 
 /**
  * Enables inventory switching between games. Handles food, experience and spawn points.
@@ -126,9 +127,8 @@ public class BeaconzStore extends BeaconzPluginDependent {
                         // Restore inventory
                         byte[] inventoryData = rs.getBytes("inventory");
                         if (inventoryData != null) {
-                            try (ByteArrayInputStream bis = new ByteArrayInputStream(inventoryData);
-                                 BukkitObjectInputStream bois = new BukkitObjectInputStream(bis)) {
-                                ItemStack[] items = (ItemStack[]) bois.readObject();
+                            try {
+                                ItemStack[] items = deserializeInventory(inventoryData);
                                 player.getInventory().setContents(items);
                             } catch (Exception e) {
                                 getLogger().warning("Failed to deserialize inventory for " + player.getName() + ": " + e.getMessage());
@@ -204,10 +204,8 @@ public class BeaconzStore extends BeaconzPluginDependent {
             // Serialize inventory to byte array
             byte[] inventoryData = null;
             if (storeInv) {
-                try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                     BukkitObjectOutputStream boos = new BukkitObjectOutputStream(bos)) {
-                    boos.writeObject(player.getInventory().getContents());
-                    inventoryData = bos.toByteArray();
+                try {
+                    inventoryData = serializeInventory(player.getInventory().getContents());
                 } catch (Exception e) {
                     getLogger().warning("Failed to serialize inventory for " + player.getName() + ": " + e.getMessage());
                 }
@@ -427,6 +425,64 @@ public class BeaconzStore extends BeaconzPluginDependent {
                 stmt.setString(2, gameName);
                 stmt.executeUpdate();
             }
+        }
+    }
+
+    /**
+     * Serializes an array of ItemStacks to a byte array using Paper's modern API.
+     * Format: [count (int)][length1 (int)][itemBytes1]...[lengthN (int)][itemBytesN]
+     * A length of -1 indicates a null/empty slot.
+     *
+     * @param items the ItemStack array to serialize
+     * @return the serialized byte array
+     * @throws IOException if serialization fails
+     */
+    private byte[] serializeInventory(ItemStack[] items) throws IOException {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             DataOutputStream dos = new DataOutputStream(baos)) {
+
+            dos.writeInt(items.length);
+
+            for (ItemStack item : items) {
+                if (item == null || item.isEmpty()) {
+                    dos.writeInt(-1); // Marker for null/empty slot
+                } else {
+                    byte[] itemBytes = item.serializeAsBytes();
+                    dos.writeInt(itemBytes.length);
+                    dos.write(itemBytes);
+                }
+            }
+
+            return baos.toByteArray();
+        }
+    }
+
+    /**
+     * Deserializes a byte array back into an array of ItemStacks using Paper's modern API.
+     *
+     * @param data the serialized byte array
+     * @return the deserialized ItemStack array
+     * @throws IOException if deserialization fails
+     */
+    private ItemStack[] deserializeInventory(byte[] data) throws IOException {
+        try (ByteArrayInputStream bais = new ByteArrayInputStream(data);
+             DataInputStream dis = new DataInputStream(bais)) {
+
+            int count = dis.readInt();
+            ItemStack[] items = new ItemStack[count];
+
+            for (int i = 0; i < count; i++) {
+                int length = dis.readInt();
+                if (length == -1) {
+                    items[i] = null; // Empty slot
+                } else {
+                    byte[] itemBytes = new byte[length];
+                    dis.readFully(itemBytes);
+                    items[i] = ItemStack.deserializeBytes(itemBytes);
+                }
+            }
+
+            return items;
         }
     }
 

@@ -77,7 +77,7 @@ public class NewGameChatListener extends BeaconzPluginDependent implements Liste
             String gameName = PlainTextComponentSerializer.plainText().serialize(event.message()).trim();
 
             // Run on main thread since game creation involves world operations
-            getBeaconzPlugin().getServer().getScheduler().runTask(getBeaconzPlugin(), () -> command.completeGameCreation(player, gameName, pending.params));
+            getBeaconzPlugin().getServer().getScheduler().runTask(getBeaconzPlugin(), () -> command.completeGameCreation(player, gameName, pending.params()));
         }
     }
 }

@@ -24,15 +24,12 @@ package com.wasteofplastic.beaconz.game;
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Random;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import org.bukkit.Location;

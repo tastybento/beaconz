@@ -226,11 +226,10 @@ public class NewGameCommand extends BeaconzPluginDependent {
     /**
      * Creates a new game from GUI settings.
      *
-     * @param player the player creating the game
+     * @param player   the player creating the game
      * @param settings the GUI settings
-     * @return true if successful, false otherwise
      */
-    public boolean createGameFromGUI(Player player, NewGameGUI.GameSettings settings) {
+    public void createGameFromGUI(Player player, NewGameGUI.GameSettings settings) {
         // Prompt for game name
         player.sendMessage(Component.text("Enter the game name in chat:").color(NamedTextColor.GOLD));
 
@@ -268,28 +267,26 @@ public class NewGameCommand extends BeaconzPluginDependent {
         // Store the settings temporarily and wait for chat input
         gui.setPendingGameCreation(player, settings, params.toArray(new String[0]));
 
-        return true;
     }
 
     /**
      * Completes game creation with a name (called after player enters name in chat).
      *
-     * @param player the player
-     * @param gameName the game name
+     * @param player    the player
+     * @param gameName  the game name
      * @param paramArgs the parameter arguments
-     * @return true if successful
      */
-    public boolean completeGameCreation(Player player, String gameName, String[] paramArgs) {
+    public void completeGameCreation(Player player, String gameName, String[] paramArgs) {
         Game game = getGameMgr().getGame(gameName);
 
         // Check if game name already exists
         if (game != null) {
             player.sendMessage(MiniMessage.miniMessage().deserialize(Lang.errorAlreadyExists,
                     Placeholder.component("name", game.getName())));
-            return false;
+            return;
         }
 
-        return createGameWithParameters(player, gameName, paramArgs);
+        createGameWithParameters(player, gameName, paramArgs);
     }
 
     /**

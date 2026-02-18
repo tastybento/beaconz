@@ -744,14 +744,7 @@ public class NewGameGUI extends BeaconzPluginDependent implements Listener {
     /**
      * Stores pending game creation data.
      */
-    public static class PendingGameCreation {
-        public final GameSettings settings;
-        public final String[] params;
-
-        public PendingGameCreation(GameSettings settings, String[] params) {
-            this.settings = settings;
-            this.params = params;
-        }
+        public record PendingGameCreation(GameSettings settings, String[] params) {
     }
 
     /**

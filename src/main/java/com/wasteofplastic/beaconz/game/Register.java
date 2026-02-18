@@ -873,7 +873,6 @@ public class Register extends BeaconzPluginDependent {
             for (List<BeaconLink> links : beaconLinks.values()) {
                 for (BeaconLink link : links) {
                     // Re-set the owner from beacon1's current ownership
-                    if (link.getBeacon1().getOwnership() != null) {
                         // Use reflection or recreate the link - actually, BeaconLink.owner is set in constructor
                         // We need to check if the current owner is null and update it
                         if (link.getOwner() == null && link.getBeacon1().getOwnership() != null) {
@@ -881,7 +880,6 @@ public class Register extends BeaconzPluginDependent {
                             BeaconLink newLink = new BeaconLink(link.getBeacon1(), link.getBeacon2(), link.getTimeStamp());
                             // Replace in the list - we need to recreate all links
                         }
-                    }
                 }
             }
 
