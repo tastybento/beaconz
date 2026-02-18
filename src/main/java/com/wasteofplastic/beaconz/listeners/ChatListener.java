@@ -81,7 +81,7 @@ public class ChatListener extends BeaconzPluginDependent implements Listener {
             // Cancel the event
             event.setCancelled(true);
             // Queue the sync task because you cannot use HashMaps asynchronously. Delaying to the next tick
-            // won't be a major issue for synch events either.
+            // won't be a major issue for synchronous events either.
             String message = PlainTextComponentSerializer.plainText().serialize(event.message());
             Bukkit.getScheduler().runTask(beaconzPlugin, () -> teamChat(event.getPlayer(), message));
         }

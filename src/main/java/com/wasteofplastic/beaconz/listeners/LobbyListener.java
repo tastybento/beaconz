@@ -171,25 +171,28 @@ public class LobbyListener extends BeaconzPluginDependent implements Listener {
 
             // Check if sign has anything on it
             // Check if line 0 contains the configured sign keyword
-            if (!side.lines().isEmpty() && side.line(0) != null && side.line(0).equals(Lang.adminSignKeyword)) {// Check lines 1-3 for game names
-                for (int i = 1; i < side.lines().size(); i++) {
-                    Component gamename = side.line(i);
+            if (!side.lines().isEmpty()) {
+                side.line(0);
+                if (side.line(0).equals(Lang.adminSignKeyword)) {// Check lines 1-3 for game names
+                    for (int i = 1; i < side.lines().size(); i++) {
+                        Component gamename = side.line(i);
 
-                    // Check if a game with this name exists
-                    if (getGameMgr().getGame(gamename) != null) {
-                        // Verify the game is not already over
-                        if (getGameMgr().getGame(gamename).isOver()) {
-                            event.getPlayer().sendMessage(Lang.scoreGameOver);
-                        } else {
-                            // Join the player to the game
-                            getGameMgr().getGame(gamename).join(event.getPlayer());
+                        // Check if a game with this name exists
+                        if (getGameMgr().getGame(gamename) != null) {
+                            // Verify the game is not already over
+                            if (getGameMgr().getGame(gamename).isOver()) {
+                                event.getPlayer().sendMessage(Lang.scoreGameOver);
+                            } else {
+                                // Join the player to the game
+                                getGameMgr().getGame(gamename).join(event.getPlayer());
+                            }
+                            return; // Found a valid game, stop checking other lines
                         }
-                        return; // Found a valid game, stop checking other lines
                     }
+                    // Sign has the keyword but no valid games found
+                    event.getPlayer().sendMessage(Lang.errorNotReady);
+                    event.getPlayer().sendMessage(Lang.errorNoSuchGame);
                 }
-                // Sign has the keyword but no valid games found
-                event.getPlayer().sendMessage(Lang.errorNotReady);
-                event.getPlayer().sendMessage(Lang.errorNoSuchGame);
             }
         }
     } 
@@ -226,7 +229,7 @@ public class LobbyListener extends BeaconzPluginDependent implements Listener {
             // Check if line 0 contains the configured sign keyword
             if (event.line(0) != null && event.line(0).contains(Lang.adminSignKeyword)) {
                 // Check lines 1-3 for valid game names
-                for (int i = 1; i < 4; i++) {
+                for (int i = 1; i < event.lines().size(); i++) {
                     // Verify a game with this name exists in the system
                     if (event.line(i) != null && getGameMgr().getGame(event.line(i)) != null) {
                         // Success! Inform the admin that the sign is valid and functional

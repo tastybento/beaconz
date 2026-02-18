@@ -180,7 +180,7 @@ public class BeaconProtectionListener extends BeaconzPluginDependent implements 
     /**
      * Handles damage events to beacon blocks (but not actual breakage).
      * <p>
-     * This event is triggered when a player starts to break a block but before it's fully broken.
+     * This event is triggered when a player starts to break a block, but before it's fully broken.
      * It serves two main purposes:
      * <ol>
      *   <li>Validates that players have proper permissions and team status to damage beacons</li>
@@ -475,7 +475,7 @@ public class BeaconProtectionListener extends BeaconzPluginDependent implements 
      *
      * The handler uses the modern BlockData API to determine which direction the dispenser
      * is facing, then checks if that direction points toward a beacon beam. If so, the
-     * dispense action is cancelled with a sound effect.
+     * dispense action is canceled with a sound effect.
      *
      * @param event The BlockDispenseEvent containing the dispenser and item being dispensed
      */
@@ -518,7 +518,7 @@ public class BeaconProtectionListener extends BeaconzPluginDependent implements 
 
             // Check if the target block is in a beacon beam
             if (getRegister().isAboveBeacon(b.getLocation())) {
-                // Play an error sound to indicate the dispense was blocked
+                // Play an error sound to indicate the dispense action was blocked
                 world.playSound(b.getLocation(), Sound.BLOCK_STONE_BREAK, 1F, 2F);
                 event.setCancelled(true);
             }
@@ -565,7 +565,7 @@ public class BeaconProtectionListener extends BeaconzPluginDependent implements 
                 return;
             }
 
-            // Additional check: prevent flows outside of the game area
+            // Additional check: prevent flows outside the game area
             // This helps maintain clean boundaries between games
             Game game = getGameMgr().getGame(event.getBlock().getLocation());
             if (game == null) {

@@ -118,7 +118,7 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
     /**
      * Handles damage events to beacon blocks (before actual breakage occurs).
      * <p>
-     * This event is triggered when a player starts to break a beacon block but before
+     * This event is triggered when a player starts to break a beacon block, but before
      * it's fully broken. It serves two main purposes:
      * <ol>
      *   <li>Validates that the player has proper permissions and team membership</li>
@@ -328,7 +328,7 @@ public class BeaconCaptureListener extends BeaconzPluginDependent implements Lis
      * @param event The BlockBreakEvent
      * @param player The player breaking the block
      * @param game The game instance
-     * @param team The player's team (may be null for ops)
+     * @param team The player's team (can be null for ops)
      * @param block The block being broken
      * @param beacon The beacon object
      */

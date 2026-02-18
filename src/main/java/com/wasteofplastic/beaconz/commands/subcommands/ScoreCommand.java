@@ -139,7 +139,7 @@ public class ScoreCommand extends BeaconzPluginDependent implements SubCommand {
             scoresPerTeam = Math.min(maxScoresAvailable, 4);
             slotsPerTeam = 1 + scoresPerTeam; // 1 header + scores
             inventorySize = 18; // 2 rows
-        } else if (teamCount <= 3) {
+        } else if (teamCount == 3) {
             // 3 teams: Show all available scores (up to 4) per team
             scoresPerTeam = Math.min(maxScoresAvailable, 4);
             slotsPerTeam = 1 + scoresPerTeam;

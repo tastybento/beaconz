@@ -328,8 +328,8 @@ public class Lang extends BeaconzPluginDependent {
         beaconLinkCreated = MiniMessage.miniMessage().deserialize(locale.getString("beacon.LinkCreated", "<green>Link created!</green>"));
         beaconLinkLost = MiniMessage.miniMessage().deserialize(locale.getString("beacon.LinkLost", "<red>The longest link was lost!</red>"));
         beaconLocked = MiniMessage.miniMessage().deserialize(locale.getString("beacon.Locked", "<gold>This beacon is locked!</gold>"));
-        beaconLockedAlready = locale.getString("beacon.LockedAlready", "<gold>This beacon is already locked. Don't waste <yellow><lockingBlock></yellow>'s!</gold>");
-        beaconLockedJustNow = locale.getString("beacon.LockedJustNow", "<green>This beacon is now locked. Break an <yellow><lockingBlock></yellow> to unlock it!</green>");
+        beaconLockedAlready = locale.getString("beacon.LockedAlready", "<gold>This beacon is already locked. Don't waste <yellow><lockingblock></yellow>'s!</gold>");
+        beaconLockedJustNow = locale.getString("beacon.LockedJustNow", "<green>This beacon is now locked. Break an <yellow><lockingblock></yellow> to unlock it!</green>");
         beaconLockedWithNMoreBlocks = locale.getString("beacon.LockedWithNMoreBlocks", "<aqua><yellow><number></yellow> additional locking block(s) on this level will lock the beacon.</aqua>");
         beaconMapBeaconMap = locale.getString("beacon.MapBeaconMap", "Beacon Map"); // Not colored because it's used as the map name in the item lore
         beaconMapUnknownBeacon = locale.getString("beacon.MapUnknownBeacon", "<gray>Unknown beacon</gray>");

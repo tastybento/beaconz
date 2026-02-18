@@ -60,7 +60,7 @@ public class BeaconPopulator extends BlockPopulator {
 
     @Override
     public void populate(@NotNull WorldInfo worldInfo, @NotNull Random unused, int chunkX, int chunkZ, @NotNull LimitedRegion limitedRegion) {
-        boolean cornerBeacon = false;
+        boolean cornerBeacon;
         Integer cornerX = null;
         Integer cornerZ = null;
 
@@ -127,7 +127,7 @@ public class BeaconPopulator extends BlockPopulator {
             plugin.getLogger().info("DEBUG: Populating chunk: " + chunkX + ":" + chunkZ);
 
         // pseudo-randomly place a beacon
-        // Mix all seed components using XOR and bit rotation
+        // Mix all seed components using XOR and bit-rotation
         long seed4 = Settings.seedAdjustment;
 
         long combinedSeed = chunkX ^

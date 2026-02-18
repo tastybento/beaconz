@@ -1,7 +1,7 @@
 ###########################################################################################
 # This is a YML file. Be careful when editing. Check your edits in a YAML checker like    #
 # the one at http://yaml-online-parser.appspot.com                                        #
-# If this file is deleted, then it will be recreate at the next reload.                   #
+# If this file is deleted, then it will be recreated at the next reload.                  #
 ###########################################################################################
 
 --- 
@@ -60,8 +60,8 @@ beacon:
   LinkCreated: "<green>Link created!</green>"
   LinkLost: "<red>The longest link was lost!</red>"
   Locked: "<gold>This beacon is locked!</gold>"
-  LockedAlready: "<gold>This beacon is already locked. Don't waste <yellow><lockingBlock></yellow>'s!</gold>"
-  LockedJustNow: "<green>This beacon is now locked. Break an <yellow><lockingBlock></yellow> to unlock it!</green>"
+  LockedAlready: "<gold>This beacon is already locked. Don't waste <yellow><lockingblock></yellow>'s!</gold>"
+  LockedJustNow: "<green>This beacon is now locked. Break an <yellow><lockingblock></yellow> to unlock it!</green>"
   LockedWithNMoreBlocks: "<aqua><yellow><number></yellow> additional locking block(s) on this level will lock the beacon.</aqua>"
   MapBeaconMap: "Beacon Map"
   MapUnknownBeacon: "<gray>Unknown beacon</gray>"

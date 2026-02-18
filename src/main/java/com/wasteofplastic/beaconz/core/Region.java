@@ -1173,9 +1173,7 @@ public class Region extends BeaconzPluginDependent {
         return switch (face) {
         case EAST -> 90F;
         case EAST_NORTH_EAST -> 67.5F;
-        case EAST_SOUTH_EAST -> 0F;
-        case NORTH -> 0F;
-        case NORTH_EAST -> 45F;
+            case NORTH_EAST -> 45F;
         case NORTH_NORTH_EAST -> 22.5F;
         case NORTH_NORTH_WEST -> 337.5F;
         case NORTH_WEST -> 315F;
@@ -1187,7 +1185,7 @@ public class Region extends BeaconzPluginDependent {
         case WEST -> 270F;
         case WEST_NORTH_WEST -> 292.5F;
         case WEST_SOUTH_WEST -> 247.5F;
-        default -> 0F;
+        default -> 0F; //NORTH and EAST_SOUTH_EAST
         };
     }
 

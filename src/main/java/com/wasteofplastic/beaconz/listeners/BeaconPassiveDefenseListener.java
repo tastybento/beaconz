@@ -424,10 +424,10 @@ public class BeaconPassiveDefenseListener extends BeaconzPluginDependent impleme
 
             if (blocksNeeded == 0) {
                 player.sendMessage(MiniMessage.miniMessage().deserialize(Lang.beaconLockedJustNow,
-                        Placeholder.component("lockingBlock", Component.text(Settings.lockingBlock.toLowerCase()))));
+                        Placeholder.component("lockingblock", Component.text(Settings.lockingBlock.toLowerCase()))));
             } else if (beacon.isLocked()) {
                 player.sendMessage(MiniMessage.miniMessage().deserialize(Lang.beaconLockedAlready,
-                        Placeholder.component("lockingBlock", Component.text(Settings.lockingBlock.toLowerCase()))));
+                        Placeholder.component("lockingblock", Component.text(Settings.lockingBlock.toLowerCase()))));
             } else {
                 player.sendMessage(MiniMessage.miniMessage().deserialize(Lang.beaconLockedWithNMoreBlocks,
                         Placeholder.component("number", Component.text(blocksNeeded))));

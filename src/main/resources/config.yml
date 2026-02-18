@@ -104,7 +104,7 @@ links:
   - EMERALD:1
   - BREAD:1
   
-  # Link commands
+  # Link commands, i.e., commands that will be run when a player makes a link. This is in addition to the rewards above.
   # Commands that will be run when the player makes a link. Command is run as console.
   # [player] is the linking player
   # If the command is proceeded by [SELF] the command will be run as that player

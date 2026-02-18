@@ -670,7 +670,7 @@ public class BeaconObj extends BeaconzPluginDependent {
                 // Check if this triangle uses both beacons as vertices
                 if (triangle.hasVertex(this.location) && triangle.hasVertex(furthest.location)) {
 
-                    // STEP 4: Remove potion effects from players in this triangle
+                    // STEP 4: Remove potion effects from players in this triangle.
                     // Triangle fields provide buffs/debuffs that must be cleared
                     for (Player player: getServer().getOnlinePlayers()) {
                         // Only check players in the Beaconz world
@@ -868,7 +868,7 @@ public class BeaconObj extends BeaconzPluginDependent {
         boolean rc = false;
         int maxHeight = getHighestBlockY();
 
-        // Check each vertical level from beacon base to highest defense
+        // Check each vertical level from beacon base to the highest defense
         for (int i = y; i <= maxHeight; i++) {
             // If nbrToLock is <= 0, this level is fully locked
             if (nbrToLock(i) <= 0) {
@@ -887,7 +887,7 @@ public class BeaconObj extends BeaconzPluginDependent {
      * around the beacon. The number required is proportional to the team size:
      * <ul>
      *   <li>Larger teams need more blocks (scales with Settings.nbrLockingBlocks)</li>
-     *   <li>Smaller teams need fewer blocks (proportional to largest team)</li>
+     *   <li>Smaller teams need fewer blocks (proportional to the largest team)</li>
      *   <li>Maximum of 8 blocks required (all surrounding positions)</li>
      * </ul>
      *
