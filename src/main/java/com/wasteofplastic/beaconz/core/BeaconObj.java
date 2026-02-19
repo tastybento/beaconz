@@ -478,19 +478,12 @@ public class BeaconObj extends BeaconzPluginDependent {
      * A beacon is considered "clear" when there are no blocks above the beacon base
      * in the 8 surrounding positions (N, S, E, W, NE, NW, SE, SW) all the way to the sky.
      * This includes checking defense blocks that may have been placed.
-     * <p>
-     * This check is important because:
-     * <ul>
-     *   <li>Beacons must be cleared before they can be captured</li>
-     *   <li>Prevents griefing by placing blocks above beacons</li>
-     *   <li>Ensures fair gameplay for capture attempts</li>
-     * </ul>
      *
      * The method checks:
      * <ol>
      *   <li>All 8 surrounding positions (cardinal + ordinal directions)</li>
      *   <li>All registered defense block positions</li>
-     *   <li>Compares highest block Y with beacon Y</li>
+     *   <li>Compares highest block Y with beacon Y but ignores any blocks at max height - 1</li>
      * </ol>
      *
      * @return false if clear (no obstructions), true if NOT clear (obstructions exist)
@@ -506,38 +499,22 @@ public class BeaconObj extends BeaconzPluginDependent {
         for (BlockFace face: FACES) {
             Block block = beacon.getRelative(face);
 
+            int heightCheck = beacon.getWorld().getMaxHeight() - 2; // Ignore any potential glass blocks at max height
+            for (; heightCheck > beacon.getY(); heightCheck--) {
+                if (!block.getWorld().getBlockAt(block.getX(), heightCheck, block.getZ()).getType().equals(Material.AIR)) {
+                    break; // Found a non-air block at this position
+                }
+            }
+
             if (DEBUG)
                 getLogger().info("DEBUG: highest block at " + block.getX() + "," + block.getZ() +
-                               " y = " + getHighestBlockYAt(block.getX(), block.getZ()));
+                               " y = " + heightCheck);
 
             // Check if the highest block at this position is above the beacon level
-            if (getHighestBlockYAt(block.getX(), block.getZ()) != beacon.getY()) {
+            if (heightCheck != beacon.getY()) {
                 if (DEBUG)
                     getLogger().info("DEBUG: Beacon is not cleared");
                 return true; // Found an obstruction - beacon is NOT clear
-            }
-        }
-
-        if (DEBUG)
-            getLogger().info("DEBUG: Checking defenses");
-
-        // STEP 2: Check all defense block positions for obstructions
-        // Defense blocks are allowed ON the beacon but not above them
-        Block block;
-        for (Point2D point: getRegister().getDefensesAtBeacon(this)) {
-            if (DEBUG)
-                getLogger().info("DEBUG: checking = " + (int)point.getX() + "," + y + ", " + (int)point.getY());
-
-            block = getBeaconzWorld().getBlockAt((int)point.getX(), y, (int)point.getY());
-
-            if (DEBUG)
-                getLogger().info("DEBUG: Block Y = " + block.getY() + " and it is " + block.getType());
-
-            // Check if there are blocks above this defense position
-            if (block.getY() != getHighestBlockYAt((int)point.getX(), (int)point.getY())) {
-                if (DEBUG)
-                    getLogger().info("DEBUG: Beacon is not cleared");
-                return true; // Found an obstruction above defense - beacon is NOT clear
             }
         }
 
