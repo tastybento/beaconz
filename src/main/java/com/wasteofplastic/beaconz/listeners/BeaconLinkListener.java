@@ -26,16 +26,15 @@ import java.awt.geom.Line2D;
 import java.util.List;
 import java.util.Locale;
 
-import org.bukkit.Bukkit;
-import org.bukkit.Material;
-import org.bukkit.Sound;
-import org.bukkit.World;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.inventory.ItemStack;
@@ -665,4 +664,33 @@ public class BeaconLinkListener extends BeaconzPluginDependent implements Listen
         }
     }
 
+    /**
+     * Prevents players from placing blocks at the top of the world in the Beaconz world.
+     * @param event The BlockPlaceEvent triggered when a player attempts to place a block
+     */
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled=true)
+    public void onBlockPlace(BlockPlaceEvent event) {
+        if (event.getPlayer().getGameMode() != GameMode.CREATIVE
+                && !event.getPlayer().isOp()
+                && event.getBlock().getWorld().equals(getBeaconzWorld())
+                && event.getBlock().getY() > getBeaconzWorld().getMaxHeight() - 2) {
+                // Prevent placing blocks at the top of the world to avoid map rendering issues
+                event.setCancelled(true);
+        }
+    }
+
+    /**
+     * Prevents players from breaking blocks at the top of the world in the Beaconz world.
+     * @param event The BlockBreakEvent triggered when a player attempts to break a block
+     */
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled=true)
+    public void onBlockBreak(BlockBreakEvent event) {
+        if (event.getPlayer().getGameMode() != GameMode.CREATIVE
+                && !event.getPlayer().isOp()
+                && event.getBlock().getWorld().equals(getBeaconzWorld())
+                && event.getBlock().getY() > getBeaconzWorld().getMaxHeight() - 2) {
+            // Prevent breaking blocks at the top of the world to avoid map rendering issues
+            event.setCancelled(true);
+        }
+    }
 }
