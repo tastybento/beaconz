@@ -194,7 +194,7 @@ public class Messages extends BeaconzPluginDependent {
         }
 
         // Prefix the message with the game name
-        Component prefixedMessage = Component.text("[" + game.getName() + "] ", NamedTextColor.GOLD)
+        Component prefixedMessage = (Component.text("[").append(game.getName()).append(Component.text("] "))).color(NamedTextColor.GOLD)
                 .append(message);
 
         var teamMembers = game.getScorecard().getTeamMembers();
