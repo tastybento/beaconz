@@ -3,6 +3,7 @@ package com.wasteofplastic.beaconz.util;
 import java.awt.geom.Point2D;
 import java.util.Iterator;
 
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -38,29 +39,49 @@ public class LineVisualizer extends BeaconzPluginDependent {
                     return;
                 }
                 // Set air to the team's block
-                Material from = Material.AIR;
+                final Material from = Material.AIR;
                 Material to = game.getScorecard().getBlockID(beaconPair.getOwner());
                 if (!addLink) {
-                    // Removal
-                    from = to;
-                    to = Material.AIR;
+                    // Removal - need to reassign, so we can't make 'to' final here
+                    to = from;
                 }
+                final Material toFinal = addLink ? to : Material.AIR;
+                final Material fromFinal = addLink ? Material.AIR : game.getScorecard().getBlockID(beaconPair.getOwner());
+
+                // Process first iterator
                 while(it.hasNext() && count++ < BLOCKS_TO_SET) {
                     current = it.next();
-                    Block b = getBeaconzWorld().getBlockAt((int)current.getX(), getBeaconzWorld().getMaxHeight()-1, (int)current.getY());
-                    if (b.getType().equals(from)) {
-                        b.setType(to);
-                        //b.setData(to.getData());
-                    }
+                    final int x = (int)current.getX();
+                    final int z = (int)current.getY();
+                    final int y = getBeaconzWorld().getMaxHeight() - 1;
+                    Location loc = new Location(getBeaconzWorld(), x, y, z);
+
+                    // Load chunk asynchronously and set block when loaded
+                    getBeaconzWorld().getChunkAtAsync(loc).thenAccept(chunk -> {
+                        Block b = getBeaconzWorld().getBlockAt(x, y, z);
+                        if (b.getType().equals(fromFinal)) {
+                            b.setType(toFinal);
+                        }
+                    });
                 }
+
+                // Process second iterator
                 while(it2.hasNext() && count++ < BLOCKS_TO_SET) {
                     current = it2.next();
-                    Block b = getBeaconzWorld().getBlockAt((int)current.getX(), getBeaconzWorld().getMaxHeight()-1, (int)current.getY());
-                    if (b.getType().equals(from)) {
-                        b.setType(to);
-                        //b.setData(to.getData());
-                    }
+                    final int x = (int)current.getX();
+                    final int z = (int)current.getY();
+                    final int y = getBeaconzWorld().getMaxHeight() - 1;
+                    Location loc = new Location(getBeaconzWorld(), x, y, z);
+
+                    // Load chunk asynchronously and set block when loaded
+                    getBeaconzWorld().getChunkAtAsync(loc).thenAccept(chunk -> {
+                        Block b = getBeaconzWorld().getBlockAt(x, y, z);
+                        if (b.getType().equals(fromFinal)) {
+                            b.setType(toFinal);
+                        }
+                    });
                 }
+
                 if (!it.hasNext() && !it2.hasNext()) {
                     // Cancel task
                     this.cancel();
