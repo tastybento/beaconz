@@ -18,7 +18,7 @@
         <!-- Testing dependencies -->
         <junit.version>5.10.2</junit.version>
         <mockito.version>5.11.0</mockito.version>
-        <mock-bukkit.version>v1.21-SNAPSHOT</mock-bukkit.version>
+        <mock-bukkit.version>4.110.0</mock-bukkit.version>
 
         <!-- Revision variable removes warning about dynamic version -->
         <revision>${build.version}-SNAPSHOT</revision>
@@ -87,9 +87,9 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.github.MockBukkit</groupId>
-            <artifactId>MockBukkit</artifactId>
-            <version>v1.21-SNAPSHOT</version>
+            <groupId>org.mockbukkit.mockbukkit</groupId>
+            <artifactId>mockbukkit-v1.21</artifactId>
+            <version>4.110.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
